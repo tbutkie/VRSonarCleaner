@@ -33,6 +33,9 @@
     <ClCompile Include="SonarCleanerMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CGLRenderModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -46,6 +49,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\pathtools.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="CGLRenderModel.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

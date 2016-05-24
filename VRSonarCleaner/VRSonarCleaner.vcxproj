@@ -164,6 +164,7 @@
     <ClCompile Include="..\shared\lodepng.cpp" />
     <ClCompile Include="..\shared\Matrices.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
+    <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +172,7 @@
     <ClInclude Include="..\shared\Matrices.h" />
     <ClInclude Include="..\shared\pathtools.h" />
     <ClInclude Include="..\shared\Vectors.h" />
+    <ClInclude Include="CGLRenderModel.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

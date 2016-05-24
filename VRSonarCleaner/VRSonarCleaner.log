@@ -1,29 +1,16 @@
-﻿  lodepng.cpp
-..\shared\lodepng.cpp(794): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(806): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(824): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(1432): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-..\shared\lodepng.cpp(1436): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-..\shared\lodepng.cpp(1508): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(3426): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
-..\shared\lodepng.cpp(3432): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(4225): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(4273): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(4353): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-..\shared\lodepng.cpp(5274): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-  Matrices.cpp
-  pathtools.cpp
-  SonarCleanerMain.cpp
-SonarCleanerMain.cpp(282): warning C4996: 'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+﻿  SonarCleanerMain.cpp
+SonarCleanerMain.cpp(264): warning C4996: 'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdio.h(240): note: see declaration of 'freopen'
-SonarCleanerMain.cpp(680): warning C4312: 'type cast': conversion from 'GLuint' to 'void *' of greater size
-SonarCleanerMain.cpp(682): warning C4312: 'type cast': conversion from 'GLuint' to 'void *' of greater size
-SonarCleanerMain.cpp(1013): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-SonarCleanerMain.cpp(1197): warning C4312: 'type cast': conversion from 'GLuint' to 'const void *' of greater size
-SonarCleanerMain.cpp(1201): warning C4312: 'type cast': conversion from 'GLuint' to 'const void *' of greater size
-SonarCleanerMain.cpp(1384): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-SonarCleanerMain.cpp(1550): warning C4312: 'type cast': conversion from 'unsigned int' to 'const void *' of greater size
+SonarCleanerMain.cpp(662): warning C4312: 'type cast': conversion from 'GLuint' to 'void *' of greater size
+SonarCleanerMain.cpp(664): warning C4312: 'type cast': conversion from 'GLuint' to 'void *' of greater size
+SonarCleanerMain.cpp(995): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+SonarCleanerMain.cpp(1179): warning C4312: 'type cast': conversion from 'GLuint' to 'const void *' of greater size
+SonarCleanerMain.cpp(1183): warning C4312: 'type cast': conversion from 'GLuint' to 'const void *' of greater size
+SonarCleanerMain.cpp(1366): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+SonarCleanerMain.cpp(1532): warning C4312: 'type cast': conversion from 'unsigned int' to 'const void *' of greater size
   Generating code
-  All 1026 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  7 of 1026 functions ( 0.7%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    6 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   VRSonarCleaner.vcxproj -> C:\Users\tbutkiewicz\Desktop\VRSonarCleaner\VRSonarCleaner\VRSonarCleaner.exe
