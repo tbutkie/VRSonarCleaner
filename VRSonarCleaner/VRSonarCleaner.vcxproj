@@ -165,6 +165,9 @@
     <ClCompile Include="..\shared\Matrices.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
+    <ClCompile Include="CleaningRoom.cpp" />
+    <ClCompile Include="CMainApplication.cpp" />
+    <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -173,6 +176,9 @@
     <ClInclude Include="..\shared\pathtools.h" />
     <ClInclude Include="..\shared\Vectors.h" />
     <ClInclude Include="CGLRenderModel.h" />
+    <ClInclude Include="CleaningRoom.h" />
+    <ClInclude Include="CMainApplication.h" />
+    <ClInclude Include="HolodeckBackground.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
