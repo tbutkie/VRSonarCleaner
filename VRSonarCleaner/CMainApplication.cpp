@@ -1493,44 +1493,55 @@ CGLRenderModel *CMainApplication::FindOrLoadRenderModel(const char *pchRenderMod
 	}
 
 	// load the model if we didn't find one
-	if (!pRenderModel)
+	if( !pRenderModel )
 	{
-		vr::RenderModel_t *pModel = NULL;
-
-		// Load model using asynchronous method
-		while (vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel) == vr::VRRenderModelError_Loading) {}
-
-		if (vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel) != vr::VRRenderModelError_None || pModel == NULL)
+		vr::RenderModel_t *pModel;
+		vr::EVRRenderModelError error;
+		while ( 1 )
 		{
-			dprintf("Unable to load render model %s\n", pchRenderModelName);
+			error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName, &pModel );
+			if ( error != vr::VRRenderModelError_Loading )
+				break;
+
+			::Sleep( 1 );
+		}
+
+		if ( error != vr::VRRenderModelError_None )
+		{
+			dprintf( "Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum( error ) );
 			return NULL; // move on to the next tracked device
 		}
 
-		vr::RenderModel_TextureMap_t *pTexture = NULL;
-
-		// Load model texture using asynchronous method
-		while (vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture) == vr::VRRenderModelError_Loading) {}
-
-		if (vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture) != vr::VRRenderModelError_None || pTexture == NULL)
+		vr::RenderModel_TextureMap_t *pTexture;
+		while ( 1 )
 		{
-			dprintf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
-			vr::VRRenderModels()->FreeRenderModel(pModel);
+			error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
+			if ( error != vr::VRRenderModelError_Loading )
+				break;
+
+			::Sleep( 1 );
+		}
+
+		if ( error != vr::VRRenderModelError_None )
+		{
+			dprintf( "Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName );
+			vr::VRRenderModels()->FreeRenderModel( pModel );
 			return NULL; // move on to the next tracked device
 		}
 
-		pRenderModel = new CGLRenderModel(pchRenderModelName);
-		if (!pRenderModel->BInit(*pModel, *pTexture))
+		pRenderModel = new CGLRenderModel( pchRenderModelName );
+		if ( !pRenderModel->BInit( *pModel, *pTexture ) )
 		{
-			dprintf("Unable to create GL model from render model %s\n", pchRenderModelName);
+			dprintf( "Unable to create GL model from render model %s\n", pchRenderModelName );
 			delete pRenderModel;
 			pRenderModel = NULL;
 		}
 		else
 		{
-			m_vecRenderModels.push_back(pRenderModel);
+			m_vecRenderModels.push_back( pRenderModel );
 		}
-		vr::VRRenderModels()->FreeRenderModel(pModel);
-		vr::VRRenderModels()->FreeTexture(pTexture);
+		vr::VRRenderModels()->FreeRenderModel( pModel );
+		vr::VRRenderModels()->FreeTexture( pTexture );
 	}
 	return pRenderModel;
 }
