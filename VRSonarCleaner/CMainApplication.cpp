@@ -401,7 +401,16 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
-				printf("L pressed!\n");
+				printf("Controller Locations:\n");
+				// Process SteamVR controller state
+				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+				{
+					printf("Controller %d\n", unDevice);
+
+					
+										
+				}
+				
 			}
 		}
 	}
