@@ -14,8 +14,8 @@ HolodeckBackground::HolodeckBackground(float SizeX, float SizeY, float SizeZ)
 	spacingY = sizeY / spacesY;
 	spacingZ = sizeZ / spacesZ;
 
-	minX = 0 - (sizeX / 2);
-	minY = 0 - (sizeY / 2);
+	minX = -sizeX/2;
+	minY = -sizeY/2;
 	minZ = 0;
 
 	maxX = (sizeX / 2);
@@ -32,6 +32,7 @@ HolodeckBackground::~HolodeckBackground()
 void HolodeckBackground::draw()
 {
 	glColor3f(1.0, 1.0, 0.0);
+	glLineWidth(2.0);
 	glBegin(GL_LINES);
 		glVertex3f(minX, minY, minZ);
 		glVertex3f(maxX, minY, minZ);

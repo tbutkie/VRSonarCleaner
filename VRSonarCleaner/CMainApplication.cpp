@@ -399,6 +399,10 @@ bool CMainApplication::HandleInput()
 			{
 				m_bShowCubes = !m_bShowCubes;
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_l)
+			{
+				printf("L pressed!\n");
+			}
 		}
 	}
 
@@ -1280,15 +1284,17 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	//if (m_bShowCubes)
-	//{
-	//	glUseProgram(m_unSceneProgramID);
-	//	glUniformMatrix4fv(m_nSceneMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-	//	glBindVertexArray(m_unSceneVAO);
-	//	glBindTexture(GL_TEXTURE_2D, m_iTexture);
-	//	glDrawArrays(GL_TRIANGLES, 0, m_uiVertcount);
-	//	glBindVertexArray(0);
-	//}
+	cleaningRoom->draw();
+
+	if (m_bShowCubes)
+	{
+		glUseProgram(m_unSceneProgramID);
+		glUniformMatrix4fv(m_nSceneMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
+		glBindVertexArray(m_unSceneVAO);
+		glBindTexture(GL_TEXTURE_2D, m_iTexture);
+		glDrawArrays(GL_TRIANGLES, 0, m_uiVertcount);
+		glBindVertexArray(0);
+	}
 
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
@@ -1326,7 +1332,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	glUseProgram(0);
 
-	cleaningRoom->draw();
+	
 
 }
 
