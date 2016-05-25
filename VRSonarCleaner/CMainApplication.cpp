@@ -429,7 +429,7 @@ bool CMainApplication::HandleInput()
 		vr::VRControllerState_t state;
 		if (m_pHMD->GetControllerState(unDevice, &state))
 		{
-			m_rbShowTrackedDevice[unDevice] = state.ulButtonPressed == 0;
+			//m_rbShowTrackedDevice[unDevice] = state.ulButtonPressed == 0;
 		}
 	}
 
@@ -966,7 +966,7 @@ void CMainApplication::DrawControllers()
 		{
 			Vector3 color(0, 0, 0);
 			Vector4 point(0, 0, 0, 1);
-			point[i] += 0.05f;  // offset in X, Y, Z
+			point[i] += 1.f;  // offset in X, Y, Z
 			color[i] = 1.0;  // R, G, B
 			point = mat * point;
 			vertdataarray.push_back(center.x);
