@@ -168,7 +168,9 @@
     <ClCompile Include="CleaningRoom.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
+    <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="ViveController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h" />
@@ -179,6 +181,8 @@
     <ClInclude Include="CleaningRoom.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="HolodeckBackground.h" />
+    <ClInclude Include="InteractionManager.h" />
+    <ClInclude Include="ViveController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

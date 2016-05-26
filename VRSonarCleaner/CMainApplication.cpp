@@ -161,8 +161,8 @@ bool CMainApplication::BInit()
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
@@ -274,7 +274,7 @@ bool CMainApplication::BInitGL()
 	SetupRenderModels();
 
 
-	cleaningRoom = new CleaningRoom(100, 100, 20);
+	cleaningRoom = new CleaningRoom();
 	
 	return true;
 }
@@ -973,6 +973,8 @@ void CMainApplication::DrawControllers()
 			vertdataarray.push_back(center.y);
 			vertdataarray.push_back(center.z);
 
+			printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
+
 			vertdataarray.push_back(color.x);
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
@@ -1293,9 +1295,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	cleaningRoom->draw();
-
-	if (m_bShowCubes)
+	/*if (m_bShowCubes)
 	{
 		glUseProgram(m_unSceneProgramID);
 		glUniformMatrix4fv(m_nSceneMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
@@ -1303,8 +1303,9 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 		glBindTexture(GL_TEXTURE_2D, m_iTexture);
 		glDrawArrays(GL_TRIANGLES, 0, m_uiVertcount);
 		glBindVertexArray(0);
-	}
+	}*/
 
+	
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
@@ -1316,6 +1317,8 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 		glDrawArrays(GL_LINES, 0, m_uiControllerVertcount);
 		glBindVertexArray(0);
 	}
+
+	
 
 	// ----- Render Model rendering -----
 	glUseProgram(m_unRenderModelProgramID);
@@ -1341,7 +1344,24 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	glUseProgram(0);
 
+	glMatrixMode(GL_PROJECTION);
+	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
+	glLoadMatrixf(thisEyesProjectionMatrix.get());
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	
+	//this didn't work either:
+	//for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
+	//{
+	//	if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
+	//	{
+	//		if (m_rDevClassChar[nDevice] == 'H') //find HMD
+	//		{
+	//			glLoadMatrixf(m_rmat4DevicePose[nDevice].get());
+	//		}
+	//	}
+	//}
+	cleaningRoom->draw();
 
 }
 

@@ -8,7 +8,7 @@
 
 //#include <SDL_opengl.h>
 //#include <gl/glu.h>
-//#include <stdio.h>
+#include <stdio.h>
 //#include <string>
 //#include <cstdlib>
 
@@ -21,10 +21,12 @@
 class CleaningRoom
 {
 public:
-	CleaningRoom(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
+	CleaningRoom();
 	virtual ~CleaningRoom();
 
 	void draw();
+
+	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;
