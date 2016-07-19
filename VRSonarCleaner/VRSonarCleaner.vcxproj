@@ -167,9 +167,15 @@
     <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="CleaningRoom.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
+    <ClCompile Include="ColorScaler.cpp" />
+    <ClCompile Include="DataVolume.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
+    <ClCompile Include="MatrixUtils.cpp" />
+    <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="Vec3.cpp" />
+    <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -180,8 +186,15 @@
     <ClInclude Include="CGLRenderModel.h" />
     <ClInclude Include="CleaningRoom.h" />
     <ClInclude Include="CMainApplication.h" />
+    <ClInclude Include="ColorScaler.h" />
+    <ClInclude Include="DataVolume.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
+    <ClInclude Include="Matrix.h" />
+    <ClInclude Include="MatrixUtils.h" />
+    <ClInclude Include="SonarPointCloud.h" />
+    <ClInclude Include="Vec3.h" />
+    <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

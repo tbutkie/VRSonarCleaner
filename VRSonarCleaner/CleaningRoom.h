@@ -5,6 +5,8 @@
 #include <math.h>
 
 #include "HolodeckBackground.h"
+#include "DataVolume.h"
+#include "SonarPointCloud.h"
 
 //#include <SDL_opengl.h>
 //#include <gl/glu.h>
@@ -17,6 +19,8 @@
 //#include "../shared/lodepng.h"
 //#include "../shared/Matrices.h"
 //#include "../shared/pathtools.h"
+
+extern SonarPointCloud* cloud;
 
 class CleaningRoom
 {
@@ -34,6 +38,9 @@ private:
 	float maxX, maxY, maxZ;
 
 	HolodeckBackground* holodeck;
+
+	DataVolume *wallVolume;
+	DataVolume *tableVolume;
 
 
 };

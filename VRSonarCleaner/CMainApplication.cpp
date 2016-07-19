@@ -365,6 +365,10 @@ void CMainApplication::Shutdown()
 		}
 	}
 
+	
+	fclose(stdout);
+	FreeConsole();
+
 	if (m_pWindow)
 	{
 		SDL_DestroyWindow(m_pWindow);
@@ -452,6 +456,10 @@ void CMainApplication::RunMainLoop()
 
 		RenderFrame();
 	}
+
+	////doesn't help here either
+	fclose(stdout);
+	FreeConsole();
 
 	SDL_StopTextInput();
 }

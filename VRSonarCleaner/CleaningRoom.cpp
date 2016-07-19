@@ -2,9 +2,13 @@
 
 CleaningRoom::CleaningRoom()
 {
+	//X-Right-Left
+	//Y-UP-vertical
+	//Z-toward monitor
+
 	roomSizeX = 10;
 	roomSizeY = 4;
-	roomSizeZ = 10;
+	roomSizeZ = 6;
 
 	holodeck = new HolodeckBackground(roomSizeX, roomSizeY, roomSizeZ, 0.25);
 
@@ -16,6 +20,13 @@ CleaningRoom::CleaningRoom()
 	maxY = (roomSizeY / 2);
 	maxZ = roomSizeZ;
 		
+	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
+	tableVolume = new DataVolume(0, 0.75, 0, 0, 2, 0.5, 2);
+	wallVolume = new DataVolume(0, roomSizeY / 2, (roomSizeZ / 2)-0.3, 1, (roomSizeX*0.9), (roomSizeY*0.75), 0.5);
+	
+
+	tableVolume->setInnerCoords(cloud->getXMin(), cloud->getXMax(), cloud->getMinDepth(), cloud->getMaxDepth(), cloud->getYMin(), cloud->getYMax());
+	wallVolume->setInnerCoords(cloud->getXMin(), cloud->getXMax(), cloud->getMinDepth(), cloud->getMaxDepth(), cloud->getYMin(), cloud->getYMax());
 
 }
 
@@ -35,5 +46,27 @@ void CleaningRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");
 	holodeck->draw();
+
+	//draw debug
+	wallVolume->drawBBox();
+	tableVolume->drawBBox();
+
+	
+	//draw table
+	glPushMatrix();
+	tableVolume->activateTransformationMatrix();
+	cloud->draw();
+	cloud->drawAxes();
+	//tableVolume->deactivateTransformationMatrix();
+	glPopMatrix();
+
+	//draw wall
+	glPushMatrix();
+	wallVolume->activateTransformationMatrix();
+	cloud->draw();
+	cloud->drawAxes();
+	glPopMatrix();
+	//wallVolume->deactivateTransformationMatrix();
+
 
 }
