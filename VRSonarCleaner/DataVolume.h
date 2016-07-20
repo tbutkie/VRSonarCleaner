@@ -15,6 +15,7 @@ public:
 	virtual ~DataVolume();
 
 	void drawBBox();
+	void drawBacking();
 	void drawAxes();
 
 	void setSize(float SizeX, float SizeY, float SizeZ);

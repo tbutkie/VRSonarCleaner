@@ -21,8 +21,8 @@ CleaningRoom::CleaningRoom()
 	maxZ = roomSizeZ;
 		
 	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	tableVolume = new DataVolume(0, 0.75, 0, 0, 2, 0.5, 2);
-	wallVolume = new DataVolume(0, roomSizeY / 2, (roomSizeZ / 2)-0.3, 1, (roomSizeX*0.9), (roomSizeY*0.75), 0.5);
+	tableVolume = new DataVolume(0, 0.75, 0, 0, 2.25, 0.75, 2.25);
+	wallVolume = new DataVolume(0, (roomSizeY / 2)+(roomSizeY*0.15), (roomSizeZ / 2)-0.42, 1, (roomSizeX*0.9), (roomSizeY*0.80), 0.8);
 	
 
 	tableVolume->setInnerCoords(cloud->getXMin(), cloud->getXMax(), cloud->getMinDepth(), cloud->getMaxDepth(), cloud->getYMin(), cloud->getYMax());
@@ -49,7 +49,9 @@ void CleaningRoom::draw()
 
 	//draw debug
 	wallVolume->drawBBox();
+	wallVolume->drawBacking();
 	tableVolume->drawBBox();
+	tableVolume->drawBacking();
 
 	
 	//draw table

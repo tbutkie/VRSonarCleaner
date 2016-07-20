@@ -19,6 +19,15 @@ void ColorScaler::setToDefaults()
 	minColorScaleValue = 0;
 	maxColorScaleValue = 1;
 	rangeColorScaleValue = 1;
+
+	biValueScale = 0;
+	biValueScaleMinMaxSet = false;
+	minVal1 = 0;
+	maxVal1 = 1;
+	rangeVal1 = 1;
+	minVal2 = 0;
+	maxVal2 = 1;
+	rangeVal2 = 1;
 }
 
 
@@ -51,6 +60,12 @@ void ColorScaler::getScaledColor(float factor, float *r, float *g, float *b)
 		getBandedRainbowScaledColor(factor, r, g, b);
 
 }
+
+void ColorScaler::getScaledColorForValue(float value, float *r, float *g, float *b)
+{
+	getScaledColor(getColorScaleFactor(value), r, g, b);
+}
+
 
 void ColorScaler::getOrangeBrownScaledColor(float factor, float *r, float *g, float *b)
 {
@@ -283,7 +298,7 @@ void ColorScaler::submitMinMaxForColorScale(float minVal, float maxVal)
 			maxColorScaleValue = maxVal;
 	}
 	rangeColorScaleValue = maxColorScaleValue - minColorScaleValue;
-	printf("Min Max Color Depth is now: %f, %f\n", minColorScaleValue, maxColorScaleValue);
+	//printf("Min Max Color Depth is now: %f, %f\n", minColorScaleValue, maxColorScaleValue);
 }
 
 void ColorScaler::resetMinMaxForColorScale(float minVal, float maxVal)
@@ -299,6 +314,7 @@ void ColorScaler::resetMinMaxForColorScale(float minVal, float maxVal)
 		maxColorScaleValue = minVal;
 	}
 	rangeColorScaleValue = maxColorScaleValue - minColorScaleValue;
+	colorScaleMinMaxSet = true;
 }
 
 float ColorScaler::getColorScaleMin()
@@ -320,3 +336,224 @@ float ColorScaler::getColorScaleFactor(float depth)
 	else
 		return ((depth - minColorScaleValue) / rangeColorScaleValue);
 }
+
+//BI VALUE SCALER:
+void ColorScaler::submitBiValueScaleMinMax(float MinVal1, float MaxVal1, float MinVal2, float MaxVal2)
+{
+	if (!biValueScaleMinMaxSet)
+	{
+		minVal1 = MinVal1;
+		maxVal1 = MaxVal1;
+		minVal2 = MinVal2;
+		maxVal2 = MaxVal2;
+		colorScaleMinMaxSet = true;
+	}
+	else
+	{
+		if (MinVal1 < minVal1)
+			minVal1 = MinVal1;
+		if (MaxVal1 > maxVal1)
+			maxVal1 = MaxVal1;
+		if (MinVal2 < minVal2)
+			minVal2 = MinVal2;
+		if (MaxVal2 > maxVal2)
+			maxVal2 = MaxVal2;
+	}
+	rangeVal1 = maxVal1 - minVal1;
+	rangeVal2 = maxVal2 - minVal2;
+	biValueScaleMinMaxSet = true;
+}
+
+void ColorScaler::resetBiValueScaleMinMax(float MinVal1, float MaxVal1, float MinVal2, float MaxVal2)
+{
+	if (MinVal1 < MaxVal1)
+	{
+		minVal1 = MinVal1;
+		maxVal1 = MaxVal1;
+	}
+	else
+	{
+		minVal1 = MaxVal1;
+		maxVal1 = MinVal1;
+	}
+	if (MinVal2 < MaxVal2)
+	{
+		minVal2 = MinVal2;
+		maxVal2 = MaxVal2;
+	}
+	else
+	{
+		minVal2 = MaxVal2;
+		maxVal2 = MinVal2;
+	}
+	rangeVal1 = maxVal1 - minVal1;
+	rangeVal2 = maxVal2 - minVal2;
+	biValueScaleMinMaxSet = true;
+}
+
+
+void ColorScaler::setBiValueScale(int scale)
+{
+	biValueScale = scale;
+}
+
+void ColorScaler::getBiValueScaledColor(float val1, float val2, float *r, float *g, float *b)
+{
+	float factor1, factor2;
+	
+	if (val1 <= minVal1)
+		factor1 = 0;
+	else if (val1 >= maxVal1)
+		factor1 = 1;
+	else
+		factor1 = ((val1 - minVal1) / rangeVal1);
+	
+	if (val2 <= minVal2)
+		factor2 = 0;
+	else if (val2 >= maxVal2)
+		factor2 = 1;
+	else
+		factor2 = ((val2 - minVal2) / rangeVal2);
+
+	if (biValueScale == 0)
+	{
+		*r = val1;
+		*g = 0;
+		*b = val2;
+	}
+	else if (biValueScale == 1) //custom error
+	{
+		if (factor1 < 0.333)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 1.0;
+				*b = 1.0;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 1.0;
+				*b = 0.75;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.75;
+				*b = 0.5;
+			}
+		}
+		else if (factor1 < 0.666)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 0.85;
+				*b = 0.15;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 0.75;
+				*b = 0.25;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.50;
+				*b = 0.40;
+			}
+		}
+		else
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 0.50;
+				*b = 0.50;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 0.35;
+				*b = 0.35;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.15;
+				*b = 0.15;
+			}
+		}
+	}
+	else if (biValueScale == 2) //purple/green bimap
+	{
+		if (factor1 < 0.333)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 0.95;
+				*g = 0.95;
+				*b = 0.95;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 0.76;
+				*g = 0.94;
+				*b = 0.81;
+			}
+			else
+			{
+				*r = 0.54;
+				*g = 0.88;
+				*b = 0.68;
+			}
+		}
+		else if (factor1 < 0.666)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 0.92;
+				*g = 0.77;
+				*b = 0.87;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 0.62;
+				*g = 0.77;
+				*b = 0.83;
+			}
+			else
+			{
+				*r = 0.49;
+				*g = 0.77;
+				*b = 0.69;
+			}
+		}
+		else
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 0.90;
+				*g = 0.64;
+				*b = 0.82;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 0.73;
+				*g = 0.62;
+				*b = 0.81;
+			}
+			else
+			{
+				*r = 0.48;
+				*g = 0.57;
+				*b = 0.68;
+			}
+		}
+	}
+
+
+}
+

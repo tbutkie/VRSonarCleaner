@@ -405,16 +405,14 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
+				/*
 				printf("Controller Locations:\n");
 				// Process SteamVR controller state
 				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
 				{
-					printf("Controller %d\n", unDevice);
-
-					
-										
+					printf("Controller %d\n", unDevice);										
 				}
-				
+				*/
 			}
 		}
 	}
@@ -1252,7 +1250,8 @@ void CMainApplication::SetupDistortion()
 //-----------------------------------------------------------------------------
 void CMainApplication::RenderStereoTargets()
 {
-	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
+	//glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
+	glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
 	// Left Eye

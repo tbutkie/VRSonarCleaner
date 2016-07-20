@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
 
 	colorScalerTPU = new ColorScaler();
 	colorScalerTPU->setColorScale(2);
+	colorScalerTPU->setBiValueScale(1);
 
 	cloud = new SonarPointCloud();
 	cloud->loadFromSonarTxt("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");

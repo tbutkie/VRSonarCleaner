@@ -142,7 +142,8 @@ void DataVolume::deactivateTransformationMatrix()
 void DataVolume::drawBBox()
 {
 	//printf("In Holodeck Draw()\n");
-	glColor3f(0.75, 0.0, 0.0);
+	//glColor3f(0.75, 0.0, 0.0);
+	glColor4f(0.22, 0.25, 0.34, 1.0);
 	glLineWidth(1.0);
 	
 	float BBox[6];
@@ -198,6 +199,39 @@ void DataVolume::drawBBox()
 
 	glEnd();
 
+}
+
+void DataVolume::drawBacking()
+{
+	//printf("In Holodeck Draw()\n");
+	glColor4f(0.22, 0.25, 0.34, 1.0);
+
+	float BBox[6];
+	BBox[0] = minX;
+	BBox[1] = maxX;
+	BBox[2] = minY;
+	BBox[3] = maxY;
+	BBox[4] = minZ;
+	BBox[5] = maxZ;
+
+	glBegin(GL_QUADS);
+
+	if (orientation == 0)
+	{
+		glVertex3f(BBox[0], BBox[2], BBox[4]);
+		glVertex3f(BBox[1], BBox[2], BBox[4]);
+		glVertex3f(BBox[1], BBox[2], BBox[5]);
+		glVertex3f(BBox[0], BBox[2], BBox[5]);
+	}
+	else if (orientation == 1)
+	{
+		glVertex3f(BBox[0], BBox[2], BBox[5]);
+		glVertex3f(BBox[1], BBox[2], BBox[5]);
+		glVertex3f(BBox[1], BBox[3], BBox[5]);
+		glVertex3f(BBox[0], BBox[3], BBox[5]);
+	}
+
+	glEnd();
 }
 
 void DataVolume::drawAxes()

@@ -189,122 +189,6 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 	pointsColors[(index*3)+2] = b;
 }
 
-bool SonarPointCloud::loadFromASCII(char* filename, int linesToSkip)
-{
-	printf("Loading Point Cloud from %s\n", filename);
-
-	strcpy(name, filename);
-
-	FILE *file;
-	file = fopen(filename, "r");
-	if (file == NULL)
-	{
-		printf("ERROR reading file in loadFromASCII!\n");
-	}
-	else
-	{
-		//count points
-		//skip the first linesToSkip lines
-		int skipped = 0;
-		int tries = 0;
-		char tempChar;
-		while (skipped < linesToSkip && tries < 5000)
-		{
-			tries++;
-			tempChar = 'a';
-			while (tempChar != '\n')
-			{
-				tempChar = fgetc(file);
-			}
-			skipped++;
-		}
-		printf("Skipped %d characters\n", skipped);
-
-		//now count lines of points
-		double x, y, z;
-		int numPointsInFile = 0;
-		while (fscanf(file, "%lf,%lf,%lf\n", &x, &y, &z) != EOF)  //while another valid entry to load
-		{
-			numPointsInFile++;
-		}
-		initPoints(numPointsInFile);
-		printf("found %d lines of points\n", numPointsInFile);
-
-		//rewind
-		rewind(file);
-		//skip the first linesToSkip lines
-		skipped = 0;
-		tries = 0;
-		while (skipped < linesToSkip && tries < 5000)
-		{
-			tries++;
-			tempChar = 'a';
-			while (tempChar != '\n')
-			{
-				tempChar = fgetc(file);
-			}
-			skipped++;
-		}
-		
-		//now load lines of points
-		int index = 0;
-		while (fscanf(file, "%lf,%lf,%lf\n", &x, &y, &z) != EOF)  //while another valid entry to load
-		{
-			setPoint(index, x, y, z);
-			index++;
-		}
-		
-		printf("Loaded %d points\n", index);
-		
-		fclose(file);	
-		
-		//scaling hack
-		for (int i=0;i<numPoints;i++)
-		{
-			pointsPositions[i*3] = (pointsPositions[i*3]-xMin)*70000;
-			pointsPositions[(i*3)+1] = (pointsPositions[(i*3)+1]-yMin)*70000;
-			pointsPositions[(i*3)+2] = -pointsPositions[(i*3)+2];
-		}
-		xMin = pointsPositions[0];
-		xMax = pointsPositions[0];
-		yMin = pointsPositions[1];
-		yMax = pointsPositions[1];
-		minDepth = pointsPositions[2];
-		maxDepth = pointsPositions[2];
-
-		for (int i=0;i<numPoints;i++)
-		{
-			if (pointsPositions[i*3] < xMin)
-				xMin = pointsPositions[i*3];
-			if (pointsPositions[i*3] > xMax)
-				xMax = pointsPositions[i*3];
-
-			if (pointsPositions[(i*3)+1] < yMin)
-				yMin = pointsPositions[(i*3)+1];
-			if (pointsPositions[(i*3)+1] > yMax)
-				yMax = pointsPositions[(i*3)+1];
-		
-			if (pointsPositions[(i*3)+2] < minDepth)
-				minDepth = pointsPositions[(i*3)+2];
-			if (pointsPositions[(i*3)+2] > maxDepth)
-				maxDepth = pointsPositions[(i*3)+2];
-		}
-
-		xRange = xMax - xMin;
-		yRange = yMax - yMin;
-		rangeDepth = maxDepth - minDepth;
-
-		colorScalerTPU->submitMinMaxForColorScale(minDepthTPU, maxDepthTPU);
-
-		//projSettings->expandProjectBounds(xMin, xMax, yMin, yMax, minDepth, maxDepth);
-
-		setRefreshNeeded();
-
-	}
-	
-	return true;
-}
-
 
 bool SonarPointCloud::loadFromSonarTxt(char* filename)
 {
@@ -427,7 +311,11 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 				maxDepth = pointsPositions[(i * 3) + 2];
 		}
 
-		//projSettings->expandProjectBounds(xMin, xMax, yMin, yMax, minDepth, maxDepth);
+		xRange = xMax - xMin;
+		yRange = yMax - yMin;
+		rangeDepth = maxDepth - minDepth;
+
+		colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
 
 		setRefreshNeeded();
 
@@ -513,13 +401,11 @@ void SonarPointCloud::buildPointsVBO()
 		y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
 		z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
 
+		colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+		//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
+		//g = 1;// pointsColors[(i * 3) + 1];
+		//b = 1;// pointsColors[(i * 3) + 2];
 		
-		r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-		g = 1;// pointsColors[(i * 3) + 1];
-		b = 1;// pointsColors[(i * 3) + 2];
-		
-		
-
 		positions[(index*3)]   = (float)x;
 		positions[(index*3)+1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
 		positions[(index*3)+2] = (float)y;
