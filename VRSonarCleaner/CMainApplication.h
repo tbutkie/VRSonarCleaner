@@ -86,6 +86,9 @@ private:
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDevice[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbShowTrackedDeviceAxes[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceTriggered[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceGripDown[vr::k_unMaxTrackedDeviceCount];
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;

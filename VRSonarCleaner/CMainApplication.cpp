@@ -432,6 +432,25 @@ bool CMainApplication::HandleInput()
 		if (m_pHMD->GetControllerState(unDevice, &state))
 		{
 			//m_rbShowTrackedDevice[unDevice] = state.ulButtonPressed == 0;
+
+			if(state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+				m_rbTrackedDeviceTriggered[unDevice] = true;
+			else
+				m_rbTrackedDeviceTriggered[unDevice] = false;
+
+
+			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
+			{
+				if (!m_rbTrackedDeviceGripDown[unDevice])
+				{
+					m_rbTrackedDeviceGripDown[unDevice] = true;
+					m_rbShowTrackedDeviceAxes[unDevice] = !m_rbShowTrackedDeviceAxes[unDevice];
+				}
+			}
+			else
+			{
+				m_rbTrackedDeviceGripDown[unDevice] = false;
+			}
 		}
 	}
 
@@ -966,34 +985,37 @@ void CMainApplication::DrawControllers()
 
 		const Matrix4 & mat = m_rmat4DevicePose[unTrackedDevice];
 
-		Vector4 center = mat * Vector4(0, 0, 0, 1);
-
-		for (int i = 0; i < 3; ++i)
+		// Draw Axes
+		if(m_rbShowTrackedDeviceAxes[unTrackedDevice])
 		{
-			Vector3 color(0, 0, 0);
-			Vector4 point(0, 0, 0, 1);
-			point[i] += 0.1f;  // offset in X, Y, Z
-			color[i] = 1.0;  // R, G, B
-			point = mat * point;
-			vertdataarray.push_back(center.x);
-			vertdataarray.push_back(center.y);
-			vertdataarray.push_back(center.z);
+			for (int i = 0; i < 3; ++i)
+			{
+				Vector3 color(0, 0, 0);
+				Vector4 center = mat * Vector4(0, 0, 0, 1);
+				Vector4 point(0, 0, 0, 1);
+				point[i] += 0.1f;  // offset in X, Y, Z
+				color[i] = 1.0;  // R, G, B
+				point = mat * point;
+				vertdataarray.push_back(center.x);
+				vertdataarray.push_back(center.y);
+				vertdataarray.push_back(center.z);
 
-			printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
+				printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
 
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x);
+				vertdataarray.push_back(color.y);
+				vertdataarray.push_back(color.z);
 
-			vertdataarray.push_back(point.x);
-			vertdataarray.push_back(point.y);
-			vertdataarray.push_back(point.z);
+				vertdataarray.push_back(point.x);
+				vertdataarray.push_back(point.y);
+				vertdataarray.push_back(point.z);
 
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x);
+				vertdataarray.push_back(color.y);
+				vertdataarray.push_back(color.z);
 
-			m_uiControllerVertcount += 2;
+				m_uiControllerVertcount += 2;
+			}
 		}
 
 		// Draw pointing line
@@ -1011,6 +1033,7 @@ void CMainApplication::DrawControllers()
 		//}
 
 		// Draw circle
+		if(m_rbTrackedDeviceTriggered[unTrackedDevice])
 		{
 			GLuint num_segments = 64;
 			GLfloat r = 0.05f;
@@ -1626,6 +1649,9 @@ void CMainApplication::SetupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t
 	{
 		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
 		m_rbShowTrackedDevice[unTrackedDeviceIndex] = true;
+		m_rbShowTrackedDeviceAxes[unTrackedDeviceIndex] = false;
+		m_rbTrackedDeviceTriggered[unTrackedDeviceIndex] = false;
+		m_rbTrackedDeviceGripDown[unTrackedDeviceIndex] = false;
 	}
 }
 
