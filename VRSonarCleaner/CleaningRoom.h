@@ -7,6 +7,8 @@
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "SonarPointCloud.h"
+#include <vector>
+#include "CloudCollection.h"
 
 //#include <SDL_opengl.h>
 //#include <gl/glu.h>
@@ -20,7 +22,7 @@
 //#include "../shared/Matrices.h"
 //#include "../shared/pathtools.h"
 
-extern SonarPointCloud* cloud;
+extern CloudCollection *clouds;
 
 class CleaningRoom
 {

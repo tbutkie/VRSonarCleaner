@@ -581,6 +581,22 @@ double SonarPointCloud::getMaxDepth()
 	return maxDepth;
 }
 
+double SonarPointCloud::getMinDepthTPU()
+{
+	return minDepthTPU;
+}
+double SonarPointCloud::getMaxDepthTPU()
+{
+	return maxDepthTPU;
+}
+double SonarPointCloud::getMinPositionalTPU()
+{
+	return minPositionalTPU;
+}
+double SonarPointCloud::getMaxPositionalTPU()
+{
+	return maxPositionalTPU;
+}
 
 char* SonarPointCloud::getName()
 {
@@ -591,6 +607,17 @@ void SonarPointCloud::setName(char* Name)
 {
 	strcpy(name, Name);
 }
+
+double SonarPointCloud::getActualRemovedXMin()
+{
+	return actualRemovedXmin;
+}
+
+double SonarPointCloud::getActualRemovedYMin()
+{
+	return actualRemovedYmin;
+}
+
 
 void SonarPointCloud::drawAxes()
 {
@@ -618,4 +645,32 @@ void SonarPointCloud::drawAxes()
 	glVertex3f(centerX, centerY, centerZ - smallSize);
 	glVertex3f(centerX, centerY, centerZ + bigSize);
 	glEnd();
+}
+
+void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin)
+{
+	double adjustmentX = actualRemovedXmin - newRemovedXmin;
+	double adjustmentY = actualRemovedYmin - newRemovedYmin;
+
+	actualRemovedXmin = newRemovedXmin;
+	actualRemovedYmin = newRemovedYmin;
+
+	//adjust bounds
+	xMin += adjustmentX;
+	xMax += adjustmentX; 
+	yMin += adjustmentY;
+	yMax += adjustmentY;
+
+	//shouldn't have to do this, but just in case of precision errors
+	xRange = xMax - xMin;
+	yRange = yMax - yMin;
+
+	//adjust point positions
+	for (int i = 0; i < numPoints; i++)
+	{
+		pointsPositions[i * 3] += adjustmentX;
+		pointsPositions[(i * 3) + 1] += adjustmentY;
+	}
+
+	refreshNeeded = true;
 }

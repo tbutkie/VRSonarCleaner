@@ -1,9 +1,9 @@
 #include "CMainApplication.h"
 #include "SonarPointCloud.h"
 #include "ColorScaler.h"
+#include "CloudCollection.h"
 
-
-SonarPointCloud* cloud;
+CloudCollection *clouds;
 ColorScaler *colorScalerTPU;
 
 //-----------------------------------------------------------------------------
@@ -19,14 +19,11 @@ int main(int argc, char *argv[])
 	colorScalerTPU->setColorScale(2);
 	colorScalerTPU->setBiValueScale(1);
 
-	cloud = new SonarPointCloud();
-	cloud->loadFromSonarTxt("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+	clouds = new CloudCollection();
+	clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+	clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
+	clouds->calculateCloudBoundsAndAlign();
 	
-
-
-	//cloud->loadFromSonarTxt("H126.txt");
-	
-
 	CMainApplication *pMainApplication = new CMainApplication( argc, argv );
 
 	if (!pMainApplication->BInit())
