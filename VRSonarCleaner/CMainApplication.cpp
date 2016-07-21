@@ -445,6 +445,7 @@ bool CMainApplication::HandleInput()
 				{
 					m_rbTrackedDeviceGripDown[unDevice] = true;
 					m_rbShowTrackedDeviceAxes[unDevice] = !m_rbShowTrackedDeviceAxes[unDevice];
+					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
 				}
 			}
 			else
