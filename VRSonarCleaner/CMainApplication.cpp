@@ -972,7 +972,7 @@ void CMainApplication::DrawControllers()
 		{
 			Vector3 color(0, 0, 0);
 			Vector4 point(0, 0, 0, 1);
-			point[i] += 1.f;  // offset in X, Y, Z
+			point[i] += 0.1f;  // offset in X, Y, Z
 			color[i] = 1.0;  // R, G, B
 			point = mat * point;
 			vertdataarray.push_back(center.x);
@@ -996,16 +996,48 @@ void CMainApplication::DrawControllers()
 			m_uiControllerVertcount += 2;
 		}
 
-		Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
-		Vector4 end = mat * Vector4(0, 0, -39.f, 1);
-		Vector3 color(.92f, .92f, .71f);
+		// Draw pointing line
+		//{
+		//	Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
+		//	Vector4 end = mat * Vector4(0, 0, -39.f, 1);
+		//	Vector3 color(.92f, .92f, .71f);
 
-		vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//	vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
+		//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-		m_uiControllerVertcount += 2;
+		//	vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
+		//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//	m_uiControllerVertcount += 2;
+		//}
+
+		// Draw circle
+		{
+			GLuint num_segments = 64;
+			GLfloat r = 0.05f;
+			Vector3 c = Vector3(0.f, 0.f, -0.1f);
+			Vector3 color = Vector3(0.8f, 0.8f, 0.2f);
+			Vector4 prevVert = mat * Vector4(r + c.x, c.y, c.z, 1.f);
+			for (GLuint i = 1; i < num_segments; i++)
+			{
+				GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+
+				GLfloat x = r * cosf(theta);
+				GLfloat y = 0.f;
+				GLfloat z = r * sinf(theta);
+
+				Vector4 thisVert = mat * Vector4(x + c.x, y + c.y, z + c.z, 1.f);
+
+				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				m_uiControllerVertcount += 2;
+
+				prevVert = thisVert;
+			}
+		}
 	}
 
 	// Setup the VAO the first time through.
