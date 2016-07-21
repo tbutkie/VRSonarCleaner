@@ -551,6 +551,36 @@ int SonarPointCloud::getColorScope()
 	return colorScope;
 }
 
+
+bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
+{
+	bool hit = false;
+	Vector3 thisPt;
+	for (int i = 0; i < numPoints; i *= 3)
+	{
+		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 1], pointsPositions[i + 2]);
+		if (distFromPointToLineSegment(thisPt, begin, end) < radius &&
+			!(pointsColors[i + 0] == 0.f &&
+			  pointsColors[i + 1] == 1.f &&
+			  pointsColors[i + 2] == 1.f)
+			)
+		{
+			pointsColors[i + 0] = 0.f;
+			pointsColors[i + 1] = 1.f;
+			pointsColors[i + 2] = 1.f;
+
+			hit = true;
+		}
+	}
+
+	return hit;
+}
+
+float SonarPointCloud::distFromPointToLineSegment(Vector3 x0, Vector3 x1, Vector3 x2)
+{
+	return ((x0 - x1).cross(x0 - x2)).length() / (x2 - x1).length();
+}
+
 double SonarPointCloud::getXMin()
 {
 	return xMin;

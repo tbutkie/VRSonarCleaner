@@ -17,7 +17,7 @@
 //#include <openvr.h>
 
 //#include "../shared/lodepng.h"
-//#include "../shared/Matrices.h"
+#include "../shared/Matrices.h"
 //#include "../shared/pathtools.h"
 
 extern SonarPointCloud* cloud;
@@ -31,6 +31,8 @@ public:
 	void draw();
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
+
+	bool checkCleaningTable(Vector3 last, Vector3 current, GLfloat radius);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

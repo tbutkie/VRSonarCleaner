@@ -433,10 +433,24 @@ bool CMainApplication::HandleInput()
 		{
 			//m_rbShowTrackedDevice[unDevice] = state.ulButtonPressed == 0;
 
-			if(state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
+			{
 				m_rbTrackedDeviceTriggered[unDevice] = true;
+				const Matrix4 & mat = m_rmat4DevicePose[unDevice];
+				Vector4 cur = mat * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 last = m_rvTrackedDeviceLastCursorPos[unDevice];
+
+				if (last.w != 0.f)
+				{
+					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), 0.05f);
+				}
+				m_rvTrackedDeviceLastCursorPos[unDevice] = cur;
+			}
 			else
+			{
 				m_rbTrackedDeviceTriggered[unDevice] = false;
+				m_rvTrackedDeviceLastCursorPos[unDevice].w = 0.f; // when w=0, consider it unset
+			}
 
 
 			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))

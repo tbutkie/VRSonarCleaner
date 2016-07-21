@@ -42,6 +42,23 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
+bool CleaningRoom::checkCleaningTable(Vector3 lastCursorCtr, Vector3 currentCursorCtr, GLfloat radius)
+{
+	GLfloat mat[16];
+	glPushMatrix();
+		tableVolume->activateTransformationMatrix();
+		glGetFloatv(GL_MODELVIEW, mat);
+	glPopMatrix();
+
+	Matrix4 mat4(mat);
+	Matrix4 matModelTrans = mat4.transpose();
+	
+	Vector4 lastXformed = matModelTrans * Vector4(lastCursorCtr.x, lastCursorCtr.y, lastCursorCtr.z, 1.f);
+	Vector4 currentXformed = matModelTrans * Vector4(currentCursorCtr.x, currentCursorCtr.y, currentCursorCtr.z, 1.f);
+
+	return cloud->checkForHit(Vector3(lastXformed.x, lastXformed.y, lastXformed.z), Vector3(currentXformed.x, currentXformed.y, currentXformed.z), radius);
+}
+
 void CleaningRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");
