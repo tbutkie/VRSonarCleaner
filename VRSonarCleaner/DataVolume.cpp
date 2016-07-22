@@ -1,5 +1,7 @@
 #include "DataVolume.h"
 
+#include <iostream>
+
 DataVolume::DataVolume(float PosX, float PosY, float PosZ, int Orientation, float SizeX, float SizeY, float SizeZ)
 {
 	sizeX = SizeX;
@@ -93,19 +95,23 @@ void DataVolume::recalcScaling()
 
 }//end recalc scaling
 
-void DataVolume::convertToInnerCoords(float xWorld , float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
+void DataVolume::convertToInnerCoords(float xWorld, float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
 {
 	//Vec3 pointIn(xWorld, yWorld, zWorld);
 	double pointIn[3];
 	double pointOut[3];
+	double invStoredMat[16];
+	InvertMat(storedMatrix, invStoredMat);
 	pointIn[0] = xWorld;
 	pointIn[1] = yWorld;
 	pointIn[2] = zWorld;
-	MVMult(storedMatrix, pointIn, pointOut, true);
+	MVMult(invStoredMat, pointIn, pointOut, true);
 	*xInner = pointOut[0];
 	*yInner = pointOut[1];
 	*zInner = pointOut[2];
-
+	
+	//std::cout << "in(" << pointIn[0] << ", " << pointIn[1] << ", " << pointIn[2] << ")" << std::endl;
+	//std::cout << "out(" << *xInner << ", " << *yInner << ", " << *zInner << ")" << std::endl << std::endl;
 }
 
 void DataVolume::convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld)
@@ -127,6 +133,9 @@ void DataVolume::activateTransformationMatrix()
 		//glRotatef(90.0, 1.0, 0.0, 0.0);
 		glScalef(XZscale, depthScale, XZscale);
 		glTranslatef((-((float)innerSizeX) / 2)-innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glGetDoublev(GL_MODELVIEW_MATRIX, storedMatrix);
 	}
 	if (orientation == 1) //wall view
 	{
@@ -139,8 +148,7 @@ void DataVolume::activateTransformationMatrix()
 		glTranslatef((-((float)innerSizeX) / 2) - innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
 	}
 
-	glMatrixMode(GL_MODELVIEW);
-	glGetDoublev(GL_MODELVIEW, storedMatrix);
+
 }
 
 

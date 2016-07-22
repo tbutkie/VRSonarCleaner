@@ -445,15 +445,17 @@ bool CMainApplication::HandleInput()
 				Vector4 last = m_rvTrackedDeviceLastCursorCtrPos[unDevice];
 				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cur;
 
-				std::cout << "last: (" << m_rvTrackedDeviceLastCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].z << ")" << std::endl;
-				std::cout << "curr: (" << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].z << ")" << std::endl;
-				Vector4 v = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] - m_rvTrackedDeviceLastCursorCtrPos[unDevice];
-				float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-				std::cout << "dist: " << dist << std::endl << std::endl;
+				float cursorRadiusXform = abs((mat * Vector4(0.f, 0.f, -cursorRadius, 1.f)).x);
+
+				//std::cout << "last: (" << m_rvTrackedDeviceLastCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].z << ")" << std::endl;
+				//std::cout << "curr: (" << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].z << ")" << std::endl;
+				//Vector4 v = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] - m_rvTrackedDeviceLastCursorCtrPos[unDevice];
+				//float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+				//std::cout << "dist: " << dist << std::endl << std::endl;
 
 
 				if (last.w != 0.f &&
-					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), cursorRadius))
+					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), cursorRadiusXform))
 				{
 					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
 				}

@@ -562,26 +562,40 @@ bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
 {
 	bool hit = false;
 	Vector3 thisPt;
-	float dist;
+	
+	float dist, tempRad = 100.f;
 
 	for (int i = 0; i < numPoints; i += 3)
 	{
-		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 1], pointsPositions[i + 2]);
-		dist = distFromPointToLineSegment(thisPt, begin, end);
-
-		if (dist > 0.f && dist < radius &&
-			!(pointsColors[i + 0] == 0.f &&
-			  pointsColors[i + 1] == 1.f &&
-			  pointsColors[i + 2] == 1.f)
-			)
+		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 2], pointsPositions[i + 1]); // SWAP Y AND Z
+		//dist = distFromPointToLineSegment(thisPt, begin, end);
+		dist = (thisPt - end).length();
+		
+		//std::cout << "dist = " << dist << std::endl;
+		if (dist > 0.f && dist < tempRad)
 		{
 			pointsColors[i + 0] = 0.f;
 			pointsColors[i + 1] = 1.f;
 			pointsColors[i + 2] = 1.f;
 
 			hit = true;
+			//std::cout << "HIT" << std::endl;
 		}
 	}
+
+	pointsPositions[(numPoints - 2) * 3 + 0] = begin.x;
+	pointsPositions[(numPoints - 2) * 3 + 1] = begin.y;
+	pointsPositions[(numPoints - 2) * 3 + 2] = begin.z;
+
+	pointsPositions[(numPoints - 1) * 3 + 0] = end.x;
+	pointsPositions[(numPoints - 1) * 3 + 1] = end.y;
+	pointsPositions[(numPoints - 1) * 3 + 2] = end.z;
+
+	pointsColors[(numPoints - 1) * 3 + 0] = 0.f;
+	pointsColors[(numPoints - 1) * 3 + 1] = 0.f;
+	pointsColors[(numPoints - 1) * 3 + 2] = 1.f;
+
+	refreshNeeded = true;
 
 	return hit;
 }
