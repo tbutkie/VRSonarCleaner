@@ -25,5 +25,7 @@ void PitchMat(double degrees, double *Mout);
 // generate roll matrix
 void RollMat(double degrees, double *Mout);
 
+//invert matrix
+bool InvertMat(double m[16], double *invOut);
 
 #endif
