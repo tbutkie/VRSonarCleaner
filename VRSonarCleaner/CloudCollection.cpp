@@ -33,11 +33,14 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 		{
 			if (clouds->at(i)->getActualRemovedXMin() < actualRemovedXmin)
 				actualRemovedXmin = clouds->at(i)->getActualRemovedXMin();
-			if (clouds->at(i)->getActualRemovedYMin() > actualRemovedYmin)
+			if (clouds->at(i)->getActualRemovedYMin() < actualRemovedYmin)
 				actualRemovedYmin = clouds->at(i)->getActualRemovedYMin();
 		}
 	}//end for
 
+	printf("Lowest Trimmed Min/Maxes:\n");
+	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+	
 	//now we have the actual min bounds, refactor the others with those as their new removed mins
 	if (clouds->size() > 1)
 	{
@@ -92,6 +95,13 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 			
 		}//end else additonal cloud being added
 	}//end for i
+
+	printf("Final Aligned Min/Maxes:\n");
+	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+	printf("X Min: %f Max: %f\n", xMin, xMax);
+	printf("Y Min: %f Max: %f\n", yMin, yMax);
+	printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
+
 
 	xRange = xMax - xMin;
 	yRange = yMax - yMin;
