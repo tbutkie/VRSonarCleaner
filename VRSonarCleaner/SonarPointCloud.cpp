@@ -571,7 +571,7 @@ bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
 		//dist = distFromPointToLineSegment(thisPt, begin, end);
 		dist = (thisPt - end).length();
 		
-		if (dist > 0.f && dist <= tempRad)
+		if (dist <= tempRad)
 			hit = true;
 	}
 
