@@ -52,6 +52,8 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_iSceneVolumeInit(20)
 	, m_strPoseClasses("")
 	, m_bShowCubes(true)
+	, cursorRadius(0.05f)
+	, cursorOffset(Vector3(0.f, 0.f, -0.1f))
 {
 
 	for (int i = 1; i < argc; i++)
@@ -436,20 +438,31 @@ bool CMainApplication::HandleInput()
 			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
 			{
 				m_rbTrackedDeviceTriggered[unDevice] = true;
-				const Matrix4 & mat = m_rmat4DevicePose[unDevice];
-				Vector4 cur = mat * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 last = m_rvTrackedDeviceLastCursorPos[unDevice];
+				m_rvTrackedDeviceLastCursorCtrPos[unDevice] = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice];
 
-				if (last.w != 0.f)
+				const Matrix4 & mat = m_rmat4DevicePose[unDevice];
+				Vector4 cur = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);;
+				Vector4 last = m_rvTrackedDeviceLastCursorCtrPos[unDevice];
+				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cur;
+
+				std::cout << "last: (" << m_rvTrackedDeviceLastCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].z << ")" << std::endl;
+				std::cout << "curr: (" << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].z << ")" << std::endl;
+				Vector4 v = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] - m_rvTrackedDeviceLastCursorCtrPos[unDevice];
+				float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+				std::cout << "dist: " << dist << std::endl << std::endl;
+
+
+				if (last.w != 0.f &&
+					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), cursorRadius))
 				{
-					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), 0.05f);
+					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
 				}
-				m_rvTrackedDeviceLastCursorPos[unDevice] = cur;
 			}
 			else
 			{
 				m_rbTrackedDeviceTriggered[unDevice] = false;
-				m_rvTrackedDeviceLastCursorPos[unDevice].w = 0.f; // when w=0, consider it unset
+				m_rvTrackedDeviceLastCursorCtrPos[unDevice].w = 0.f; // when w=0, consider it unset
+				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].w = 0.f; // when w=0, consider it unset
 			}
 
 
@@ -1051,19 +1064,17 @@ void CMainApplication::DrawControllers()
 		if(m_rbTrackedDeviceTriggered[unTrackedDevice])
 		{
 			GLuint num_segments = 64;
-			GLfloat r = 0.05f;
-			Vector3 c = Vector3(0.f, 0.f, -0.1f);
 			Vector3 color = Vector3(0.8f, 0.8f, 0.2f);
-			Vector4 prevVert = mat * Vector4(r + c.x, c.y, c.z, 1.f);
+			Vector4 prevVert = mat * Vector4(cursorRadius + cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);
 			for (GLuint i = 1; i < num_segments; i++)
 			{
 				GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
 
-				GLfloat x = r * cosf(theta);
+				GLfloat x = cursorRadius * cosf(theta);
 				GLfloat y = 0.f;
-				GLfloat z = r * sinf(theta);
+				GLfloat z = cursorRadius * sinf(theta);
 
-				Vector4 thisVert = mat * Vector4(x + c.x, y + c.y, z + c.z, 1.f);
+				Vector4 thisVert = mat * Vector4(x + cursorOffset.x, y + cursorOffset.y, z + cursorOffset.z, 1.f);
 
 				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
@@ -1074,6 +1085,23 @@ void CMainApplication::DrawControllers()
 				m_uiControllerVertcount += 2;
 
 				prevVert = thisVert;
+			}
+
+			color = Vector3(1.f, 0.f, 0.f);
+			if (m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].w != 0.f &&
+				m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].w != 0.f)
+			{
+				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].x);
+				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].y);
+				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				
+				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].x);
+				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].y);
+				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				m_uiControllerVertcount += 2;
 			}
 		}
 	}
