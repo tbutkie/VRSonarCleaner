@@ -116,7 +116,7 @@ void DataVolume::activateTransformationMatrix()
 		//glRotatef(180.0, 0.0, 0.0, 1.0);
 		//glRotatef(90.0, 1.0, 0.0, 0.0);
 		glScalef(XZscale, depthScale, XZscale);
-		glTranslatef(-((float)innerSizeX) / 2, ((float)innerSizeY) / 2, -((float)innerSizeZ) / 2);
+		glTranslatef((-((float)innerSizeX) / 2)-innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
 	}
 	if (orientation == 1) //wall view
 	{

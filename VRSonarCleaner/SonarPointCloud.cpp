@@ -319,6 +319,12 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 
 		setRefreshNeeded();
 
+		printf("Trimmed Min/Maxes:\n");
+		printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+		printf("X Min: %f Max: %f\n", xMin, xMax);
+		printf("Y Min: %f Max: %f\n", yMin, yMax);
+		printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
+
 	}
 
 	return true;
@@ -685,6 +691,8 @@ void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double
 {
 	double adjustmentX = actualRemovedXmin - newRemovedXmin;
 	double adjustmentY = actualRemovedYmin - newRemovedYmin;
+
+	printf("adjusting cloud by %f, %f\n", adjustmentX, adjustmentY);
 
 	actualRemovedXmin = newRemovedXmin;
 	actualRemovedYmin = newRemovedYmin;
