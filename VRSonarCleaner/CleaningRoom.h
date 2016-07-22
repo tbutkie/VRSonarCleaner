@@ -34,7 +34,7 @@ public:
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
-	bool checkCleaningTable(Vector3 last, Vector3 current, GLfloat radius);
+	bool checkCleaningTable(Vector3 last, Vector3 current, float radius);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

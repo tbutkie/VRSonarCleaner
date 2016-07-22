@@ -563,33 +563,17 @@ bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
 	bool hit = false;
 	Vector3 thisPt;
 	
-	float dist, tempRad = 1.f;
+	float dist, tempRad = 0.25f;
 
-	for (int i = 0; i < numPoints; i += 3)
+	for (int i = 0; i < numPoints * 3; i += 3)
 	{
-		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 1], pointsPositions[i + 2]); // SWAP Y AND Z
+		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 2], pointsPositions[i + 1]); // SWAP Y AND Z
 		//dist = distFromPointToLineSegment(thisPt, begin, end);
 		dist = (thisPt - end).length();
 		
-		//std::cout << "dist = " << dist << std::endl;
-		if (dist > 0.f && dist < tempRad)
-		{
-			pointsColors[i + 0] = 0.f;
-			pointsColors[i + 1] = 1.f;
-			pointsColors[i + 2] = 1.f;
-
+		if (dist > 0.f && dist <= tempRad)
 			hit = true;
-			//std::cout << "HIT" << std::endl;
-		}
 	}
-
-	pointsPositions[(numPoints - 2) * 3 + 0] = begin.x;
-	pointsPositions[(numPoints - 2) * 3 + 1] = begin.y;
-	pointsPositions[(numPoints - 2) * 3 + 2] = begin.z;
-
-	pointsPositions[(numPoints - 1) * 3 + 0] = end.x;
-	pointsPositions[(numPoints - 1) * 3 + 1] = end.y;
-	pointsPositions[(numPoints - 1) * 3 + 2] = end.z;
 
 	refreshNeeded = true;
 

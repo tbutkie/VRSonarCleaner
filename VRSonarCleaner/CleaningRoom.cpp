@@ -41,30 +41,16 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(Vector3 lastCursorCtr, Vector3 currentCursorCtr, GLfloat radius)
+bool CleaningRoom::checkCleaningTable(Vector3 lastCursorCtr, Vector3 currentCursorCtr, float radius)
 {
 	Vector3 lastXformed, currentXformed;
 
 	tableVolume->convertToInnerCoords(lastCursorCtr.x, lastCursorCtr.y, lastCursorCtr.z,
 		&lastXformed.x, &lastXformed.y, &lastXformed.z);
 	tableVolume->convertToInnerCoords(currentCursorCtr.x, currentCursorCtr.y, currentCursorCtr.z,
-		&currentXformed.x, &currentXformed.y, &currentXformed.z);	 
+		&currentXformed.x, &currentXformed.y, &currentXformed.z);
 
-	//std::cout << "last: (" << lastCursorCtr.x << ", " << lastCursorCtr.y << ", " << lastCursorCtr.z << ")" << std::endl;
-	//std::cout << "curr: (" << currentCursorCtr.x << ", " << currentCursorCtr.y << ", " << currentCursorCtr.z << ")" << std::endl;
-	//Vector3 v = currentCursorCtr - lastCursorCtr;
-	//float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-	//std::cout << "dist: " << dist << std::endl << std::endl;
-
-	//std::cout << "lastXform: (" << lastXformed.x << ", " << lastXformed.y << ", " << lastXformed.z << ")" << std::endl;
-	//std::cout << "currXform: (" << currentXformed.x << ", " << currentXformed.y << ", " << currentXformed.z << ")" << std::endl;
-	//Vector4 v2 = currentXformed - lastXformed;
-	//dist = sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
-	//std::cout << "dist: " << dist << std::endl << std::endl;
-	//std::cout << "------------------------------------------------------------" << std::endl << std::endl;
-
-
-	return clouds->getCloud(0)->checkForHit(Vector3(lastXformed.x, lastXformed.z, lastXformed.y), Vector3(currentXformed.x, currentXformed.z, currentXformed.y), 20.f);
+	return clouds->getCloud(0)->checkForHit(lastXformed, currentXformed, radius);
 }
 
 void CleaningRoom::draw()
