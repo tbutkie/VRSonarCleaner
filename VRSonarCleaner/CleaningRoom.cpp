@@ -24,9 +24,8 @@ CleaningRoom::CleaningRoom()
 	tableVolume = new DataVolume(0, 0.75, 0, 0, 2.25, 0.75, 2.25);
 	wallVolume = new DataVolume(0, (roomSizeY / 2)+(roomSizeY*0.15), (roomSizeZ / 2)-0.42, 1, (roomSizeX*0.9), (roomSizeY*0.80), 0.8);
 	
-
-	tableVolume->setInnerCoords(cloud->getXMin(), cloud->getXMax(), cloud->getMinDepth(), cloud->getMaxDepth(), cloud->getYMin(), cloud->getYMax());
-	wallVolume->setInnerCoords(cloud->getXMin(), cloud->getXMax(), cloud->getMinDepth(), cloud->getMaxDepth(), cloud->getYMin(), cloud->getYMax());
+	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
+	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
 
 }
 
@@ -74,16 +73,16 @@ void CleaningRoom::draw()
 	//draw table
 	glPushMatrix();
 	tableVolume->activateTransformationMatrix();
-	cloud->draw();
-	cloud->drawAxes();
+	clouds->getCloud(0)->draw();
+	//clouds->getCloud(0)->drawAxes();
 	//tableVolume->deactivateTransformationMatrix();
 	glPopMatrix();
 
 	//draw wall
 	glPushMatrix();
 	wallVolume->activateTransformationMatrix();
-	cloud->draw();
-	cloud->drawAxes();
+	clouds->drawAllClouds();
+	//cloud->drawAxes();
 	glPopMatrix();
 	//wallVolume->deactivateTransformationMatrix();
 

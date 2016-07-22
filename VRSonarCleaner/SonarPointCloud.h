@@ -64,13 +64,21 @@ class SonarPointCloud
 		bool checkForHit(Vector3 begin, Vector3 end, float radius);
 		float distFromPointToLineSegment(Vector3 x0, Vector3 x1, Vector3 x2);
 
-		//bbox access:
+		//bounds access:
 		double getXMin();
 		double getXMax();
 		double getYMin();
 		double getYMax();
 		double getMinDepth();
 		double getMaxDepth();
+		double getActualRemovedXMin();
+		double getActualRemovedYMin();
+		double getMinDepthTPU();
+		double getMaxDepthTPU();
+		double getMinPositionalTPU();
+		double getMaxPositionalTPU();
+
+		void useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin);
 
 		char* getName();
 		void setName(char* Name);

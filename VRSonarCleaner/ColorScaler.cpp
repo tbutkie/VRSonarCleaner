@@ -435,13 +435,13 @@ void ColorScaler::getBiValueScaledColor(float val1, float val2, float *r, float 
 			{
 				*r = 1.0;
 				*g = 1.0;
-				*b = 0.75;
+				*b = 0.65;
 			}
 			else
 			{
 				*r = 1.0;
 				*g = 0.75;
-				*b = 0.5;
+				*b = 0.45;
 			}
 		}
 		else if (factor1 < 0.666)

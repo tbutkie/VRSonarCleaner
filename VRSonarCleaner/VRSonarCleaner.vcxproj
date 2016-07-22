@@ -166,6 +166,7 @@
     <ClCompile Include="..\shared\pathtools.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="CleaningRoom.cpp" />
+    <ClCompile Include="CloudCollection.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="..\shared\Vectors.h" />
     <ClInclude Include="CGLRenderModel.h" />
     <ClInclude Include="CleaningRoom.h" />
+    <ClInclude Include="CloudCollection.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="DataVolume.h" />
