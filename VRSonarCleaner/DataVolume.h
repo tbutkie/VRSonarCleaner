@@ -4,7 +4,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
-
+#include "Vec3.h"
+#include "MatrixUtils.h"
 //#include <string>
 //#include <cstdlib>
 
@@ -29,7 +30,6 @@ public:
 	void convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld);
 
 	void activateTransformationMatrix();
-	void deactivateTransformationMatrix();
 
 	
 

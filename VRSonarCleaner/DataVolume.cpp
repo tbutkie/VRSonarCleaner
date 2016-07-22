@@ -76,7 +76,7 @@ void DataVolume::recalcScaling()
 {
 	if (orientation == 0) //z-up table
 	{
-		XZscale = (float)std::min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
+		XZscale = (float)min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
 		//float newWidth = innerSizeX*XYscale;
 		//float newHeight = innerSizeY*XYscale;
 
@@ -84,7 +84,7 @@ void DataVolume::recalcScaling()
 	}
 	else if (orientation == 1) //rotated wall view
 	{
-		XZscale = (float)std::min((double)sizeX / innerSizeX, (double)sizeY / innerSizeZ);
+		XZscale = (float)min((double)sizeX / innerSizeX, (double)sizeY / innerSizeZ);
 		
 		depthScale = sizeZ / (float)innerSizeY;
 	}
@@ -95,6 +95,16 @@ void DataVolume::recalcScaling()
 
 void DataVolume::convertToInnerCoords(float xWorld , float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
 {
+	//Vec3 pointIn(xWorld, yWorld, zWorld);
+	double pointIn[3];
+	double pointOut[3];
+	pointIn[0] = xWorld;
+	pointIn[1] = yWorld;
+	pointIn[2] = zWorld;
+	MVMult(storedMatrix, pointIn, pointOut, true);
+	*xInner = pointOut[0];
+	*yInner = pointOut[1];
+	*zInner = pointOut[2];
 
 }
 
@@ -107,7 +117,7 @@ void DataVolume::activateTransformationMatrix()
 {
 	//store current matrix so we can restore it later in deactivateTransformationMatrix(), this isn't working right now for some reason
 	glMatrixMode(GL_MODELVIEW);
-	glGetDoublev(GL_MODELVIEW, storedMatrix);
+	//glGetDoublev(GL_MODELVIEW, storedMatrix);
 
 	glTranslatef(posX, posY, posZ);
 	if (orientation == 0) //table view 
@@ -125,18 +135,15 @@ void DataVolume::activateTransformationMatrix()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		//glScalef(XZscale, XZscale, depthScale);
 		glScalef(XZscale, depthScale, XZscale);
-		glTranslatef(-((float)innerSizeX) / 2, ((float)innerSizeY) / 2, -((float)innerSizeZ) / 2);
+		//glTranslatef(-((float)innerSizeX) / 2, ((float)innerSizeY) / 2, -((float)innerSizeZ) / 2);
+		glTranslatef((-((float)innerSizeX) / 2) - innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
 	}
-	
-}
 
-
-//This doesn't work, not sure why, using glPushMatrix and glPopMatrix outisde of here instead.
-void DataVolume::deactivateTransformationMatrix()
-{
 	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(storedMatrix);
+	glGetDoublev(GL_MODELVIEW, storedMatrix);
 }
+
+
 
 
 void DataVolume::drawBBox()
