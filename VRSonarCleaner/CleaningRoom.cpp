@@ -55,7 +55,21 @@ bool CleaningRoom::checkCleaningTable(Vector3 lastCursorCtr, Vector3 currentCurs
 	Vector4 lastXformed = matModelTrans * Vector4(lastCursorCtr.x, lastCursorCtr.y, lastCursorCtr.z, 1.f);
 	Vector4 currentXformed = matModelTrans * Vector4(currentCursorCtr.x, currentCursorCtr.y, currentCursorCtr.z, 1.f);
 
-	return cloud->checkForHit(Vector3(lastXformed.x, lastXformed.y, lastXformed.z), Vector3(currentXformed.x, currentXformed.y, currentXformed.z), radius);
+	std::cout << "last: (" << lastCursorCtr.x << ", " << lastCursorCtr.y << ", " << lastCursorCtr.z << ")" << std::endl;
+	std::cout << "curr: (" << currentCursorCtr.x << ", " << currentCursorCtr.y << ", " << currentCursorCtr.z << ")" << std::endl;
+	Vector3 v = currentCursorCtr - lastCursorCtr;
+	float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	std::cout << "dist: " << dist << std::endl << std::endl;
+
+	std::cout << "lastXform: (" << lastXformed.x << ", " << lastXformed.y << ", " << lastXformed.z << ")" << std::endl;
+	std::cout << "currXform: (" << currentXformed.x << ", " << currentXformed.y << ", " << currentXformed.z << ")" << std::endl;
+	Vector4 v2 = currentXformed - lastXformed;
+	dist = sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
+	std::cout << "dist: " << dist << std::endl << std::endl;
+	std::cout << "------------------------------------------------------------" << std::endl << std::endl;
+
+
+	return clouds->getCloud(0)->checkForHit(Vector3(lastXformed.x, lastXformed.y, lastXformed.z), Vector3(currentXformed.x, currentXformed.y, currentXformed.z), radius);
 }
 
 void CleaningRoom::draw()

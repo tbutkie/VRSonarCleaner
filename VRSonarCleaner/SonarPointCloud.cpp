@@ -556,10 +556,14 @@ bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
 {
 	bool hit = false;
 	Vector3 thisPt;
-	for (int i = 0; i < numPoints; i *= 3)
+	float dist;
+
+	for (int i = 0; i < numPoints; i += 3)
 	{
 		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 1], pointsPositions[i + 2]);
-		if (distFromPointToLineSegment(thisPt, begin, end) < radius &&
+		dist = distFromPointToLineSegment(thisPt, begin, end);
+
+		if (dist > 0.f && dist < radius &&
 			!(pointsColors[i + 0] == 0.f &&
 			  pointsColors[i + 1] == 1.f &&
 			  pointsColors[i + 2] == 1.f)
