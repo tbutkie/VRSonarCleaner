@@ -61,8 +61,7 @@ class SonarPointCloud
 		int getColorScope();
 		
 		//cleaning
-		bool checkForHit(Vector3 begin, Vector3 end, float radius);
-		float distFromPointToLineSegment(Vector3 x0, Vector3 x1, Vector3 x2);
+		std::vector<Vector3> getPointPositions(); // with Y and Z swapped
 
 		//bounds access:
 		double getXMin();

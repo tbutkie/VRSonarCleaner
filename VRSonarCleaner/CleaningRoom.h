@@ -34,7 +34,9 @@ public:
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
-	bool checkCleaningTable(Vector3 last, Vector3 current, float radius);
+	bool checkCleaningTable(Vector3 cursorCtr, Vector3 forward, Vector3 width);
+
+	float cylTest(const Vector3 & pt1, const Vector3 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

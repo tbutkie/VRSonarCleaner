@@ -185,6 +185,6 @@ private: // OpenGL bookkeeping
 	std::vector< CGLRenderModel * > m_vecRenderModels;
 	CGLRenderModel *m_rTrackedDeviceToRenderModel[vr::k_unMaxTrackedDeviceCount];
 
-	float cursorRadius;
+	float cursorRadius, cursorWidth;
 	Vector3 cursorOffset;
 };

@@ -41,16 +41,75 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(Vector3 lastCursorCtr, Vector3 currentCursorCtr, float radius)
+bool CleaningRoom::checkCleaningTable(Vector3 cursorCtr, Vector3 forward, Vector3 width)
 {
-	Vector3 lastXformed, currentXformed;
+	bool hit = false;
 
-	tableVolume->convertToInnerCoords(lastCursorCtr.x, lastCursorCtr.y, lastCursorCtr.z,
-		&lastXformed.x, &lastXformed.y, &lastXformed.z);
-	tableVolume->convertToInnerCoords(currentCursorCtr.x, currentCursorCtr.y, currentCursorCtr.z,
-		&currentXformed.x, &currentXformed.y, &currentXformed.z);
+	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();
+	
+	float cylAxisLen = (width - cursorCtr).length() * 2;
+	float cylAxisLen_sq = cylAxisLen * cylAxisLen;
 
-	return clouds->getCloud(0)->checkForHit(lastXformed, currentXformed, radius);
+	Vector3 cylBegin = cursorCtr + cylAxisLen * 0.5f * (cursorCtr - width).normalize();
+	Vector3 cylEnd = width;
+
+	float radius = (forward - cursorCtr).length();
+	float radius_sq = radius * radius;
+	
+	for (int i = 0; i < pts.size(); ++i)
+	{
+		Vector3 ptInWorldCoords;
+		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
+
+		float dist_sq = cylTest(cylBegin, cylEnd, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+		
+		if (dist_sq > 0.f)
+		{
+			hit = true;
+			clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
+			clouds->getCloud(0)->setRefreshNeeded();
+		}
+	}
+
+	return hit;
+}
+
+// This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
+// with credit to Greg James @ Nvidia
+float CleaningRoom::cylTest(const Vector3 & pt1, const Vector3 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt)
+{
+	float dx, dy, dz;	// vector d  from line segment point 1 to point 2
+	float pdx, pdy, pdz;	// vector pd from point 1 to test point
+	float dot, dsq;
+
+	dx = pt2.x - pt1.x;	// translate so pt1 is origin.  Make vector from
+	dy = pt2.y - pt1.y;     // pt1 to pt2.  Need for this is easily eliminated
+	dz = pt2.z - pt1.z;
+
+	pdx = testpt.x - pt1.x;		// vector from pt1 to test point.
+	pdy = testpt.y - pt1.y;
+	pdz = testpt.z - pt1.z;
+
+	// Dot the d and pd vectors to see if point lies behind the 
+	// cylinder cap at pt1.x, pt1.y, pt1.z
+
+	dot = pdx * dx + pdy * dy + pdz * dz;
+
+	// If dot is less than zero the point is behind the pt1 cap.
+	// If greater than the cylinder axis line segment length squared
+	// then the point is outside the other end cap at pt2.
+
+	if (dot < 0.f || dot > lengthsq)
+		return(-1.f);
+	else
+	{
+		dsq = (pdx*pdx + pdy*pdy + pdz*pdz) - dot*dot / lengthsq;
+
+		if (dsq > radius_sq)
+			return(-1.f);
+		else
+			return(dsq);		// return distance squared to axis
+	}
 }
 
 void CleaningRoom::draw()

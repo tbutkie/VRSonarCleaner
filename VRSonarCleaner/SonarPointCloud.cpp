@@ -557,32 +557,20 @@ int SonarPointCloud::getColorScope()
 	return colorScope;
 }
 
-
-bool SonarPointCloud::checkForHit(Vector3 begin, Vector3 end, float radius)
+std::vector<Vector3> SonarPointCloud::getPointPositions()
 {
-	bool hit = false;
-	Vector3 thisPt;
-	
-	float dist, tempRad = 0.25f;
-
+	std::vector<Vector3> ret;
 	for (int i = 0; i < numPoints * 3; i += 3)
 	{
-		thisPt = Vector3(pointsPositions[i], pointsPositions[i + 2], pointsPositions[i + 1]); // SWAP Y AND Z
-		//dist = distFromPointToLineSegment(thisPt, begin, end);
-		dist = (thisPt - end).length();
-		
-		if (dist <= tempRad)
-			hit = true;
+		Vector3 thisVert = { // SWAP Y AND Z
+			  (float)pointsPositions[i + 0]
+			, (float)pointsPositions[i + 2]
+			, (float)pointsPositions[i + 1]
+		};
+
+		ret.push_back(thisVert);
 	}
-
-	refreshNeeded = true;
-
-	return hit;
-}
-
-float SonarPointCloud::distFromPointToLineSegment(Vector3 x0, Vector3 x1, Vector3 x2)
-{
-	return ((x0 - x1).cross(x0 - x2)).length() / (x2 - x1).length();
+	return ret;
 }
 
 double SonarPointCloud::getXMin()

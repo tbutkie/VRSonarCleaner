@@ -53,6 +53,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_strPoseClasses("")
 	, m_bShowCubes(true)
 	, cursorRadius(0.05f)
+	, cursorWidth(0.005f)
 	, cursorOffset(Vector3(0.f, 0.f, -0.1f))
 {
 
@@ -440,22 +441,13 @@ bool CMainApplication::HandleInput()
 				m_rbTrackedDeviceTriggered[unDevice] = true;
 				m_rvTrackedDeviceLastCursorCtrPos[unDevice] = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice];
 
-				const Matrix4 & mat = m_rmat4DevicePose[unDevice];
-				Vector4 cur = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);;
-				Vector4 last = m_rvTrackedDeviceLastCursorCtrPos[unDevice];
-				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cur;
-
-				float cursorRadiusXform = abs((mat * Vector4(0.f, 0.f, -cursorRadius, 1.f)).x);
-
-				//std::cout << "last: (" << m_rvTrackedDeviceLastCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceLastCursorCtrPos[unDevice].z << ")" << std::endl;
-				//std::cout << "curr: (" << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].x << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].y << ", " << m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].z << ")" << std::endl;
-				//Vector4 v = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] - m_rvTrackedDeviceLastCursorCtrPos[unDevice];
-				//float dist = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-				//std::cout << "dist: " << dist << std::endl << std::endl;
-
-
-				if (last.w != 0.f &&
-					cleaningRoom->checkCleaningTable(Vector3(last.x, last.y, last.z), Vector3(cur.x, cur.y, cur.z), cursorRadiusXform))
+				Matrix4 & mat = m_rmat4DevicePose[unDevice];
+				Vector4 cursorPos = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);
+				Vector4 forward = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z - cursorRadius, 1.f);
+				Vector4 width = mat * Vector4(cursorOffset.x, cursorOffset.y + cursorWidth / 2.f, cursorOffset.z, 1.f);
+				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cursorPos;
+								
+				if (cleaningRoom->checkCleaningTable(Vector3(cursorPos.x, cursorPos.y, cursorPos.z), Vector3(forward.x, forward.y, forward.z), Vector3(width.x, width.y, width.z)))
 				{
 					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
 				}
