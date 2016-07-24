@@ -427,59 +427,6 @@ bool CMainApplication::HandleInput()
 		ProcessVREvent(event);
 	}
 
-	// Process SteamVR controller state
-	for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-	{
-		//printf("controller %d at %f, %f, %f\n", unDevice, m_pHMD->getCon)
-		vr::VRControllerState_t state;
-		if (m_pHMD->GetControllerState(unDevice, &state))
-		{
-			//m_rbShowTrackedDevice[unDevice] = state.ulButtonPressed == 0;
-
-			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger))
-			{
-				m_rbTrackedDeviceTriggered[unDevice] = true;
-				m_rvTrackedDeviceLastCursorCtrPos[unDevice] = m_rvTrackedDeviceCurrentCursorCtrPos[unDevice];
-
-				Matrix4 & mat = m_rmat4DevicePose[unDevice];
-				Vector4 cursorPos = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);
-				Vector4 lastPos = m_rvTrackedDeviceLastCursorCtrPos[unDevice];
-				Vector4 forwardRadiusPos = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z - cursorRadius, 1.f);
-				Vector4 cylAxisEndPos = mat * Vector4(cursorOffset.x, cursorOffset.y - cursorWidth, cursorOffset.z, 1.f);
-				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cursorPos;
-								
-				if (cleaningRoom->checkCleaningTable(
-					Vector3(cursorPos.x, cursorPos.y, cursorPos.z),
-					Vector3(forwardRadiusPos.x, forwardRadiusPos.y, forwardRadiusPos.z),
-					Vector3(cylAxisEndPos.x, cylAxisEndPos.y, cylAxisEndPos.z)))
-				{
-					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
-				}
-			}
-			else
-			{
-				m_rbTrackedDeviceTriggered[unDevice] = false;
-				m_rvTrackedDeviceLastCursorCtrPos[unDevice].w = 0.f; // when w=0, consider it unset
-				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice].w = 0.f; // when w=0, consider it unset
-			}
-
-
-			if (state.ulButtonPressed == vr::ButtonMaskFromId(vr::k_EButton_Grip))
-			{
-				if (!m_rbTrackedDeviceGripDown[unDevice])
-				{
-					m_rbTrackedDeviceGripDown[unDevice] = true;
-					m_rbShowTrackedDeviceAxes[unDevice] = !m_rbShowTrackedDeviceAxes[unDevice];
-					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
-				}
-			}
-			else
-			{
-				m_rbTrackedDeviceGripDown[unDevice] = false;
-			}
-		}
-	}
-
 	return bRet;
 }
 
@@ -496,6 +443,11 @@ void CMainApplication::RunMainLoop()
 	while (!bQuit)
 	{
 		bQuit = HandleInput();
+
+		for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+		{
+			if (m_rbTrackedDeviceCleaningMode[unDevice]) checkForHits(unDevice);
+		}
 
 		RenderFrame();
 	}
@@ -531,9 +483,114 @@ void CMainApplication::ProcessVREvent(const vr::VREvent_t & event)
 		dprintf("Device %u updated.\n", event.trackedDeviceIndex);
 	}
 	break;
+	case vr::VREvent_ButtonPress:
+	{
+		vr::VRControllerState_t state;
+		vr::TrackedDevicePose_t pose;
+
+		if (m_pHMD->GetControllerStateWithPose(vr::TrackingUniverseStanding,event.trackedDeviceIndex, &state, &pose))
+		{
+			Matrix4 & poseMat = ConvertSteamVRMatrixToMatrix4(pose.mDeviceToAbsoluteTracking);
+
+			// TRIGGER DOWN
+			if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+			{
+				dprintf("Device %u trigger pressed.\n", event.trackedDeviceIndex);
+				m_rbTrackedDeviceCleaningMode[event.trackedDeviceIndex] = true;
+			}
+
+			// GRIP DOWN
+			if (event.data.controller.button == vr::k_EButton_Grip)
+			{
+				dprintf("Device %u grip pressed.\n", event.trackedDeviceIndex);
+				m_rbShowTrackedDeviceAxes[event.trackedDeviceIndex] = !m_rbShowTrackedDeviceAxes[event.trackedDeviceIndex];
+				m_pHMD->TriggerHapticPulse(event.trackedDeviceIndex, 0, 2000);
+			}
+		}
+	}
+	break;
+	case vr::VREvent_ButtonUnpress:
+	{
+		// TRIGGER UP
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+		{
+			dprintf("Device %u trigger unpressed.\n", event.trackedDeviceIndex);
+			m_rbTrackedDeviceCleaningMode[event.trackedDeviceIndex] = false;
+			m_rvTrackedDeviceLastCursorCtrPos[event.trackedDeviceIndex].w = 0.f; // when w=0, consider it unset
+			m_rvTrackedDeviceCurrentCursorCtrPos[event.trackedDeviceIndex].w = 0.f; // when w=0, consider it unset
+		}
+
+		// GRIP UP
+		if (event.data.controller.button == vr::k_EButton_Grip)
+		{
+			dprintf("Device %u grip unpressed.\n", event.trackedDeviceIndex);
+		}		
+	}
+	break;
+	case vr::VREvent_ButtonTouch:
+	{
+		vr::VRControllerState_t state;
+		if (m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
+		{
+			if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+			{
+				dprintf("Device %u trigger touched at %u.\n", event.trackedDeviceIndex, state.rAxis[vr::k_eControllerAxis_Trigger].x);
+			}
+
+			if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+			{
+				dprintf("Device %u touchpad touched at (%u, %u).\n", 
+					  event.trackedDeviceIndex
+					, state.rAxis[vr::k_eControllerAxis_TrackPad].x
+					, state.rAxis[vr::k_eControllerAxis_TrackPad].y);
+			}
+		}			
+	}
+	break;
+	case vr::VREvent_ButtonUntouch:
+	{
+		vr::VRControllerState_t state;
+		if (m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
+		{
+			if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+			{
+				dprintf("Device %u trigger untouched at %u.\n", event.trackedDeviceIndex, state.rAxis[vr::k_eControllerAxis_Trigger].x);
+			}
+
+			if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+			{
+				dprintf("Device %u touchpad untouched at (%u, %u).\n",
+					event.trackedDeviceIndex
+					, state.rAxis[vr::k_eControllerAxis_TrackPad].x
+					, state.rAxis[vr::k_eControllerAxis_TrackPad].y);
+			}
+		}
+	}
+	break;
 	}
 }
 
+void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
+{
+	Matrix4 & poseMat = m_rmat4DevicePose[id];
+
+	m_rvTrackedDeviceLastCursorCtrPos[id] = m_rvTrackedDeviceCurrentCursorCtrPos[id];
+	
+	Vector4 cursorPos = poseMat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);
+	Vector4 lastPos = m_rvTrackedDeviceLastCursorCtrPos[id];
+	Vector4 forwardRadiusPos = poseMat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z - cursorRadius, 1.f);
+	Vector4 cylAxisEndPos = poseMat * Vector4(cursorOffset.x, cursorOffset.y - cursorWidth, cursorOffset.z, 1.f);
+
+	m_rvTrackedDeviceCurrentCursorCtrPos[id] = cursorPos;
+
+	if (cleaningRoom->checkCleaningTable(
+		Vector3(cursorPos.x, cursorPos.y, cursorPos.z),
+		Vector3(forwardRadiusPos.x, forwardRadiusPos.y, forwardRadiusPos.z),
+		Vector3(cylAxisEndPos.x, cylAxisEndPos.y, cylAxisEndPos.z)))
+	{
+		m_pHMD->TriggerHapticPulse(id, 0, 2000);
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -1059,7 +1116,7 @@ void CMainApplication::DrawControllers()
 		//}
 
 		// Draw circle
-		if(m_rbTrackedDeviceTriggered[unTrackedDevice])
+		if(m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 		{
 			GLuint num_segments = 64;
 			Vector3 color = Vector3(0.8f, 0.8f, 0.2f);
@@ -1691,8 +1748,7 @@ void CMainApplication::SetupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t
 		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
 		m_rbShowTrackedDevice[unTrackedDeviceIndex] = true;
 		m_rbShowTrackedDeviceAxes[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceTriggered[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceGripDown[unTrackedDeviceIndex] = false;
+		m_rbTrackedDeviceCleaningMode[unTrackedDeviceIndex] = false;
 	}
 }
 

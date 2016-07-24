@@ -39,6 +39,7 @@ public:
 	void RunMainLoop();
 	bool HandleInput();
 	void ProcessVREvent(const vr::VREvent_t & event);
+	void checkForHits(vr::TrackedDeviceIndex_t id);
 	void RenderFrame();
 
 	bool SetupTexturemaps();
@@ -87,8 +88,7 @@ private:
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDevice[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDeviceAxes[vr::k_unMaxTrackedDeviceCount];
-	bool m_rbTrackedDeviceTriggered[vr::k_unMaxTrackedDeviceCount];
-	bool m_rbTrackedDeviceGripDown[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceCleaningMode[vr::k_unMaxTrackedDeviceCount];
 	Vector4 m_rvTrackedDeviceLastCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
 	Vector4 m_rvTrackedDeviceCurrentCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
 
