@@ -63,7 +63,7 @@ bool CleaningRoom::checkCleaningTable(Vector3 cursorCtr, Vector3 forward, Vector
 
 		float dist_sq = cylTest(cylBegin, cylEnd, cylAxisLen_sq, radius_sq, ptInWorldCoords);
 		
-		if (dist_sq > 0.f)
+		if (dist_sq >= 0.f)
 		{
 			hit = true;
 			clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
