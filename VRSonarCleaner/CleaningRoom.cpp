@@ -41,19 +41,16 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(Vector3 cursorCtr, Vector3 forward, Vector3 width)
+bool CleaningRoom::checkCleaningTable(Vector3 cursorCtr, Vector3 forwardRadiusPos, Vector3 cylAxisEndPos)
 {
 	bool hit = false;
 
 	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();
 	
-	float cylAxisLen = (width - cursorCtr).length() * 2;
+	float cylAxisLen = (cylAxisEndPos - cursorCtr).length();
 	float cylAxisLen_sq = cylAxisLen * cylAxisLen;
-
-	Vector3 cylBegin = cursorCtr + cylAxisLen * 0.5f * (cursorCtr - width).normalize();
-	Vector3 cylEnd = width;
-
-	float radius = (forward - cursorCtr).length();
+	
+	float radius = (forwardRadiusPos - cursorCtr).length();
 	float radius_sq = radius * radius;
 	
 	for (int i = 0; i < pts.size(); ++i)
@@ -61,7 +58,7 @@ bool CleaningRoom::checkCleaningTable(Vector3 cursorCtr, Vector3 forward, Vector
 		Vector3 ptInWorldCoords;
 		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
 
-		float dist_sq = cylTest(cylBegin, cylEnd, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+		float dist_sq = cylTest(cursorCtr, cylAxisEndPos, cylAxisLen_sq, radius_sq, ptInWorldCoords);
 		
 		if (dist_sq >= 0.f)
 		{

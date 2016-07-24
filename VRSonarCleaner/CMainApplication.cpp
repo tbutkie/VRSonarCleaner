@@ -443,11 +443,15 @@ bool CMainApplication::HandleInput()
 
 				Matrix4 & mat = m_rmat4DevicePose[unDevice];
 				Vector4 cursorPos = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z, 1.f);
-				Vector4 forward = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z - cursorRadius, 1.f);
-				Vector4 width = mat * Vector4(cursorOffset.x, cursorOffset.y + cursorWidth / 2.f, cursorOffset.z, 1.f);
+				Vector4 lastPos = m_rvTrackedDeviceLastCursorCtrPos[unDevice];
+				Vector4 forwardRadiusPos = mat * Vector4(cursorOffset.x, cursorOffset.y, cursorOffset.z - cursorRadius, 1.f);
+				Vector4 cylAxisEndPos = mat * Vector4(cursorOffset.x, cursorOffset.y - cursorWidth, cursorOffset.z, 1.f);
 				m_rvTrackedDeviceCurrentCursorCtrPos[unDevice] = cursorPos;
 								
-				if (cleaningRoom->checkCleaningTable(Vector3(cursorPos.x, cursorPos.y, cursorPos.z), Vector3(forward.x, forward.y, forward.z), Vector3(width.x, width.y, width.z)))
+				if (cleaningRoom->checkCleaningTable(
+					Vector3(cursorPos.x, cursorPos.y, cursorPos.z),
+					Vector3(forwardRadiusPos.x, forwardRadiusPos.y, forwardRadiusPos.z),
+					Vector3(cylAxisEndPos.x, cylAxisEndPos.y, cylAxisEndPos.z)))
 				{
 					m_pHMD->TriggerHapticPulse(unDevice, 0, 2000);
 				}
