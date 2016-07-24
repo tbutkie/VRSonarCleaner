@@ -101,22 +101,34 @@ void DataVolume::convertToInnerCoords(float xWorld, float yWorld, float zWorld, 
 	double pointIn[3];
 	double pointOut[3];
 	double invStoredMat[16];
+
 	InvertMat(storedMatrix, invStoredMat);
+
 	pointIn[0] = xWorld;
 	pointIn[1] = yWorld;
 	pointIn[2] = zWorld;
+
 	MVMult(invStoredMat, pointIn, pointOut, true);
+
 	*xInner = pointOut[0];
 	*yInner = pointOut[1];
 	*zInner = pointOut[2];
-	
-	//std::cout << "in(" << pointIn[0] << ", " << pointIn[1] << ", " << pointIn[2] << ")" << std::endl;
-	//std::cout << "out(" << *xInner << ", " << *yInner << ", " << *zInner << ")" << std::endl << std::endl;
 }
 
 void DataVolume::convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld)
 {
+	double pointIn[3];
+	double pointOut[3];
 
+	pointIn[0] = xInner;
+	pointIn[1] = yInner;
+	pointIn[2] = zInner;
+
+	MVMult(storedMatrix, pointIn, pointOut, true);
+
+	*xWorld = pointOut[0];
+	*yWorld = pointOut[1];
+	*zWorld = pointOut[2];
 }
 
 void DataVolume::activateTransformationMatrix()
