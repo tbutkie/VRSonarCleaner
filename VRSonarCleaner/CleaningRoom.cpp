@@ -21,8 +21,8 @@ CleaningRoom::CleaningRoom()
 	maxZ = roomSizeZ;
 		
 	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	tableVolume = new DataVolume(0, 0.75, 0, 0, 2.25, 0.75, 2.25);
-	wallVolume = new DataVolume(0, (roomSizeY / 2)+(roomSizeY*0.15), (roomSizeZ / 2)-0.42, 1, (roomSizeX*0.9), (roomSizeY*0.80), 0.8);
+	tableVolume = new DataVolume(0, 1.10, 0, 0, 2.25, 0.75, 2.25);
+	wallVolume = new DataVolume(0, (roomSizeY / 2)+(roomSizeY*0.09), (roomSizeZ / 2)-0.42, 1, (roomSizeX*0.9), (roomSizeY*0.80), 0.8);
 	
 	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
 	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
@@ -44,7 +44,7 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 void CleaningRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");
-	holodeck->draw();
+	holodeck->drawSolid();
 
 	//draw debug
 	wallVolume->drawBBox();

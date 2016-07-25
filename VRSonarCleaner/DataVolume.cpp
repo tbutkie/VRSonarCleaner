@@ -95,16 +95,20 @@ void DataVolume::recalcScaling()
 
 void DataVolume::convertToInnerCoords(float xWorld , float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
 {
+	double inverted[16];
+	InvertMat(storedMatrix, inverted);
+	
 	//Vec3 pointIn(xWorld, yWorld, zWorld);
 	double pointIn[3];
 	double pointOut[3];
 	pointIn[0] = xWorld;
 	pointIn[1] = yWorld;
 	pointIn[2] = zWorld;
-	MVMult(storedMatrix, pointIn, pointOut, true);
+	MVMult(inverted, pointIn, pointOut, true);
 	*xInner = pointOut[0];
 	*yInner = pointOut[1];
 	*zInner = pointOut[2];
+
 
 }
 

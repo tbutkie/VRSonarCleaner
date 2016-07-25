@@ -48,6 +48,10 @@ class SonarPointCloud
 		void drawPointsVBO();
 		void refreshPointsVBO();
 
+		void buildPreviewVBO();
+		void drawPreviewVBO();
+		void drawPreview();
+
 		void draw();
 
 		void drawAxes();
@@ -107,6 +111,13 @@ class SonarPointCloud
 		GLuint pointsPositionsVBO;
 		GLuint pointsColorsVBO;
 		int numPointsInVBO;
+
+		//preview
+		bool previewBuffersGenerated;
+		GLuint previewPointsPositionsVBO;
+		GLuint previewPointsColorsVBO;
+		int previewNumPointsInVBO;
+		bool previewRefreshNeeded;
 };
 
 #endif

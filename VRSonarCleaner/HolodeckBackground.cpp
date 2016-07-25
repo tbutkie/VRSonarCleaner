@@ -228,3 +228,119 @@ void HolodeckBackground::draw()
 
 
 }
+
+
+void HolodeckBackground::drawSolid()
+{
+	//draw box
+	glColor4f(0.33, 0.39, 0.49, 1.0);
+
+	//printf("In Holodeck Draw()\n");
+
+	/*
+	glColor3f(0.0, 1.0, 1.0);
+	glPointSize(2.0);
+	glBegin(GL_POINTS);
+	glVertex3f(0, 0, 0);
+	glEnd();
+
+
+	glLineWidth(2.0);
+	glBegin(GL_LINES);
+	glColor3f(1.0, 0.0, 0.0);
+	glVertex3f(-0.25, 0, 0);
+	glVertex3f(0.5, 0, 0);
+
+	glColor3f(0.0, 1.0, 0.0);
+	glVertex3f(0, -0.25, 0);
+	glVertex3f(0, 0.5, 0);
+
+	glColor3f(0.0, 0.0, 1.0);
+	glVertex3f(0, 0, -0.25);
+	glVertex3f(0, 0, 0.5);
+	glEnd();
+
+	*/
+
+	drawGrids(0.15, 0.21, 0.31, 1);
+	drawGrids(0.23, 0.29, 0.39, 0.25);
+	
+}
+
+void HolodeckBackground::drawGrids(float r, float g, float b, float spacingFactor)
+{
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+	//glColor4f(0.22, 0.25, 0.32, 1.0);
+	glLineWidth(2.0);
+	glEnable(GL_LINE_SMOOTH);
+	glBegin(GL_LINES);
+
+	float floorOpacity = 0.30;
+	float ceilingOpacity = 0.03;
+	float inBetweenOpacity;
+
+	for (float x = minX; x <= maxX; x += spacingX*spacingFactor)
+	{
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(x, minY, minZ);
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(x, maxY, minZ);
+
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(x, minY, maxZ);
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(x, maxY, maxZ);
+
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(x, minY, minZ);
+		glVertex3f(x, minY, maxZ);
+
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(x, maxY, minZ);
+		glVertex3f(x, maxY, maxZ);
+	}
+
+	for (float y = minY; y <= maxY; y += spacingY*spacingFactor)
+	{
+		inBetweenOpacity = ((1 - (y / maxY))*(floorOpacity - ceilingOpacity)) + ceilingOpacity;
+		glColor4f(r, g, b, inBetweenOpacity);
+		glVertex3f(minX, y, minZ);
+		glVertex3f(maxX, y, minZ);
+
+		glVertex3f(minX, y, maxZ);
+		glVertex3f(maxX, y, maxZ);
+
+		glVertex3f(minX, y, minZ);
+		glVertex3f(minX, y, maxZ);
+
+		glVertex3f(maxX, y, minZ);
+		glVertex3f(maxX, y, maxZ);
+	}
+
+	for (float z = minZ; z <= maxZ; z += spacingZ*spacingFactor)
+	{
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(minX, minY, z);
+		glVertex3f(maxX, minY, z);
+
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(minX, maxY, z);
+		glVertex3f(maxX, maxY, z);
+
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(minX, minY, z);
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(minX, maxY, z);
+
+		glColor4f(r, g, b, floorOpacity);
+		glVertex3f(maxX, minY, z);
+		glColor4f(r, g, b, ceilingOpacity);
+		glVertex3f(maxX, maxY, z);
+	}
+
+	glEnd();
+
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+}
