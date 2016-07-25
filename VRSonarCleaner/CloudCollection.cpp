@@ -194,5 +194,5 @@ void CloudCollection::drawCloud(int index)
 void CloudCollection::drawAllClouds()
 {
 	for (int i=0;i<clouds->size();i++)
-		clouds->at(i)->draw();
+		clouds->at(i)->drawPreview();
 }

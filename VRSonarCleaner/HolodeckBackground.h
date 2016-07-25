@@ -24,6 +24,9 @@ public:
 	virtual ~HolodeckBackground();
 
 	void draw();
+	void drawSolid();
+
+	void drawGrids(float r, float g, float b, float spacingFactor);
 
 private:
 
