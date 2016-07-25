@@ -39,6 +39,8 @@ public:
 	void RunMainLoop();
 	bool HandleInput();
 	void ProcessVREvent(const vr::VREvent_t & event);
+	void processControllerEvent(const vr::VREvent_t & event);
+	void updateControllerStates();
 	void checkForHits(vr::TrackedDeviceIndex_t id);
 	void RenderFrame();
 
@@ -88,7 +90,12 @@ private:
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDevice[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDeviceAxes[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceShowCursor[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceCleaningMode[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceTouchpadTouched[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceTriggerEngaged[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceTriggerClicked[vr::k_unMaxTrackedDeviceCount];
+	Vector2 m_rvTrackedDeviceTouchpadInitialTouchPoint[vr::k_unMaxTrackedDeviceCount];
 	Vector4 m_rvTrackedDeviceLastCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
 	Vector4 m_rvTrackedDeviceCurrentCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
 
@@ -185,6 +192,5 @@ private: // OpenGL bookkeeping
 	std::vector< CGLRenderModel * > m_vecRenderModels;
 	CGLRenderModel *m_rTrackedDeviceToRenderModel[vr::k_unMaxTrackedDeviceCount];
 
-	float cursorRadius, cursorWidth;
-	Vector3 cursorOffset;
+	float cursorRadius, maxCursorRadius, cursorOffset, minCursorOffset, maxCursorOffset, cursorWidth;
 };
