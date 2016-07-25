@@ -449,6 +449,17 @@ void CMainApplication::RunMainLoop()
 	{
 		bQuit = HandleInput();
 
+		for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+		{
+			if (m_pHMD->GetTrackedDeviceClass(unDevice) != vr::TrackedDeviceClass_Controller)
+				continue;
+
+			updateCursorPosition(unDevice);
+
+			if (m_rbTrackedDeviceCleaningMode[unDevice])
+				checkForHits(unDevice);
+		}
+
 		RenderFrame();
 	}
 
@@ -632,9 +643,6 @@ void CMainApplication::updateControllerStates()
 
 		vr::VRControllerState_t state;
 		if (!m_pHMD->GetControllerState(unDevice, &state)) continue;
-
-		if (m_rbTrackedDeviceCleaningMode[unDevice])
-			checkForHits(unDevice);
 		
 		// TOUCHPAD BEING TOUCHED
 		if (m_rbTrackedDeviceTouchpadTouched[unDevice])
@@ -645,9 +653,10 @@ void CMainApplication::updateControllerStates()
 				, state.rAxis[0].y);
 		}
 
-		// TRIGGER ENGAGED
+		// TRIGGER INTERACTIONS
 		if (state.rAxis[1].x >= 0.05f) // lower limit is 5%
 		{
+			// TRIGGER ENGAGED
 			if(!m_rbTrackedDeviceTriggerEngaged[unDevice])
 			{
 				dprintf("Controller (device %u) trigger engaged).\n", unDevice);
@@ -690,18 +699,22 @@ void CMainApplication::updateControllerStates()
 	}
 }
 
-void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
+void CMainApplication::updateCursorPosition(vr::TrackedDeviceIndex_t id)
 {
 	Matrix4 & poseMat = m_rmat4DevicePose[id];
 
 	m_rvTrackedDeviceLastCursorCtrPos[id] = m_rvTrackedDeviceCurrentCursorCtrPos[id];
+	m_rvTrackedDeviceCurrentCursorCtrPos[id] = poseMat * Vector4(0.f, 0.f, -1.f * cursorOffset, 1.f);
+}
+
+void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
+{
+	Matrix4 & poseMat = m_rmat4DevicePose[id];
 	
-	Vector4 cursorPos = poseMat * Vector4(0.f, 0.f, -1.f * cursorOffset, 1.f);
+	Vector4 cursorPos = m_rvTrackedDeviceCurrentCursorCtrPos[id];
 	Vector4 lastPos = m_rvTrackedDeviceLastCursorCtrPos[id];
 	Vector4 forwardRadiusPos = poseMat * Vector4(0.f, 0.f, -1.f * cursorOffset - cursorRadius, 1.f);
 	Vector4 cylAxisEndPos = poseMat * Vector4(0.f, 0.f - cursorWidth, -1.f * cursorOffset, 1.f);
-
-	m_rvTrackedDeviceCurrentCursorCtrPos[id] = cursorPos;
 
 	if (cleaningRoom->checkCleaningTable(
 		Vector3(cursorPos.x, cursorPos.y, cursorPos.z),
@@ -1268,23 +1281,26 @@ void CMainApplication::DrawControllers()
 				prevVert = thisVert;
 			}
 
-			color = Vector3(1.f, 0.f, 0.f);
-			if (m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].w != 0.f &&
-				m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].w != 0.f)
+			// DISPLAY CURSOR DOT
+			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 			{
-				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].x);
-				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].y);
-				vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				color = Vector3(1.f, 0.f, 0.f);
+				if (m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].w != 0.f &&
+					m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].w != 0.f)
+				{
+					vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].x);
+					vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].y);
+					vertdataarray.push_back(m_rvTrackedDeviceLastCursorCtrPos[unTrackedDevice].z);
+					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].x);
-				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].y);
-				vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+					vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].x);
+					vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].y);
+					vertdataarray.push_back(m_rvTrackedDeviceCurrentCursorCtrPos[unTrackedDevice].z);
+					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiControllerVertcount += 2;
+					m_uiControllerVertcount += 2;
+				}
 			}
-			
 		}
 	}
 

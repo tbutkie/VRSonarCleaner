@@ -41,6 +41,7 @@ public:
 	void ProcessVREvent(const vr::VREvent_t & event);
 	void processControllerEvent(const vr::VREvent_t & event);
 	void updateControllerStates();
+	void updateCursorPosition(vr::TrackedDeviceIndex_t id);
 	void checkForHits(vr::TrackedDeviceIndex_t id);
 	void RenderFrame();
 
