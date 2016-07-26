@@ -160,10 +160,10 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	int nWindowPosX = 700;
-	int nWindowPosY = 100;
-	m_nWindowWidth = 1280;
-	m_nWindowHeight = 720;
+	int nWindowPosX = 10;// 700;
+	int nWindowPosY = 30;// 100;
+	m_nWindowWidth = 1660;// 1280;
+	m_nWindowHeight = 980;// 720;
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
