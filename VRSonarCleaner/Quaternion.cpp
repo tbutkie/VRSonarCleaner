@@ -124,6 +124,98 @@ void Quaternion::normalize()
 
 Quaternion Quaternion::getConjugate()
 {
-	return Quaternion(-m_x, -m_y, -m_z, -m_w);
+	tquat<T, P> z = y;
+
+	T cosTheta = dot(x, y);
+
+	// If cosTheta < 0, the interpolation will take the long way around the sphere. 
+	// To fix this, one quat must be negated.
+	if (cosTheta < T(0))
+	{
+		z = -y;
+		cosTheta = -cosTheta;
+	}
+
+	// Perform a linear interpolation when cosTheta is close to 1 to avoid side effect of sin(angle) becoming a zero denominator
+	if (cosTheta > T(1) - epsilon<T>())
+	{
+		// Linear interpolation
+		return tquat<T, P>(
+			mix(x.w, z.w, a),
+			mix(x.x, z.x, a),
+			mix(x.y, z.y, a),
+			mix(x.z, z.z, a));
+	}
+	else
+	{
+		// Essential Mathematics, page 467
+		T angle = acos(cosTheta);
+		return (sin((T(1) - a) * angle) * x + sin(a * angle) * z) / sin(angle);
+	}
+}
+
+Quaternion Quaternion::slerp(const Quaternion & q1, const Quaternion & q2, float amount)
+{
+	return Quaternion();
+}
+
+Quaternion Quaternion::castMatrixToQuat(const Matrix & m)
+{
+
+	float fourXSquaredMinus1 = m[0][0] - m[1][1] - m[2][2];
+	float fourYSquaredMinus1 = m[1][1] - m[0][0] - m[2][2];
+	float fourZSquaredMinus1 = m[2][2] - m[0][0] - m[1][1];
+	float fourWSquaredMinus1 = m[0][0] + m[1][1] + m[2][2];
+
+	int biggestIndex = 0;
+	float fourBiggestSquaredMinus1 = fourWSquaredMinus1;
+	if (fourXSquaredMinus1 > fourBiggestSquaredMinus1)
+	{
+		fourBiggestSquaredMinus1 = fourXSquaredMinus1;
+		biggestIndex = 1;
+	}
+	if (fourYSquaredMinus1 > fourBiggestSquaredMinus1)
+	{
+		fourBiggestSquaredMinus1 = fourYSquaredMinus1;
+		biggestIndex = 2;
+	}
+	if (fourZSquaredMinus1 > fourBiggestSquaredMinus1)
+	{
+		fourBiggestSquaredMinus1 = fourZSquaredMinus1;
+		biggestIndex = 3;
+	}
+
+	float biggestVal = sqrt(fourBiggestSquaredMinus1 + T(1)) * T(0.5);
+	float mult = static_cast<T>(0.25) / biggestVal;
+
+	Quaternion Result;
+	switch (biggestIndex)
+	{
+	case 0:
+		Result.m_w = biggestVal;
+		Result.m_x = (m[1][2] - m[2][1]) * mult;
+		Result.m_y = (m[2][0] - m[0][2]) * mult;
+		Result.m_z = (m[0][1] - m[1][0]) * mult;
+		break;
+	case 1:
+		Result.m_w = (m[1][2] - m[2][1]) * mult;
+		Result.m_x = biggestVal;
+		Result.m_y = (m[0][1] + m[1][0]) * mult;
+		Result.m_z = (m[2][0] + m[0][2]) * mult;
+		break;
+	case 2:
+		Result.m_w = (m[2][0] - m[0][2]) * mult;
+		Result.m_x = (m[0][1] + m[1][0]) * mult;
+		Result.m_y = biggestVal;
+		Result.m_z = (m[1][2] + m[2][1]) * mult;
+		break;
+	case 3:
+		Result.m_w = (m[0][1] - m[1][0]) * mult;
+		Result.m_x = (m[2][0] + m[0][2]) * mult;
+		Result.m_y = (m[1][2] + m[2][1]) * mult;
+		Result.m_z = biggestVal;
+		break;
+
+	return Result;	
 }
 

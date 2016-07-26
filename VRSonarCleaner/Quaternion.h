@@ -4,6 +4,7 @@
 #include <windows.h>		// Header File For Windows
 #include "GL/glew.h"
 #include <math.h>
+#include "Matrix.h"
 //#include "Vec3.cpp" //DAMN circular includes!
 
 #define PI			3.14159265358979323846
@@ -27,7 +28,8 @@ public:
 	float getMagnitude();
 	void normalize();
 	Quaternion getConjugate();
-		
+	Quaternion slerp(const Quaternion & q1, const Quaternion & q2, float amount);
+	Quaternion castMatrixToQuat(const Matrix & m);
 
 private:
 	float m_w;
