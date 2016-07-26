@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 //#include <SDL.h>
 #include <GL/glew.h>
@@ -29,4 +28,5 @@ public:
 private:
 	float posX, posY, posZ;
 	
+
 };

@@ -6,10 +6,9 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
-#include "Vec3.h"
-#include "Vec3Double.h"
 #include "ColorScaler.h"
 
+#include "../shared/Matrices.h"
 
 extern ColorScaler *colorScalerTPU;
 
@@ -65,6 +64,9 @@ class SonarPointCloud
 		void setColorScope(int mode);
 		int getColorScope();
 		
+		//cleaning
+		std::vector<Vector3> getPointPositions(); // with Y and Z swapped
+
 		//bounds access:
 		double getXMin();
 		double getXMax();
