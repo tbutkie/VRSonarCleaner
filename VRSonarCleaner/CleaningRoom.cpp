@@ -87,8 +87,15 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 	float radius_sq = radius * radius;
 
 	// check if points are within volume
+	bool refreshNeeded = false;
 	for (int i = 0; i < pts.size(); ++i)
 	{
+		//skip already marked points
+		while (clouds->getCloud(0)->getPointMark(i) != 0 && i < pts.size())
+		{
+			i++;
+		}
+
 		bool hit = true;
 
 		Vector3 ptInWorldCoords;
@@ -100,8 +107,9 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 		{
 			anyHits = true;
 			printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
-			clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
-			clouds->getCloud(0)->setRefreshNeeded();
+			//clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
+			clouds->getCloud(0)->markPoint(i, 1);
+			refreshNeeded = true;
 		}
 
 		//for(size_t j = 0; j < circleVecs.size(); ++j)
@@ -127,6 +135,9 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 		//	clouds->getCloud(0)->setRefreshNeeded();
 		//}
 	}
+
+	if (refreshNeeded)
+		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;
 }

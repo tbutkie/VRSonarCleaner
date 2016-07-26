@@ -410,6 +410,11 @@ bool CMainApplication::HandleInput()
 			{
 				m_bShowCubes = !m_bShowCubes;
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_r)
+			{
+				printf("Pressed r, resetting marks\n");
+				clouds->resetMarksInAllClouds();
+			}
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
 				/*

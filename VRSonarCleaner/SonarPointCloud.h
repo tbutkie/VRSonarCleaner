@@ -34,14 +34,8 @@ class SonarPointCloud
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
-
-		bool loadFromASCII(char* filename, int linesToSkip);
 		bool loadFromSonarTxt(char* filename);
-
-		float getMinValidTime();
-		float getMaxValidTime();
-		void setValidTimes(bool infiniteMin, float minTime, bool infiniteMax, float maxTime);
-
+				
 		//VBOs
 		void buildPointsVBO();
 		void drawPointsVBO();
@@ -64,8 +58,13 @@ class SonarPointCloud
 		void setColorScope(int mode);
 		int getColorScope();
 		
+		void markPoint(int index, int code);
+		void resetAllMarks();
+
 		//cleaning
 		std::vector<Vector3> getPointPositions(); // with Y and Z swapped
+
+		int getPointMark(int index);
 
 		//bounds access:
 		double getXMin();
@@ -97,6 +96,7 @@ class SonarPointCloud
 
 		double *pointsPositions;
 		float *pointsColors;
+		int *pointsMarks;
 		float *pointsDepthTPU;
 		float *pointsPositionTPU;
 		int numPoints;

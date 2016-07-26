@@ -17,6 +17,11 @@ SonarPointCloud::SonarPointCloud()
 	minDepth = 123456789;
 	maxDepth = -123456789;
 
+	minDepthTPU = 0;
+	maxDepthTPU = 0;
+	minPositionalTPU = 0;
+	maxPositionalTPU = 0;
+
 	colorMode = 1; //0=predefined 1=scaled
 	colorScale = 2;
 	colorScope = 1; //0=global 1=dynamic
@@ -52,6 +57,9 @@ void SonarPointCloud::deleteSelf()
 	{
 		delete[] pointsPositions;
 		delete[] pointsColors;
+		delete[] pointsMarks;
+		delete[] pointsDepthTPU;
+		delete[] pointsPositionTPU;
 		pointsAllocated = false;
 	}
 
@@ -59,6 +67,11 @@ void SonarPointCloud::deleteSelf()
 	{
 		glDeleteBuffers(1, &pointsPositionsVBO);
 		glDeleteBuffers(1, &pointsColorsVBO);
+	}
+	if (previewBuffersGenerated)
+	{
+		glDeleteBuffers(1, &previewPointsPositionsVBO);
+		glDeleteBuffers(1, &previewPointsColorsVBO);
 	}
 	printf("PointCloud done cleaning itself up!\n");
 }
@@ -70,6 +83,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	{
 		delete[] pointsPositions;
 		delete[] pointsColors;
+		delete[] pointsMarks;
 		delete[] pointsDepthTPU;
 		delete[] pointsPositionTPU;
 	}
@@ -77,6 +91,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	pointsColors = new float[numPoints*3];
 	pointsDepthTPU = new float[numPoints];
 	pointsPositionTPU = new float[numPoints];;
+	pointsMarks = new int[numPoints];
 	pointsAllocated = true;
 }
 
@@ -89,6 +104,10 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	pointsColors[index*3]	 = 0.75;
 	pointsColors[(index*3)+1] = 0.75;
 	pointsColors[(index*3)+2] = 0.75;
+
+	pointsDepthTPU[index] = 0.0;
+	pointsPositionTPU[index] = 0.0;
+	pointsMarks[index] = 0;
 	
 	if (firstMinMaxSet)
 	{
@@ -133,6 +152,8 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 	pointsDepthTPU[index] = depthTPU;
 	pointsPositionTPU[index] = positionTPU;
+
+	pointsMarks[index] = 0;
 
 	if (firstMinMaxSet)
 	{
@@ -188,6 +209,10 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 	pointsColors[index*3]	 = r;
 	pointsColors[(index*3)+1] = g;
 	pointsColors[(index*3)+2] = b;
+
+	pointsDepthTPU[index] = 0.0;
+	pointsPositionTPU[index] = 0.0;
+	pointsMarks[index] = 0;
 }
 
 
@@ -356,13 +381,13 @@ void SonarPointCloud::buildPointsVBO()
 	
 	//build VBO out of mesh
 	//printf("checking before gen buffers\n");
-	if (!buffersGenerated)
+	if (!previewBuffersGenerated)
 	{
 		//printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
 		glGenBuffers(1, &pointsPositionsVBO);
 		glGenBuffers(1, &pointsColorsVBO);
 		
-		buffersGenerated = true;
+		previewBuffersGenerated = true;
 	}
 	else
 	{
@@ -373,10 +398,19 @@ void SonarPointCloud::buildPointsVBO()
 		glGenBuffers(1, &pointsPositionsVBO);
 		glGenBuffers(1, &pointsColorsVBO);
 
-		buffersGenerated = true;
+		previewBuffersGenerated = true;
 	}
 
-	numPointsInVBO = numPoints;
+	//figure out how many point to draw
+	int count = 0;
+	for (int i = 0; i < numPoints; i++)
+	{
+		if (pointsMarks[i] == 0)
+			count++;
+	}
+	
+	//numPointsInVBO = numPoints;
+	numPointsInVBO = count;
 
 	printf("Building VBO with %d points... ", numPointsInVBO);
 
@@ -404,25 +438,28 @@ void SonarPointCloud::buildPointsVBO()
 
 	for (int i=0;i<numPoints;i++)
 	{
-		x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-		y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-		z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
+		if (pointsMarks[i] == 0)
+		{
+			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
+			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
+			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
 
-		colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-		//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-		//g = 1;// pointsColors[(i * 3) + 1];
-		//b = 1;// pointsColors[(i * 3) + 2];
-		
-		positions[(index*3)]   = (float)x;
-		positions[(index*3)+1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-		positions[(index*3)+2] = (float)y;
+			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
 
-		colors[(index*3)]   = r;
-		colors[(index*3)+1] = g;
-		colors[(index*3)+2] = b;
+			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
+			//g = 1;// pointsColors[(i * 3) + 1];
+			//b = 1;// pointsColors[(i * 3) + 2];
 
-		index++;
+			positions[(index * 3)] = (float)x;
+			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
+			positions[(index * 3) + 2] = (float)y;
 
+			colors[(index * 3)] = r;
+			colors[(index * 3) + 1] = g;
+			colors[(index * 3) + 2] = b;
+
+			index++;
+		}//end if not marked
 	}//end for each pt
 
 	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
@@ -488,7 +525,16 @@ void SonarPointCloud::buildPreviewVBO()
 
 	int reductionFactor = 20;
 
-	previewNumPointsInVBO = (int)floor((double)numPoints/ (double)reductionFactor);
+	//figure out how many point to draw
+	int count = 0;
+	for (int i = 0; i < numPoints; i+=20)
+	{
+		if (pointsMarks[i] == 0)
+			count++;
+	}
+
+	//previewNumPointsInVBO = (int)floor((double)numPoints/ (double)reductionFactor);
+	previewNumPointsInVBO = count;
 
 	printf("Building preview VBO with %d points... ", previewNumPointsInVBO);
 
@@ -516,25 +562,27 @@ void SonarPointCloud::buildPreviewVBO()
 
 	for (int i = 0; i<numPoints; i+= reductionFactor)
 	{
-		x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-		y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-		z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
+		if (pointsMarks[i] == 0)
+		{
+			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
+			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
+			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
 
-		colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-		//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-		//g = 1;// pointsColors[(i * 3) + 1];
-		//b = 1;// pointsColors[(i * 3) + 2];
+			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
+			//g = 1;// pointsColors[(i * 3) + 1];
+			//b = 1;// pointsColors[(i * 3) + 2];
 
-		positions[(index * 3)] = (float)x;
-		positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-		positions[(index * 3) + 2] = (float)y;
+			positions[(index * 3)] = (float)x;
+			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
+			positions[(index * 3) + 2] = (float)y;
 
-		colors[(index * 3)] = r;
-		colors[(index * 3) + 1] = g;
-		colors[(index * 3) + 2] = b;
+			colors[(index * 3)] = r;
+			colors[(index * 3) + 1] = g;
+			colors[(index * 3) + 2] = b;
 
-		index++;
-
+			index++;
+		}//end if point not marked
 	}//end for each pt
 
 	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
@@ -876,4 +924,23 @@ void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double
 	}
 
 	setRefreshNeeded();
+}
+
+void SonarPointCloud::markPoint(int index, int code)
+{
+	pointsMarks[index] = code;
+}
+
+void SonarPointCloud::resetAllMarks()
+{
+	for (int i = 0; i < numPoints; i++)
+	{
+		pointsMarks[i] = 0;
+	}
+	setRefreshNeeded();
+}
+
+int SonarPointCloud::getPointMark(int index)
+{
+	return pointsMarks[index];
 }

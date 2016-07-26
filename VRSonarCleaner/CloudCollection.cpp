@@ -196,3 +196,9 @@ void CloudCollection::drawAllClouds()
 	for (int i=0;i<clouds->size();i++)
 		clouds->at(i)->drawPreview();
 }
+
+void CloudCollection::resetMarksInAllClouds()
+{
+	for (int i = 0; i < clouds->size(); i++)
+		clouds->at(i)->resetAllMarks();
+}

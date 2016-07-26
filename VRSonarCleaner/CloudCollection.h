@@ -28,6 +28,8 @@ public:
 	void drawCloud(int index);
 	void drawAllClouds();
 
+	void resetMarksInAllClouds();
+
 	//bounds access:
 	double getXMin();
 	double getXMax();
