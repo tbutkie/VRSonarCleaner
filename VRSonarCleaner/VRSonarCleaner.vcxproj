@@ -173,6 +173,7 @@
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
+    <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="Vec3.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="InteractionManager.h" />
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="MatrixUtils.h" />
+    <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="Vec3.h" />
     <ClInclude Include="Vec3Double.h" />
