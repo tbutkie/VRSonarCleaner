@@ -175,6 +175,7 @@
     <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="Vec3.cpp" />
     <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
@@ -195,6 +196,7 @@
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="SonarPointCloud.h" />
+    <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="Vec3.h" />
     <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />

@@ -41,9 +41,10 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, GLuint detailLevel)
+bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, float fastMotionThreshold)
 {
 	bool anyHits = false;
+	float discreteCylLen = fastMotionThreshold / 2.f;
 	
 	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
 	Vector4 up(0.f, 1.f, 0.f, 0.f);
@@ -53,36 +54,46 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 
 	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
 
+	bool fastMovement = lastToCurrentVec.length() > fastMotionThreshold ? true : false;
+
 	Vector4 halfwayPos = lastCtrPos + lastToCurrentVec * 0.5f;
 
 	Vector4 currentUpVec = (currentCursorPose * up).normalize();
 	Vector4 lastUpVec = (lastCursorPose * up).normalize();
-	
-	// pre-calculate vectors from a circle at specified detail level
-	std::vector<Vector4> circleVecs;
-	// power of two for circular segmentation amount
-	GLuint num_segments = 1u << detailLevel;
 
-	for (GLuint i = 1; i < num_segments; i++)
+	if (currentUpVec.dot(lastUpVec) <= 0.f)
 	{
-		GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-		Vector4 circleVec;
-		circleVec.x = cosf(theta);
-		circleVec.y = 0.f;
-		circleVec.z = sinf(theta);
-		circleVec.w = 0.f;
-
-		Vector4 currentCircleVec = currentCursorPose * circleVec;
-		Vector4 lastCircleVec = lastCursorPose * circleVec;
-		Vector4 halfwayCircleVec = currentCircleVec + lastCircleVec;
-
-		circleVecs.push_back(halfwayCircleVec.normalize() * radius);
+		printf("Last two cursor orientations don't look valid; aborting...");
+		return false;
 	}
-
+	
+	// used to flip the side of the cursor from which the cylinder is extended
+	// -1 = below cursor; 1 = above cursor
+	int cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1 : 1;
+	
 	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();
 
-	float cylAxisLen = radius > 0.05f ? radius / 10.f : 0.005f;
+	Vector4 cylBeginCurrent, cylEndCurrent;
+	Vector4 cylBeginLast, cylEndLast;
+	float cylAxisLen;
+	
+	if (fastMovement)
+	{
+		cylBeginCurrent = currentCtrPos;
+		cylEndCurrent = lastCtrPos;
+		cylAxisLen = lastToCurrentVec.length();
+	}
+	else
+	{
+		cylAxisLen = discreteCylLen;
+
+		cylBeginCurrent = currentCtrPos;
+		cylEndCurrent = currentCtrPos - currentUpVec * cylAxisLen * cylSide;
+		cylBeginLast = lastCtrPos;
+		cylEndLast = lastCtrPos + lastUpVec * cylAxisLen * cylSide;
+	}
+	
+	
 	float cylAxisLen_sq = cylAxisLen * cylAxisLen;
 	float radius_sq = radius * radius;
 
@@ -91,19 +102,21 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 	for (int i = 0; i < pts.size(); ++i)
 	{
 		//skip already marked points
-		while (clouds->getCloud(0)->getPointMark(i) != 0 && i < pts.size())
-		{
-			i++;
-		}
+		if (clouds->getCloud(0)->getPointMark(i) != 0)
+			continue;		
 
 		bool hit = true;
 
 		Vector3 ptInWorldCoords;
 		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
 
-		float dist_sq = cylTest(currentCtrPos + currentUpVec * cylAxisLen / 2.f, currentCtrPos - currentUpVec * cylAxisLen / 2.f, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+		float dist_sq_cyl1, dist_sq_cyl2 = -1.f;
 		
-		if (dist_sq >= 0.f)
+		dist_sq_cyl1 = cylTest(cylBeginCurrent, cylEndCurrent, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+
+		if(!fastMovement) dist_sq_cyl2 = cylTest(cylBeginLast, cylEndLast, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+		
+		if (dist_sq_cyl1 >= 0.f || dist_sq_cyl2 >= 0.f)
 		{
 			anyHits = true;
 			printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
@@ -111,29 +124,6 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 			clouds->getCloud(0)->markPoint(i, 1);
 			refreshNeeded = true;
 		}
-
-		//for(size_t j = 0; j < circleVecs.size(); ++j)
-		//{
-		//	Vector4 boundaryPos = halfwayPos + circleVecs[j];
-		//	Vector4 boundaryToPtVec = Vector4(ptInWorldCoords.x, ptInWorldCoords.y, ptInWorldCoords.z, 1.f) - boundaryPos;
-		//	
-		//	// point outside of boundary (dot prod > 0 means vectors point from same side of plane)
-		//	if (boundaryToPtVec.dot(circleVecs[j]) > 0)
-		//	{
-		//		hit = false;
-		//		break;
-		//	}
-		//}
-		//		
-		//if (hit)
-		//{
-		//	anyHits = true;
-		//	printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
-
-		//	// HACK FOR NOW: Sets hit points to origin, but need to handle this better
-		//	clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
-		//	clouds->getCloud(0)->setRefreshNeeded();
-		//}
 	}
 
 	if (refreshNeeded)
