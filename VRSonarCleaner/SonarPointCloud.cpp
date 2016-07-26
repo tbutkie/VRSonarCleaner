@@ -334,7 +334,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 void SonarPointCloud::buildPointsVBO()
 {
 	
-	printf("Rebuilding PointCloud VBOs\n");
+	printf("Begin rebuilding PointCloud VBOs\n");
 
 	//printGlErrorCode();
 
@@ -378,7 +378,7 @@ void SonarPointCloud::buildPointsVBO()
 
 	numPointsInVBO = numPoints;
 
-	printf("building vbo with %d points\n", numPointsInVBO);
+	printf("Building VBO with %d points... ", numPointsInVBO);
 
 	GLsizeiptr positionsSize = numPointsInVBO * 3  * sizeof(GLfloat);
 	GLsizeiptr colorsSize    = numPointsInVBO * 3 * sizeof(GLfloat);
@@ -435,7 +435,7 @@ void SonarPointCloud::buildPointsVBO()
 //printf("at END: ");
 	//printGlErrorCode();
 
-	printf("Build VBO with %d points\n", numPointsInVBO);
+	printf("done\n");
 
 	refreshNeeded = false;
 
@@ -444,7 +444,7 @@ void SonarPointCloud::buildPointsVBO()
 void SonarPointCloud::buildPreviewVBO()
 {
 
-	printf("Rebuilding PointCloud VBOs\n");
+	printf("Begin rebuilding PointCloud Preview VBOs\n");
 
 	//printGlErrorCode();
 
@@ -490,7 +490,7 @@ void SonarPointCloud::buildPreviewVBO()
 
 	previewNumPointsInVBO = (int)floor((double)numPoints/ (double)reductionFactor);
 
-	printf("building preview vbo with %d points\n", previewNumPointsInVBO);
+	printf("Building preview VBO with %d points... ", previewNumPointsInVBO);
 
 	GLsizeiptr positionsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
 	GLsizeiptr colorsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
@@ -547,7 +547,7 @@ void SonarPointCloud::buildPreviewVBO()
 	//printf("at END: ");
 	//printGlErrorCode();
 
-	printf("Build Preview VBO with %d points\n", previewNumPointsInVBO);
+	printf("done\n");
 
 	previewRefreshNeeded = false;
 
@@ -571,6 +571,7 @@ void SonarPointCloud::drawPreview()
 	{
 		if (!previewBuffersGenerated || previewNumPointsInVBO < 1 || previewRefreshNeeded)
 		{
+			std::cout << previewBuffersGenerated << " | " << previewNumPointsInVBO << " | " << previewRefreshNeeded << std::endl;
 			buildPreviewVBO();
 		}
 		drawPreviewVBO();

@@ -30,13 +30,13 @@ public:
 	CleaningRoom();
 	virtual ~CleaningRoom();
 
+	float cylTest(const Vector4 & pt1, const Vector4 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt);
+
 	void draw();
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
-	bool checkCleaningTable(Vector3 cursorCtr, Vector3 forwardRadiusPos, Vector3 cylAxisEndPos);
-
-	float cylTest(const Vector3 & pt1, const Vector3 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt);
+	bool checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, GLuint detailLevel = 4);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

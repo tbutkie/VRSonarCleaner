@@ -41,7 +41,6 @@ public:
 	void ProcessVREvent(const vr::VREvent_t & event);
 	void processControllerEvent(const vr::VREvent_t & event);
 	void updateControllerStates();
-	void updateCursorPosition(vr::TrackedDeviceIndex_t id);
 	void checkForHits(vr::TrackedDeviceIndex_t id);
 	void RenderFrame();
 
@@ -89,16 +88,22 @@ private:
 	std::string m_strDisplay;
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
+
+
 	bool m_rbShowTrackedDevice[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDeviceAxes[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceShowCursor[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceCleaningMode[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceTouchpadTouched[vr::k_unMaxTrackedDeviceCount];
+	Vector2 m_rvTrackedDeviceTouchpadInitialTouchPoint[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceTriggerEngaged[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceTriggerClicked[vr::k_unMaxTrackedDeviceCount];
-	Vector2 m_rvTrackedDeviceTouchpadInitialTouchPoint[vr::k_unMaxTrackedDeviceCount];
-	Vector4 m_rvTrackedDeviceLastCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
-	Vector4 m_rvTrackedDeviceCurrentCursorCtrPos[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceCursorRadiusResizeMode[vr::k_unMaxTrackedDeviceCount];
+	float m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[vr::k_unMaxTrackedDeviceCount];
+	bool m_rbTrackedDeviceCursorOffsetMode[vr::k_unMaxTrackedDeviceCount];
+	float m_rfTrackedDeviceCursorOffsetModeInitialOffset[vr::k_unMaxTrackedDeviceCount];
+	Matrix4 m_rmat4DeviceCursorCurrentPose[vr::k_unMaxTrackedDeviceCount];
+	Matrix4 m_rmat4DeviceCursorLastPose[vr::k_unMaxTrackedDeviceCount];
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;
@@ -193,5 +198,6 @@ private: // OpenGL bookkeeping
 	std::vector< CGLRenderModel * > m_vecRenderModels;
 	CGLRenderModel *m_rTrackedDeviceToRenderModel[vr::k_unMaxTrackedDeviceCount];
 
-	float cursorRadius, maxCursorRadius, cursorOffset, minCursorOffset, maxCursorOffset, cursorWidth;
+	float cursorRadius, cursorRadiusMin, cursorRadiusMax, cursorOffsetAmount, cursorOffsetAmountMin, cursorOffsetAmountMax;
+	Vector4 cursorOffsetDirection;
 };
