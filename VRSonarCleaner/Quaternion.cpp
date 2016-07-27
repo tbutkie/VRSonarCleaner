@@ -123,16 +123,20 @@ void Quaternion::reset()
 	m_w = 1.0f;
 }
 
-void Quaternion::CreateMatrix(float *pMatrix)
+Matrix4 Quaternion::createMatrix(const Vector3 & center)
 {
-	// Make sure the matrix has allocated memory to store the rotation data
-	if (!pMatrix) return;
+	return createMatrix(center.x, center.y, center.z);
+}
+
+Matrix4 Quaternion::createMatrix(float ctr_x, float ctr_y, float ctr_z)
+{
+	Matrix4 pMatrix;
 
 	// First row
-	pMatrix[0] = 1.0f - 2.0f * (m_y * m_y + m_z * m_z);
-	pMatrix[1] = 2.0f * (m_x * m_y + m_z * m_w);
-	pMatrix[2] = 2.0f * (m_x * m_z - m_y * m_w);
-	pMatrix[3] = 0.0f;
+	pMatrix[0] = 1.f - 2.f * (m_y * m_y + m_z * m_z);
+	pMatrix[1] = 2.f * (m_x * m_y + m_z * m_w);
+	pMatrix[2] = 2.f * (m_x * m_z - m_y * m_w);
+	pMatrix[3] = 0.f;
 
 	// Second row
 	pMatrix[4] = 2.0f * (m_x * m_y - m_z * m_w);
@@ -146,16 +150,16 @@ void Quaternion::CreateMatrix(float *pMatrix)
 	pMatrix[10] = 1.0f - 2.0f * (m_x * m_x + m_y * m_y);
 	pMatrix[11] = 0.0f;
 
-	// Fourth row
-	pMatrix[12] = 0;
-	pMatrix[13] = 0;
-	pMatrix[14] = 0;
-	pMatrix[15] = 1.0f;
+	// Fourth row (a.k.a matrix center location)
+	pMatrix[12] = ctr_x;
+	pMatrix[13] = ctr_y;
+	pMatrix[14] = ctr_z;
+	pMatrix[15] = 1.f;
 
-	// Now pMatrix[] is a 4x4 homogeneous matrix that can be applied to an OpenGL Matrix
+	return pMatrix;
 }
 
-void Quaternion::CreateFromAxisAngle(float x, float y, float z, float degrees)
+void Quaternion::createFromAxisAngle(float x, float y, float z, float degrees)
 {
 	// First we want to convert the degrees to radians 
 	// since the angle is assumed to be in radians

@@ -29,8 +29,9 @@ public:
 
 	void reset();
 
-	void CreateMatrix(float *pMatrix);
-	void CreateFromAxisAngle(float x, float y, float z, float degrees);
+	Matrix4 createMatrix(const Vector3 & center = Vector3(0.f, 0.f, 0.f));
+	Matrix4 createMatrix(float ctr_x = 0.f, float ctr_y = 0.f, float ctr_z = 0.f);
+	void createFromAxisAngle(float x, float y, float z, float degrees);
 	float getMagnitude();
 	Quaternion & normalize();
 	float dot(const Quaternion & q2) const;
