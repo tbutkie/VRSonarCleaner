@@ -10,6 +10,8 @@
 
 #include "../shared/Matrices.h"
 
+#include "../thirdparty/OpenNS_1.6.0/include/bag.h"
+
 extern ColorScaler *colorScalerTPU;
 
 class SonarPointCloud

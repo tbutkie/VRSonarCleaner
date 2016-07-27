@@ -58,7 +58,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
 	, cursorOffsetAmount(0.1f)
 	, cursorOffsetAmountMin(0.1f)
-	, cursorOffsetAmountMax(1.f)
+	, cursorOffsetAmountMax(1.5f)
 {
 
 	for (int i = 1; i < argc; i++)
@@ -696,16 +696,24 @@ void CMainApplication::updateControllerStates()
 					float range = cursorOffsetAmountMax - cursorOffsetAmountMin;
 
 					if (dy > 0.f)
-						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range;
+						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range * 0.5f;
 					else if (dy < 0.f)
-						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range;
+						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range * 0.5f;
 					else if (dy == 0.f)
 						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice];
 
 					if (cursorOffsetAmount > cursorOffsetAmountMax)
+					{
 						cursorOffsetAmount = cursorOffsetAmountMax;
+						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMax;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
+					}
 					else if (cursorOffsetAmount < cursorOffsetAmountMin)
+					{
 						cursorOffsetAmount = cursorOffsetAmountMin;
+						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMin;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
+					}
 				}
 
 				// Cursor resizing
@@ -723,9 +731,17 @@ void CMainApplication::updateControllerStates()
 						cursorRadius = m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice];
 
 					if (cursorRadius > cursorRadiusMax)
+					{
 						cursorRadius = cursorRadiusMax;
+						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMax;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
+					}
 					else if (cursorRadius < cursorRadiusMin)
+					{
 						cursorRadius = cursorRadiusMin;
+						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMin;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
+					}
 				}
 			}
 		}
@@ -739,7 +755,7 @@ void CMainApplication::updateControllerStates()
 				dprintf("Controller (device %u) trigger engaged).\n", unDevice);
 
 				m_rbTrackedDeviceTriggerEngaged[unDevice] = true;
-				m_rbTrackedDeviceShowCursor[unDevice] = true;
+				//m_rbTrackedDeviceShowCursor[unDevice] = true;
 
 				if(m_rbTrackedDeviceTouchpadTouched[unDevice])
 					m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice] = Vector2(0.f, 0.f);
@@ -773,7 +789,7 @@ void CMainApplication::updateControllerStates()
 		{
 			dprintf("Controller (device %u) trigger disengaged).\n", unDevice);
 			m_rbTrackedDeviceTriggerEngaged[unDevice] = false;
-			m_rbTrackedDeviceShowCursor[unDevice] = false;
+			//m_rbTrackedDeviceShowCursor[unDevice] = false;
 		}
 	}
 }
@@ -783,7 +799,7 @@ void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
 	Matrix4 & currentCursorPose = m_rmat4DeviceCursorCurrentPose[id];
 	Matrix4 & lastCursorPose = m_rmat4DeviceCursorLastPose[id];
 
-	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius))
+	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 0.01f))
 		m_pHMD->TriggerHapticPulse(id, 0, 2000);
 }
 
@@ -1364,6 +1380,29 @@ void CMainApplication::DrawControllers()
 					vertdataarray.push_back(thisCtrPos.x);
 					vertdataarray.push_back(thisCtrPos.y);
 					vertdataarray.push_back(thisCtrPos.z);
+					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+					m_uiControllerVertcount += 2;
+				}
+			}
+
+			// DISPLAY CONNECTING LINE TO CURSOR
+			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
+			{
+				color = Vector3(1.f, 1.f, 1.f);
+				if (m_rbTrackedDeviceShowCursor[unTrackedDevice])
+				{
+					Vector4 controllerCtr = mat * Vector4(0.f, 0.f, 0.f, 1.f);
+					Vector4 cursorEdge = cursorMat * Vector4(0.f, 0.f, cursorRadius, 1.f);
+
+					vertdataarray.push_back(cursorEdge.x);
+					vertdataarray.push_back(cursorEdge.y);
+					vertdataarray.push_back(cursorEdge.z);
+					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+					vertdataarray.push_back(controllerCtr.x);
+					vertdataarray.push_back(controllerCtr.y);
+					vertdataarray.push_back(controllerCtr.z);
 					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
 					m_uiControllerVertcount += 2;
@@ -1963,7 +2002,7 @@ void CMainApplication::SetupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t
 		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
 		m_rbShowTrackedDevice[unTrackedDeviceIndex] = true;
 		m_rbShowTrackedDeviceAxes[unTrackedDeviceIndex] = false; 
-		m_rbTrackedDeviceShowCursor[unTrackedDeviceIndex] = false;
+		m_rbTrackedDeviceShowCursor[unTrackedDeviceIndex] = true;
 		m_rbTrackedDeviceCleaningMode[unTrackedDeviceIndex] = false;
 		m_rbTrackedDeviceTriggerEngaged[unTrackedDeviceIndex] = false;
 		m_rbTrackedDeviceTriggerClicked[unTrackedDeviceIndex] = false;

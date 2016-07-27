@@ -15,6 +15,8 @@
 //#include "../shared/Matrices.h"
 //#include "../shared/pathtools.h"
 
+#include "TrackedDevice.h"
+
 class ViveController
 {
 public:
@@ -28,5 +30,6 @@ public:
 private:
 	float posX, posY, posZ;
 	
+
 
 };

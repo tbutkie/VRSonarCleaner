@@ -108,14 +108,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS_1.6.0/include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bagd.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\thirdparty\OpenNS_1.6.0\lib\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,7 +128,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..;../../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;../../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS_1.6.0/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -149,15 +149,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS_1.6.0/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bag.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\thirdparty\OpenNS_1.6.0\lib\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -176,6 +176,7 @@
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="Vec3.cpp" />
     <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
@@ -193,10 +194,10 @@
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
-    <ClInclude Include="Matrix.h" />
     <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />
+    <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="Vec3.h" />
     <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />
