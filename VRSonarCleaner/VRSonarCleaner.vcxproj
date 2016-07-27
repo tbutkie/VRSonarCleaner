@@ -194,7 +194,6 @@
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
-    <ClInclude Include="Matrix.h" />
     <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />

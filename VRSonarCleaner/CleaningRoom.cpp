@@ -1,4 +1,5 @@
 #include "CleaningRoom.h"
+#include "Quaternion.h"
 
 CleaningRoom::CleaningRoom()
 {
@@ -41,10 +42,14 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, float fastMotionThreshold)
+bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, float fastMotionThreshold)
 {
 	bool anyHits = false;
 	float discreteCylLen = fastMotionThreshold / 2.f;
+
+	Quaternion lastQuat, thisQuat;
+	lastQuat = lastCursorPose;
+	thisQuat = currentCursorPose;
 	
 	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
 	Vector4 up(0.f, 1.f, 0.f, 0.f);
@@ -55,8 +60,6 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
 
 	bool fastMovement = lastToCurrentVec.length() > fastMotionThreshold ? true : false;
-
-	Vector4 halfwayPos = lastCtrPos + lastToCurrentVec * 0.5f;
 
 	Vector4 currentUpVec = (currentCursorPose * up).normalize();
 	Vector4 lastUpVec = (lastCursorPose * up).normalize();
@@ -120,7 +123,6 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 		{
 			anyHits = true;
 			//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
-			//clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
 			clouds->getCloud(0)->markPoint(i, 1);
 			refreshNeeded = true;
 		}

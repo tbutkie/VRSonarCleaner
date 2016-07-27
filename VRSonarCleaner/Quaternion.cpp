@@ -19,60 +19,9 @@ Quaternion::~Quaternion()
 
 }
 
-void Quaternion::reset()
+Quaternion Quaternion::operator +(const Quaternion& b) const
 {
-	m_x = m_y = m_z = 0.0f;
-	m_w = 1.0f;
-}
-
-void Quaternion::CreateFromAxisAngle(float x, float y, float z, float degrees)
-{
-	// First we want to convert the degrees to radians 
-	// since the angle is assumed to be in radians
-	float angle = float((degrees / 180.0f) * PI);
-
-	// Here we calculate the sin( theta / 2) once for optimization
-	float result = (float)sin( angle / 2.0f );
-		
-	// Calcualte the w value by cos( theta / 2 )
-	m_w = (float)cos( angle / 2.0f );
-
-	// Calculate the x, y and z of the quaternion
-	m_x = float(x * result);
-	m_y = float(y * result);
-	m_z = float(z * result);
-}
-
-void Quaternion::CreateMatrix(float *pMatrix)
-{
-	// Make sure the matrix has allocated memory to store the rotation data
-	if(!pMatrix) return;
-
-	// First row
-	pMatrix[ 0] = 1.0f - 2.0f * ( m_y * m_y + m_z * m_z ); 
-	pMatrix[ 1] = 2.0f * (m_x * m_y + m_z * m_w);
-	pMatrix[ 2] = 2.0f * (m_x * m_z - m_y * m_w);
-	pMatrix[ 3] = 0.0f;  
-
-	// Second row
-	pMatrix[ 4] = 2.0f * ( m_x * m_y - m_z * m_w );  
-	pMatrix[ 5] = 1.0f - 2.0f * ( m_x * m_x + m_z * m_z ); 
-	pMatrix[ 6] = 2.0f * (m_z * m_y + m_x * m_w );  
-	pMatrix[ 7] = 0.0f;  
-
-	// Third row
-	pMatrix[ 8] = 2.0f * ( m_x * m_z + m_y * m_w );
-	pMatrix[ 9] = 2.0f * ( m_y * m_z - m_x * m_w );
-	pMatrix[10] = 1.0f - 2.0f * ( m_x * m_x + m_y * m_y );  
-	pMatrix[11] = 0.0f;  
-
-	// Fourth row
-	pMatrix[12] = 0;  
-	pMatrix[13] = 0;  
-	pMatrix[14] = 0;  
-	pMatrix[15] = 1.0f;
-
-	// Now pMatrix[] is a 4x4 homogeneous matrix that can be applied to an OpenGL Matrix
+	return Quaternion(m_x + b.m_x, m_y + b.m_y, m_z + b.m_z, m_w + b.m_w);
 }
 
 Quaternion Quaternion::operator *(Quaternion q)
@@ -86,6 +35,12 @@ Quaternion Quaternion::operator *(Quaternion q)
 	
 	return(r);
 }
+
+Quaternion Quaternion::operator*(float s) const
+{
+	return Quaternion(s*m_x, s*m_y, s*m_z, s*m_w);
+}
+
 
 //Vec3 Quaternion::operator *(Vec3 vec)
 //{
@@ -105,21 +60,138 @@ Quaternion Quaternion::operator *(Quaternion q)
 //	return Vec3(resQuat.m_x, resQuat.m_y, resQuat.m_z);
 //}
 
+Quaternion & Quaternion::operator=(const Matrix4 & m)
+{
+	const float diag = m[0] + m[5] + m[10] + 1;
+
+	if (diag > 0.0f)
+	{
+		const float scale = sqrtf(diag) * 2.0f; // get scale from diagonal
+
+											  // TODO: speed this up
+		m_x = (m[6] - m[9]) / scale;
+		m_y = (m[8] - m[2]) / scale;
+		m_z = (m[1] - m[4]) / scale;
+		m_w = 0.25f * scale;
+	}
+	else
+	{
+		if (m[0]>m[5] && m[0]>m[10])
+		{
+			// 1st element of diag is greatest value
+			// find scale according to 1st element, and double it
+			const float scale = sqrtf(1.0f + m[0] - m[5] - m[10]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = 0.25f * scale;
+			m_y = (m[4] + m[1]) / scale;
+			m_z = (m[2] + m[8]) / scale;
+			m_w = (m[6] - m[9]) / scale;
+		}
+		else if (m[5]>m[10])
+		{
+			// 2nd element of diag is greatest value
+			// find scale according to 2nd element, and double it
+			const float scale = sqrtf(1.0f + m[5] - m[0] - m[10]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = (m[4] + m[1]) / scale;
+			m_y = 0.25f * scale;
+			m_z = (m[9] + m[6]) / scale;
+			m_w = (m[8] - m[2]) / scale;
+		}
+		else
+		{
+			// 3rd element of diag is greatest value
+			// find scale according to 3rd element, and double it
+			const float scale = sqrtf(1.0f + m[10] - m[0] - m[5]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = (m[8] + m[2]) / scale;
+			m_y = (m[9] + m[6]) / scale;
+			m_z = 0.25f * scale;
+			m_w = (m[1] - m[4]) / scale;
+		}
+	}
+
+	return normalize();
+}
+
+void Quaternion::reset()
+{
+	m_x = m_y = m_z = 0.0f;
+	m_w = 1.0f;
+}
+
+void Quaternion::CreateMatrix(float *pMatrix)
+{
+	// Make sure the matrix has allocated memory to store the rotation data
+	if (!pMatrix) return;
+
+	// First row
+	pMatrix[0] = 1.0f - 2.0f * (m_y * m_y + m_z * m_z);
+	pMatrix[1] = 2.0f * (m_x * m_y + m_z * m_w);
+	pMatrix[2] = 2.0f * (m_x * m_z - m_y * m_w);
+	pMatrix[3] = 0.0f;
+
+	// Second row
+	pMatrix[4] = 2.0f * (m_x * m_y - m_z * m_w);
+	pMatrix[5] = 1.0f - 2.0f * (m_x * m_x + m_z * m_z);
+	pMatrix[6] = 2.0f * (m_z * m_y + m_x * m_w);
+	pMatrix[7] = 0.0f;
+
+	// Third row
+	pMatrix[8] = 2.0f * (m_x * m_z + m_y * m_w);
+	pMatrix[9] = 2.0f * (m_y * m_z - m_x * m_w);
+	pMatrix[10] = 1.0f - 2.0f * (m_x * m_x + m_y * m_y);
+	pMatrix[11] = 0.0f;
+
+	// Fourth row
+	pMatrix[12] = 0;
+	pMatrix[13] = 0;
+	pMatrix[14] = 0;
+	pMatrix[15] = 1.0f;
+
+	// Now pMatrix[] is a 4x4 homogeneous matrix that can be applied to an OpenGL Matrix
+}
+
+void Quaternion::CreateFromAxisAngle(float x, float y, float z, float degrees)
+{
+	// First we want to convert the degrees to radians 
+	// since the angle is assumed to be in radians
+	float angle = float((degrees / 180.0f) * PI);
+
+	// Here we calculate the sin( theta / 2) once for optimization
+	float result = (float)sin(angle / 2.0f);
+
+	// Calcualte the w value by cos( theta / 2 )
+	m_w = (float)cos(angle / 2.0f);
+
+	// Calculate the x, y and z of the quaternion
+	m_x = float(x * result);
+	m_y = float(y * result);
+	m_z = float(z * result);
+}
+
 float Quaternion::getMagnitude()
 {
 	return sqrt(m_w*m_w + m_x*m_x + m_y*m_y + m_z*m_z);
 }
 
-void Quaternion::normalize()
+ Quaternion & Quaternion::normalize()
 {
-	float mag = getMagnitude();
-	if (mag !=0)
-	{
-		m_w /= mag;
-		m_x /= mag;
-		m_y /= mag;
-		m_z /= mag;      
-	}  
+	const float n = m_x*m_x + m_y*m_y + m_z*m_z + m_w*m_w;
+
+	if (n == 1)
+		return *this;
+
+	//n = 1.0f / sqrtf(n);
+	return (*this = *this * (1.f / sqrtf(n)));
+}
+
+float Quaternion::dot(const Quaternion & q2) const
+{
+	return (m_x * q2.m_x) + (m_y * q2.m_y) + (m_z * q2.m_z) + (m_w * q2.m_w);
 }
 
 Quaternion Quaternion::getConjugate()
@@ -127,97 +199,35 @@ Quaternion Quaternion::getConjugate()
 	return Quaternion(-m_x, -m_y, -m_z, -m_w);	
 }
 
-Quaternion Quaternion::slerp(const Quaternion & x, const Quaternion & y, float a)
+Quaternion & Quaternion::lerp(Quaternion q1, Quaternion q2, float a)
 {
-	//Quaternion z = y;
-
-	//// NEED TO FIX
-	//float cosTheta = dot(x, y);
-
-	//// If cosTheta < 0, the interpolation will take the long way around the sphere. 
-	//// To fix this, one quat must be negated.
-	//if (cosTheta < 0.f)
-	//{
-	//	z = -y;
-	//	cosTheta = -cosTheta;
-	//}
-
-	//// Perform a linear interpolation when cosTheta is close to 1 to avoid side effect of sin(angle) becoming a zero denominator
-	//if (cosTheta > 1.f)
-	//{
-	//	// Linear interpolation
-	//	return Quaternion(
-	//		mix(x.w, z.w, a),
-	//		mix(x.x, z.x, a),
-	//		mix(x.y, z.y, a),
-	//		mix(x.z, z.z, a));
-	//}
-	//else
-	//{
-	//	// Essential Mathematics, page 467
-	//	float angle = acos(cosTheta);
-	//	return (sin((1.f - a) * angle) * x + sin(a * angle) * z) / sin(angle);
-	//}
-
-	return Quaternion();
+	const float scale = 1.0f - a;
+	return (*this = (q1*scale) + (q2*a));
 }
 
-Quaternion Quaternion::castMatrixToQuat(const Matrix & m)
-{	
-	//float fourXSquaredMinus1 = m[0][0] - m[1][1] - m[2][2];
-	//float fourYSquaredMinus1 = m[1][1] - m[0][0] - m[2][2];
-	//float fourZSquaredMinus1 = m[2][2] - m[0][0] - m[1][1];
-	//float fourWSquaredMinus1 = m[0][0] + m[1][1] + m[2][2];
+Quaternion & Quaternion::slerp(Quaternion q1, Quaternion q2, float a)
+{
+	float angle = q1.dot(q2);
+	float threshold = 0.05f;
 
-	//int biggestIndex = 0;
-	//float fourBiggestSquaredMinus1 = fourWSquaredMinus1;
-	//if (fourXSquaredMinus1 > fourBiggestSquaredMinus1)
-	//{
-	//	fourBiggestSquaredMinus1 = fourXSquaredMinus1;
-	//	biggestIndex = 1;
-	//}
-	//if (fourYSquaredMinus1 > fourBiggestSquaredMinus1)
-	//{
-	//	fourBiggestSquaredMinus1 = fourYSquaredMinus1;
-	//	biggestIndex = 2;
-	//}
-	//if (fourZSquaredMinus1 > fourBiggestSquaredMinus1)
-	//{
-	//	fourBiggestSquaredMinus1 = fourZSquaredMinus1;
-	//	biggestIndex = 3;
-	//}
+	// make sure we use the short rotation
+	if (angle < 0.0f)
+	{
+		q1 = q1 * -1.0f;
+		angle *= -1.0f;
+	}
 
-	//float biggestVal = sqrt(fourBiggestSquaredMinus1 + T(1)) * T(0.5);
-	//float mult = static_cast<T>(0.25) / biggestVal;
+	if (angle <= (1 - threshold)) // spherical interpolation
+	{
+		const float theta = acosf(angle);
+		const float invsintheta = 1.f / sinf(theta);
+		const float scale = sinf(theta * (1.0f - a)) * invsintheta;
+		const float invscale = sinf(theta * a) * invsintheta;
+		return (*this = (q1*scale) + (q2*invscale));
+	}
+	else // linear interpolation
+		return lerp(q1, q2, a);
 
-	Quaternion Result;
-	//switch (biggestIndex)
-	//{
-	//case 0:
-	//	Result.m_w = biggestVal;
-	//	Result.m_x = (m[1][2] - m[2][1]) * mult;
-	//	Result.m_y = (m[2][0] - m[0][2]) * mult;
-	//	Result.m_z = (m[0][1] - m[1][0]) * mult;
-	//	break;
-	//case 1:
-	//	Result.m_w = (m[1][2] - m[2][1]) * mult;
-	//	Result.m_x = biggestVal;
-	//	Result.m_y = (m[0][1] + m[1][0]) * mult;
-	//	Result.m_z = (m[2][0] + m[0][2]) * mult;
-	//	break;
-	//case 2:
-	//	Result.m_w = (m[2][0] - m[0][2]) * mult;
-	//	Result.m_x = (m[0][1] + m[1][0]) * mult;
-	//	Result.m_y = biggestVal;
-	//	Result.m_z = (m[1][2] + m[2][1]) * mult;
-	//	break;
-	//case 3:
-	//	Result.m_w = (m[0][1] - m[1][0]) * mult;
-	//	Result.m_x = (m[2][0] + m[0][2]) * mult;
-	//	Result.m_y = (m[1][2] + m[2][1]) * mult;
-	//	Result.m_z = biggestVal;
-	//	break;
-
-	return Result;	
+	return Quaternion();
 }
 

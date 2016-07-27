@@ -122,9 +122,6 @@
     <ClInclude Include="DataVolume.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MatrixUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
