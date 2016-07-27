@@ -119,7 +119,7 @@ bool CleaningRoom::checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & las
 		if (dist_sq_cyl1 >= 0.f || dist_sq_cyl2 >= 0.f)
 		{
 			anyHits = true;
-			printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
+			//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
 			//clouds->getCloud(0)->setPoint(i, 0.f, 0.f, 0.f);
 			clouds->getCloud(0)->markPoint(i, 1);
 			refreshNeeded = true;
