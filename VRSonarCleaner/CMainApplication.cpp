@@ -58,7 +58,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
 	, cursorOffsetAmount(0.1f)
 	, cursorOffsetAmountMin(0.1f)
-	, cursorOffsetAmountMax(1.f)
+	, cursorOffsetAmountMax(1.5f)
 {
 
 	for (int i = 1; i < argc; i++)
@@ -695,9 +695,17 @@ void CMainApplication::updateControllerStates()
 						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice];
 
 					if (cursorOffsetAmount > cursorOffsetAmountMax)
+					{
 						cursorOffsetAmount = cursorOffsetAmountMax;
+						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMax;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
+					}
 					else if (cursorOffsetAmount < cursorOffsetAmountMin)
+					{
 						cursorOffsetAmount = cursorOffsetAmountMin;
+						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMin;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
+					}
 				}
 
 				// Cursor resizing
@@ -715,9 +723,17 @@ void CMainApplication::updateControllerStates()
 						cursorRadius = m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice];
 
 					if (cursorRadius > cursorRadiusMax)
+					{
 						cursorRadius = cursorRadiusMax;
+						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMax;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
+					}
 					else if (cursorRadius < cursorRadiusMin)
+					{
 						cursorRadius = cursorRadiusMin;
+						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMin;
+						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
+					}
 				}
 			}
 		}
