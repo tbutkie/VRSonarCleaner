@@ -35,6 +35,8 @@ class SonarPointCloud
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
 		bool loadFromSonarTxt(char* filename);
+
+		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
 				
 		//VBOs
 		void buildPointsVBO();

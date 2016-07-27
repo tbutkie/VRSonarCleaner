@@ -415,6 +415,14 @@ bool CMainApplication::HandleInput()
 				printf("Pressed r, resetting marks\n");
 				clouds->resetMarksInAllClouds();
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_g)
+			{
+				printf("Pressed g, generating fake test cloud\n");
+				clouds->clearAllClouds();
+				clouds->generateFakeTestCloud(150, 150, 25, 40000);
+				clouds->calculateCloudBoundsAndAlign();
+				cleaningRoom->recalcVolumeBounds();
+			}
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
 				/*

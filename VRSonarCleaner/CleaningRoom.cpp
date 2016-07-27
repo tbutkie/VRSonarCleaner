@@ -34,6 +34,12 @@ CleaningRoom::~CleaningRoom()
 
 }
 
+void CleaningRoom::recalcVolumeBounds()
+{
+	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
+	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
+}
+
 void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 {
 	roomSizeX = SizeX;

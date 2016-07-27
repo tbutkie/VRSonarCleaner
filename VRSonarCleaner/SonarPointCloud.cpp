@@ -356,6 +356,90 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 	return true;
 }
 
+bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, int numPoints)
+{
+	strcpy(name, "fakeCloud");
+	
+	initPoints(numPoints);
+
+	int index = 0;
+	float randX, randY, randZ;
+	srand(149124);
+	for (int i = 0; i < numPoints; i++)
+	{
+		if (i == 0)
+		{
+			randX = 0;
+			randY = 0;
+			randZ = 0;
+		}
+		else if (i == 1)
+		{
+			randX = xSize;
+			randY = ySize;
+			randZ = zSize;
+		}
+		else if (i < numPoints*0.40)
+		{
+			randZ = zSize*(((float)(rand() % 1000)) / 1000);
+			randX = xSize*((((float)(rand() % 100)) + 450) / 1000);
+			randY = ySize*(((float)(rand() % 1000)) / 1000);
+		}
+		else
+		{
+			randZ = zSize*((((float)(rand() % 100)) + 450) / 1000);
+			randX = xSize*(((float)(rand() % 1000)) / 1000);
+			randY = ySize*(((float)(rand() % 1000)) / 1000);
+		}
+		setUncertaintyPoint(i, randX, randY, randZ, 0.0, 0.0);
+	}
+
+	//scaling hack
+	for (int i = 0; i<numPoints; i++)
+	{
+		pointsPositions[i * 3] = (pointsPositions[i * 3] - xMin);
+		pointsPositions[(i * 3) + 1] = (pointsPositions[(i * 3) + 1] - yMin);
+		pointsPositions[(i * 3) + 2] = -pointsPositions[(i * 3) + 2];
+	}
+	actualRemovedXmin = xMin;
+	actualRemovedYmin = yMin;
+	xMin = pointsPositions[0];
+	xMax = pointsPositions[0];
+	yMin = pointsPositions[1];
+	yMax = pointsPositions[1];
+	minDepth = pointsPositions[2];
+	maxDepth = pointsPositions[2];
+
+	for (int i = 0; i<numPoints; i++)
+	{
+		if (pointsPositions[i * 3] < xMin)
+			xMin = pointsPositions[i * 3];
+		if (pointsPositions[i * 3] > xMax)
+			xMax = pointsPositions[i * 3];
+
+		if (pointsPositions[(i * 3) + 1] < yMin)
+			yMin = pointsPositions[(i * 3) + 1];
+		if (pointsPositions[(i * 3) + 1] > yMax)
+			yMax = pointsPositions[(i * 3) + 1];
+
+		if (pointsPositions[(i * 3) + 2] < minDepth)
+			minDepth = pointsPositions[(i * 3) + 2];
+		if (pointsPositions[(i * 3) + 2] > maxDepth)
+			maxDepth = pointsPositions[(i * 3) + 2];
+	}
+
+	xRange = xMax - xMin;
+	yRange = yMax - yMin;
+	rangeDepth = maxDepth - minDepth;
+
+	colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
+
+	setRefreshNeeded();
+
+	return true;
+}
+
+
 void SonarPointCloud::buildPointsVBO()
 {
 	

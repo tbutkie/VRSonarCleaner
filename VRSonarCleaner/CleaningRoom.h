@@ -36,6 +36,8 @@ public:
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
+	void recalcVolumeBounds();
+
 	bool checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, GLuint detailLevel = 4);
 
 private:
