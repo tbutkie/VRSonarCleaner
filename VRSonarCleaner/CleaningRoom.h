@@ -38,7 +38,7 @@ public:
 
 	void recalcVolumeBounds();
 
-	bool checkCleaningTable(Matrix4 & currentCursorPose, Matrix4 & lastCursorPose, float radius, GLuint detailLevel = 4);
+	bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, float fastMotionThreshold);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;
