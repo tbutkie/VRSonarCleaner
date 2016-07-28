@@ -57,15 +57,16 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	Vector4 currentCtrPos = currentCursorPose * ctr;
 	Vector4 lastCtrPos = lastCursorPose * ctr;
 
-	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
-	float dist = lastToCurrentVec.length();
-	float cylLen = dist / static_cast<float>(sensitivity);
-	float cylLen_sq = cylLen * cylLen;
-	float radius_sq = radius * radius;
-
 	Vector4 up(0.f, 1.f, 0.f, 0.f);
 	Vector4 currentUpVec = (currentCursorPose * up).normalize();
 	Vector4 lastUpVec = (lastCursorPose * up).normalize();
+
+	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
+	float dist = lastToCurrentVec.length();	
+	float verticalDistBetweenCursors = abs(lastToCurrentVec.dot(lastUpVec));
+	float cylLen = verticalDistBetweenCursors / static_cast<float>(sensitivity);
+	float cylLen_sq = cylLen * cylLen;
+	float radius_sq = radius * radius;
 
 	if (currentUpVec.dot(lastUpVec) <= 0.f)
 	{
@@ -77,12 +78,10 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	// -1 = below cursor; 1 = above cursor
 	float cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1.f : 1.f;
 	
-	// Initialize quaternions
+	// Initialize quaternions used for interpolating orientation
 	Quaternion lastQuat, thisQuat;
 	lastQuat = lastCursorPose;
 	thisQuat = currentCursorPose;
-	std::vector<Quaternion> quats;
-	quats.push_back(lastQuat);
 
 	// Initialize subcylinder axis endpoints
 	Vector4 cylBeginLast, cylEndLast;
@@ -95,47 +94,60 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	cylEndCurrent = currentCtrPos - currentUpVec * cylLen * cylSide;
 	cylAxisPtPairs.push_back(cylBeginLast);
 	cylAxisPtPairs.push_back(cylEndLast);
-
+	
+	// Interpolate cursor positions and store the subcylinder axial endpoints
 	for (unsigned int i = 1; i < sensitivity - 1; ++i)
 	{
-		float ratio = static_cast<float>(i) / static_cast<float>(sensitivity);
+		float ratio = static_cast<float>(i) / static_cast<float>(sensitivity - 1);
 		Vector4 ptOnPathLine = lastCtrPos + lastToCurrentVec * ratio;
 		Quaternion q = Quaternion().slerp(lastQuat, thisQuat, ratio);
-		Matrix4 mat;//= q.getMatrixWithCenter(ptOnPathLine) here, need to create a matrix from q and translate to ptOnPathLine
-		// ptOnPathLine +  * cylLen * 0.75f
-		cylAxisPtPairs.push_back(mat * Vector4(0.f, cylLen * 0.75, 0.f, 1.f));
-		cylAxisPtPairs.push_back(mat * Vector4(0.f, -cylLen * 0.75, 0.f, 1.f));
+		Matrix4 mat = q.createMatrix();
+		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * 0.75);
+		cylAxisPtPairs.push_back(ptOnPathLine + mat * -Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * 0.75);
 	}
 
+	cylAxisPtPairs.push_back(cylBeginCurrent);
+	cylAxisPtPairs.push_back(cylEndCurrent);
 
-	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();
+	for (unsigned int i = 0; i < sensitivity; ++i)
+	{
+		Vector3 start, end;
+		tableVolume->convertToInnerCoords(cylAxisPtPairs[i * 2].x, cylAxisPtPairs[i * 2].y, cylAxisPtPairs[i * 2].z, &start.x, &start.y, &start.z);
+		tableVolume->convertToInnerCoords(cylAxisPtPairs[i * 2 + 1].x, cylAxisPtPairs[i * 2 + 1].y, cylAxisPtPairs[i * 2 + 1].z, &end.x, &end.y, &end.z);
+		clouds->getCloud(0)->setPoint(i * 2, start.x, start.z, start.y);
+		clouds->getCloud(0)->markPoint(i * 2, 2);
+		clouds->getCloud(0)->setPoint(i * 2 + 1, end.x, end.z, end.y);
+		clouds->getCloud(0)->markPoint(i * 2 + 1, 3);
 
-	
+		//std::cout << "Path pt " << i << ": " << pt1 << " | " << pt2 << std::endl;
+	}
+	//std::cout << "-------------------------------------------" << std::endl << std::endl;
+
+	clouds->getCloud(0)->setRefreshNeeded();
+
+	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();	
 
 	// check if points are within volume
 	bool refreshNeeded = false;
-	for (int i = 0; i < pts.size(); ++i)
+	for (int i = 100; i < pts.size(); ++i)
 	{
 		//skip already marked points
 		if (clouds->getCloud(0)->getPointMark(i) != 0)
 			continue;		
-
-		bool hit = true;
-
+		
 		Vector3 ptInWorldCoords;
 		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
-
-		float dist_sq_cyl1, dist_sq_cyl2 = -1.f;
 		
-		dist_sq_cyl1 = cylTest(cylBeginCurrent, cylEndCurrent, cylLen_sq, radius_sq, ptInWorldCoords);
-		dist_sq_cyl2 = cylTest(cylBeginLast, cylEndLast, cylLen_sq, radius_sq, ptInWorldCoords);
-		
-		if (dist_sq_cyl1 >= 0.f || dist_sq_cyl2 >= 0.f)
+		for (int j = 0; j < cylAxisPtPairs.size(); j += 2)
 		{
-			anyHits = true;
-			//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
-			clouds->getCloud(0)->markPoint(i, 1);
-			refreshNeeded = true;
+			if (cylTest(cylAxisPtPairs[j], cylAxisPtPairs[j+1], cylLen_sq, radius_sq, ptInWorldCoords) > 0.f)
+			{
+				anyHits = true;
+				//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
+				clouds->getCloud(0)->markPoint(i, 1);
+				refreshNeeded = true;
+				break;
+			}
 		}
 	}
 

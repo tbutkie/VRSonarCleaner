@@ -799,7 +799,7 @@ void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
 	Matrix4 & currentCursorPose = m_rmat4DeviceCursorCurrentPose[id];
 	Matrix4 & lastCursorPose = m_rmat4DeviceCursorLastPose[id];
 
-	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 0.01f))
+	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
 		m_pHMD->TriggerHapticPulse(id, 0, 2000);
 }
 
