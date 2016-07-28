@@ -19,6 +19,14 @@ void CloudCollection::loadCloud(char* filename)
 	clouds->push_back(cloud);
 }
 
+void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints)
+{
+	SonarPointCloud* cloud;
+	cloud = new SonarPointCloud();
+	cloud->generateFakeCloud(sizeX, sizeY, sizeZ, numPoints);
+	clouds->push_back(cloud);
+}
+
 void CloudCollection::calculateCloudBoundsAndAlign()
 {
 	//find absolute minimum actual removed min values (the min bounds of the whole dataset)

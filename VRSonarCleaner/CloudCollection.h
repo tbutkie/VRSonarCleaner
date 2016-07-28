@@ -19,6 +19,7 @@ public:
 	~CloudCollection();
 
 	void loadCloud(char* filename);
+	void generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints);
 	void clearAllClouds();
 	void calculateCloudBoundsAndAlign();
 

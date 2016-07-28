@@ -36,7 +36,9 @@ public:
 
 	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
-	bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, float fastMotionThreshold);
+	void recalcVolumeBounds();
+
+	bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int fastMotionThreshold);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

@@ -35,6 +35,12 @@ CleaningRoom::~CleaningRoom()
 
 }
 
+void CleaningRoom::recalcVolumeBounds()
+{
+	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
+	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
+}
+
 void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 {
 	roomSizeX = SizeX;
@@ -42,25 +48,22 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeZ = SizeZ;
 }
 
-bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, float fastMotionThreshold)
+bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity)
 {
 	bool anyHits = false;
-	float discreteCylLen = fastMotionThreshold / 2.f;
 
-	Quaternion lastQuat, thisQuat;
-	lastQuat = lastCursorPose;
-	thisQuat = currentCursorPose;
-	
 	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
-	Vector4 up(0.f, 1.f, 0.f, 0.f);
 
 	Vector4 currentCtrPos = currentCursorPose * ctr;
 	Vector4 lastCtrPos = lastCursorPose * ctr;
 
 	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
+	float dist = lastToCurrentVec.length();
+	float cylLen = dist / static_cast<float>(sensitivity);
+	float cylLen_sq = cylLen * cylLen;
+	float radius_sq = radius * radius;
 
-	bool fastMovement = lastToCurrentVec.length() > fastMotionThreshold ? true : false;
-
+	Vector4 up(0.f, 1.f, 0.f, 0.f);
 	Vector4 currentUpVec = (currentCursorPose * up).normalize();
 	Vector4 lastUpVec = (lastCursorPose * up).normalize();
 
@@ -72,33 +75,42 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	
 	// used to flip the side of the cursor from which the cylinder is extended
 	// -1 = below cursor; 1 = above cursor
-	int cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1 : 1;
+	float cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1.f : 1.f;
 	
+	// Initialize quaternions
+	Quaternion lastQuat, thisQuat;
+	lastQuat = lastCursorPose;
+	thisQuat = currentCursorPose;
+	std::vector<Quaternion> quats;
+	quats.push_back(lastQuat);
+
+	// Initialize subcylinder axis endpoints
+	Vector4 cylBeginLast, cylEndLast;
+	Vector4 cylBeginCurrent, cylEndCurrent;
+	std::vector<Vector4> cylAxisPtPairs; // organized as cyl1 begin, cyl1 end, cyl2 begin, cyl2 end, ...
+
+	cylBeginLast = lastCtrPos;
+	cylEndLast = lastCtrPos + lastUpVec * cylLen * cylSide;
+	cylBeginCurrent = currentCtrPos;
+	cylEndCurrent = currentCtrPos - currentUpVec * cylLen * cylSide;
+	cylAxisPtPairs.push_back(cylBeginLast);
+	cylAxisPtPairs.push_back(cylEndLast);
+
+	for (unsigned int i = 1; i < sensitivity - 1; ++i)
+	{
+		float ratio = static_cast<float>(i) / static_cast<float>(sensitivity);
+		Vector4 ptOnPathLine = lastCtrPos + lastToCurrentVec * ratio;
+		Quaternion q = Quaternion().slerp(lastQuat, thisQuat, ratio);
+		Matrix4 mat;//= q.getMatrixWithCenter(ptOnPathLine) here, need to create a matrix from q and translate to ptOnPathLine
+		// ptOnPathLine +  * cylLen * 0.75f
+		cylAxisPtPairs.push_back(mat * Vector4(0.f, cylLen * 0.75, 0.f, 1.f));
+		cylAxisPtPairs.push_back(mat * Vector4(0.f, -cylLen * 0.75, 0.f, 1.f));
+	}
+
+
 	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();
 
-	Vector4 cylBeginCurrent, cylEndCurrent;
-	Vector4 cylBeginLast, cylEndLast;
-	float cylAxisLen;
 	
-	if (fastMovement)
-	{
-		cylBeginCurrent = currentCtrPos;
-		cylEndCurrent = lastCtrPos;
-		cylAxisLen = lastToCurrentVec.length();
-	}
-	else
-	{
-		cylAxisLen = discreteCylLen;
-
-		cylBeginCurrent = currentCtrPos;
-		cylEndCurrent = currentCtrPos - currentUpVec * cylAxisLen * cylSide;
-		cylBeginLast = lastCtrPos;
-		cylEndLast = lastCtrPos + lastUpVec * cylAxisLen * cylSide;
-	}
-	
-	
-	float cylAxisLen_sq = cylAxisLen * cylAxisLen;
-	float radius_sq = radius * radius;
 
 	// check if points are within volume
 	bool refreshNeeded = false;
@@ -115,9 +127,8 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 
 		float dist_sq_cyl1, dist_sq_cyl2 = -1.f;
 		
-		dist_sq_cyl1 = cylTest(cylBeginCurrent, cylEndCurrent, cylAxisLen_sq, radius_sq, ptInWorldCoords);
-
-		if(!fastMovement) dist_sq_cyl2 = cylTest(cylBeginLast, cylEndLast, cylAxisLen_sq, radius_sq, ptInWorldCoords);
+		dist_sq_cyl1 = cylTest(cylBeginCurrent, cylEndCurrent, cylLen_sq, radius_sq, ptInWorldCoords);
+		dist_sq_cyl2 = cylTest(cylBeginLast, cylEndLast, cylLen_sq, radius_sq, ptInWorldCoords);
 		
 		if (dist_sq_cyl1 >= 0.f || dist_sq_cyl2 >= 0.f)
 		{
