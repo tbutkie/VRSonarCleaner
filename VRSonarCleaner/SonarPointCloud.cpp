@@ -489,7 +489,7 @@ void SonarPointCloud::buildPointsVBO()
 	int count = 0;
 	for (int i = 0; i < numPoints; i++)
 	{
-		if (pointsMarks[i] == 0)
+		if (pointsMarks[i] != 1)
 			count++;
 	}
 	
@@ -522,13 +522,20 @@ void SonarPointCloud::buildPointsVBO()
 
 	for (int i=0;i<numPoints;i++)
 	{
-		if (pointsMarks[i] == 0)
+		if (pointsMarks[i] != 1)
 		{
 			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
 			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
 			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
 
 			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+
+			if (pointsMarks[i] == 2)
+			{
+				r = 0.0;
+				g = 1.0;
+				b = 0.0;
+			}
 
 			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
 			//g = 1;// pointsColors[(i * 3) + 1];
@@ -613,7 +620,7 @@ void SonarPointCloud::buildPreviewVBO()
 	int count = 0;
 	for (int i = 0; i < numPoints; i+=20)
 	{
-		if (pointsMarks[i] == 0)
+		if (pointsMarks[i] != 1)
 			count++;
 	}
 
@@ -646,7 +653,7 @@ void SonarPointCloud::buildPreviewVBO()
 
 	for (int i = 0; i<numPoints; i+= reductionFactor)
 	{
-		if (pointsMarks[i] == 0)
+		if (pointsMarks[i] != 1)
 		{
 			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
 			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
