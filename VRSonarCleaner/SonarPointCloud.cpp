@@ -619,7 +619,6 @@ void SonarPointCloud::drawPreview()
 	{
 		if (!previewBuffersGenerated || previewNumPointsInVBO < 1 || previewRefreshNeeded)
 		{
-			std::cout << previewBuffersGenerated << " | " << previewNumPointsInVBO << " | " << previewRefreshNeeded << std::endl;
 			buildPreviewVBO();
 		}
 		drawPreviewVBO();

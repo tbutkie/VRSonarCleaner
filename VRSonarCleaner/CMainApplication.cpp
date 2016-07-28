@@ -505,7 +505,7 @@ void CMainApplication::ProcessVREvent(const vr::VREvent_t & event)
 	}
 	break;
 	default:
-		dprintf("Device %u uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
+		;//dprintf("Device %u uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
 	}
 }
 
@@ -756,9 +756,9 @@ void CMainApplication::updateControllerStates()
 			// TRIGGER BEING PULLED
 			if (!m_rbTrackedDeviceTriggerClicked[unDevice])
 			{
-				dprintf("Controller (device %u) trigger at %f%%).\n"
-					, unDevice
-					, state.rAxis[1].x * 100.f);
+				//dprintf("Controller (device %u) trigger at %f%%).\n"
+				//	, unDevice
+				//	, state.rAxis[1].x * 100.f);
 			}
 
 			// TRIGGER CLICKED
