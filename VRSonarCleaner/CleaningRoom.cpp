@@ -47,10 +47,12 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeY = SizeY;
 	roomSizeZ = SizeZ;
 }
-
+ // This function works but could be improved in efficiency if needed
 bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity)
 {
 	bool anyHits = false;
+
+	float radius_sq = radius * radius;
 
 	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
 
@@ -64,18 +66,23 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
 	float dist = lastToCurrentVec.length();	
 	float verticalDistBetweenCursors = abs(lastToCurrentVec.dot(lastUpVec));
+
 	float cylLen = verticalDistBetweenCursors / static_cast<float>(sensitivity);
+	if (cylLen < 0.001f) cylLen = 0.001f;
 	float cylLen_sq = cylLen * cylLen;
-	float radius_sq = radius * radius;
+
+	float subCylOverlap = 0.25f; // overlap on each side of subcylinder; 0.f = no overlap, 1.f = 100% overlap
+	float subCylLen = cylLen * (1.f + 2.f * subCylOverlap);
+	float subCylLen_sq = subCylLen * subCylLen;
 
 	if (currentUpVec.dot(lastUpVec) <= 0.f)
 	{
-		printf("Last two cursor orientations don't look valid; aborting...");
+		printf("Last two cursor orientations don't look valid; aborting point check...");
 		return false;
 	}
 	
 	// used to flip the side of the cursor from which the cylinder is extended
-	// -1 = below cursor; 1 = above cursor
+	// -1 = below cursor (-y); 1 = above cursor (+y)
 	float cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1.f : 1.f;
 	
 	// Initialize quaternions used for interpolating orientation
@@ -102,34 +109,19 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 		Vector4 ptOnPathLine = lastCtrPos + lastToCurrentVec * ratio;
 		Quaternion q = Quaternion().slerp(lastQuat, thisQuat, ratio);
 		Matrix4 mat = q.createMatrix();
-		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * 0.75);
-		cylAxisPtPairs.push_back(ptOnPathLine + mat * -Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * 0.75);
+		// move cylinder axis endpoints out from center point that lies along the path line of the cursor centers
+		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
+		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, -1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
 	}
 
 	cylAxisPtPairs.push_back(cylBeginCurrent);
 	cylAxisPtPairs.push_back(cylEndCurrent);
-
-	for (unsigned int i = 0; i < sensitivity; ++i)
-	{
-		Vector3 start, end;
-		tableVolume->convertToInnerCoords(cylAxisPtPairs[i * 2].x, cylAxisPtPairs[i * 2].y, cylAxisPtPairs[i * 2].z, &start.x, &start.y, &start.z);
-		tableVolume->convertToInnerCoords(cylAxisPtPairs[i * 2 + 1].x, cylAxisPtPairs[i * 2 + 1].y, cylAxisPtPairs[i * 2 + 1].z, &end.x, &end.y, &end.z);
-		clouds->getCloud(0)->setPoint(i * 2, start.x, start.z, start.y);
-		clouds->getCloud(0)->markPoint(i * 2, 2);
-		clouds->getCloud(0)->setPoint(i * 2 + 1, end.x, end.z, end.y);
-		clouds->getCloud(0)->markPoint(i * 2 + 1, 3);
-
-		//std::cout << "Path pt " << i << ": " << pt1 << " | " << pt2 << std::endl;
-	}
-	//std::cout << "-------------------------------------------" << std::endl << std::endl;
-
-	clouds->getCloud(0)->setRefreshNeeded();
-
+	
 	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();	
 
 	// check if points are within volume
 	bool refreshNeeded = false;
-	for (int i = 100; i < pts.size(); ++i)
+	for (int i = 0; i < pts.size(); ++i)
 	{
 		//skip already marked points
 		if (clouds->getCloud(0)->getPointMark(i) != 0)
@@ -138,9 +130,15 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 		Vector3 ptInWorldCoords;
 		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
 		
-		for (int j = 0; j < cylAxisPtPairs.size(); j += 2)
+		for (int j = 0; j < cylAxisPtPairs.size() / 2; ++j)
 		{
-			if (cylTest(cylAxisPtPairs[j], cylAxisPtPairs[j+1], cylLen_sq, radius_sq, ptInWorldCoords) > 0.f)
+			float len_sq;
+			if (j == 0 || j == cylAxisPtPairs.size() - 1)
+				len_sq = cylLen_sq;
+			else
+				len_sq = subCylLen_sq;
+
+			if (cylTest(cylAxisPtPairs[j * 2], cylAxisPtPairs[j * 2 +1], len_sq, radius_sq, ptInWorldCoords) > 0.f)
 			{
 				anyHits = true;
 				//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
