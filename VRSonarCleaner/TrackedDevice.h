@@ -1,6 +1,11 @@
 #pragma once
 
+#include <vector>
+#include <windows.h>
+
 #include <openvr.h>
+
+#include "CGLRenderModel.h"
 
 #include "../shared/Matrices.h"
 
@@ -12,10 +17,29 @@ public:
 
 	bool BInit();
 
+
+	vr::TrackedDeviceIndex_t getIndex();
+	void setRenderModel(CGLRenderModel *renderModel);
+
+	bool toggleAxes();
+
+	bool triggerDown();
+
+	void touchpadInitialTouch(float x, float y);
+	void touchpadTouch(float x, float y);
+	void touchpadUntouched();
+	bool touchpadActive();
+
+	bool cursorActive();
+
+	void updateState(vr::VRControllerState_t *state);
+
 private:
+	
 	vr::TrackedDeviceIndex_t id;
 
 	vr::IVRRenderModels *m_pRenderModel;
+	CGLRenderModel * pRenderModel;
 
 	int m_iTrackedControllerCount;
 	int m_iTrackedControllerCount_Last;
@@ -25,22 +49,26 @@ private:
 	std::string m_strPoseClasses;                          // what classes we saw poses for this frame
 	char m_rDevClassChar;   // for each device, a character representing its class
 
-	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
-	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
+	Matrix4 m_mat4Pose;
+	Matrix4 m_mat4CursorCurrentPose;
+	Matrix4 m_mat4CursorLastPose;
 
-	bool m_rbShowTrackedDevice;
-	bool m_rbShowTrackedDeviceAxes;
-	bool m_rbTrackedDeviceShowCursor;
-	bool m_rbTrackedDeviceCleaningMode;
-	bool m_rbTrackedDeviceTouchpadTouched;
-	Vector2 m_rvTrackedDeviceTouchpadInitialTouchPoint;
-	bool m_rbTrackedDeviceTriggerEngaged;
-	bool m_rbTrackedDeviceTriggerClicked;
-	bool m_rbTrackedDeviceCursorRadiusResizeMode;
-	float m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius;
-	bool m_rbTrackedDeviceCursorOffsetMode;
-	float m_rfTrackedDeviceCursorOffsetModeInitialOffset;
-	Matrix4 m_rmat4DeviceCursorCurrentPose;
-	Matrix4 m_rmat4DeviceCursorLastPose;
+	CGLRenderModel *m_rTrackedDeviceToRenderModel;
+
+	bool m_bShow;
+	bool m_bShowAxes;
+	bool m_bShowCursor;
+	bool m_bCleaningMode;
+	bool m_bTouchpadTouched;
+	Vector2 m_vTouchpadInitialTouchPoint;
+	bool m_bTriggerEngaged;
+	bool m_bTriggerClicked;
+	bool m_bCursorRadiusResizeMode;
+	float m_fCursorRadiusResizeModeInitialRadius;
+	bool m_bCursorOffsetMode;
+	float m_fCursorOffsetModeInitialOffset;
+
+	float cursorRadius, cursorRadiusMin, cursorRadiusMax, cursorOffsetAmount, cursorOffsetAmountMin, cursorOffsetAmountMax;
+	Vector4 cursorOffsetDirection;
 };
 

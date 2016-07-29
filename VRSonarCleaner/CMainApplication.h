@@ -10,7 +10,7 @@
 
 #include "CGLRenderModel.h"
 #include "CleaningRoom.h"
-#include "TrackedDevice.h"
+#include "TrackedDeviceManager.h"
 
 #include <openvr.h>
 
@@ -90,10 +90,8 @@ private:
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 
-
-	TrackedDevice* m_rTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-
-
+	TrackedDeviceManager *m_pTDM;
+	
 	bool m_rbShowTrackedDevice[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbShowTrackedDeviceAxes[vr::k_unMaxTrackedDeviceCount];
 	bool m_rbTrackedDeviceShowCursor[vr::k_unMaxTrackedDeviceCount];

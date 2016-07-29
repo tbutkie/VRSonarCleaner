@@ -160,6 +160,8 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
+	m_pTDM = new TrackedDeviceManager(m_pHMD);
+
 	int nWindowPosX = 10;// 700;
 	int nWindowPosY = 30;// 100;
 	m_nWindowWidth = 1660;// 1280;
@@ -315,11 +317,16 @@ void CMainApplication::Shutdown()
 		m_pHMD = NULL;
 	}
 
+	if (m_pTDM)
+		delete m_pTDM;
+
 	for (std::vector< CGLRenderModel * >::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
 	{
 		delete (*i);
 	}
 	m_vecRenderModels.clear();
+
+	
 
 	if (m_pContext)
 	{
@@ -437,6 +444,8 @@ bool CMainApplication::HandleInput()
 		}
 	}
 
+
+	m_pTDM->handleEvents();
 	// Process SteamVR events
 	vr::VREvent_t event;
 	while (m_pHMD->PollNextEvent(&event, sizeof(event)))
