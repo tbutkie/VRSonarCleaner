@@ -189,9 +189,6 @@ void TrackedDevice::updateState(vr::VRControllerState_t *state)
 
 			m_bTriggerEngaged = true;
 			//m_bShowCursor = true;
-
-			if (m_bTouchpadTouched)
-				m_vTouchpadInitialTouchPoint = Vector2(0.f, 0.f);
 		}
 
 		// TRIGGER BEING PULLED
