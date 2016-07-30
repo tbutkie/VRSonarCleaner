@@ -34,23 +34,34 @@ public:
 	bool cursorActive();
 	bool cleaningActive();
 
+	bool poseValid();
+
 	void updateState(vr::VRControllerState_t *state);
 
+	char getClassChar();
+	void setClassChar(char classChar);
+
+	Matrix4 getPose();
+	bool updatePose(vr::TrackedDevicePose_t pose);
+	void getCursorPoses(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose = NULL);
+	float getCursorRadius();
+	
 	void renderModel();
 
-private:	
-	vr::TrackedDeviceIndex_t id;
+private:
+	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 
-	CGLRenderModel * pRenderModel;
+	vr::TrackedDeviceIndex_t id;
+	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	
-	char m_rDevClassChar;   // for each device, a character representing its class
+	char m_ClassChar;   // for each device, a character representing its class
+	
+	vr::TrackedDevicePose_t m_Pose;
 
 	Matrix4 m_mat4Pose;
 	Matrix4 m_mat4CursorCurrentPose;
 	Matrix4 m_mat4CursorLastPose;
-
-	CGLRenderModel *m_rTrackedDeviceToRenderModel;
-
+	
 	bool m_bShow;
 	bool m_bShowAxes;
 	bool m_bShowCursor;

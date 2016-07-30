@@ -4,9 +4,16 @@
 
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	: id(id)
-	, pRenderModel(NULL)
+	, m_pTrackedDeviceToRenderModel(NULL)
+	, m_ClassChar(0)
+	, cursorRadius(0.05f)
+	, cursorRadiusMin(0.005f)
+	, cursorRadiusMax(0.1f)
+	, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
+	, cursorOffsetAmount(0.1f)
+	, cursorOffsetAmountMin(0.1f)
+	, cursorOffsetAmountMax(1.5f)
 {	
-	m_rDevClassChar = 0;
 }
 
 
@@ -26,7 +33,7 @@ vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
 
 void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 {
-	m_rTrackedDeviceToRenderModel = renderModel;
+	m_pTrackedDeviceToRenderModel = renderModel;
 }
 
 bool TrackedDevice::toggleAxes()
@@ -154,6 +161,11 @@ bool TrackedDevice::cleaningActive()
 	return m_bCleaningMode;
 }
 
+bool TrackedDevice::poseValid()
+{
+	return m_Pose.bPoseIsValid;
+}
+
 void TrackedDevice::updateState(vr::VRControllerState_t *state)
 {
 	// TOUCHPAD BEING TOUCHED
@@ -214,8 +226,61 @@ void TrackedDevice::updateState(vr::VRControllerState_t *state)
 	}
 }
 
+char TrackedDevice::getClassChar()
+{
+	return m_ClassChar;
+}
+
+void TrackedDevice::setClassChar(char classChar)
+{
+	m_ClassChar = classChar;
+}
+
+Matrix4 TrackedDevice::getPose()
+{
+	return m_mat4Pose;
+}
+
+bool TrackedDevice::updatePose(vr::TrackedDevicePose_t pose)
+{
+	m_Pose = pose;
+	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
+	m_mat4CursorCurrentPose = m_mat4Pose * (Matrix4().identity()).translate(
+		Vector3(cursorOffsetDirection.x, cursorOffsetDirection.y, cursorOffsetDirection.z) * cursorOffsetAmount);
+
+	return m_Pose.bPoseIsValid;
+}
+
+void TrackedDevice::getCursorPoses(Matrix4 * thisCursorPose, Matrix4 * lastCursorPose)
+{
+	*thisCursorPose = m_mat4CursorCurrentPose;
+
+	if (lastCursorPose)
+		*lastCursorPose = m_mat4CursorLastPose;
+}
+
+float TrackedDevice::getCursorRadius()
+{
+	return cursorRadius;
+}
+
 void TrackedDevice::renderModel()
 {
-	if(m_rTrackedDeviceToRenderModel)
-		m_rTrackedDeviceToRenderModel->Draw();
+	if(m_pTrackedDeviceToRenderModel)
+		m_pTrackedDeviceToRenderModel->Draw();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Converts a SteamVR matrix to our local matrix class
+//-----------------------------------------------------------------------------
+Matrix4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose)
+{
+	Matrix4 matrixObj(
+		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
+		matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
+		matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
+		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
+	);
+	return matrixObj;
 }

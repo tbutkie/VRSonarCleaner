@@ -393,10 +393,13 @@ void CMainApplication::checkForHits()
 {
 	Matrix4 currentCursorPose;
 	Matrix4 lastCursorPose;
-	float cursorRadius = m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose);
-
+	float cursorRadius;
 	
+	// if editing mode not active, abort
+	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
+		return;	
 
+	// check point cloud for hits
 	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
 		m_pTDM->cleaningHit();
 }

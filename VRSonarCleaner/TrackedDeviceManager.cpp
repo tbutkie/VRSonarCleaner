@@ -13,17 +13,7 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 , m_unControllerVAO(0)
 , m_nControllerMatrixLocation(-1)
 , m_nRenderModelMatrixLocation(-1)
-, cursorRadius(0.05f)
-, cursorRadiusMin(0.005f)
-, cursorRadiusMax(0.1f)
-, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
-, cursorOffsetAmount(0.1f)
-, cursorOffsetAmountMin(0.1f)
-, cursorOffsetAmountMax(1.5f)
 {
-
-	// other initialization tasks are done in init
-	memset(m_rDevClassChar, 0, sizeof(m_rDevClassChar));
 }
 
 
@@ -249,22 +239,21 @@ void TrackedDeviceManager::updateControllerStates()
 	}
 }
 
-float TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose)
+float TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius)
 {
+	float cursorRadius;
+	bool cleaningModeActive;
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
+		if (m_rpTrackedDevices[nDevice]->poseValid() && m_rpTrackedDevices[nDevice]->getClassChar() == 'C')
 		{
-			if (m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass_Controller)
-			{
-				*thisCursorPose = m_rmat4DeviceCursorCurrentPose[nDevice];
-				*lastCursorPose = m_rmat4DeviceCursorLastPose[nDevice];
-				cursorRadius = this->cursorRadius;
-				break;
-			}
+			m_rpTrackedDevices[nDevice]->getCursorPoses(thisCursorPose, lastCursorPose);
+			*radius = m_rpTrackedDevices[nDevice]->getCursorRadius();
+			cleaningModeActive = m_rpTrackedDevices[nDevice]->cleaningActive();
+			break;			
 		}
 	}
-	return cursorRadius;
+	return cleaningModeActive;
 }
 
 void TrackedDeviceManager::cleaningHit()
@@ -436,10 +425,10 @@ void TrackedDeviceManager::prepareControllersForRendering()
 
 		m_iTrackedControllerCount += 1;
 
-		if (!m_rTrackedDevicePose[unTrackedDevice].bPoseIsValid)
+		if (!m_rpTrackedDevices[unTrackedDevice]->poseValid())
 			continue;
 
-		const Matrix4 & mat = m_rmat4DevicePose[unTrackedDevice];
+		const Matrix4 & mat = m_rpTrackedDevices[unTrackedDevice]->getPose();
 
 		// Draw Axes
 		if (m_rpTrackedDevices[unTrackedDevice]->axesActive())
@@ -488,7 +477,9 @@ void TrackedDeviceManager::prepareControllersForRendering()
 		//	m_uiControllerVertcount += 2;
 		//}
 
-		Matrix4 & cursorMat = m_rmat4DeviceCursorCurrentPose[unTrackedDevice];
+		Matrix4 cursorMat, lastCursorMat;
+		m_rpTrackedDevices[unTrackedDevice]->getCursorPoses(&cursorMat, &lastCursorMat);
+		float cursorRadius = m_rpTrackedDevices[unTrackedDevice]->getCursorRadius();
 
 		// Draw cursor hoop
 		if (m_rpTrackedDevices[unTrackedDevice]->cursorActive())
@@ -532,7 +523,7 @@ void TrackedDeviceManager::prepareControllersForRendering()
 				if (m_rpTrackedDevices[unTrackedDevice]->cursorActive())
 				{
 					Vector4 thisCtrPos = cursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
-					Vector4 lastCtrPos = m_rmat4DeviceCursorLastPose[unTrackedDevice] * Vector4(0.f, 0.f, 0.f, 1.f);
+					Vector4 lastCtrPos = lastCursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
 
 					vertdataarray.push_back(lastCtrPos.x);
 					vertdataarray.push_back(lastCtrPos.y);
@@ -631,14 +622,13 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		if (!m_rTrackedDeviceToRenderModel[unTrackedDevice])
 			continue;
 
-		const vr::TrackedDevicePose_t & pose = m_rTrackedDevicePose[unTrackedDevice];
-		if (!pose.bPoseIsValid)
+		if (!m_rpTrackedDevices[unTrackedDevice]->poseValid())
 			continue;
 
 		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
 		//	continue;
 
-		const Matrix4 & matDeviceToTracking = m_rmat4DevicePose[unTrackedDevice];
+		const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getPose();
 		Matrix4 matMVP = matVP * matDeviceToTracking;
 		glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
 
@@ -676,39 +666,36 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	if (!m_pHMD)
 		return;
 
-	vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+	vr::TrackedDevicePose_t poses[vr::k_unMaxTrackedDeviceCount];
+	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
 
 	m_iValidPoseCount = 0;
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
+		if (m_rpTrackedDevices[nDevice]->updatePose(poses[nDevice]))
 		{
 			m_iValidPoseCount++;
-			m_rmat4DevicePose[nDevice] = ConvertSteamVRMatrixToMatrix4(m_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking);
-			m_rmat4DeviceCursorLastPose[nDevice] = m_rmat4DeviceCursorCurrentPose[nDevice];
-			m_rmat4DeviceCursorCurrentPose[nDevice] = m_rmat4DevicePose[nDevice] * (Matrix4().identity()).translate(
-				Vector3(cursorOffsetDirection.x, cursorOffsetDirection.y, cursorOffsetDirection.z) * cursorOffsetAmount);
 
-			if (m_rDevClassChar[nDevice] == 0)
+			if (m_rpTrackedDevices[nDevice]->getClassChar() == 0)
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
-				case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
-				case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
-				case vr::TrackedDeviceClass_Other:             m_rDevClassChar[nDevice] = 'O'; break;
-				case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
-				default:                                       m_rDevClassChar[nDevice] = '?'; break;
+				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); break;
+				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
+				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
+				case vr::TrackedDeviceClass_Other:             m_rpTrackedDevices[nDevice]->setClassChar('O'); break;
+				case vr::TrackedDeviceClass_TrackingReference: m_rpTrackedDevices[nDevice]->setClassChar('T'); break;
+				default:                                       m_rpTrackedDevices[nDevice]->setClassChar('?'); break;
 				}
 			}
-			m_strPoseClasses += m_rDevClassChar[nDevice];
+			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
 	}
 
-	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
+	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
-		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
+		m_mat4HMDPose = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose().invert();
 	}
 }
 
@@ -835,18 +822,4 @@ GLuint TrackedDeviceManager::CompileGLShader(const char *pchShaderName, const ch
 	glUseProgram(0);
 
 	return unProgramID;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Converts a SteamVR matrix to our local matrix class
-//-----------------------------------------------------------------------------
-Matrix4 TrackedDeviceManager::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose)
-{
-	Matrix4 matrixObj(
-		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
-		matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
-		matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
-		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
-	);
-	return matrixObj;
 }
