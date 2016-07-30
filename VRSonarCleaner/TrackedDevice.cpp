@@ -2,8 +2,9 @@
 
 
 
-TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id) :
-	id(id)
+TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
+	: id(id)
+	, pRenderModel(NULL)
 {	
 	m_rDevClassChar = 0;
 }
@@ -31,6 +32,11 @@ void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 bool TrackedDevice::toggleAxes()
 {
 	return m_bShowAxes = !m_bShowAxes;
+}
+
+bool TrackedDevice::axesActive()
+{
+	return m_bShowAxes;
 }
 
 bool TrackedDevice::triggerDown()
@@ -143,6 +149,11 @@ bool TrackedDevice::cursorActive()
 	return m_bShowCursor;
 }
 
+bool TrackedDevice::cleaningActive()
+{
+	return m_bCleaningMode;
+}
+
 void TrackedDevice::updateState(vr::VRControllerState_t *state)
 {
 	// TOUCHPAD BEING TOUCHED
@@ -201,4 +212,10 @@ void TrackedDevice::updateState(vr::VRControllerState_t *state)
 		m_bTriggerEngaged = false;
 		//m_bShowCursor = false;
 	}
+}
+
+void TrackedDevice::renderModel()
+{
+	if(m_rTrackedDeviceToRenderModel)
+		m_rTrackedDeviceToRenderModel->Draw();
 }

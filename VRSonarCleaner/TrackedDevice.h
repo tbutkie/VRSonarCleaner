@@ -22,6 +22,7 @@ public:
 	void setRenderModel(CGLRenderModel *renderModel);
 
 	bool toggleAxes();
+	bool axesActive();
 
 	bool triggerDown();
 
@@ -31,22 +32,17 @@ public:
 	bool touchpadActive();
 
 	bool cursorActive();
+	bool cleaningActive();
 
 	void updateState(vr::VRControllerState_t *state);
 
-private:
-	
+	void renderModel();
+
+private:	
 	vr::TrackedDeviceIndex_t id;
 
-	vr::IVRRenderModels *m_pRenderModel;
 	CGLRenderModel * pRenderModel;
-
-	int m_iTrackedControllerCount;
-	int m_iTrackedControllerCount_Last;
-	int m_iValidPoseCount;
-	int m_iValidPoseCount_Last;
-
-	std::string m_strPoseClasses;                          // what classes we saw poses for this frame
+	
 	char m_rDevClassChar;   // for each device, a character representing its class
 
 	Matrix4 m_mat4Pose;

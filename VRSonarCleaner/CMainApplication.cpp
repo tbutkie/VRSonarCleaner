@@ -27,10 +27,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_pContext(NULL)
 	, m_nWindowWidth(1280)
 	, m_nWindowHeight(720)
-	, m_unSceneProgramID(0)
 	, m_unLensProgramID(0)
-	, m_unControllerTransformProgramID(0)
-	, m_unRenderModelProgramID(0)
 	, m_pHMD(NULL)
 	, m_pRenderModels(NULL)
 	, m_bDebugOpenGL(false)
@@ -38,27 +35,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_bPerf(false)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
-	, m_glControllerVertBuffer(0)
-	, m_unControllerVAO(0)
 	, m_unLensVAO(0)
-	, m_unSceneVAO(0)
-	, m_nSceneMatrixLocation(-1)
-	, m_nControllerMatrixLocation(-1)
-	, m_nRenderModelMatrixLocation(-1)
-	, m_iTrackedControllerCount(0)
-	, m_iTrackedControllerCount_Last(-1)
-	, m_iValidPoseCount(0)
-	, m_iValidPoseCount_Last(-1)
-	, m_iSceneVolumeInit(20)
-	, m_strPoseClasses("")
-	, m_bShowCubes(true)
-	, cursorRadius(0.05f)
-	, cursorRadiusMin(0.005f)
-	, cursorRadiusMax(0.1f)
-	, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
-	, cursorOffsetAmount(0.1f)
-	, cursorOffsetAmountMin(0.1f)
-	, cursorOffsetAmountMax(1.5f)
 {
 
 	for (int i = 1; i < argc; i++)
@@ -83,15 +60,7 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 		{
 			g_bPrintf = false;
 		}
-		else if (!stricmp(argv[i], "-cubevolume") && (argc > i + 1) && (*argv[i + 1] != '-'))
-		{
-			m_iSceneVolumeInit = atoi(argv[i + 1]);
-			i++;
-		}
 	}
-
-	// other initialization tasks are done in BInit
-	memset(m_rDevClassChar, 0, sizeof(m_rDevClassChar));
 };
 
 
@@ -207,29 +176,11 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-
-	m_strDriver = "No Driver";
-	m_strDisplay = "No Display";
-
-	m_strDriver = GetTrackedDeviceString(m_pHMD, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String);
-	m_strDisplay = GetTrackedDeviceString(m_pHMD, vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String);
-
-	std::string strWindowTitle = "hellovr_sdl - " + m_strDriver + " " + m_strDisplay;
+	std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
 	SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
-
-	// cube array
-	m_iSceneVolumeWidth = m_iSceneVolumeInit;
-	m_iSceneVolumeHeight = m_iSceneVolumeInit;
-	m_iSceneVolumeDepth = m_iSceneVolumeInit;
-
-	m_fScale = 0.3f;
-	m_fScaleSpacing = 4.0f;
 
 	m_fNearClip = 0.1f;
 	m_fFarClip = 30.0f;
-
-	m_iTexture = 0;
-	m_uiVertcount = 0;
 
 	// 		m_MillisecondsTimer.start(1, this);
 	// 		m_SecondsTimer.start(1000, this);
@@ -271,18 +222,14 @@ bool CMainApplication::BInitGL()
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	}
 
-	if (!CreateAllShaders())
+	if (!CreateLensShader())
 		return false;
 
-	SetupTexturemaps();
-	SetupScene();
 	SetupCameras();
 	SetupStereoRenderTargets();
 	SetupDistortion();
 
-	SetupRenderModels();
-
-
+	m_pTDM->init();
 	cleaningRoom = new CleaningRoom();
 	
 	return true;
@@ -320,34 +267,13 @@ void CMainApplication::Shutdown()
 	if (m_pTDM)
 		delete m_pTDM;
 
-	for (std::vector< CGLRenderModel * >::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
-	{
-		delete (*i);
-	}
-	m_vecRenderModels.clear();
-
-	
-
 	if (m_pContext)
 	{
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
 		glDebugMessageCallback(nullptr, nullptr);
-		glDeleteBuffers(1, &m_glSceneVertBuffer);
 		glDeleteBuffers(1, &m_glIDVertBuffer);
 		glDeleteBuffers(1, &m_glIDIndexBuffer);
 
-		if (m_unSceneProgramID)
-		{
-			glDeleteProgram(m_unSceneProgramID);
-		}
-		if (m_unControllerTransformProgramID)
-		{
-			glDeleteProgram(m_unControllerTransformProgramID);
-		}
-		if (m_unRenderModelProgramID)
-		{
-			glDeleteProgram(m_unRenderModelProgramID);
-		}
 		if (m_unLensProgramID)
 		{
 			glDeleteProgram(m_unLensProgramID);
@@ -368,14 +294,6 @@ void CMainApplication::Shutdown()
 		if (m_unLensVAO != 0)
 		{
 			glDeleteVertexArrays(1, &m_unLensVAO);
-		}
-		if (m_unSceneVAO != 0)
-		{
-			glDeleteVertexArrays(1, &m_unSceneVAO);
-		}
-		if (m_unControllerVAO != 0)
-		{
-			glDeleteVertexArrays(1, &m_unControllerVAO);
 		}
 	}
 
@@ -413,10 +331,6 @@ bool CMainApplication::HandleInput()
 			{
 				bRet = true;
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_c)
-			{
-				m_bShowCubes = !m_bShowCubes;
-			}
 			if (sdlEvent.key.keysym.sym == SDLK_r)
 			{
 				printf("Pressed r, resetting marks\n");
@@ -443,17 +357,8 @@ bool CMainApplication::HandleInput()
 			}
 		}
 	}
-
-
-	m_pTDM->handleEvents();
-	// Process SteamVR events
-	vr::VREvent_t event;
-	while (m_pHMD->PollNextEvent(&event, sizeof(event)))
-	{
-		ProcessVREvent(event);
-	}
 	
-	updateControllerStates();
+	m_pTDM->handleEvents();
 
 	return bRet;
 }
@@ -472,14 +377,7 @@ void CMainApplication::RunMainLoop()
 	{
 		bQuit = HandleInput();
 
-		for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-		{
-			if (m_pHMD->GetTrackedDeviceClass(unDevice) != vr::TrackedDeviceClass_Controller)
-				continue;
-			
-			if (m_rbTrackedDeviceCleaningMode[unDevice])
-				checkForHits(unDevice);
-		}
+		checkForHits();
 
 		RenderFrame();
 	}
@@ -491,325 +389,16 @@ void CMainApplication::RunMainLoop()
 	SDL_StopTextInput();
 }
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Processes a single VR event
-//-----------------------------------------------------------------------------
-void CMainApplication::ProcessVREvent(const vr::VREvent_t & event)
+void CMainApplication::checkForHits()
 {
-	if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-	{
-		processControllerEvent(event);
-		return;
-	}
+	Matrix4 currentCursorPose;
+	Matrix4 lastCursorPose;
+	float cursorRadius = m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose);
 
-	switch (event.eventType)
-	{
-	case vr::VREvent_TrackedDeviceActivated:
-	{
-		SetupRenderModelForTrackedDevice(event.trackedDeviceIndex);
-		dprintf("Device %u attached. Setting up render model.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceDeactivated:
-	{
-		dprintf("Device %u detached.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceUpdated:
-	{
-		dprintf("Device %u updated.\n", event.trackedDeviceIndex);
-	}
-	break;
-	default:
-		;//dprintf("Device %u uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
-	}
-}
-
-void CMainApplication::processControllerEvent(const vr::VREvent_t & event)
-{
-	vr::VRControllerState_t state;
-	if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
-		return;
-
-	switch (event.eventType)
-	{
-	case vr::VREvent_TrackedDeviceActivated:
-	{
-		SetupRenderModelForTrackedDevice(event.trackedDeviceIndex);
-		dprintf("Controller (device %u) attached. Setting up render model.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceDeactivated:
-	{
-		dprintf("Controller (device %u) detached.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceUpdated:
-	{
-		dprintf("Controller (device %u) updated.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_ButtonPress:
-	{
-		// TRIGGER DOWN
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			dprintf("Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
-		}
-
-		// MENU BUTTON DOWN
-		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
-		{
-			dprintf("Controller (device %u) menu button pressed.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD DOWN
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			dprintf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[vr::k_eControllerAxis_None].x
-				, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		// GRIP DOWN
-		if (event.data.controller.button == vr::k_EButton_Grip)
-		{
-			dprintf("Controller (device %u) grip pressed.\n", event.trackedDeviceIndex);
-			m_rbShowTrackedDeviceAxes[event.trackedDeviceIndex] = !m_rbShowTrackedDeviceAxes[event.trackedDeviceIndex];
-			m_pHMD->TriggerHapticPulse(event.trackedDeviceIndex, 0, 2000);
-		}		
-	}
-	break;
-	case vr::VREvent_ButtonUnpress:
-	{
-		// TRIGGER UP
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			dprintf("Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
-		}
-
-		// MENU BUTTON
-		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
-		{
-			dprintf("Controller (device %u) menu button unpressed.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD UP
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			dprintf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[vr::k_eControllerAxis_None].x
-				, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		// GRIP UP
-		if (event.data.controller.button == vr::k_EButton_Grip)
-		{
-			dprintf("Controller (device %u) grip unpressed.\n", event.trackedDeviceIndex);
-		}
-	}
-	break;
-	case vr::VREvent_ButtonTouch:
-	{
-		// TRIGGER TOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			dprintf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD TOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			dprintf("Controller (device %u) touchpad touched at initial position (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[0].x
-				, state.rAxis[0].y);
-			m_rbTrackedDeviceTouchpadTouched[event.trackedDeviceIndex] = true;
-			m_rvTrackedDeviceTouchpadInitialTouchPoint[event.trackedDeviceIndex] = Vector2(state.rAxis[0].x, state.rAxis[0].y);
-
-			// if cursor mode on, start modfication interactions
-			if (m_rbTrackedDeviceShowCursor[event.trackedDeviceIndex])
-			{
-				if (state.rAxis[0].y > 0.5f || state.rAxis[0].y < -0.5f)
-				{
-					m_rbTrackedDeviceCursorOffsetMode[event.trackedDeviceIndex] = true;
-					m_rfTrackedDeviceCursorOffsetModeInitialOffset[event.trackedDeviceIndex] = cursorOffsetAmount;
-				}
-				else
-				{
-					m_rbTrackedDeviceCursorRadiusResizeMode[event.trackedDeviceIndex] = true;
-					m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[event.trackedDeviceIndex] = cursorRadius;
-				}
-			}
-		}
-	}
-	break;
-	case vr::VREvent_ButtonUntouch:
-	{
-		// TRIGGER UNTOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			dprintf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD UNTOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			dprintf("Controller (device %u) touchpad untouched.\n", event.trackedDeviceIndex);
-			m_rbTrackedDeviceTouchpadTouched[event.trackedDeviceIndex] = false;
-			m_rvTrackedDeviceTouchpadInitialTouchPoint[event.trackedDeviceIndex] = Vector2(0.f, 0.f);
-			m_rbTrackedDeviceCursorOffsetMode[event.trackedDeviceIndex] = false;
-			m_rbTrackedDeviceCursorRadiusResizeMode[event.trackedDeviceIndex] = false;
-		}
-	}
-	break;
-	default:
-		dprintf("Controller (device %u) uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
-	}
-}
-
-void CMainApplication::updateControllerStates()
-{
-	// If controller is engaged in interaction, update interaction vars
-	for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-	{
-		if (m_pHMD->GetTrackedDeviceClass(unDevice) != vr::TrackedDeviceClass_Controller)
-			continue;
-
-		vr::VRControllerState_t state;
-		if (!m_pHMD->GetControllerState(unDevice, &state)) continue;
-		
-		// TOUCHPAD BEING TOUCHED
-		if (m_rbTrackedDeviceTouchpadTouched[unDevice])
-		{
-			dprintf("Controller (device %u) touchpad touch tracked at (%f, %f).\n"
-				, unDevice
-				, state.rAxis[0].x
-				, state.rAxis[0].y);
-
-			if(m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].equal(Vector2(0.f, 0.f), 0.000001))
-				m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice] = Vector2(state.rAxis[0].x, state.rAxis[0].y);
-
-			Vector2 initTouch = m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice];
-			
-			if (m_rbTrackedDeviceShowCursor)
-			{
-				// Cursor repositioning
-				if (m_rbTrackedDeviceCursorOffsetMode[unDevice])
-				{
-					float dy = state.rAxis[0].y - initTouch.y;
-
-					float range = cursorOffsetAmountMax - cursorOffsetAmountMin;
-
-					if (dy > 0.f)
-						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range * 0.5f;
-					else if (dy < 0.f)
-						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] + dy * range * 0.5f;
-					else if (dy == 0.f)
-						cursorOffsetAmount = m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice];
-
-					if (cursorOffsetAmount > cursorOffsetAmountMax)
-					{
-						cursorOffsetAmount = cursorOffsetAmountMax;
-						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMax;
-						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
-					}
-					else if (cursorOffsetAmount < cursorOffsetAmountMin)
-					{
-						cursorOffsetAmount = cursorOffsetAmountMin;
-						m_rfTrackedDeviceCursorOffsetModeInitialOffset[unDevice] = cursorOffsetAmountMin;
-						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].y = state.rAxis[0].y;
-					}
-				}
-
-				// Cursor resizing
-				if (m_rbTrackedDeviceCursorRadiusResizeMode[unDevice])
-				{
-					float dx = state.rAxis[0].x - initTouch.x;
-
-					float range = cursorRadiusMax - cursorRadiusMin;
-
-					if (dx > 0.f)
-						cursorRadius = m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] + dx * range;
-					else if (dx < 0.f)
-						cursorRadius = m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] + dx * range;
-					else if (dx == 0.f)
-						cursorRadius = m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice];
-
-					if (cursorRadius > cursorRadiusMax)
-					{
-						cursorRadius = cursorRadiusMax;
-						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMax;
-						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
-					}
-					else if (cursorRadius < cursorRadiusMin)
-					{
-						cursorRadius = cursorRadiusMin;
-						m_rfTrackedDeviceCursorRadiusResizeModeInitialRadius[unDevice] = cursorRadiusMin;
-						m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice].x = state.rAxis[0].x;
-					}
-				}
-			}
-		}
-
-		// TRIGGER INTERACTIONS
-		if (state.rAxis[1].x >= 0.05f) // lower limit is 5%
-		{
-			// TRIGGER ENGAGED
-			if(!m_rbTrackedDeviceTriggerEngaged[unDevice])
-			{
-				dprintf("Controller (device %u) trigger engaged).\n", unDevice);
-
-				m_rbTrackedDeviceTriggerEngaged[unDevice] = true;
-				//m_rbTrackedDeviceShowCursor[unDevice] = true;
-
-				if(m_rbTrackedDeviceTouchpadTouched[unDevice])
-					m_rvTrackedDeviceTouchpadInitialTouchPoint[unDevice] = Vector2(0.f, 0.f);
-			}
-
-			// TRIGGER BEING PULLED
-			if (!m_rbTrackedDeviceTriggerClicked[unDevice])
-			{
-				//dprintf("Controller (device %u) trigger at %f%%).\n"
-				//	, unDevice
-				//	, state.rAxis[1].x * 100.f);
-			}
-
-			// TRIGGER CLICKED
-			if (state.rAxis[1].x == 1.f && !m_rbTrackedDeviceTriggerClicked[unDevice])
-			{
-				dprintf("Controller (device %u) trigger clicked.\n", unDevice);
-				m_rbTrackedDeviceTriggerClicked[unDevice] = true;
-				m_rbTrackedDeviceCleaningMode[unDevice] = true;
-			}
-			// TRIGGER UNCLICKED
-			if (state.rAxis[1].x != 1.f && m_rbTrackedDeviceTriggerClicked[unDevice])
-			{
-				dprintf("Controller (device %u) trigger unclicked.\n", unDevice);
-				m_rbTrackedDeviceTriggerClicked[unDevice] = false;
-				m_rbTrackedDeviceCleaningMode[unDevice] = false;
-			}			
-		}
-		// TRIGGER DISENGAGED
-		else if(m_rbTrackedDeviceTriggerEngaged[unDevice])
-		{
-			dprintf("Controller (device %u) trigger disengaged).\n", unDevice);
-			m_rbTrackedDeviceTriggerEngaged[unDevice] = false;
-			//m_rbTrackedDeviceShowCursor[unDevice] = false;
-		}
-	}
-}
-
-void CMainApplication::checkForHits(vr::TrackedDeviceIndex_t id)
-{
-	Matrix4 & currentCursorPose = m_rmat4DeviceCursorCurrentPose[id];
-	Matrix4 & lastCursorPose = m_rmat4DeviceCursorLastPose[id];
+	
 
 	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-		m_pHMD->TriggerHapticPulse(id, 0, 2000);
+		m_pTDM->cleaningHit();
 }
 
 //-----------------------------------------------------------------------------
@@ -820,7 +409,6 @@ void CMainApplication::RenderFrame()
 	// for now as fast as possible
 	if (m_pHMD)
 	{
-		DrawControllers();
 		RenderStereoTargets();
 		RenderDistortion();
 
@@ -859,16 +447,7 @@ void CMainApplication::RenderFrame()
 		glFinish();
 	}
 
-	// Spew out the controller and pose count whenever they change.
-	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
-	{
-		m_iValidPoseCount_Last = m_iValidPoseCount;
-		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
-
-		dprintf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
-	}
-
-	UpdateHMDMatrixPose();
+	m_pTDM->postRenderUpdate();
 }
 
 
@@ -934,106 +513,8 @@ GLuint CMainApplication::CompileGLShader(const char *pchShaderName, const char *
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
 //-----------------------------------------------------------------------------
-bool CMainApplication::CreateAllShaders()
+bool CMainApplication::CreateLensShader()
 {
-	m_unSceneProgramID = CompileGLShader(
-		"Scene",
-
-		// Vertex Shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec2 v2UVcoordsIn;\n"
-		"layout(location = 2) in vec3 v3NormalIn;\n"
-		"out vec2 v2UVcoords;\n"
-		"void main()\n"
-		"{\n"
-		"	v2UVcoords = v2UVcoordsIn;\n"
-		"	gl_Position = matrix * position;\n"
-		"}\n",
-
-		// Fragment Shader
-		"#version 410 core\n"
-		"uniform sampler2D mytexture;\n"
-		"in vec2 v2UVcoords;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = texture(mytexture, v2UVcoords);\n"
-		"}\n"
-	);
-	m_nSceneMatrixLocation = glGetUniformLocation(m_unSceneProgramID, "matrix");
-	if (m_nSceneMatrixLocation == -1)
-	{
-		dprintf("Unable to find matrix uniform in scene shader\n");
-		return false;
-	}
-
-	m_unControllerTransformProgramID = CompileGLShader(
-		"Controller",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3ColorIn;\n"
-		"out vec4 v4Color;\n"
-		"void main()\n"
-		"{\n"
-		"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
-		"	gl_Position = matrix * position;\n"
-		"}\n",
-
-		// fragment shader
-		"#version 410\n"
-		"in vec4 v4Color;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = v4Color;\n"
-		"}\n"
-	);
-	m_nControllerMatrixLocation = glGetUniformLocation(m_unControllerTransformProgramID, "matrix");
-	if (m_nControllerMatrixLocation == -1)
-	{
-		dprintf("Unable to find matrix uniform in controller shader\n");
-		return false;
-	}
-
-	m_unRenderModelProgramID = CompileGLShader(
-		"render model",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3NormalIn;\n"
-		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
-		"out vec2 v2TexCoord;\n"
-		"void main()\n"
-		"{\n"
-		"	v2TexCoord = v2TexCoordsIn;\n"
-		"	gl_Position = matrix * vec4(position.xyz, 1);\n"
-		"}\n",
-
-		//fragment shader
-		"#version 410 core\n"
-		"uniform sampler2D diffuse;\n"
-		"in vec2 v2TexCoord;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = texture( diffuse, v2TexCoord);\n"
-		"}\n"
-
-	);
-	m_nRenderModelMatrixLocation = glGetUniformLocation(m_unRenderModelProgramID, "matrix");
-	if (m_nRenderModelMatrixLocation == -1)
-	{
-		dprintf("Unable to find matrix uniform in render model shader\n");
-		return false;
-	}
-
 	m_unLensProgramID = CompileGLShader(
 		"Distortion",
 
@@ -1079,377 +560,7 @@ bool CMainApplication::CreateAllShaders()
 	);
 
 
-	return m_unSceneProgramID != 0
-		&& m_unControllerTransformProgramID != 0
-		&& m_unRenderModelProgramID != 0
-		&& m_unLensProgramID != 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::SetupTexturemaps()
-{
-	std::string sExecutableDirectory = Path_StripFilename(Path_GetExecutablePath());
-	std::string strFullPath = Path_MakeAbsolute("cube_texture.png", sExecutableDirectory);
-
-	std::vector<unsigned char> imageRGBA;
-	unsigned nImageWidth, nImageHeight;
-	unsigned nError = lodepng::decode(imageRGBA, nImageWidth, nImageHeight, strFullPath.c_str());
-
-	if (nError != 0)
-		return false;
-
-	glGenTextures(1, &m_iTexture);
-	glBindTexture(GL_TEXTURE_2D, m_iTexture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nImageWidth, nImageHeight,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &imageRGBA[0]);
-
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	GLfloat fLargest;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return (m_iTexture != 0);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: create a sea of cubes
-//-----------------------------------------------------------------------------
-void CMainApplication::SetupScene()
-{
-	if (!m_pHMD)
-		return;
-
-	std::vector<float> vertdataarray;
-
-	Matrix4 matScale;
-	matScale.scale(m_fScale, m_fScale, m_fScale);
-	Matrix4 matTransform;
-	matTransform.translate(
-		-((float)m_iSceneVolumeWidth * m_fScaleSpacing) / 2.f,
-		-((float)m_iSceneVolumeHeight * m_fScaleSpacing) / 2.f,
-		-((float)m_iSceneVolumeDepth * m_fScaleSpacing) / 2.f);
-
-	Matrix4 mat = matScale * matTransform;
-
-	for (int z = 0; z< m_iSceneVolumeDepth; z++)
-	{
-		for (int y = 0; y< m_iSceneVolumeHeight; y++)
-		{
-			for (int x = 0; x< m_iSceneVolumeWidth; x++)
-			{
-				AddCubeToScene(mat, vertdataarray);
-				mat = mat * Matrix4().translate(m_fScaleSpacing, 0, 0);
-			}
-			mat = mat * Matrix4().translate(-((float)m_iSceneVolumeWidth) * m_fScaleSpacing, m_fScaleSpacing, 0);
-		}
-		mat = mat * Matrix4().translate(0, -((float)m_iSceneVolumeHeight) * m_fScaleSpacing, m_fScaleSpacing);
-	}
-	m_uiVertcount = vertdataarray.size() / 5;
-
-	glGenVertexArrays(1, &m_unSceneVAO);
-	glBindVertexArray(m_unSceneVAO);
-
-	glGenBuffers(1, &m_glSceneVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glSceneVertBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glSceneVertBuffer);
-
-	GLsizei stride = sizeof(VertexDataScene);
-	uintptr_t offset = 0;
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	offset += sizeof(Vector3);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	glBindVertexArray(0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::AddCubeVertex(float fl0, float fl1, float fl2, float fl3, float fl4, std::vector<float> &vertdata)
-{
-	vertdata.push_back(fl0);
-	vertdata.push_back(fl1);
-	vertdata.push_back(fl2);
-	vertdata.push_back(fl3);
-	vertdata.push_back(fl4);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::AddCubeToScene(Matrix4 mat, std::vector<float> &vertdata)
-{
-	// Matrix4 mat( outermat.data() );
-
-	Vector4 A = mat * Vector4(0, 0, 0, 1);
-	Vector4 B = mat * Vector4(1, 0, 0, 1);
-	Vector4 C = mat * Vector4(1, 1, 0, 1);
-	Vector4 D = mat * Vector4(0, 1, 0, 1);
-	Vector4 E = mat * Vector4(0, 0, 1, 1);
-	Vector4 F = mat * Vector4(1, 0, 1, 1);
-	Vector4 G = mat * Vector4(1, 1, 1, 1);
-	Vector4 H = mat * Vector4(0, 1, 1, 1);
-
-	// triangles instead of quads
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata); //Front
-	AddCubeVertex(F.x, F.y, F.z, 1, 1, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata);
-
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata); //Back
-	AddCubeVertex(A.x, A.y, A.z, 1, 1, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 0, 0, vertdata);
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata);
-
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata); //Top
-	AddCubeVertex(G.x, G.y, G.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata);
-
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Bottom
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
-
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Left
-	AddCubeVertex(E.x, E.y, E.z, 1, 1, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
-
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata); //Right
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 0, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Draw all of the controllers as X/Y/Z lines
-//-----------------------------------------------------------------------------
-void CMainApplication::DrawControllers()
-{
-	// don't draw controllers if somebody else has input focus
-	if (m_pHMD->IsInputFocusCapturedByAnotherProcess())
-		return;
-
-	std::vector<float> vertdataarray;
-
-	m_uiControllerVertcount = 0;
-	m_iTrackedControllerCount = 0;
-
-	for (vr::TrackedDeviceIndex_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; ++unTrackedDevice)
-	{
-		if (!m_pHMD->IsTrackedDeviceConnected(unTrackedDevice))
-			continue;
-
-		if (m_pHMD->GetTrackedDeviceClass(unTrackedDevice) != vr::TrackedDeviceClass_Controller)
-			continue;
-
-		m_iTrackedControllerCount += 1;
-
-		if (!m_rTrackedDevicePose[unTrackedDevice].bPoseIsValid)
-			continue;
-
-		const Matrix4 & mat = m_rmat4DevicePose[unTrackedDevice];
-
-		// Draw Axes
-		if(m_rbShowTrackedDeviceAxes[unTrackedDevice])
-		{
-			for (int i = 0; i < 3; ++i)
-			{
-				Vector3 color(0, 0, 0);
-				Vector4 center = mat * Vector4(0, 0, 0, 1);
-				Vector4 point(0, 0, 0, 1);
-				point[i] += 0.1f;  // offset in X, Y, Z
-				color[i] = 1.0;  // R, G, B
-				point = mat * point;
-				vertdataarray.push_back(center.x);
-				vertdataarray.push_back(center.y);
-				vertdataarray.push_back(center.z);
-
-				//printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
-
-				vertdataarray.push_back(color.x);
-				vertdataarray.push_back(color.y);
-				vertdataarray.push_back(color.z);
-
-				vertdataarray.push_back(point.x);
-				vertdataarray.push_back(point.y);
-				vertdataarray.push_back(point.z);
-
-				vertdataarray.push_back(color.x);
-				vertdataarray.push_back(color.y);
-				vertdataarray.push_back(color.z);
-
-				m_uiControllerVertcount += 2;
-			}
-		}
-
-		// Draw pointing line
-		//{
-		//	Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
-		//	Vector4 end = mat * Vector4(0, 0, -39.f, 1);
-		//	Vector3 color(.92f, .92f, .71f);
-
-		//	vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-		//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-		//	vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-		//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-		//	m_uiControllerVertcount += 2;
-		//}
-
-		Matrix4 & cursorMat = m_rmat4DeviceCursorCurrentPose[unTrackedDevice];
-
-		// Draw cursor hoop
-		if(m_rbTrackedDeviceShowCursor[unTrackedDevice])
-		{
-			GLuint num_segments = 64;
-			
-			Vector3 color;
-			if (m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-				color = Vector3(1.f, 0.f, 0.f);
-			else
-				color = Vector3(0.8f, 0.8f, 0.2f);
-
-			Vector4 prevVert = cursorMat * Vector4(cursorRadius, 0.f, 0.f, 1.f);
-			for (GLuint i = 1; i < num_segments; i++)
-			{
-				GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-				Vector4 circlePt;
-				circlePt.x = cursorRadius * cosf(theta);
-				circlePt.y = 0.f;
-				circlePt.z = cursorRadius * sinf(theta);
-				circlePt.w = 1.f;
-
-				Vector4 thisVert = cursorMat * circlePt;
-
-				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-				vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-				m_uiControllerVertcount += 2;
-
-				prevVert = thisVert;
-			}
-
-			// DISPLAY CURSOR DOT
-			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-			{
-				color = Vector3(1.f, 0.f, 0.f);
-				if (m_rbTrackedDeviceShowCursor[unTrackedDevice])
-				{
-					Vector4 thisCtrPos = cursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
-					Vector4 lastCtrPos = m_rmat4DeviceCursorLastPose[unTrackedDevice] * Vector4(0.f, 0.f, 0.f, 1.f);
-
-					vertdataarray.push_back(lastCtrPos.x);
-					vertdataarray.push_back(lastCtrPos.y);
-					vertdataarray.push_back(lastCtrPos.z);
-					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-					vertdataarray.push_back(thisCtrPos.x);
-					vertdataarray.push_back(thisCtrPos.y);
-					vertdataarray.push_back(thisCtrPos.z);
-					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-					m_uiControllerVertcount += 2;
-				}
-			}
-
-			// DISPLAY CONNECTING LINE TO CURSOR
-			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-			{
-				color = Vector3(1.f, 1.f, 1.f);
-				if (m_rbTrackedDeviceShowCursor[unTrackedDevice])
-				{
-					Vector4 controllerCtr = mat * Vector4(0.f, 0.f, 0.f, 1.f);
-					Vector4 cursorEdge = cursorMat * Vector4(0.f, 0.f, cursorRadius, 1.f);
-
-					vertdataarray.push_back(cursorEdge.x);
-					vertdataarray.push_back(cursorEdge.y);
-					vertdataarray.push_back(cursorEdge.z);
-					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-					vertdataarray.push_back(controllerCtr.x);
-					vertdataarray.push_back(controllerCtr.y);
-					vertdataarray.push_back(controllerCtr.z);
-					vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-					m_uiControllerVertcount += 2;
-				}
-			}
-		}
-	}
-
-	// Setup the VAO the first time through.
-	if (m_unControllerVAO == 0)
-	{
-		glGenVertexArrays(1, &m_unControllerVAO);
-		glBindVertexArray(m_unControllerVAO);
-
-		glGenBuffers(1, &m_glControllerVertBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-		GLuint stride = 2 * 3 * sizeof(float);
-		GLuint offset = 0;
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-		offset += sizeof(Vector3);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-		glBindVertexArray(0);
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-	// set vertex data if we have some
-	if (vertdataarray.size() > 0)
-	{
-		//$ TODO: Use glBufferSubData for this...
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
-	}
+	return m_unLensProgramID != 0;
 }
 
 
@@ -1713,73 +824,20 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-
-	/*if (m_bShowCubes)
-	{
-		glUseProgram(m_unSceneProgramID);
-		glUniformMatrix4fv(m_nSceneMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-		glBindVertexArray(m_unSceneVAO);
-		glBindTexture(GL_TEXTURE_2D, m_iTexture);
-		glDrawArrays(GL_TRIANGLES, 0, m_uiVertcount);
-		glBindVertexArray(0);
-	}*/
-
 	
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
 	{
-		// draw the controller axis lines
-		glUseProgram(m_unControllerTransformProgramID);
-		glUniformMatrix4fv(m_nControllerMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-		glBindVertexArray(m_unControllerVAO);
-		glDrawArrays(GL_LINES, 0, m_uiControllerVertcount);
-		glBindVertexArray(0);
+		m_pTDM->renderTrackedDevices(GetCurrentViewProjectionMatrix(nEye));
 	}
-
 	
-
-	// ----- Render Model rendering -----
-	glUseProgram(m_unRenderModelProgramID);
-
-	for (uint32_t unTrackedDevice = 0; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
-	{
-		if (!m_rTrackedDeviceToRenderModel[unTrackedDevice] || !m_rbShowTrackedDevice[unTrackedDevice])
-			continue;
-
-		const vr::TrackedDevicePose_t & pose = m_rTrackedDevicePose[unTrackedDevice];
-		if (!pose.bPoseIsValid)
-			continue;
-
-		if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
-			continue;
-
-		const Matrix4 & matDeviceToTracking = m_rmat4DevicePose[unTrackedDevice];
-		Matrix4 matMVP = GetCurrentViewProjectionMatrix(nEye) * matDeviceToTracking;
-		glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
-
-		m_rTrackedDeviceToRenderModel[unTrackedDevice]->Draw();
-	}
-
-	glUseProgram(0);
-
 	glMatrixMode(GL_PROJECTION);
 	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
 	glLoadMatrixf(thisEyesProjectionMatrix.get());
 	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	//this didn't work either:
-	//for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-	//{
-	//	if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
-	//	{
-	//		if (m_rDevClassChar[nDevice] == 'H') //find HMD
-	//		{
-	//			glLoadMatrixf(m_rmat4DevicePose[nDevice].get());
-	//		}
-	//	}
-	//}
+	glLoadIdentity();	
+
 	cleaningRoom->draw();
 
 }
@@ -1864,195 +922,12 @@ Matrix4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 	Matrix4 matMVP;
 	if (nEye == vr::Eye_Left)
 	{
-		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_mat4HMDPose;
+		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_pTDM->getHMDPose();
 	}
 	else if (nEye == vr::Eye_Right)
 	{
-		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_mat4HMDPose;
+		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_pTDM->getHMDPose();
 	}
 
 	return matMVP;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::UpdateHMDMatrixPose()
-{
-	if (!m_pHMD)
-		return;
-
-	vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
-
-	m_iValidPoseCount = 0;
-	m_strPoseClasses = "";
-	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-	{
-		if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
-		{
-			m_iValidPoseCount++;
-			m_rmat4DevicePose[nDevice] = ConvertSteamVRMatrixToMatrix4(m_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking);
-			m_rmat4DeviceCursorLastPose[nDevice] = m_rmat4DeviceCursorCurrentPose[nDevice];
-			m_rmat4DeviceCursorCurrentPose[nDevice] = m_rmat4DevicePose[nDevice] * (Matrix4().identity()).translate(
-				Vector3(cursorOffsetDirection.x, cursorOffsetDirection.y, cursorOffsetDirection.z) * cursorOffsetAmount);
-
-			if (m_rDevClassChar[nDevice] == 0)
-			{
-				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
-				{
-				case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
-				case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
-				case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
-				case vr::TrackedDeviceClass_Other:             m_rDevClassChar[nDevice] = 'O'; break;
-				case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
-				default:                                       m_rDevClassChar[nDevice] = '?'; break;
-				}
-			}
-			m_strPoseClasses += m_rDevClassChar[nDevice];
-		}
-	}
-
-	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
-	{
-		m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd].invert();
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Finds a render model we've already loaded or loads a new one
-//-----------------------------------------------------------------------------
-CGLRenderModel *CMainApplication::FindOrLoadRenderModel(const char *pchRenderModelName)
-{
-	CGLRenderModel *pRenderModel = NULL;
-	for (std::vector< CGLRenderModel * >::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
-	{
-		if (!stricmp((*i)->GetName().c_str(), pchRenderModelName))
-		{
-			pRenderModel = *i;
-			break;
-		}
-	}
-
-	// load the model if we didn't find one
-	if( !pRenderModel )
-	{
-		vr::RenderModel_t *pModel;
-		vr::EVRRenderModelError error;
-		while ( 1 )
-		{
-			error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName, &pModel );
-			if ( error != vr::VRRenderModelError_Loading )
-				break;
-
-			::Sleep( 1 );
-		}
-
-		if ( error != vr::VRRenderModelError_None )
-		{
-			dprintf( "Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum( error ) );
-			return NULL; // move on to the next tracked device
-		}
-
-		vr::RenderModel_TextureMap_t *pTexture;
-		while ( 1 )
-		{
-			error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
-			if ( error != vr::VRRenderModelError_Loading )
-				break;
-
-			::Sleep( 1 );
-		}
-
-		if ( error != vr::VRRenderModelError_None )
-		{
-			dprintf( "Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName );
-			vr::VRRenderModels()->FreeRenderModel( pModel );
-			return NULL; // move on to the next tracked device
-		}
-
-		pRenderModel = new CGLRenderModel( pchRenderModelName );
-		if ( !pRenderModel->BInit( *pModel, *pTexture ) )
-		{
-			dprintf( "Unable to create GL model from render model %s\n", pchRenderModelName );
-			delete pRenderModel;
-			pRenderModel = NULL;
-		}
-		else
-		{
-			m_vecRenderModels.push_back( pRenderModel );
-		}
-		vr::VRRenderModels()->FreeRenderModel( pModel );
-		vr::VRRenderModels()->FreeTexture( pTexture );
-	}
-	return pRenderModel;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Create/destroy GL a Render Model for a single tracked device
-//-----------------------------------------------------------------------------
-void CMainApplication::SetupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-{
-	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
-		return;
-
-	// try to find a model we've already set up
-	std::string sRenderModelName = GetTrackedDeviceString(m_pHMD, unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
-	CGLRenderModel *pRenderModel = FindOrLoadRenderModel(sRenderModelName.c_str());
-	if (!pRenderModel)
-	{
-		std::string sTrackingSystemName = GetTrackedDeviceString(m_pHMD, unTrackedDeviceIndex, vr::Prop_TrackingSystemName_String);
-		dprintf("Unable to load render model for tracked device %d (%s.%s)", unTrackedDeviceIndex, sTrackingSystemName.c_str(), sRenderModelName.c_str());
-	}
-	else
-	{
-		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
-		m_rbShowTrackedDevice[unTrackedDeviceIndex] = true;
-		m_rbShowTrackedDeviceAxes[unTrackedDeviceIndex] = false; 
-		m_rbTrackedDeviceShowCursor[unTrackedDeviceIndex] = true;
-		m_rbTrackedDeviceCleaningMode[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceTriggerEngaged[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceTriggerClicked[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceTouchpadTouched[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceCursorRadiusResizeMode[unTrackedDeviceIndex] = false;
-		m_rbTrackedDeviceCursorOffsetMode[unTrackedDeviceIndex] = false;
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Create/destroy GL Render Models
-//-----------------------------------------------------------------------------
-void CMainApplication::SetupRenderModels()
-{
-	memset(m_rTrackedDeviceToRenderModel, 0, sizeof(m_rTrackedDeviceToRenderModel));
-
-	if (!m_pHMD)
-		return;
-
-	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
-	{
-		if (!m_pHMD->IsTrackedDeviceConnected(unTrackedDevice))
-			continue;
-
-		SetupRenderModelForTrackedDevice(unTrackedDevice);
-	}
-
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Converts a SteamVR matrix to our local matrix class
-//-----------------------------------------------------------------------------
-Matrix4 CMainApplication::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose)
-{
-	Matrix4 matrixObj(
-		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
-		matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
-		matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
-		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
-	);
-	return matrixObj;
 }
