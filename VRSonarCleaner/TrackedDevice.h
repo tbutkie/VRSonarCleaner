@@ -52,7 +52,6 @@ public:
 private:
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	bool createShader();
-	GLuint CompileGLShader(const char *pchShaderName, const char *pchVertexShader, const char *pchFragmentShader);
 
 	vr::TrackedDeviceIndex_t id;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;

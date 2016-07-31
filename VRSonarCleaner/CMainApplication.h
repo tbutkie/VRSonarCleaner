@@ -51,7 +51,6 @@ public:
 	Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
 	Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye);
 
-	GLuint CompileGLShader(const char *pchShaderName, const char *pchVertexShader, const char *pchFragmentShader);
 	bool CreateLensShader();
 
 	void checkForHits();

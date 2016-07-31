@@ -193,6 +193,7 @@
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="DataVolume.h" />
+    <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
     <ClInclude Include="MatrixUtils.h" />

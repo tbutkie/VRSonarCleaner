@@ -33,7 +33,6 @@ private:
 	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 	void setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	bool createShaders();
-	GLuint CompileGLShader(const char *pchShaderName, const char *pchVertexShader, const char *pchFragmentShader);
 	void renderDeviceModels(Matrix4 & matVP);
 	
 	std::string getTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
