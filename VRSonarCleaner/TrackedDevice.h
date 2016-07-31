@@ -15,11 +15,10 @@ public:
 	TrackedDevice(vr::TrackedDeviceIndex_t id);
 	~TrackedDevice();
 
-	bool BInit();
-
-
 	vr::TrackedDeviceIndex_t getIndex();
 	void setRenderModel(CGLRenderModel *renderModel);
+
+	void prepareForRendering();
 
 	bool toggleAxes();
 	bool axesActive();
@@ -48,9 +47,12 @@ public:
 	float getCursorRadius();
 	
 	void renderModel();
+	void render(Matrix4 & matVP);
 
 private:
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	bool createShader();
+	GLuint CompileGLShader(const char *pchShaderName, const char *pchVertexShader, const char *pchFragmentShader);
 
 	vr::TrackedDeviceIndex_t id;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;
@@ -62,6 +64,12 @@ private:
 	Matrix4 m_mat4Pose;
 	Matrix4 m_mat4CursorCurrentPose;
 	Matrix4 m_mat4CursorLastPose;
+	
+	GLuint m_glControllerVertBuffer;
+	GLuint m_unControllerVAO;
+	unsigned int m_uiControllerVertcount;
+	GLuint m_unControllerTransformProgramID;
+	GLint m_nControllerMatrixLocation;
 	
 	bool m_bShow;
 	bool m_bShowAxes;

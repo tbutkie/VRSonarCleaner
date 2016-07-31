@@ -6,6 +6,11 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	: id(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_ClassChar(0)
+	, m_unControllerTransformProgramID(0)
+	, m_glControllerVertBuffer(0)
+	, m_uiControllerVertcount(0)
+	, m_unControllerVAO(0)
+	, m_nControllerMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
 	, m_bShowCursor(true)
@@ -26,16 +31,21 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 {	
 	m_fCursorRadiusResizeModeInitialRadius = cursorRadius;
 	m_fCursorOffsetModeInitialOffset = cursorOffsetAmount;
+
+	createShader();
 }
 
 
 TrackedDevice::~TrackedDevice()
 {
-}
-
-bool TrackedDevice::BInit()
-{
-	return false;
+	if (m_unControllerVAO != 0)
+	{
+		glDeleteVertexArrays(1, &m_unControllerVAO);
+	}
+	if (m_unControllerTransformProgramID)
+	{
+		glDeleteProgram(m_unControllerTransformProgramID);
+	}
 }
 
 vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
@@ -47,6 +57,277 @@ void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 {
 	m_pTrackedDeviceToRenderModel = renderModel;
 }
+
+bool TrackedDevice::createShader()
+{
+	m_unControllerTransformProgramID = CompileGLShader(
+		"Controller",
+
+		// vertex shader
+		"#version 410\n"
+		"uniform mat4 matrix;\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec3 v3ColorIn;\n"
+		"out vec4 v4Color;\n"
+		"void main()\n"
+		"{\n"
+		"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
+		"	gl_Position = matrix * position;\n"
+		"}\n",
+
+		// fragment shader
+		"#version 410\n"
+		"in vec4 v4Color;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"   outputColor = v4Color;\n"
+		"}\n"
+	);
+	m_nControllerMatrixLocation = glGetUniformLocation(m_unControllerTransformProgramID, "matrix");
+	if (m_nControllerMatrixLocation == -1)
+	{
+		printf("Unable to find matrix uniform in controller shader\n");
+		return false;
+	}
+
+	return m_unControllerTransformProgramID != 0;
+}
+
+GLuint TrackedDevice::CompileGLShader(const char *pchShaderName, const char *pchVertexShader, const char *pchFragmentShader)
+{
+	GLuint unProgramID = glCreateProgram();
+
+	GLuint nSceneVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(nSceneVertexShader, 1, &pchVertexShader, NULL);
+	glCompileShader(nSceneVertexShader);
+
+	GLint vShaderCompiled = GL_FALSE;
+	glGetShaderiv(nSceneVertexShader, GL_COMPILE_STATUS, &vShaderCompiled);
+	if (vShaderCompiled != GL_TRUE)
+	{
+		printf("%s - Unable to compile vertex shader %d!\n", pchShaderName, nSceneVertexShader);
+		glDeleteProgram(unProgramID);
+		glDeleteShader(nSceneVertexShader);
+		return 0;
+	}
+	glAttachShader(unProgramID, nSceneVertexShader);
+	glDeleteShader(nSceneVertexShader); // the program hangs onto this once it's attached
+
+	GLuint  nSceneFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(nSceneFragmentShader, 1, &pchFragmentShader, NULL);
+	glCompileShader(nSceneFragmentShader);
+
+	GLint fShaderCompiled = GL_FALSE;
+	glGetShaderiv(nSceneFragmentShader, GL_COMPILE_STATUS, &fShaderCompiled);
+	if (fShaderCompiled != GL_TRUE)
+	{
+		printf("%s - Unable to compile fragment shader %d!\n", pchShaderName, nSceneFragmentShader);
+		glDeleteProgram(unProgramID);
+		glDeleteShader(nSceneFragmentShader);
+		return 0;
+	}
+
+	glAttachShader(unProgramID, nSceneFragmentShader);
+	glDeleteShader(nSceneFragmentShader); // the program hangs onto this once it's attached
+
+	glLinkProgram(unProgramID);
+
+	GLint programSuccess = GL_TRUE;
+	glGetProgramiv(unProgramID, GL_LINK_STATUS, &programSuccess);
+	if (programSuccess != GL_TRUE)
+	{
+		printf("%s - Error linking program %d!\n", pchShaderName, unProgramID);
+		glDeleteProgram(unProgramID);
+		return 0;
+	}
+
+	glUseProgram(unProgramID);
+	glUseProgram(0);
+
+	return unProgramID;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Draw all of the controllers as X/Y/Z lines
+//-----------------------------------------------------------------------------
+void TrackedDevice::prepareForRendering()
+{
+	std::vector<float> vertdataarray;
+
+	m_uiControllerVertcount = 0;
+
+	if (!poseValid())
+		return;
+
+	const Matrix4 & mat = getPose();
+
+	// Draw Axes
+	if (axesActive())
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			Vector3 color(0, 0, 0);
+			Vector4 center = mat * Vector4(0, 0, 0, 1);
+			Vector4 point(0, 0, 0, 1);
+			point[i] += 0.1f;  // offset in X, Y, Z
+			color[i] = 1.0;  // R, G, B
+			point = mat * point;
+			vertdataarray.push_back(center.x);
+			vertdataarray.push_back(center.y);
+			vertdataarray.push_back(center.z);
+
+			//printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
+
+			vertdataarray.push_back(color.x);
+			vertdataarray.push_back(color.y);
+			vertdataarray.push_back(color.z);
+
+			vertdataarray.push_back(point.x);
+			vertdataarray.push_back(point.y);
+			vertdataarray.push_back(point.z);
+
+			vertdataarray.push_back(color.x);
+			vertdataarray.push_back(color.y);
+			vertdataarray.push_back(color.z);
+
+			m_uiControllerVertcount += 2;
+		}
+	}
+
+	// Draw pointing line
+	//{
+	//	Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
+	//	Vector4 end = mat * Vector4(0, 0, -39.f, 1);
+	//	Vector3 color(.92f, .92f, .71f);
+
+	//	vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
+	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+	//	vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
+	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+	//	m_uiControllerVertcount += 2;
+	//}
+
+	Matrix4 cursorMat, lastCursorMat;
+	getCursorPoses(&cursorMat, &lastCursorMat);
+	float cursorRadius = getCursorRadius();
+
+	// Draw cursor hoop
+	if (cursorActive())
+	{
+		GLuint num_segments = 64;
+
+		Vector3 color;
+		if (cleaningActive())
+			color = Vector3(1.f, 0.f, 0.f);
+		else
+			color = Vector3(0.8f, 0.8f, 0.2f);
+
+		Vector4 prevVert = cursorMat * Vector4(cursorRadius, 0.f, 0.f, 1.f);
+		for (GLuint i = 1; i < num_segments; i++)
+		{
+			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+
+			Vector4 circlePt;
+			circlePt.x = cursorRadius * cosf(theta);
+			circlePt.y = 0.f;
+			circlePt.z = cursorRadius * sinf(theta);
+			circlePt.w = 1.f;
+
+			Vector4 thisVert = cursorMat * circlePt;
+
+			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			m_uiControllerVertcount += 2;
+
+			prevVert = thisVert;
+		}
+
+		// DISPLAY CURSOR DOT
+		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
+		{
+			color = Vector3(1.f, 0.f, 0.f);
+			if (cursorActive())
+			{
+				Vector4 thisCtrPos = cursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 lastCtrPos = lastCursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
+
+				vertdataarray.push_back(lastCtrPos.x);
+				vertdataarray.push_back(lastCtrPos.y);
+				vertdataarray.push_back(lastCtrPos.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				vertdataarray.push_back(thisCtrPos.x);
+				vertdataarray.push_back(thisCtrPos.y);
+				vertdataarray.push_back(thisCtrPos.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				m_uiControllerVertcount += 2;
+			}
+		}
+
+		// DISPLAY CONNECTING LINE TO CURSOR
+		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
+		{
+			color = Vector3(1.f, 1.f, 1.f);
+			if (cursorActive())
+			{
+				Vector4 controllerCtr = mat * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 cursorEdge = cursorMat * Vector4(0.f, 0.f, cursorRadius, 1.f);
+
+				vertdataarray.push_back(cursorEdge.x);
+				vertdataarray.push_back(cursorEdge.y);
+				vertdataarray.push_back(cursorEdge.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				vertdataarray.push_back(controllerCtr.x);
+				vertdataarray.push_back(controllerCtr.y);
+				vertdataarray.push_back(controllerCtr.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				m_uiControllerVertcount += 2;
+			}
+		}
+	
+	}
+
+	// Setup the VAO the first time through.
+	if (m_unControllerVAO == 0)
+	{
+		glGenVertexArrays(1, &m_unControllerVAO);
+		glBindVertexArray(m_unControllerVAO);
+
+		glGenBuffers(1, &m_glControllerVertBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+
+		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint offset = 0;
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+
+		offset += sizeof(Vector3);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+
+		glBindVertexArray(0);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+
+	// set vertex data if we have some
+	if (vertdataarray.size() > 0)
+	{
+		//$ TODO: Use glBufferSubData for this...
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
+	}
+}
+
 
 bool TrackedDevice::toggleAxes()
 {
@@ -385,6 +666,16 @@ void TrackedDevice::renderModel()
 {
 	if(m_pTrackedDeviceToRenderModel)
 		m_pTrackedDeviceToRenderModel->Draw();
+}
+
+void TrackedDevice::render(Matrix4 & matVP)
+{
+	// draw the controller axis lines
+	glUseProgram(m_unControllerTransformProgramID);
+	glUniformMatrix4fv(m_nControllerMatrixLocation, 1, GL_FALSE, matVP.get());
+	glBindVertexArray(m_unControllerVAO);
+	glDrawArrays(GL_LINES, 0, m_uiControllerVertcount);
+	glBindVertexArray(0);
 }
 
 //-----------------------------------------------------------------------------
