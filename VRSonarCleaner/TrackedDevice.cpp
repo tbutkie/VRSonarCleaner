@@ -6,6 +6,16 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	: id(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_ClassChar(0)
+	, m_bShow(true)
+	, m_bShowAxes(false)
+	, m_bShowCursor(true)
+	, m_bCleaningMode(false)
+	, m_bTouchpadTouched(false)
+	, m_vTouchpadInitialTouchPoint(Vector2(0.f, 0.f))
+	, m_bTriggerEngaged(false)
+	, m_bTriggerClicked(false)
+	, m_bCursorRadiusResizeMode(false)
+	, m_bCursorOffsetMode(false)
 	, cursorRadius(0.05f)
 	, cursorRadiusMin(0.005f)
 	, cursorRadiusMax(0.1f)
@@ -14,6 +24,8 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	, cursorOffsetAmountMin(0.1f)
 	, cursorOffsetAmountMax(1.5f)
 {	
+	m_fCursorRadiusResizeModeInitialRadius = cursorRadius;
+	m_fCursorOffsetModeInitialOffset = cursorOffsetAmount;
 }
 
 

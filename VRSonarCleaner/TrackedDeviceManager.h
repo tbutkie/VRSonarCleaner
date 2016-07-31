@@ -20,7 +20,7 @@ public:
 	void processControllerEvent(const vr::VREvent_t & event);
 	void updateControllerStates();
 
-	float getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
+	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
 	void cleaningHit();
 
 	void prepareControllersForRendering();
@@ -44,6 +44,7 @@ private:
 	vr::IVRSystem *m_pHMD;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
+	TrackedDevice* editingController;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;

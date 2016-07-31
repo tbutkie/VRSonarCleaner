@@ -2,6 +2,7 @@
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
+, editingController(NULL)
 , m_unControllerTransformProgramID(0)
 , m_unRenderModelProgramID(0)
 , m_iTrackedControllerCount(0)
@@ -69,32 +70,27 @@ void TrackedDeviceManager::handleEvents()
 //-----------------------------------------------------------------------------
 void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 {
-	if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-	{
-		processControllerEvent(event);
-		return;
-	}
-
-	switch (event.eventType)
-	{
-	case vr::VREvent_TrackedDeviceActivated:
+	if (event.eventType == vr::VREvent_TrackedDeviceActivated)
 	{
 		setupRenderModelForTrackedDevice(event.trackedDeviceIndex);
 		printf("Device %u attached. Setting up render model.\n", event.trackedDeviceIndex);
 	}
-	break;
-	case vr::VREvent_TrackedDeviceDeactivated:
+	else if (event.eventType == vr::VREvent_TrackedDeviceDeactivated)
 	{
 		printf("Device %u detached.\n", event.trackedDeviceIndex);
 	}
-	break;
-	case vr::VREvent_TrackedDeviceUpdated:
+	else if (event.eventType == vr::VREvent_TrackedDeviceUpdated)
 	{
 		printf("Device %u updated.\n", event.trackedDeviceIndex);
 	}
-	break;
-	default:
-		;//dprintf("Device %u uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
+	else if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
+	{
+		processControllerEvent(event);
+		return;		
+	}
+	else
+	{
+		; // This is where uncaught events go for now
 	}
 }
 
@@ -106,22 +102,6 @@ void TrackedDeviceManager::processControllerEvent(const vr::VREvent_t & event)
 
 	switch (event.eventType)
 	{
-	case vr::VREvent_TrackedDeviceActivated:
-	{
-		setupRenderModelForTrackedDevice(event.trackedDeviceIndex);
-		printf("Controller (device %u) attached. Setting up render model.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceDeactivated:
-	{
-		printf("Controller (device %u) detached.\n", event.trackedDeviceIndex);
-	}
-	break;
-	case vr::VREvent_TrackedDeviceUpdated:
-	{
-		printf("Controller (device %u) updated.\n", event.trackedDeviceIndex);
-	}
-	break;
 	case vr::VREvent_ButtonPress:
 	{
 		// TRIGGER DOWN
@@ -239,32 +219,26 @@ void TrackedDeviceManager::updateControllerStates()
 	}
 }
 
-float TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius)
+bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius)
 {
-	float cursorRadius;
-	bool cleaningModeActive;
-	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
+	if (!editingController) return false;
+
+	float cursorRadius = 0.f;
+	bool cleaningModeActive = false;
+
+	if (editingController->poseValid())
 	{
-		if (m_rpTrackedDevices[nDevice]->poseValid() && m_rpTrackedDevices[nDevice]->getClassChar() == 'C')
-		{
-			m_rpTrackedDevices[nDevice]->getCursorPoses(thisCursorPose, lastCursorPose);
-			*radius = m_rpTrackedDevices[nDevice]->getCursorRadius();
-			cleaningModeActive = m_rpTrackedDevices[nDevice]->cleaningActive();
-			break;			
-		}
+		editingController->getCursorPoses(thisCursorPose, lastCursorPose);
+		*radius = editingController->getCursorRadius();
+		cleaningModeActive = editingController->cleaningActive();
 	}
+
 	return cleaningModeActive;
 }
 
 void TrackedDeviceManager::cleaningHit()
 {
-	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-	{
-		if (m_pHMD->GetTrackedDeviceClass(nDevice) == vr::TrackedDeviceClass_Controller)
-		{
-			m_pHMD->TriggerHapticPulse(nDevice, 0, 2000);
-		}
-	}
+	m_pHMD->TriggerHapticPulse(editingController->getIndex(), 0, 2000); 
 }
 
 //-----------------------------------------------------------------------------
@@ -364,6 +338,9 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 {
 	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
 		return;
+
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller && !editingController)
+		editingController = m_rpTrackedDevices[unTrackedDeviceIndex];
 
 	// try to find a model we've already set up
 	std::string sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
