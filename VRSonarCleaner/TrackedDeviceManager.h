@@ -17,7 +17,6 @@ public:
 	void handleEvents();
 
 	void processVREvent(const vr::VREvent_t & event);
-	void processControllerEvent(const vr::VREvent_t & event);
 	void updateControllerStates();
 
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);

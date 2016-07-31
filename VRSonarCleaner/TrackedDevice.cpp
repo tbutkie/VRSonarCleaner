@@ -235,6 +235,113 @@ void TrackedDevice::updateState(vr::VRControllerState_t *state)
 	}
 }
 
+void TrackedDevice::processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state)
+{
+
+
+	switch (event.eventType)
+	{
+	case vr::VREvent_ButtonPress:
+	{
+		// TRIGGER DOWN
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+		{
+			printf("Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
+		}
+
+		// MENU BUTTON DOWN
+		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
+		{
+			printf("Controller (device %u) menu button pressed.\n", event.trackedDeviceIndex);
+		}
+
+		// TOUCHPAD DOWN
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+		{
+			printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
+				, event.trackedDeviceIndex
+				, state.rAxis[vr::k_eControllerAxis_None].x
+				, state.rAxis[vr::k_eControllerAxis_None].y);
+		}
+
+		// GRIP DOWN
+		if (event.data.controller.button == vr::k_EButton_Grip)
+		{
+			printf("Controller (device %u) grip pressed.\n", event.trackedDeviceIndex);
+			toggleAxes();			
+		}
+	}
+	break;
+	case vr::VREvent_ButtonUnpress:
+	{
+		// TRIGGER UP
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+		{
+			printf("Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
+		}
+
+		// MENU BUTTON
+		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
+		{
+			printf("Controller (device %u) menu button unpressed.\n", event.trackedDeviceIndex);
+		}
+
+		// TOUCHPAD UP
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+		{
+			printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
+				, event.trackedDeviceIndex
+				, state.rAxis[vr::k_eControllerAxis_None].x
+				, state.rAxis[vr::k_eControllerAxis_None].y);
+		}
+
+		// GRIP UP
+		if (event.data.controller.button == vr::k_EButton_Grip)
+		{
+			printf("Controller (device %u) grip unpressed.\n", event.trackedDeviceIndex);
+		}
+	}
+	break;
+	case vr::VREvent_ButtonTouch:
+	{
+		// TRIGGER TOUCH
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+		{
+			printf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
+		}
+
+		// TOUCHPAD TOUCH
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+		{
+			printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n"
+				, event.trackedDeviceIndex
+				, state.rAxis[0].x
+				, state.rAxis[0].y);
+			touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
+		}
+	}
+	break;
+	case vr::VREvent_ButtonUntouch:
+	{
+		// TRIGGER UNTOUCH
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
+		{
+			printf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
+		}
+
+		// TOUCHPAD UNTOUCH
+		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
+		{
+			printf("Controller (device %u) touchpad untouched.\n", event.trackedDeviceIndex);
+			touchpadUntouched();
+		}
+	}
+	break;
+	default:
+		printf("Controller (device %u) uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
+	}
+}
+
 char TrackedDevice::getClassChar()
 {
 	return m_ClassChar;

@@ -37,6 +37,7 @@ public:
 	bool poseValid();
 
 	void updateState(vr::VRControllerState_t *state);
+	void processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state);
 
 	char getClassChar();
 	void setClassChar(char classChar);

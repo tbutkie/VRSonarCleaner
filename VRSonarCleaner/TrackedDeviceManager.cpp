@@ -85,122 +85,16 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 	}
 	else if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
-		processControllerEvent(event);
+		vr::VRControllerState_t state;
+		if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
+			return;
+
+		m_rpTrackedDevices[event.trackedDeviceIndex]->processControllerEvent(event, state);
 		return;		
 	}
 	else
 	{
 		; // This is where uncaught events go for now
-	}
-}
-
-void TrackedDeviceManager::processControllerEvent(const vr::VREvent_t & event)
-{
-	vr::VRControllerState_t state;
-	if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
-		return;
-
-	switch (event.eventType)
-	{
-	case vr::VREvent_ButtonPress:
-	{
-		// TRIGGER DOWN
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			printf("Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
-		}
-
-		// MENU BUTTON DOWN
-		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
-		{
-			printf("Controller (device %u) menu button pressed.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD DOWN
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[vr::k_eControllerAxis_None].x
-				, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		// GRIP DOWN
-		if (event.data.controller.button == vr::k_EButton_Grip)
-		{
-			printf("Controller (device %u) grip pressed.\n", event.trackedDeviceIndex);
-			m_rpTrackedDevices[event.trackedDeviceIndex]->toggleAxes();
-			m_pHMD->TriggerHapticPulse(event.trackedDeviceIndex, 0, 2000);
-		}
-	}
-	break;
-	case vr::VREvent_ButtonUnpress:
-	{
-		// TRIGGER UP
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			printf("Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
-		}
-
-		// MENU BUTTON
-		if (event.data.controller.button == vr::k_EButton_ApplicationMenu)
-		{
-			printf("Controller (device %u) menu button unpressed.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD UP
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[vr::k_eControllerAxis_None].x
-				, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		// GRIP UP
-		if (event.data.controller.button == vr::k_EButton_Grip)
-		{
-			printf("Controller (device %u) grip unpressed.\n", event.trackedDeviceIndex);
-		}
-	}
-	break;
-	case vr::VREvent_ButtonTouch:
-	{
-		// TRIGGER TOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			printf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD TOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n"
-				, event.trackedDeviceIndex
-				, state.rAxis[0].x
-				, state.rAxis[0].y);
-			m_rpTrackedDevices[event.trackedDeviceIndex]->touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
-		}
-	}
-	break;
-	case vr::VREvent_ButtonUntouch:
-	{
-		// TRIGGER UNTOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Trigger)
-		{
-			printf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
-		}
-
-		// TOUCHPAD UNTOUCH
-		if (event.data.controller.button == vr::k_EButton_SteamVR_Touchpad)
-		{
-			printf("Controller (device %u) touchpad untouched.\n", event.trackedDeviceIndex);
-			m_rpTrackedDevices[event.trackedDeviceIndex]->touchpadUntouched();
-		}
-	}
-	break;
-	default:
-		printf("Controller (device %u) uncaught event %u.\n", event.trackedDeviceIndex, event.eventType);
 	}
 }
 
@@ -455,16 +349,16 @@ void TrackedDeviceManager::prepareControllersForRendering()
 		//}
 
 		Matrix4 cursorMat, lastCursorMat;
-		m_rpTrackedDevices[unTrackedDevice]->getCursorPoses(&cursorMat, &lastCursorMat);
-		float cursorRadius = m_rpTrackedDevices[unTrackedDevice]->getCursorRadius();
+		editingController->getCursorPoses(&cursorMat, &lastCursorMat);
+		float cursorRadius = editingController->getCursorRadius();
 
 		// Draw cursor hoop
-		if (m_rpTrackedDevices[unTrackedDevice]->cursorActive())
+		if (editingController->cursorActive())
 		{
 			GLuint num_segments = 64;
 
 			Vector3 color;
-			if (m_rpTrackedDevices[unTrackedDevice]->cleaningActive())
+			if (editingController->cleaningActive())
 				color = Vector3(1.f, 0.f, 0.f);
 			else
 				color = Vector3(0.8f, 0.8f, 0.2f);
@@ -497,7 +391,7 @@ void TrackedDeviceManager::prepareControllersForRendering()
 			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 			{
 				color = Vector3(1.f, 0.f, 0.f);
-				if (m_rpTrackedDevices[unTrackedDevice]->cursorActive())
+				if (editingController->cursorActive())
 				{
 					Vector4 thisCtrPos = cursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
 					Vector4 lastCtrPos = lastCursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
@@ -520,7 +414,7 @@ void TrackedDeviceManager::prepareControllersForRendering()
 			//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 			{
 				color = Vector3(1.f, 1.f, 1.f);
-				if (m_rpTrackedDevices[unTrackedDevice]->cursorActive())
+				if (editingController->cursorActive())
 				{
 					Vector4 controllerCtr = mat * Vector4(0.f, 0.f, 0.f, 1.f);
 					Vector4 cursorEdge = cursorMat * Vector4(0.f, 0.f, cursorRadius, 1.f);
