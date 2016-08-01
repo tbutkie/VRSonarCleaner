@@ -263,7 +263,7 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 	{
 		if (!m_pEditController)
 		{
-			m_pEditController = new ViveController(unTrackedDeviceIndex);
+			m_pEditController = new EditingController(unTrackedDeviceIndex);
 
 			if (pRenderModel)
 				m_pEditController->setRenderModel(pRenderModel);
