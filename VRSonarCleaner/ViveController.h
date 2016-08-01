@@ -17,19 +17,29 @@
 
 #include "TrackedDevice.h"
 
-class ViveController
+class ViveController :
+	public TrackedDevice
 {
 public:
-	ViveController();
+	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	virtual ~ViveController();
-	
-	void draw();
 
-	void setLocation(float x, float y, float z);
+	virtual void updateState(vr::VRControllerState_t *state);
+	virtual void processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state);
+	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
-private:
-	float posX, posY, posZ;
-	
+	virtual void prepareForRendering();
 
+	virtual bool triggerDown();
 
+	virtual void touchpadInitialTouch(float x, float y);
+	virtual void touchpadTouch(float x, float y);
+	virtual void touchpadUntouched();
+	virtual bool touchpadActive();
+
+protected:
+	bool m_bTouchpadTouched;
+	Vector2 m_vTouchpadInitialTouchPoint;
+	bool m_bTriggerEngaged;
+	bool m_bTriggerClicked;
 };
