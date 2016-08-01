@@ -17,19 +17,13 @@
 
 #include "TrackedDevice.h"
 
-class ViveController
+class ViveController : public TrackedDevice
 {
 public:
-	ViveController();
+	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	virtual ~ViveController();
-	
-	void draw();
 
-	void setLocation(float x, float y, float z);
-
-private:
-	float posX, posY, posZ;
-	
+private:	
 
 
 };

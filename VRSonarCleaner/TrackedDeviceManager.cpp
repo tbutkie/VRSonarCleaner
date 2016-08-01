@@ -79,8 +79,12 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 		vr::VRControllerState_t state;
 		if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
 			return;
-
+				
 		m_rpTrackedDevices[event.trackedDeviceIndex]->processControllerEvent(event, state);
+
+		if (editingController && editingController->getIndex() == event.trackedDeviceIndex)
+			editingController->processControllerEvent(event, state);
+
 		return;		
 	}
 	else
@@ -101,6 +105,13 @@ void TrackedDeviceManager::updateControllerStates()
 		if (!m_pHMD->GetControllerState(unDevice, &state)) continue;
 
 		m_rpTrackedDevices[unDevice]->updateState(&state);
+	}
+
+	if (editingController)
+	{
+		vr::VRControllerState_t state;
+		if (m_pHMD->GetControllerState(editingController->getIndex(), &state))
+			editingController->updateState(&state);
 	}
 }
 
@@ -224,9 +235,6 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
 		return;
 
-	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller && !editingController)
-		editingController = m_rpTrackedDevices[unTrackedDeviceIndex];
-
 	// try to find a model we've already set up
 	std::string sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
 
@@ -241,6 +249,14 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 	{
 		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
 		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
+	}
+
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller && !editingController)
+	{
+		editingController = new ViveController(unTrackedDeviceIndex);
+
+		if(pRenderModel)
+			editingController->setRenderModel(pRenderModel);
 	}
 }
 
@@ -347,6 +363,9 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
 	}
+
+	if(editingController)
+		editingController->updatePose(poses[editingController->getIndex()]);
 
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{

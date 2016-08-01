@@ -3,6 +3,7 @@
 #include <openvr.h>
 
 #include "TrackedDevice.h"
+#include "ViveController.h"
 #include "CGLRenderModel.h"
 
 
@@ -40,7 +41,7 @@ private:
 	vr::IVRSystem *m_pHMD;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-	TrackedDevice* editingController;
+	ViveController* editingController;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
