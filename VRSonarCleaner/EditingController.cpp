@@ -212,19 +212,17 @@ void EditingController::prepareForRendering()
 	if (!poseValid())
 		return;
 
-	const Matrix4 & mat = getPose();
-
 	// Draw Axes
 	if (axesActive())
 	{
 		for (int i = 0; i < 3; ++i)
 		{
 			Vector3 color(0, 0, 0);
-			Vector4 center = mat * Vector4(0, 0, 0, 1);
+			Vector4 center = m_mat4Pose * Vector4(0, 0, 0, 1);
 			Vector4 point(0, 0, 0, 1);
 			point[i] += 0.1f;  // offset in X, Y, Z
 			color[i] = 1.0;  // R, G, B
-			point = mat * point;
+			point = m_mat4Pose * point;
 			vertdataarray.push_back(center.x);
 			vertdataarray.push_back(center.y);
 			vertdataarray.push_back(center.z);
@@ -261,10 +259,6 @@ void EditingController::prepareForRendering()
 	//	m_uiControllerVertcount += 2;
 	//}
 
-	Matrix4 cursorMat, lastCursorMat;
-	getCursorPoses(&cursorMat, &lastCursorMat);
-	float cursorRadius = getCursorRadius();
-
 	// Draw cursor hoop
 	if (cursorActive())
 	{
@@ -276,7 +270,7 @@ void EditingController::prepareForRendering()
 		else
 			color = Vector3(0.8f, 0.8f, 0.2f);
 
-		Vector4 prevVert = cursorMat * Vector4(cursorRadius, 0.f, 0.f, 1.f);
+		Vector4 prevVert = m_mat4CursorCurrentPose * Vector4(cursorRadius, 0.f, 0.f, 1.f);
 		for (GLuint i = 1; i < num_segments; i++)
 		{
 			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
@@ -287,7 +281,7 @@ void EditingController::prepareForRendering()
 			circlePt.z = cursorRadius * sinf(theta);
 			circlePt.w = 1.f;
 
-			Vector4 thisVert = cursorMat * circlePt;
+			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
 
 			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
 			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
@@ -306,8 +300,8 @@ void EditingController::prepareForRendering()
 			color = Vector3(1.f, 0.f, 0.f);
 			if (cursorActive())
 			{
-				Vector4 thisCtrPos = cursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 lastCtrPos = lastCursorMat * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
 
 				vertdataarray.push_back(lastCtrPos.x);
 				vertdataarray.push_back(lastCtrPos.y);
@@ -329,8 +323,8 @@ void EditingController::prepareForRendering()
 			color = Vector3(1.f, 1.f, 1.f);
 			if (cursorActive())
 			{
-				Vector4 controllerCtr = mat * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 cursorEdge = cursorMat * Vector4(0.f, 0.f, cursorRadius, 1.f);
+				Vector4 controllerCtr = m_mat4Pose * Vector4(0.f, 0.f, 0.f, 1.f);
+				Vector4 cursorEdge = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, cursorRadius, 1.f);
 
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
