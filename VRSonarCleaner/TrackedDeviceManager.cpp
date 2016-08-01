@@ -3,7 +3,8 @@
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
-, editingController(NULL)
+, m_pEditController(NULL)
+, m_pManipController(NULL)
 , m_unRenderModelProgramID(0)
 , m_iTrackedControllerCount(0)
 , m_iTrackedControllerCount_Last(-1)
@@ -53,8 +54,14 @@ void TrackedDeviceManager::handleEvents()
 	
 	updateControllerStates();
 	// don't draw controllers if somebody else has input focus
-	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess() && editingController && m_pHMD->IsTrackedDeviceConnected(editingController->getIndex()))
-		editingController->prepareForRendering();
+	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
+	{
+		if (m_pEditController && m_pHMD->IsTrackedDeviceConnected(m_pEditController->getIndex()))
+			m_pEditController->prepareForRendering();
+
+		if (m_pManipController && m_pHMD->IsTrackedDeviceConnected(m_pManipController->getIndex()))
+			m_pManipController->prepareForRendering();
+	}
 }
 //-----------------------------------------------------------------------------
 // Purpose: Processes a single VR event
@@ -79,11 +86,16 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 		vr::VRControllerState_t state;
 		if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
 			return;
-				
-		m_rpTrackedDevices[event.trackedDeviceIndex]->processControllerEvent(event, state);
 
-		if (editingController && editingController->getIndex() == event.trackedDeviceIndex)
-			editingController->processControllerEvent(event, state);
+		if (m_pEditController && m_pEditController->getIndex() == event.trackedDeviceIndex)
+		{
+			m_pEditController->processControllerEvent(event, state);
+		}
+
+		if (m_pManipController && m_pManipController->getIndex() == event.trackedDeviceIndex)
+		{
+			m_pManipController->processControllerEvent(event, state);
+		}
 
 		return;		
 	}
@@ -96,37 +108,33 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 void TrackedDeviceManager::updateControllerStates()
 {
 	// If controller is engaged in interaction, update interaction vars
-	for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+	if (m_pEditController)
 	{
-		if (m_pHMD->GetTrackedDeviceClass(unDevice) != vr::TrackedDeviceClass_Controller)
-			continue;
-
 		vr::VRControllerState_t state;
-		if (!m_pHMD->GetControllerState(unDevice, &state)) continue;
-
-		m_rpTrackedDevices[unDevice]->updateState(&state);
+		if (m_pHMD->GetControllerState(m_pEditController->getIndex(), &state))
+			m_pEditController->updateState(&state);
 	}
 
-	if (editingController)
+	if (m_pManipController)
 	{
 		vr::VRControllerState_t state;
-		if (m_pHMD->GetControllerState(editingController->getIndex(), &state))
-			editingController->updateState(&state);
+		if (m_pHMD->GetControllerState(m_pManipController->getIndex(), &state))
+			m_pManipController->updateState(&state);
 	}
 }
 
 bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius)
 {
-	if (!editingController) return false;
+	if (!m_pEditController) return false;
 
 	float cursorRadius = 0.f;
 	bool cleaningModeActive = false;
 
-	if (editingController->poseValid())
+	if (m_pEditController->poseValid())
 	{
-		editingController->getCursorPoses(thisCursorPose, lastCursorPose);
-		*radius = editingController->getCursorRadius();
-		cleaningModeActive = editingController->cleaningActive();
+		m_pEditController->getCursorPoses(thisCursorPose, lastCursorPose);
+		*radius = m_pEditController->getCursorRadius();
+		cleaningModeActive = m_pEditController->cleaningActive();
 	}
 
 	return cleaningModeActive;
@@ -134,7 +142,7 @@ bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix
 
 void TrackedDeviceManager::cleaningHit()
 {
-	m_pHMD->TriggerHapticPulse(editingController->getIndex(), 0, 2000); 
+	m_pHMD->TriggerHapticPulse(m_pEditController->getIndex(), 0, 2000);
 }
 
 //-----------------------------------------------------------------------------
@@ -251,12 +259,23 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
 	}
 
-	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller && !editingController)
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
-		editingController = new ViveController(unTrackedDeviceIndex);
+		if (!m_pEditController)
+		{
+			m_pEditController = new ViveController(unTrackedDeviceIndex);
 
-		if(pRenderModel)
-			editingController->setRenderModel(pRenderModel);
+			if (pRenderModel)
+				m_pEditController->setRenderModel(pRenderModel);
+		}
+		else if(!m_pManipController)
+		{
+			m_pManipController = new ViveController(unTrackedDeviceIndex);
+
+			if (pRenderModel)
+				m_pManipController->setRenderModel(pRenderModel);
+		}
+
 	}
 }
 
@@ -279,7 +298,8 @@ std::string TrackedDeviceManager::getTrackedDeviceString(vr::TrackedDeviceIndex_
 
 void TrackedDeviceManager::renderTrackedDevices(Matrix4 & matVP)
 {
-	if(editingController) editingController->render(matVP);
+	if (m_pEditController) m_pEditController->render(matVP);
+	if (m_pManipController) m_pManipController->render(matVP);
 	renderDeviceModels(matVP);
 }
 
@@ -364,8 +384,11 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 		}
 	}
 
-	if(editingController)
-		editingController->updatePose(poses[editingController->getIndex()]);
+	if(m_pEditController)
+		m_pEditController->updatePose(poses[m_pEditController->getIndex()]);
+
+	if (m_pManipController)
+		m_pManipController->updatePose(poses[m_pManipController->getIndex()]);
 
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{

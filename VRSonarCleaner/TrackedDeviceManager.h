@@ -41,7 +41,8 @@ private:
 	vr::IVRSystem *m_pHMD;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-	ViveController* editingController;
+	ViveController* m_pEditController;
+	ViveController* m_pManipController;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
