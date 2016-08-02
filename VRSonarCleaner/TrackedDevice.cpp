@@ -13,6 +13,7 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	, m_nMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
+	, m_TouchPointSphere(Icosphere(4))
 {	
 
 	createShader();

@@ -6,6 +6,7 @@
 #include <openvr.h>
 
 #include "CGLRenderModel.h"
+#include "Icosphere.h"
 
 #include "../shared/Matrices.h"
 
@@ -55,5 +56,7 @@ protected:
 	
 	bool m_bShow;
 	bool m_bShowAxes;
+
+	Icosphere m_TouchPointSphere;
 };
 

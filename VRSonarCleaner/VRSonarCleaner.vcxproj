@@ -172,6 +172,7 @@
     <ClCompile Include="DataVolume.cpp" />
     <ClCompile Include="EditingController.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
+    <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="Quaternion.cpp" />
@@ -195,6 +196,7 @@
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="EditingController.h" />
+    <ClInclude Include="Icosphere.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
