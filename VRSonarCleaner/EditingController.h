@@ -20,7 +20,7 @@ public:
 	virtual void touchpadUntouched();
 	virtual bool touchpadActive();
 
-	void getCursorPoses(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose = NULL);
+	void getCursorPoses(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose);
 	float getCursorRadius();
 
 	bool cursorActive();

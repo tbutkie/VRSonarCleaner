@@ -468,9 +468,7 @@ bool EditingController::touchpadActive()
 void EditingController::getCursorPoses(Matrix4 * thisCursorPose, Matrix4 * lastCursorPose)
 {
 	*thisCursorPose = m_mat4CursorCurrentPose;
-
-	if (lastCursorPose)
-		*lastCursorPose = m_mat4CursorLastPose;
+	*lastCursorPose = m_mat4CursorLastPose;
 }
 
 float EditingController::getCursorRadius()
