@@ -6,11 +6,11 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	: m_DeviceID(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_ClassChar(0)
-	, m_unControllerTransformProgramID(0)
-	, m_glControllerVertBuffer(0)
-	, m_uiControllerVertcount(0)
-	, m_unControllerVAO(0)
-	, m_nControllerMatrixLocation(-1)
+	, m_unTransformProgramID(0)
+	, m_glVertBuffer(0)
+	, m_uiVertcount(0)
+	, m_unVAO(0)
+	, m_nMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
 {	
@@ -21,13 +21,13 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 
 TrackedDevice::~TrackedDevice()
 {
-	if (m_unControllerVAO != 0)
+	if (m_unVAO != 0)
 	{
-		glDeleteVertexArrays(1, &m_unControllerVAO);
+		glDeleteVertexArrays(1, &m_unVAO);
 	}
-	if (m_unControllerTransformProgramID)
+	if (m_unTransformProgramID)
 	{
-		glDeleteProgram(m_unControllerTransformProgramID);
+		glDeleteProgram(m_unTransformProgramID);
 	}
 }
 
@@ -43,7 +43,7 @@ void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 
 bool TrackedDevice::createShader()
 {
-	m_unControllerTransformProgramID = CompileGLShader(
+	m_unTransformProgramID = CompileGLShader(
 		"Controller",
 
 		// vertex shader
@@ -67,14 +67,14 @@ bool TrackedDevice::createShader()
 		"   outputColor = v4Color;\n"
 		"}\n"
 	);
-	m_nControllerMatrixLocation = glGetUniformLocation(m_unControllerTransformProgramID, "matrix");
-	if (m_nControllerMatrixLocation == -1)
+	m_nMatrixLocation = glGetUniformLocation(m_unTransformProgramID, "matrix");
+	if (m_nMatrixLocation == -1)
 	{
 		printf("Unable to find matrix uniform in controller shader\n");
 		return false;
 	}
 
-	return m_unControllerTransformProgramID != 0;
+	return m_unTransformProgramID != 0;
 }
 
 
@@ -116,20 +116,99 @@ bool TrackedDevice::updatePose(vr::TrackedDevicePose_t pose)
 	return m_Pose.bPoseIsValid;
 }
 
-void TrackedDevice::renderModel()
+//-----------------------------------------------------------------------------
+// Purpose: Draw all of the line-based controller augmentations
+//-----------------------------------------------------------------------------
+void TrackedDevice::prepareForRendering()
 {
-	if(m_pTrackedDeviceToRenderModel)
-		m_pTrackedDeviceToRenderModel->Draw();
+	std::vector<float> vertdataarray;
+
+	m_uiVertcount = 0;
+
+	if (!poseValid())
+		return;
+
+	const Matrix4 & mat = getPose();
+
+	// Draw Axes
+	if (axesActive())
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			Vector3 color(0, 0, 0);
+			Vector4 center = mat * Vector4(0, 0, 0, 1);
+			Vector4 point(0, 0, 0, 1);
+			point[i] += 0.1f;  // offset in X, Y, Z
+			color[i] = 1.0;  // R, G, B
+			point = mat * point;
+			vertdataarray.push_back(center.x);
+			vertdataarray.push_back(center.y);
+			vertdataarray.push_back(center.z);
+
+			//printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
+
+			vertdataarray.push_back(color.x);
+			vertdataarray.push_back(color.y);
+			vertdataarray.push_back(color.z);
+
+			vertdataarray.push_back(point.x);
+			vertdataarray.push_back(point.y);
+			vertdataarray.push_back(point.z);
+
+			vertdataarray.push_back(color.x);
+			vertdataarray.push_back(color.y);
+			vertdataarray.push_back(color.z);
+
+			m_uiVertcount += 2;
+		}
+	}
+
+	// Setup the VAO the first time through.
+	if (m_unVAO == 0)
+	{
+		glGenVertexArrays(1, &m_unVAO);
+		glBindVertexArray(m_unVAO);
+
+		glGenBuffers(1, &m_glVertBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
+
+		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint offset = 0;
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+
+		offset += sizeof(Vector3);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+
+		glBindVertexArray(0);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
+
+	// set vertex data if we have some
+	if (vertdataarray.size() > 0)
+	{
+		//$ TODO: Use glBufferSubData for this...
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
+	}
 }
 
 void TrackedDevice::render(Matrix4 & matVP)
 {
 	// draw the controller axis lines
-	glUseProgram(m_unControllerTransformProgramID);
-	glUniformMatrix4fv(m_nControllerMatrixLocation, 1, GL_FALSE, matVP.get());
-	glBindVertexArray(m_unControllerVAO);
-	glDrawArrays(GL_LINES, 0, m_uiControllerVertcount);
+	glUseProgram(m_unTransformProgramID);
+	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, matVP.get());
+	glBindVertexArray(m_unVAO);
+	glDrawArrays(GL_LINES, 0, m_uiVertcount);
 	glBindVertexArray(0);
+}
+
+void TrackedDevice::renderModel()
+{
+	if(m_pTrackedDeviceToRenderModel)
+		m_pTrackedDeviceToRenderModel->Draw();
 }
 
 //-----------------------------------------------------------------------------

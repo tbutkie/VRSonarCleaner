@@ -43,7 +43,7 @@ void EditingController::prepareForRendering()
 {
 	std::vector<float> vertdataarray;
 
-	m_uiControllerVertcount = 0;
+	m_uiVertcount = 0;
 
 	if (!poseValid())
 		return;
@@ -77,7 +77,7 @@ void EditingController::prepareForRendering()
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
 
-			m_uiControllerVertcount += 2;
+			m_uiVertcount += 2;
 		}
 	}
 
@@ -125,7 +125,7 @@ void EditingController::prepareForRendering()
 			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
 			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-			m_uiControllerVertcount += 2;
+			m_uiVertcount += 2;
 
 			prevVert = thisVert;
 		}
@@ -149,7 +149,7 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(thisCtrPos.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiControllerVertcount += 2;
+				m_uiVertcount += 2;
 			}
 		}
 
@@ -172,20 +172,20 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(controllerCtr.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiControllerVertcount += 2;
+				m_uiVertcount += 2;
 			}
 		}
 
 	}
 
 	// Setup the VAO the first time through.
-	if (m_unControllerVAO == 0)
+	if (m_unVAO == 0)
 	{
-		glGenVertexArrays(1, &m_unControllerVAO);
-		glBindVertexArray(m_unControllerVAO);
+		glGenVertexArrays(1, &m_unVAO);
+		glBindVertexArray(m_unVAO);
 
-		glGenBuffers(1, &m_glControllerVertBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+		glGenBuffers(1, &m_glVertBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
 		GLuint stride = 2 * 3 * sizeof(float);
 		GLuint offset = 0;
@@ -200,7 +200,7 @@ void EditingController::prepareForRendering()
 		glBindVertexArray(0);
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
 	// set vertex data if we have some
 	if (vertdataarray.size() > 0)

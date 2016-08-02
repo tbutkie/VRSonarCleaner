@@ -28,9 +28,11 @@ public:
 
 	Matrix4 getPose();
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
-	
+
+	virtual void prepareForRendering();
+
+	virtual void render(Matrix4 & matVP); 
 	void renderModel();
-	virtual void render(Matrix4 & matVP);
 
 protected:
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
@@ -45,11 +47,11 @@ protected:
 
 	Matrix4 m_mat4Pose;
 	
-	GLuint m_glControllerVertBuffer;
-	GLuint m_unControllerVAO;
-	unsigned int m_uiControllerVertcount;
-	GLuint m_unControllerTransformProgramID;
-	GLint m_nControllerMatrixLocation;
+	GLuint m_glVertBuffer;
+	GLuint m_unVAO;
+	unsigned int m_uiVertcount;
+	GLuint m_unTransformProgramID;
+	GLint m_nMatrixLocation;
 	
 	bool m_bShow;
 	bool m_bShowAxes;

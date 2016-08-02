@@ -25,13 +25,13 @@ bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Draw all of the controllers as X/Y/Z lines
+// Purpose: Draw all of the line-based controller augmentations
 //-----------------------------------------------------------------------------
 void ViveController::prepareForRendering()
 {
 	std::vector<float> vertdataarray;
 
-	m_uiControllerVertcount = 0;
+	m_uiVertcount = 0;
 
 	if (!poseValid())
 		return;
@@ -67,7 +67,7 @@ void ViveController::prepareForRendering()
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
 
-			m_uiControllerVertcount += 2;
+			m_uiVertcount += 2;
 		}
 	}
 
@@ -82,17 +82,17 @@ void ViveController::prepareForRendering()
 
 		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
 		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-		m_uiControllerVertcount += 2;
+		m_uiVertcount += 2;
 	}
 
 	// Setup the VAO the first time through.
-	if (m_unControllerVAO == 0)
+	if (m_unVAO == 0)
 	{
-		glGenVertexArrays(1, &m_unControllerVAO);
-		glBindVertexArray(m_unControllerVAO);
+		glGenVertexArrays(1, &m_unVAO);
+		glBindVertexArray(m_unVAO);
 
-		glGenBuffers(1, &m_glControllerVertBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+		glGenBuffers(1, &m_glVertBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
 		GLuint stride = 2 * 3 * sizeof(float);
 		GLuint offset = 0;
@@ -107,7 +107,7 @@ void ViveController::prepareForRendering()
 		glBindVertexArray(0);
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
 	// set vertex data if we have some
 	if (vertdataarray.size() > 0)
