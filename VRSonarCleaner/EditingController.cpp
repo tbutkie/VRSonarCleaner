@@ -25,156 +25,6 @@ EditingController::~EditingController()
 {
 }
 
-void EditingController::updateState(vr::VRControllerState_t *state)
-{
-	// TOUCHPAD BEING TOUCHED
-	if (m_bTouchpadTouched)
-	{
-		printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n"
-			, id
-			, state->rAxis[0].x
-			, state->rAxis[0].y);
-
-		touchpadTouch(state->rAxis[0].x, state->rAxis[0].y);
-	}
-
-	// TRIGGER INTERACTIONS
-	if (state->rAxis[1].x >= 0.05f) // lower limit is 5%
-	{
-		// TRIGGER ENGAGED
-		if (!m_bTriggerEngaged)
-		{
-			//printf("Controller (device %u) trigger engaged).\n", id);
-
-			m_bTriggerEngaged = true;
-			//m_bShowCursor = true;
-		}
-
-		// TRIGGER BEING PULLED
-		if (!m_bTriggerClicked)
-		{
-			//printf("Controller (device %u) trigger at %f%%).\n"
-			//	, id
-			//	, state->rAxis[1].x * 100.f);
-		}
-
-		// TRIGGER CLICKED
-		if (state->rAxis[1].x == 1.f && !m_bTriggerClicked)
-		{
-			//printf("Controller (device %u) trigger clicked.\n", id);
-			m_bTriggerClicked = true;
-			m_bCleaningMode = true;
-		}
-		// TRIGGER UNCLICKED
-		if (state->rAxis[1].x != 1.f && m_bTriggerClicked)
-		{
-			//printf("Controller (device %u) trigger unclicked.\n", id);
-			m_bTriggerClicked = false;
-			m_bCleaningMode = false;
-		}
-	}
-	// TRIGGER DISENGAGED
-	else if (m_bTriggerEngaged)
-	{
-		//printf("Controller (device %u) trigger disengaged).\n", id);
-		m_bTriggerEngaged = false;
-		//m_bShowCursor = false;
-	}
-}
-
-void EditingController::processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state)
-{
-	switch (event.data.controller.button)
-	{
-	case vr::k_EButton_ApplicationMenu:
-	{
-		if (event.eventType == vr::VREvent_ButtonPress)
-		{
-			//printf("Controller (device %u) menu button pressed.\n", event.trackedDeviceIndex);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUnpress)
-		{
-			//printf("Controller (device %u) menu button unpressed.\n", event.trackedDeviceIndex);
-		}
-	}
-	break;
-	case vr::k_EButton_Grip:
-	{
-		if (event.eventType == vr::VREvent_ButtonPress)
-		{
-			//printf("Controller (device %u) grip pressed.\n", event.trackedDeviceIndex);
-			toggleAxes();
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUnpress)
-		{
-			//printf("Controller (device %u) grip unpressed.\n", event.trackedDeviceIndex);
-		}
-	}
-	break;
-	case vr::k_EButton_SteamVR_Trigger:
-	{
-		if (event.eventType == vr::VREvent_ButtonPress)
-		{
-			//printf("Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUnpress)
-		{
-			//printf("Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonTouch)
-		{
-			//printf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUntouch)
-		{
-			//printf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
-		}
-	}
-	break;
-	case vr::k_EButton_SteamVR_Touchpad:
-	{
-		if (event.eventType == vr::VREvent_ButtonPress)
-		{
-			//printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-			//	, event.trackedDeviceIndex
-			//	, state.rAxis[vr::k_eControllerAxis_None].x
-			//	, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUnpress)
-		{
-			//printf("Controller (device %u) touchpad pressed at (%f, %f).\n"
-			//	, event.trackedDeviceIndex
-			//	, state.rAxis[vr::k_eControllerAxis_None].x
-			//	, state.rAxis[vr::k_eControllerAxis_None].y);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonTouch)
-		{
-			//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n"
-			//	, event.trackedDeviceIndex
-			//	, state.rAxis[0].x
-			//	, state.rAxis[0].y);
-			touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
-		}
-
-		if (event.eventType == vr::VREvent_ButtonUntouch)
-		{
-			//printf("Controller (device %u) touchpad untouched.\n", event.trackedDeviceIndex);
-			touchpadUntouched();
-		}
-	}
-	break;
-	default:
-		;//printf("Controller (device %u) event not processed: %u.\n", event.trackedDeviceIndex, event.eventType);
-	}
-}
-
 bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
@@ -360,9 +210,32 @@ void EditingController::prepareForRendering()
 	}
 }
 
-bool EditingController::triggerDown()
+void EditingController::triggerEngaged()
 {
-	return m_bTriggerClicked;
+	//printf("Controller (device %u) trigger engaged).\n", m_DeviceID);
+	m_bTriggerEngaged = true;
+	//m_bShowCursor = true;
+}
+
+void EditingController::triggerDisengaged()
+{
+	//printf("Controller (device %u) trigger disengaged).\n", m_DeviceID);
+	m_bTriggerEngaged = false;
+	//m_bShowCursor = false;
+}
+
+void EditingController::triggerClicked()
+{
+	//printf("Controller (device %u) trigger clicked.\n", m_DeviceID);
+	m_bTriggerClicked = true;
+	m_bCleaningMode = true;
+}
+
+void EditingController::triggerUnclicked()
+{
+	//printf("Controller (device %u) trigger unclicked.\n", m_DeviceID);
+	m_bTriggerClicked = false;
+	m_bCleaningMode = false;
 }
 
 void EditingController::touchpadInitialTouch(float x, float y)

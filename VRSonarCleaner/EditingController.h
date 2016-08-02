@@ -7,13 +7,14 @@ public:
 	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	~EditingController();
 
-	void updateState(vr::VRControllerState_t *state);
-	void processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state);
 	bool updatePose(vr::TrackedDevicePose_t pose);
 
 	void prepareForRendering();
-	
-	virtual bool triggerDown();
+
+	void triggerEngaged();
+	void triggerDisengaged();
+	void triggerClicked();
+	void triggerUnclicked();
 
 	virtual void touchpadInitialTouch(float x, float y);
 	virtual void touchpadTouch(float x, float y);

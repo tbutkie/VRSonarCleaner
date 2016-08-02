@@ -3,7 +3,7 @@
 
 
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
-	: id(id)
+	: m_DeviceID(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_ClassChar(0)
 	, m_unControllerTransformProgramID(0)
@@ -33,7 +33,7 @@ TrackedDevice::~TrackedDevice()
 
 vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
 {
-	return id;
+	return m_DeviceID;
 }
 
 void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)

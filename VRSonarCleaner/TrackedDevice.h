@@ -36,7 +36,7 @@ protected:
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	bool createShader();
 
-	vr::TrackedDeviceIndex_t id;
+	vr::TrackedDeviceIndex_t m_DeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	
 	char m_ClassChar;   // for each device, a character representing its class

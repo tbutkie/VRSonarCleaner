@@ -83,18 +83,14 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 	}
 	else if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
-		vr::VRControllerState_t state;
-		if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
-			return;
-
 		if (m_pEditController && m_pEditController->getIndex() == event.trackedDeviceIndex)
 		{
-			m_pEditController->processControllerEvent(event, state);
+			processControllerEvent(event);
 		}
 
 		if (m_pManipController && m_pManipController->getIndex() == event.trackedDeviceIndex)
 		{
-			m_pManipController->processControllerEvent(event, state);
+			processControllerEvent(event);
 		}
 
 		return;		
@@ -105,21 +101,166 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 	}
 }
 
+void TrackedDeviceManager::processControllerEvent(const vr::VREvent_t & event)
+{
+	ViveController *controller;
+
+	if (m_pEditController->getIndex() == event.trackedDeviceIndex)
+		controller = m_pEditController;
+	else
+		controller = m_pManipController;
+
+	vr::VRControllerState_t state;
+	if (!m_pHMD->GetControllerState(event.trackedDeviceIndex, &state))
+		return;
+
+	switch (event.data.controller.button)
+	{
+	case vr::k_EButton_ApplicationMenu:
+	{
+		if (event.eventType == vr::VREvent_ButtonPress)
+		{
+			controller->menuButtonPressed();
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUnpress)
+		{
+			controller->menuButtonUnpressed();
+		}
+	}
+	case vr::k_EButton_System:
+	{
+		if (event.eventType == vr::VREvent_ButtonPress)
+		{
+			controller->systemButtonPressed();
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUnpress)
+		{
+			controller->systemButtonUnpressed();
+		}
+	}
+	break;
+	case vr::k_EButton_Grip:
+	{
+		if (event.eventType == vr::VREvent_ButtonPress)
+		{
+			controller->gripButtonPressed();
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUnpress)
+		{
+			controller->gripButtonUnpressed();
+		}
+	}
+	break;
+	case vr::k_EButton_SteamVR_Trigger:
+	{
+		if (event.eventType == vr::VREvent_ButtonPress)
+		{
+			//printf("(VR Event) Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUnpress)
+		{
+			//printf("(VR Event) Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonTouch)
+		{
+			//printf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUntouch)
+		{
+			//printf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
+		}
+	}
+	break;
+	case vr::k_EButton_SteamVR_Touchpad:
+	{
+		if (event.eventType == vr::VREvent_ButtonPress)
+		{
+			controller->touchPadClicked(state.rAxis[0].x, state.rAxis[0].y);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUnpress)
+		{
+			controller->touchPadUnclicked(state.rAxis[0].x, state.rAxis[0].y);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonTouch)
+		{
+			controller->touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
+		}
+
+		if (event.eventType == vr::VREvent_ButtonUntouch)
+		{
+			controller->touchpadUntouched();
+		}
+	}
+	break;
+	default:
+		;//printf("Controller (device %u) event not processed: %u.\n", event.trackedDeviceIndex, event.eventType);
+	}
+}
+
 void TrackedDeviceManager::updateControllerStates()
 {
 	// If controller is engaged in interaction, update interaction vars
 	if (m_pEditController)
 	{
-		vr::VRControllerState_t state;
-		if (m_pHMD->GetControllerState(m_pEditController->getIndex(), &state))
-			m_pEditController->updateState(&state);
+		updateState(m_pEditController);
 	}
 
 	if (m_pManipController)
 	{
-		vr::VRControllerState_t state;
-		if (m_pHMD->GetControllerState(m_pManipController->getIndex(), &state))
-			m_pManipController->updateState(&state);
+		updateState(m_pManipController);
+	}
+}
+
+void TrackedDeviceManager::updateState(ViveController *controller)
+{
+	vr::VRControllerState_t state;
+	if (!m_pHMD->GetControllerState(controller->getIndex(), &state))
+		return;
+
+	// TOUCHPAD BEING TOUCHED
+	if (controller->isTouchpadTouched())
+	{
+		controller->touchpadTouch(state.rAxis[0].x, state.rAxis[0].y);
+	}
+
+	// TRIGGER INTERACTIONS
+	if (state.rAxis[1].x >= controller->getTriggerThreshold())
+	{
+		// TRIGGER ENGAGED
+		if (!controller->isTriggerEngaged())
+		{
+			controller->triggerEngaged();
+		}
+
+		// TRIGGER BEING PULLED
+		if (!controller->isTriggerClicked())
+		{
+			controller->triggerBeingPulled(state.rAxis[1].x);
+		}
+
+		// TRIGGER CLICKED
+		if (state.rAxis[1].x == 1.f && !controller->isTriggerClicked())
+		{
+			controller->triggerClicked();
+		}
+		// TRIGGER UNCLICKED
+		if (state.rAxis[1].x != 1.f && controller->isTriggerClicked())
+		{
+			controller->triggerUnclicked();
+		}
+	}
+	// TRIGGER DISENGAGED
+	else if (controller->isTriggerEngaged())
+	{
+		controller->triggerDisengaged();
 	}
 }
 

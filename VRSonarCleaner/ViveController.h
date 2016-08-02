@@ -30,22 +30,47 @@ public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	virtual ~ViveController();
 
-	virtual void updateState(vr::VRControllerState_t *state);
-	virtual void processControllerEvent(const vr::VREvent_t & event, vr::VRControllerState_t & state);
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
 	virtual void prepareForRendering();
 
-	virtual bool triggerDown();
+	virtual void systemButtonPressed();
+	virtual void systemButtonUnpressed();
+	bool isSystemButtonPressed();
 
+	virtual void menuButtonPressed();
+	virtual void menuButtonUnpressed();
+	bool isMenuButtonPressed();
+
+	virtual void gripButtonPressed();
+	virtual void gripButtonUnpressed();
+	bool isGripButtonPressed();
+
+	virtual void triggerEngaged();
+	virtual void triggerBeingPulled(float amount);
+	virtual void triggerDisengaged();
+	virtual void triggerClicked();
+	virtual void triggerUnclicked();
+	bool isTriggerEngaged();
+	bool isTriggerClicked();
+	float getTriggerThreshold();
+	
 	virtual void touchpadInitialTouch(float x, float y);
 	virtual void touchpadTouch(float x, float y);
 	virtual void touchpadUntouched();
-	virtual bool touchpadActive();
+	virtual void touchPadClicked(float x, float y);
+	virtual void touchPadUnclicked(float x, float y);
+	bool isTouchpadTouched();
+	bool isTouchpadClicked();
 
 protected:
+	bool m_bSystemButtonClicked;
+	bool m_bMenuButtonClicked;
+	bool m_bGripButtonClicked;
 	bool m_bTouchpadTouched;
+	bool m_bTouchpadClicked;
 	Vector2 m_vTouchpadInitialTouchPoint;
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
+	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
 };
