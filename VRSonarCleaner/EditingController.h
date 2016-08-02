@@ -16,10 +16,10 @@ public:
 	void triggerClicked();
 	void triggerUnclicked();
 
-	virtual void touchpadInitialTouch(float x, float y);
-	virtual void touchpadTouch(float x, float y);
-	virtual void touchpadUntouched();
-	virtual bool touchpadActive();
+	void touchpadInitialTouch(float x, float y);
+	void touchpadTouch(float x, float y);
+	void touchpadUntouched();
+	bool touchpadActive();
 
 	void getCursorPoses(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose);
 	float getCursorRadius();
