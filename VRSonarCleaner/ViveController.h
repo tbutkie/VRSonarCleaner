@@ -4,12 +4,6 @@
 
 #include "TrackedDevice.h"
 
-const Vector4 c_vec4TouchPadCenter = Vector4(0.f, 0.00378f, 0.04920f, 1.f);
-const Vector4 c_vec4TouchPadLeft = Vector4(-0.02023f, 0.00495f, 0.04934f, 1.f);
-const Vector4 c_vec4TouchPadRight = Vector4(0.02023f, 0.00495f, 0.04934f, 1.f);
-const Vector4 c_vec4TouchPadTop = Vector4(0.f, 0.00725f, 0.02924f, 1.f);
-const Vector4 c_vec4TouchPadBottom = Vector4(0.f, 0.00265f, 0.06943f, 1.f);
-
 class ViveController :
 	public TrackedDevice
 {
@@ -65,4 +59,10 @@ protected:
 	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
 
 	Icosphere m_TouchPointSphere;
+
+	const Vector4 c_vec4TouchPadCenter;
+	const Vector4 c_vec4TouchPadLeft;
+	const Vector4 c_vec4TouchPadRight;
+	const Vector4 c_vec4TouchPadTop;
+	const Vector4 c_vec4TouchPadBottom;
 };
