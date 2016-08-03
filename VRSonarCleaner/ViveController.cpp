@@ -112,31 +112,7 @@ void ViveController::prepareForRendering()
 	// Draw touchpad touch point sphere
 	if (m_bTouchpadTouched)
 	{
-		std::vector<float> sphereVertdataarray;
-		std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
-		Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
-
-		//Vector3 color(.2f, .2f, .71f);
-		Vector3 color(.65f, .65f, .65f);
-
-		Matrix4 & sphereMat = mat * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
-
-		for (size_t i = 0; i < sphereVerts.size(); ++i)
-		{
-			Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
-
-			sphereVertdataarray.push_back(thisPt.x);
-			sphereVertdataarray.push_back(thisPt.y);
-			sphereVertdataarray.push_back(thisPt.z);
-
-			sphereVertdataarray.push_back(color.x);
-			sphereVertdataarray.push_back(color.y);
-			sphereVertdataarray.push_back(color.z);
-
-			m_uiTriVertcount++;
-		}
-
-		vertdataarray.insert(vertdataarray.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
+		m_uiTriVertcount += insertTouchpadCursor(&vertdataarray);
 	}
 
 	// Setup the VAO the first time through.
@@ -321,4 +297,35 @@ Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
 	Vector4 yVec = (pt->y > 0 ? c_vec4TouchPadTop : c_vec4TouchPadBottom) - c_vec4TouchPadCenter;
 
 	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
+}
+
+unsigned int ViveController::insertTouchpadCursor(std::vector<float>* verts)
+{
+	std::vector<float> sphereVertdataarray;
+	unsigned int nVerts = 0;
+	std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
+	Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
+
+	//Vector3 color(.2f, .2f, .71f);
+	Vector3 color(.65f, .65f, .65f);
+
+	Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
+
+	for (size_t i = 0; i < sphereVerts.size(); ++i)
+	{
+		Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
+
+		sphereVertdataarray.push_back(thisPt.x);
+		sphereVertdataarray.push_back(thisPt.y);
+		sphereVertdataarray.push_back(thisPt.z);
+
+		sphereVertdataarray.push_back(color.x);
+		sphereVertdataarray.push_back(color.y);
+		sphereVertdataarray.push_back(color.z);
+
+		nVerts++;
+	}
+
+	verts->insert(verts->end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
+	return nVerts;
 }

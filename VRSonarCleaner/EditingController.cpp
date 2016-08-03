@@ -179,31 +179,7 @@ void EditingController::prepareForRendering()
 		// Draw touchpad touch point sphere
 		if (m_bTouchpadTouched)
 		{
-			std::vector<float> sphereVertdataarray;
-			std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
-			Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
-
-			//Vector3 color(.2f, .2f, .71f);
-			Vector3 color(.65f, .65f, .65f);
-
-			Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f, 0.001f, 0.0025f);
-
-			for (size_t i = 0; i < sphereVerts.size(); ++i)
-			{
-				Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
-
-				sphereVertdataarray.push_back(thisPt.x);
-				sphereVertdataarray.push_back(thisPt.y);
-				sphereVertdataarray.push_back(thisPt.z);
-
-				sphereVertdataarray.push_back(color.x);
-				sphereVertdataarray.push_back(color.y);
-				sphereVertdataarray.push_back(color.z);
-
-				m_uiTriVertcount++;
-			}
-
-			vertdataarray.insert(vertdataarray.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
+			m_uiTriVertcount += insertTouchpadCursor(&vertdataarray);
 		}
 	}
 

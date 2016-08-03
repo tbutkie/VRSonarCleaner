@@ -46,6 +46,7 @@ public:
 
 protected:
 	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
+	unsigned int insertTouchpadCursor(std::vector<float> *verts);
 
 	bool m_bSystemButtonClicked;
 	bool m_bMenuButtonClicked;
