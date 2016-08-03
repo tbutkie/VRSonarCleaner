@@ -4,10 +4,12 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
 	: TrackedDevice(unTrackedDeviceIndex)
 	, m_bTouchpadTouched(false)
 	, m_bTouchpadClicked(false)
-	, m_vTouchpadInitialTouchPoint(Vector2(0.f, 0.f))
+	, m_vec2TouchpadInitialTouchPoint(Vector2(0.f, 0.f))
+	, m_vec2TouchpadCurrentTouchPoint(Vector2(0.f, 0.f))
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
 	, m_fTriggerLowerThreshold(0.05f)
+	, m_TouchPointSphere(Icosphere(2))
 {
 }
 
@@ -31,7 +33,8 @@ void ViveController::prepareForRendering()
 {
 	std::vector<float> vertdataarray;
 
-	m_uiVertcount = 0;
+	m_uiLineVertcount = 0;
+	m_uiTriVertcount = 0;
 
 	if (!poseValid())
 		return;
@@ -67,7 +70,7 @@ void ViveController::prepareForRendering()
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
 
-			m_uiVertcount += 2;
+			m_uiLineVertcount += 2;
 		}
 	}
 
@@ -82,7 +85,53 @@ void ViveController::prepareForRendering()
 
 		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
 		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-		m_uiVertcount += 2;
+		m_uiLineVertcount += 2;
+	}
+
+	// Draw Touchpad line
+	if(m_bTouchpadTouched)
+	{
+
+		Vector4 start = mat * transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint);
+		Vector4 end = mat * transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
+		Vector3 color(.9f, .2f, .1f);
+
+		vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
+		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
+		vertdataarray.push_back(color.z); vertdataarray.push_back(color.y); vertdataarray.push_back(color.x);
+		m_uiLineVertcount += 2;
+	}
+
+	// Draw touchpad touch point sphere
+	if (m_bTouchpadTouched)
+	{
+		std::vector<float> sphereVertdataarray;
+		std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
+		Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
+
+		//Vector3 color(.2f, .2f, .71f);
+		Vector3 color(.65f, .65f, .65f);
+
+		Matrix4 & sphereMat = mat * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
+
+		for (size_t i = 0; i < sphereVerts.size(); ++i)
+		{
+			Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
+
+			sphereVertdataarray.push_back(thisPt.x);
+			sphereVertdataarray.push_back(thisPt.y);
+			sphereVertdataarray.push_back(thisPt.z);
+
+			sphereVertdataarray.push_back(color.x);
+			sphereVertdataarray.push_back(color.y);
+			sphereVertdataarray.push_back(color.z);
+
+			m_uiTriVertcount++;
+		}
+
+		vertdataarray.insert(vertdataarray.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
 	}
 
 	// Setup the VAO the first time through.
@@ -217,24 +266,26 @@ void ViveController::touchpadInitialTouch(float x, float y)
 {
 	//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_DeviceID, x, y);
 	m_bTouchpadTouched = true;
-	m_vTouchpadInitialTouchPoint.x = x;
-	m_vTouchpadInitialTouchPoint.y = y;
+	m_vec2TouchpadInitialTouchPoint = Vector2(x, y);
+	m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
 
 }
 
 void ViveController::touchpadTouch(float x, float y)
 {
 	//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_DeviceID, x, y);
+	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
 
-	if (m_vTouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
-		m_vTouchpadInitialTouchPoint = Vector2(x, y);
+	if (m_vec2TouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
+		m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
 }
 
 void ViveController::touchpadUntouched()
 {
 	//printf("Controller (device %u) touchpad untouched.\n", m_DeviceID);
 	m_bTouchpadTouched = false;
-	m_vTouchpadInitialTouchPoint = Vector2(0.f, 0.f);
+	m_vec2TouchpadInitialTouchPoint = Vector2(0.f, 0.f);
+	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
 }
 
 void ViveController::touchPadClicked(float x, float y)
@@ -257,4 +308,12 @@ bool ViveController::isTouchpadTouched()
 bool ViveController::isTouchpadClicked()
 {
 	return m_bTouchpadClicked;
+}
+
+Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
+{
+	Vector4 xVec = (pt->x > 0 ? c_vec4TouchPadRight : c_vec4TouchPadLeft) - c_vec4TouchPadCenter;
+	Vector4 yVec = (pt->y > 0 ? c_vec4TouchPadTop : c_vec4TouchPadBottom) - c_vec4TouchPadCenter;
+
+	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
 }

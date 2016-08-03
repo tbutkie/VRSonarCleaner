@@ -8,16 +8,16 @@ EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceInd
 	, m_bCleaningMode(false)
 	, m_bCursorRadiusResizeMode(false)
 	, m_bCursorOffsetMode(false)
-	, cursorRadius(0.05f)
-	, cursorRadiusMin(0.005f)
-	, cursorRadiusMax(0.1f)
-	, cursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
-	, cursorOffsetAmount(0.1f)
-	, cursorOffsetAmountMin(0.1f)
-	, cursorOffsetAmountMax(1.5f)
+	, m_fCursorRadius(0.05f)
+	, m_fCursorRadiusMin(0.005f)
+	, m_fCursorRadiusMax(0.1f)
+	, m_vec4CursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
+	, m_fCursorOffsetAmount(0.1f)
+	, m_fCursorOffsetAmountMin(0.1f)
+	, m_fCursorOffsetAmountMax(1.5f)
 {
-	m_fCursorRadiusResizeModeInitialRadius = cursorRadius;
-	m_fCursorOffsetModeInitialOffset = cursorOffsetAmount;
+	m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadius;
+	m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
 }
 
 
@@ -31,7 +31,7 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
 	m_mat4CursorCurrentPose = m_mat4Pose * (Matrix4().identity()).translate(
-		Vector3(cursorOffsetDirection.x, cursorOffsetDirection.y, cursorOffsetDirection.z) * cursorOffsetAmount);
+		Vector3(m_vec4CursorOffsetDirection.x, m_vec4CursorOffsetDirection.y, m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount);
 
 	return m_Pose.bPoseIsValid;
 }
@@ -43,7 +43,7 @@ void EditingController::prepareForRendering()
 {
 	std::vector<float> vertdataarray;
 
-	m_uiVertcount = 0;
+	m_uiLineVertcount = 0;
 
 	if (!poseValid())
 		return;
@@ -77,7 +77,7 @@ void EditingController::prepareForRendering()
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
 
-			m_uiVertcount += 2;
+			m_uiLineVertcount += 2;
 		}
 	}
 
@@ -106,15 +106,15 @@ void EditingController::prepareForRendering()
 		else
 			color = Vector3(0.8f, 0.8f, 0.2f);
 
-		Vector4 prevVert = m_mat4CursorCurrentPose * Vector4(cursorRadius, 0.f, 0.f, 1.f);
+		Vector4 prevVert = m_mat4CursorCurrentPose * Vector4(m_fCursorRadius, 0.f, 0.f, 1.f);
 		for (GLuint i = 1; i < num_segments; i++)
 		{
 			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
 
 			Vector4 circlePt;
-			circlePt.x = cursorRadius * cosf(theta);
+			circlePt.x = m_fCursorRadius * cosf(theta);
 			circlePt.y = 0.f;
-			circlePt.z = cursorRadius * sinf(theta);
+			circlePt.z = m_fCursorRadius * sinf(theta);
 			circlePt.w = 1.f;
 
 			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
@@ -125,7 +125,7 @@ void EditingController::prepareForRendering()
 			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
 			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-			m_uiVertcount += 2;
+			m_uiLineVertcount += 2;
 
 			prevVert = thisVert;
 		}
@@ -149,7 +149,7 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(thisCtrPos.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiVertcount += 2;
+				m_uiLineVertcount += 2;
 			}
 		}
 
@@ -160,7 +160,7 @@ void EditingController::prepareForRendering()
 			if (m_bShowCursor)
 			{
 				Vector4 controllerCtr = m_mat4Pose * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 cursorEdge = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, cursorRadius, 1.f);
+				Vector4 cursorEdge = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, m_fCursorRadius, 1.f);
 
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
@@ -172,10 +172,39 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(controllerCtr.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiVertcount += 2;
+				m_uiLineVertcount += 2;
 			}
 		}
 
+		// Draw touchpad touch point sphere
+		if (m_bTouchpadTouched)
+		{
+			std::vector<float> sphereVertdataarray;
+			std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
+			Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
+
+			//Vector3 color(.2f, .2f, .71f);
+			Vector3 color(.65f, .65f, .65f);
+
+			Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f, 0.001f, 0.0025f);
+
+			for (size_t i = 0; i < sphereVerts.size(); ++i)
+			{
+				Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
+
+				sphereVertdataarray.push_back(thisPt.x);
+				sphereVertdataarray.push_back(thisPt.y);
+				sphereVertdataarray.push_back(thisPt.z);
+
+				sphereVertdataarray.push_back(color.x);
+				sphereVertdataarray.push_back(color.y);
+				sphereVertdataarray.push_back(color.z);
+
+				m_uiTriVertcount++;
+			}
+
+			vertdataarray.insert(vertdataarray.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
+		}
 	}
 
 	// Setup the VAO the first time through.
@@ -241,8 +270,8 @@ void EditingController::triggerUnclicked()
 void EditingController::touchpadInitialTouch(float x, float y)
 {
 	m_bTouchpadTouched = true;
-	m_vTouchpadInitialTouchPoint.x = x;
-	m_vTouchpadInitialTouchPoint.y = y;
+	m_vec2TouchpadInitialTouchPoint = Vector2(x, y);
+	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
 
 	// if cursor mode on, start modfication interactions
 	if (m_bShowCursor)
@@ -250,76 +279,78 @@ void EditingController::touchpadInitialTouch(float x, float y)
 		if (y > 0.5f || y < -0.5f)
 		{
 			m_bCursorOffsetMode = true;
-			m_fCursorOffsetModeInitialOffset = cursorOffsetAmount;
+			m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
 		}
 		else
 		{
 			m_bCursorRadiusResizeMode = true;
-			m_fCursorRadiusResizeModeInitialRadius = cursorRadius;
+			m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadius;
 		}
 	}
 }
 
 void EditingController::touchpadTouch(float x, float y)
 {
-	if (m_vTouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
-		m_vTouchpadInitialTouchPoint = Vector2(x, y);
+	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
+
+	if (m_vec2TouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
+		m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
 
 	if (m_bShowCursor)
 	{
 		// Cursor repositioning
 		if (m_bCursorOffsetMode)
 		{
-			float dy = y - m_vTouchpadInitialTouchPoint.y;
+			float dy = y - m_vec2TouchpadInitialTouchPoint.y;
 
-			float range = cursorOffsetAmountMax - cursorOffsetAmountMin;
+			float range = m_fCursorOffsetAmountMax - m_fCursorOffsetAmountMin;
 
 			if (dy > 0.f)
-				cursorOffsetAmount = m_fCursorOffsetModeInitialOffset + dy * range * 0.5f;
+				m_fCursorOffsetAmount = m_fCursorOffsetModeInitialOffset + dy * range * 0.5f;
 			else if (dy < 0.f)
-				cursorOffsetAmount = m_fCursorOffsetModeInitialOffset + dy * range * 0.5f;
+				m_fCursorOffsetAmount = m_fCursorOffsetModeInitialOffset + dy * range * 0.5f;
 			else if (dy == 0.f)
-				cursorOffsetAmount = m_fCursorOffsetModeInitialOffset;
+				m_fCursorOffsetAmount = m_fCursorOffsetModeInitialOffset;
 
-			if (cursorOffsetAmount > cursorOffsetAmountMax)
+			if (m_fCursorOffsetAmount > m_fCursorOffsetAmountMax)
 			{
-				cursorOffsetAmount = cursorOffsetAmountMax;
-				m_fCursorOffsetModeInitialOffset = cursorOffsetAmountMax;
-				m_vTouchpadInitialTouchPoint.y = y;
+				m_fCursorOffsetAmount = m_fCursorOffsetAmountMax;
+				m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmountMax;
+				m_vec2TouchpadInitialTouchPoint.y = y;
 			}
-			else if (cursorOffsetAmount < cursorOffsetAmountMin)
+			else if (m_fCursorOffsetAmount < m_fCursorOffsetAmountMin)
 			{
-				cursorOffsetAmount = cursorOffsetAmountMin;
-				m_fCursorOffsetModeInitialOffset = cursorOffsetAmountMin;
-				m_vTouchpadInitialTouchPoint.y = y;
+				m_fCursorOffsetAmount = m_fCursorOffsetAmountMin;
+				m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmountMin;
+				m_vec2TouchpadInitialTouchPoint.y = y;
 			}
 		}
 
 		// Cursor resizing
 		if (m_bCursorRadiusResizeMode)
 		{
-			float dx = x - m_vTouchpadInitialTouchPoint.x;
+			float dx = x - m_vec2TouchpadInitialTouchPoint.x;
 
-			float range = cursorRadiusMax - cursorRadiusMin;
+			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
 
 			if (dx > 0.f)
-				cursorRadius = m_fCursorRadiusResizeModeInitialRadius + dx * range;
+				m_fCursorRadius = m_fCursorRadiusResizeModeInitialRadius + dx * range;
 			else if (dx < 0.f)
-				cursorRadius = m_fCursorRadiusResizeModeInitialRadius + dx * range;
+				m_fCursorRadius = m_fCursorRadiusResizeModeInitialRadius + dx * range;
 			else if (dx == 0.f)
-				cursorRadius = m_fCursorRadiusResizeModeInitialRadius;
+				m_fCursorRadius = m_fCursorRadiusResizeModeInitialRadius;
 
-			if (cursorRadius > cursorRadiusMax)
+			if (m_fCursorRadius > m_fCursorRadiusMax)
 			{
-				cursorRadius = cursorRadiusMax;
-				m_fCursorRadiusResizeModeInitialRadius = cursorRadiusMax;
-				m_vTouchpadInitialTouchPoint.x = x;
+				m_fCursorRadius = m_fCursorRadiusMax;
+				m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadiusMax;
+				m_vec2TouchpadInitialTouchPoint.x = x;
 			}
-			else if (cursorRadius < cursorRadiusMin)
+			else if (m_fCursorRadius < m_fCursorRadiusMin)
 			{
-				cursorRadius = cursorRadiusMin;
-				m_fCursorRadiusResizeModeInitialRadius = cursorRadiusMin;
-				m_vTouchpadInitialTouchPoint.x = x;
+				m_fCursorRadius = m_fCursorRadiusMin;
+				m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadiusMin;
+				m_vec2TouchpadInitialTouchPoint.x = x;
 			}
 		}
 	}
@@ -328,7 +359,8 @@ void EditingController::touchpadTouch(float x, float y)
 void EditingController::touchpadUntouched()
 {
 	m_bTouchpadTouched = false;
-	m_vTouchpadInitialTouchPoint = Vector2(0.f, 0.f);
+	m_vec2TouchpadInitialTouchPoint = Vector2(0.f, 0.f);
+	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
 	m_bCursorOffsetMode = false;
 	m_bCursorRadiusResizeMode = false;
 }
@@ -346,7 +378,7 @@ void EditingController::getCursorPoses(Matrix4 * thisCursorPose, Matrix4 * lastC
 
 float EditingController::getCursorRadius()
 {
-	return cursorRadius;
+	return m_fCursorRadius;
 }
 
 bool EditingController::cursorActive()

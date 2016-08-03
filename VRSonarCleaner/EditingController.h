@@ -32,12 +32,18 @@ private:
 	Matrix4 m_mat4CursorLastPose;
 	bool m_bShowCursor;
 	bool m_bCleaningMode;
+
+	float m_fCursorRadius;
+	float m_fCursorRadiusMin;
+	float m_fCursorRadiusMax;
 	bool m_bCursorRadiusResizeMode;
 	float m_fCursorRadiusResizeModeInitialRadius;
+
+	float m_fCursorOffsetAmount;
+	float m_fCursorOffsetAmountMin;
+	float m_fCursorOffsetAmountMax;
+	Vector4 m_vec4CursorOffsetDirection;
 	bool m_bCursorOffsetMode;
 	float m_fCursorOffsetModeInitialOffset;
-
-	float cursorRadius, cursorRadiusMin, cursorRadiusMax, cursorOffsetAmount, cursorOffsetAmountMin, cursorOffsetAmountMax;
-	Vector4 cursorOffsetDirection;
 };
 

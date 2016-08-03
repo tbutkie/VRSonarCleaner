@@ -51,13 +51,18 @@ public:
 	bool isTouchpadClicked();
 
 protected:
+	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
+
 	bool m_bSystemButtonClicked;
 	bool m_bMenuButtonClicked;
 	bool m_bGripButtonClicked;
 	bool m_bTouchpadTouched;
 	bool m_bTouchpadClicked;
-	Vector2 m_vTouchpadInitialTouchPoint;
+	Vector2 m_vec2TouchpadInitialTouchPoint;
+	Vector2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
 	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
+
+	Icosphere m_TouchPointSphere;
 };

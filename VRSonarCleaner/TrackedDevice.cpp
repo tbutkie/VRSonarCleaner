@@ -3,19 +3,18 @@
 
 
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
-	: m_DeviceID(id)
+	: m_nDeviceID(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_ClassChar(0)
 	, m_unTransformProgramID(0)
 	, m_glVertBuffer(0)
-	, m_uiVertcount(0)
+	, m_uiLineVertcount(0)
+	, m_uiTriVertcount(0)
 	, m_unVAO(0)
 	, m_nMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
-	, m_TouchPointSphere(Icosphere(4))
 {	
-
 	createShader();
 }
 
@@ -34,7 +33,7 @@ TrackedDevice::~TrackedDevice()
 
 vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
 {
-	return m_DeviceID;
+	return m_nDeviceID;
 }
 
 void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
@@ -124,7 +123,7 @@ void TrackedDevice::prepareForRendering()
 {
 	std::vector<float> vertdataarray;
 
-	m_uiVertcount = 0;
+	m_uiLineVertcount = 0;
 
 	if (!poseValid())
 		return;
@@ -160,7 +159,7 @@ void TrackedDevice::prepareForRendering()
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
 
-			m_uiVertcount += 2;
+			m_uiLineVertcount += 2;
 		}
 	}
 
@@ -202,7 +201,8 @@ void TrackedDevice::render(Matrix4 & matVP)
 	glUseProgram(m_unTransformProgramID);
 	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, matVP.get());
 	glBindVertexArray(m_unVAO);
-	glDrawArrays(GL_LINES, 0, m_uiVertcount);
+	glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
+	glDrawArrays(GL_TRIANGLES, m_uiLineVertcount, m_uiTriVertcount);
 	glBindVertexArray(0);
 }
 

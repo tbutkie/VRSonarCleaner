@@ -39,7 +39,7 @@ protected:
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	bool createShader();
 
-	vr::TrackedDeviceIndex_t m_DeviceID;
+	vr::TrackedDeviceIndex_t m_nDeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	
 	char m_ClassChar;   // for each device, a character representing its class
@@ -50,13 +50,12 @@ protected:
 	
 	GLuint m_glVertBuffer;
 	GLuint m_unVAO;
-	unsigned int m_uiVertcount;
+	unsigned int m_uiLineVertcount;
+	unsigned int m_uiTriVertcount;
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
 	
 	bool m_bShow;
 	bool m_bShowAxes;
-
-	Icosphere m_TouchPointSphere;
 };
 
