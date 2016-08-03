@@ -105,15 +105,13 @@ std::vector<Vector3> Icosphere::getVertices(void) { return vertices; }
 
 std::vector<unsigned int> Icosphere::getIndices(void) { return indices; }
 
-std::vector<float> Icosphere::getUnindexedFlatVertices(void)
+std::vector<Vector3> Icosphere::getUnindexedVertices(void)
 {
-	std::vector<float> flatVerts;
+	std::vector<Vector3> flatVerts;
 
 	for (size_t i = 0; i < indices.size(); ++i)
 	{
-		flatVerts.push_back(vertices[i].x);
-		flatVerts.push_back(vertices[i].y);
-		flatVerts.push_back(vertices[i].z);
+		flatVerts.push_back(vertices[indices[i]]);
 	}
 
 	return flatVerts;

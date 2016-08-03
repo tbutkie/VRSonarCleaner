@@ -14,7 +14,7 @@ public:
 	std::vector<Vector3> getVertices(void);
 	std::vector<unsigned int> getIndices(void);
 
-	std::vector<float> getUnindexedFlatVertices(void);
+	std::vector<Vector3> getUnindexedVertices(void);
 
 private:	
 
