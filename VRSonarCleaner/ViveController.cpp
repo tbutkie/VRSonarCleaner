@@ -112,7 +112,7 @@ void ViveController::prepareForRendering()
 	// Draw touchpad touch point sphere
 	if (m_bTouchpadTouched)
 	{
-		m_uiTriVertcount += insertTouchpadCursor(&vertdataarray);
+		insertTouchpadCursor(vertdataarray, m_uiTriVertcount);
 	}
 
 	// Setup the VAO the first time through.
@@ -299,10 +299,9 @@ Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
 	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
 }
 
-unsigned int ViveController::insertTouchpadCursor(std::vector<float>* verts)
+void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices)
 {
 	std::vector<float> sphereVertdataarray;
-	unsigned int nVerts = 0;
 	std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
 	Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
 
@@ -323,9 +322,8 @@ unsigned int ViveController::insertTouchpadCursor(std::vector<float>* verts)
 		sphereVertdataarray.push_back(color.y);
 		sphereVertdataarray.push_back(color.z);
 
-		nVerts++;
+		nTriangleVertices++;
 	}
 
-	verts->insert(verts->end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
-	return nVerts;
+	vertices.insert(vertices.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
 }

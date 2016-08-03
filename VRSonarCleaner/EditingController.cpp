@@ -179,7 +179,7 @@ void EditingController::prepareForRendering()
 		// Draw touchpad touch point sphere
 		if (m_bTouchpadTouched)
 		{
-			m_uiTriVertcount += insertTouchpadCursor(&vertdataarray);
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount);
 		}
 	}
 
