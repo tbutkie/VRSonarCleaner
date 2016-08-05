@@ -30,7 +30,6 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_nWindowHeight(720)
 	, m_unLensProgramID(0)
 	, m_pHMD(NULL)
-	, m_pRenderModels(NULL)
 	, m_bDebugOpenGL(false)
 	, m_bVerbose(false)
 	, m_bPerf(false)
@@ -113,19 +112,6 @@ bool CMainApplication::BInit()
 		m_pHMD = NULL;
 		char buf[1024];
 		sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", buf, NULL);
-		return false;
-	}
-
-
-	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
-	if (!m_pRenderModels)
-	{
-		m_pHMD = NULL;
-		vr::VR_Shutdown();
-
-		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "Unable to get render model interface: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", buf, NULL);
 		return false;
 	}
@@ -230,7 +216,13 @@ bool CMainApplication::BInitGL()
 	SetupStereoRenderTargets();
 	SetupDistortion();
 
-	m_pTDM->init();
+	if (!m_pTDM->BInit())
+	{
+		dprintf("Error initializing TrackedDeviceManager\n");
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not get render model interface", NULL);
+	}
+
+
 	cleaningRoom = new CleaningRoom();
 	
 	return true;

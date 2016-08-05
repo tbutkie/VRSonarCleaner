@@ -14,7 +14,7 @@ public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
 	~TrackedDeviceManager();
 
-	void init();
+	bool BInit();
 
 	void handleEvents();
 
@@ -43,6 +43,7 @@ private:
 	std::string getTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	
 	vr::IVRSystem *m_pHMD;
+	vr::IVRRenderModels *m_pRenderModels;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	EditingController* m_pEditController;

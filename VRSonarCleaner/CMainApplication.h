@@ -65,7 +65,6 @@ private:
 	bool m_bGlFinishHack;
 
 	vr::IVRSystem *m_pHMD;
-	vr::IVRRenderModels *m_pRenderModels;
 
 	TrackedDeviceManager *m_pTDM;
 

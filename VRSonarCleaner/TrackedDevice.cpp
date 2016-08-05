@@ -3,8 +3,9 @@
 
 
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
-	: m_nDeviceID(id)
+	: m_unDeviceID(id)
 	, m_pTrackedDeviceToRenderModel(NULL)
+	, m_strRenderModelName("No model name")
 	, m_ClassChar(0)
 	, m_unTransformProgramID(0)
 	, m_glVertBuffer(0)
@@ -33,17 +34,45 @@ TrackedDevice::~TrackedDevice()
 
 vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
 {
-	return m_nDeviceID;
+	return m_unDeviceID;
 }
 
 void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 {
 	m_pTrackedDeviceToRenderModel = renderModel;
+	m_strRenderModelName = renderModel->GetName();
 }
 
-bool TrackedDevice::hasRenderModel()
+void TrackedDevice::addComponent(uint32_t unComponentIndex, const char * pchComponentName, CGLRenderModel * pComponentRenderModel)
 {
-	return !(m_pTrackedDeviceToRenderModel == NULL);
+	TrackedDeviceComponent newComponent;
+
+	newComponent.m_unComponentIndex = unComponentIndex;
+	newComponent.m_pchComponentName = pchComponentName;
+	newComponent.m_pComponentRenderModel = pComponentRenderModel;
+
+	m_Components.push_back(newComponent);
+}
+
+Matrix4 TrackedDevice::getComponentPose(uint32_t unComponentIndex)
+{
+	uint32_t nComponents = getComponentCount();
+	if (nComponents == 0 || unComponentIndex >= nComponents)
+		return Matrix4().identity();
+
+	TrackedDeviceComponent *c = &m_Components[unComponentIndex];
+
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVRRenderModels *pRenderModelsInterface = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
+
+	const vr::VRControllerState_t *pControllerState;
+	const vr::RenderModel_ControllerMode_State_t *pState;
+	vr::RenderModel_ComponentState_t *pComponentState;
+
+	pRenderModelsInterface->GetComponentState(m_strRenderModelName.c_str(), c->m_pchComponentName, pControllerState, pState, pComponentState);
+	
+	//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
+	return Matrix4().identity();
 }
 
 bool TrackedDevice::createShader()
@@ -213,8 +242,17 @@ void TrackedDevice::render(Matrix4 & matVP)
 
 void TrackedDevice::renderModel()
 {
-	if(m_pTrackedDeviceToRenderModel)
+	if (m_pTrackedDeviceToRenderModel)
 		m_pTrackedDeviceToRenderModel->Draw();
+}
+
+void TrackedDevice::renderModelComponent(uint32_t unComponent)
+{
+	if (unComponent >= m_Components.size())
+		return;
+
+	if (m_Components[unComponent].m_pComponentRenderModel)
+				m_Components[unComponent].m_pComponentRenderModel->Draw();
 }
 
 //-----------------------------------------------------------------------------

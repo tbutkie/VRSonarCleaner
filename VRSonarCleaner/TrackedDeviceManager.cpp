@@ -3,6 +3,7 @@
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
+, m_pRenderModels(NULL)
 , m_pEditController(NULL)
 , m_pManipController(NULL)
 , m_unRenderModelProgramID(0)
@@ -34,13 +35,29 @@ TrackedDeviceManager::~TrackedDeviceManager()
 	}
 }
 
-void TrackedDeviceManager::init()
+bool TrackedDeviceManager::BInit()
 {
+	vr::EVRInitError eError = vr::VRInitError_None;
+
+	m_pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
+
+	if (!m_pRenderModels)
+	{
+		m_pHMD = NULL;
+		vr::VR_Shutdown();
+
+		char buf[1024];
+		sprintf_s(buf, sizeof(buf), "Unable to get render model interface: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		return false;
+	}
+
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice);
 
 	setupRenderModels();
 	createShaders();
+
+	return true;
 }
 
 void TrackedDeviceManager::handleEvents()
@@ -370,9 +387,7 @@ CGLRenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRende
 		vr::VRRenderModels()->FreeRenderModel(pModel);
 		vr::VRRenderModels()->FreeTexture(pTexture);
 	}
-
-	std::cout << pchRenderModelName << " has " << ((vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, NULL))->GetComponentCount(pchRenderModelName) << " components" << std::endl;
-
+	
 	return pRenderModel;
 }
 
@@ -397,7 +412,42 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 	}
 	else
 	{
+		const char* pchRenderName = pRenderModel->GetName().c_str();
+
+		std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << pchRenderName << std::endl;
 		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
+
+
+		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
+		
+		for (uint32_t i = 0; i < nModelComponents; ++i)
+		{
+			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, NULL, 0);
+			if (unRequiredBufferLen == 0)
+				continue;
+
+			char *pchBuffer1 = new char[unRequiredBufferLen];
+			unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
+			std::string sComponentName = pchBuffer1;
+			delete[] pchBuffer1;
+
+			bool hasRenderModel = true;
+			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
+			if (unRequiredBufferLen == 0)
+				hasRenderModel = false;
+			else
+			{
+				char *pchBuffer2 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+				std::string sComponentRenderModelName = pchBuffer2;
+				delete[] pchBuffer2;
+
+				CGLRenderModel *pComponentRenderModel = findOrLoadRenderModel(sComponentRenderModelName.c_str());
+				m_rpTrackedDevices[unTrackedDeviceIndex]->addComponent(i, sComponentRenderModelName.c_str(), pComponentRenderModel);
+			}
+			
+			std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
+		}
 	}
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
@@ -416,7 +466,6 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 			if (pRenderModel)
 				m_pManipController->setRenderModel(pRenderModel);
 		}
-
 	}
 }
 
@@ -460,11 +509,27 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
 		//	continue;
 
-		const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getPose();
-		Matrix4 matMVP = matVP * matDeviceToTracking;
-		glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+		uint32_t nComponents = m_rpTrackedDevices[unTrackedDevice]->getComponentCount();
 
-		m_rpTrackedDevices[unTrackedDevice]->renderModel();
+		if (nComponents == 0)
+		{
+			const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getPose();
+			Matrix4 matMVP = matVP * matDeviceToTracking;
+			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+
+			m_rpTrackedDevices[unTrackedDevice]->renderModel();
+		}
+		else
+		{
+			for (uint32_t i = 0; i < nComponents; ++i)
+			{				
+				const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getComponentPose(i);
+				Matrix4 matMVP = matVP * matDeviceToTracking;
+				glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+
+				m_rpTrackedDevices[unTrackedDevice]->renderModelComponent(i);
+			}
+		}
 	}
 
 	glUseProgram(0);
