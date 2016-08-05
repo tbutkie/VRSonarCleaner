@@ -291,8 +291,6 @@ void TrackedDeviceManager::cleaningHit()
 //-----------------------------------------------------------------------------
 void TrackedDeviceManager::setupRenderModels()
 {
-	memset(m_rTrackedDeviceToRenderModel, 0, sizeof(m_rTrackedDeviceToRenderModel));
-
 	if (!m_pHMD)
 		return;
 
@@ -400,7 +398,6 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 	else
 	{
 		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
-		m_rTrackedDeviceToRenderModel[unTrackedDeviceIndex] = pRenderModel;
 	}
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
@@ -454,7 +451,7 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 
 	for (uint32_t unTrackedDevice = 0; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
 	{
-		if (!m_rTrackedDeviceToRenderModel[unTrackedDevice])
+		if (!m_rpTrackedDevices[unTrackedDevice]->hasRenderModel())
 			continue;
 
 		if (!m_rpTrackedDevices[unTrackedDevice]->poseValid())
@@ -467,7 +464,7 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		Matrix4 matMVP = matVP * matDeviceToTracking;
 		glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
 
-		m_rTrackedDeviceToRenderModel[unTrackedDevice]->Draw();
+		m_rpTrackedDevices[unTrackedDevice]->renderModel();
 	}
 
 	glUseProgram(0);

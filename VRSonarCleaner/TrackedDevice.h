@@ -18,6 +18,7 @@ public:
 
 	vr::TrackedDeviceIndex_t getIndex();
 	void setRenderModel(CGLRenderModel *renderModel);
+	bool hasRenderModel();
 
 	bool toggleAxes();
 	bool axesActive();

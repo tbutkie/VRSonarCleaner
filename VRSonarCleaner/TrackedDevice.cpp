@@ -41,6 +41,11 @@ void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 	m_pTrackedDeviceToRenderModel = renderModel;
 }
 
+bool TrackedDevice::hasRenderModel()
+{
+	return !(m_pTrackedDeviceToRenderModel == NULL);
+}
+
 bool TrackedDevice::createShader()
 {
 	m_unTransformProgramID = CompileGLShader(
