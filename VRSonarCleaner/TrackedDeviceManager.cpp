@@ -372,6 +372,9 @@ CGLRenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRende
 		vr::VRRenderModels()->FreeRenderModel(pModel);
 		vr::VRRenderModels()->FreeTexture(pTexture);
 	}
+
+	std::cout << pchRenderModelName << " has " << ((vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, NULL))->GetComponentCount(pchRenderModelName) << " components" << std::endl;
+
 	return pRenderModel;
 }
 
