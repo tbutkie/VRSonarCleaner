@@ -60,7 +60,6 @@ private:
 	GLint m_nRenderModelMatrixLocation;
 
 	Matrix4 m_mat4HMDPose;
-
 	
 	std::vector< CGLRenderModel * > m_vecRenderModels;
 };

@@ -416,55 +416,59 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 
 		std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << pchRenderName << std::endl;
 		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
-
-
-		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
-		
-		for (uint32_t i = 0; i < nModelComponents; ++i)
-		{
-			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, NULL, 0);
-			if (unRequiredBufferLen == 0)
-				continue;
-
-			char *pchBuffer1 = new char[unRequiredBufferLen];
-			unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
-			std::string sComponentName = pchBuffer1;
-			delete[] pchBuffer1;
-
-			bool hasRenderModel = true;
-			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
-			if (unRequiredBufferLen == 0)
-				hasRenderModel = false;
-			else
-			{
-				char *pchBuffer2 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-				std::string sComponentRenderModelName = pchBuffer2;
-				delete[] pchBuffer2;
-
-				CGLRenderModel *pComponentRenderModel = findOrLoadRenderModel(sComponentRenderModelName.c_str());
-				m_rpTrackedDevices[unTrackedDeviceIndex]->addComponent(i, sComponentRenderModelName.c_str(), pComponentRenderModel);
-			}
-			
-			std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
-		}
 	}
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
+		ViveController *thisController = NULL;
+
 		if (!m_pEditController)
 		{
 			m_pEditController = new EditingController(unTrackedDeviceIndex);
-
-			if (pRenderModel)
-				m_pEditController->setRenderModel(pRenderModel);
+			thisController = m_pEditController;
 		}
 		else if(!m_pManipController)
 		{
 			m_pManipController = new ViveController(unTrackedDeviceIndex);
+			thisController = m_pManipController;
+		}
+		
+		if (pRenderModel && thisController)
+		{
+			thisController->setRenderModel(pRenderModel);
 
-			if (pRenderModel)
-				m_pManipController->setRenderModel(pRenderModel);
+			const char* pchRenderName = pRenderModel->GetName().c_str();
+
+			uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
+
+			for (uint32_t i = 0; i < nModelComponents; ++i)
+			{
+				uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
+				if (unRequiredBufferLen == 0)
+					continue;
+
+				char *pchBuffer1 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
+				std::string sComponentName = pchBuffer1;
+				delete[] pchBuffer1;
+
+				bool hasRenderModel = true;
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
+				if (unRequiredBufferLen == 0)
+					hasRenderModel = false;
+				else
+				{
+					char *pchBuffer2 = new char[unRequiredBufferLen];
+					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+					std::string sComponentRenderModelName = pchBuffer2;
+					delete[] pchBuffer2;
+
+					CGLRenderModel *pComponentRenderModel = findOrLoadRenderModel(sComponentRenderModelName.c_str());
+					thisController->addComponent(i, sComponentName, pComponentRenderModel);
+				}
+
+				std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
+			}
 		}
 	}
 }
@@ -509,7 +513,7 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
 		//	continue;
 
-		uint32_t nComponents = m_rpTrackedDevices[unTrackedDevice]->getComponentCount();
+		uint32_t nComponents = m_pEditController ? m_pEditController->getComponentCount() : 0;
 
 		if (nComponents == 0)
 		{
@@ -522,12 +526,13 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		else
 		{
 			for (uint32_t i = 0; i < nComponents; ++i)
-			{				
-				const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getComponentPose(i);
+			{
+				const Matrix4 & matDeviceToTracking = m_pEditController->getPose();
+				const Matrix4 & matComponentToDevice = m_pEditController->getComponentPose(i);
 				Matrix4 matMVP = matVP * matDeviceToTracking;
 				glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
 
-				m_rpTrackedDevices[unTrackedDevice]->renderModelComponent(i);
+				m_pEditController->renderModel();
 			}
 		}
 	}

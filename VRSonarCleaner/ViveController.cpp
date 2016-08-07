@@ -23,12 +23,51 @@ ViveController::~ViveController()
 
 }
 
+void ViveController::update()
+{
+
+}
+
 bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
 	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 
 	return m_Pose.bPoseIsValid;
+}
+
+void ViveController::addComponent(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel * pComponentRenderModel)
+{
+	ControllerComponent newComponent;
+
+	newComponent.m_unComponentIndex = unComponentIndex;
+	newComponent.m_strComponentName = pchComponentName;
+	newComponent.m_pComponentRenderModel = pComponentRenderModel;
+
+	m_vComponents.push_back(newComponent);
+}
+
+Matrix4 ViveController::getComponentPose(uint32_t unComponentIndex)
+{
+	uint32_t nComponents = getComponentCount();
+	if (nComponents == 0 || unComponentIndex >= nComponents)
+		return Matrix4().identity();
+
+	ControllerComponent *c = &m_vComponents[unComponentIndex];
+
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
+	vr::IVRRenderModels *pRenderModelsInterface = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
+
+	vr::VRControllerState_t pControllerState;
+	vr::RenderModel_ControllerMode_State_t pState;
+	vr::RenderModel_ComponentState_t pComponentState;
+
+	pHMD->GetControllerState(m_unDeviceID, &pControllerState);
+	pRenderModelsInterface->GetComponentState(m_strRenderModelName.c_str(), c->m_strComponentName.c_str(), &pControllerState, &pState, &pComponentState);
+
+	//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
+	return ConvertSteamVRMatrixToMatrix4(pComponentState.mTrackingToComponentRenderModel);
 }
 
 //-----------------------------------------------------------------------------
@@ -289,6 +328,13 @@ bool ViveController::isTouchpadTouched()
 bool ViveController::isTouchpadClicked()
 {
 	return m_bTouchpadClicked;
+}
+
+void ViveController::renderModel()
+{
+	for(size_t i = 0; i < m_vComponents.size(); ++i)
+		if (m_vComponents[i].m_pComponentRenderModel)
+			m_vComponents[i].m_pComponentRenderModel->Draw();
 }
 
 Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)

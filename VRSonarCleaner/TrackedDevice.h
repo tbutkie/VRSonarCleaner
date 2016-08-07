@@ -20,10 +20,6 @@ public:
 	void setRenderModel(CGLRenderModel *renderModel);
 	inline bool hasRenderModel() { return !(m_pTrackedDeviceToRenderModel == NULL); }
 
-	void addComponent(uint32_t unComponentIndex, const char *pchComponentName, CGLRenderModel *pComponentRenderModel);
-	inline size_t getComponentCount() { return m_Components.size();  }
-	Matrix4 getComponentPose(uint32_t unComponentIndex);
-
 	bool toggleAxes();
 	bool axesActive();
 
@@ -38,23 +34,9 @@ public:
 	virtual void prepareForRendering();
 
 	virtual void render(Matrix4 & matVP); 
-	void renderModel();
-	void renderModelComponent(uint32_t unComponent);
+	virtual void renderModel();
 
 protected:
-
-	struct TrackedDeviceComponent {
-		uint32_t m_unComponentIndex;
-		const char *m_pchComponentName;
-		CGLRenderModel *m_pComponentRenderModel;
-
-		TrackedDeviceComponent()
-			: m_unComponentIndex(-1)
-			, m_pchComponentName("No name")
-			, m_pComponentRenderModel(NULL)
-		{}
-	};
-
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	bool createShader();
@@ -62,8 +44,6 @@ protected:
 	vr::TrackedDeviceIndex_t m_unDeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	std::string m_strRenderModelName;
-
-	std::vector<TrackedDeviceComponent> m_Components;
 	
 	char m_ClassChar;   // for each device, a character representing its class
 	

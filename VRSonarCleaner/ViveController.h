@@ -11,7 +11,12 @@ public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	~ViveController();
 
+	void update();
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+
+	void addComponent(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel *pComponentRenderModel);
+	inline size_t getComponentCount() { return m_vComponents.size(); }
+	Matrix4 getComponentPose(uint32_t unComponentIndex);
 
 	virtual void prepareForRendering();
 
@@ -44,9 +49,30 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
+	void renderModel();
+
 protected:
+	struct ControllerComponent {
+		uint32_t m_unComponentIndex;
+		std::string m_strComponentName;
+		CGLRenderModel *m_pComponentRenderModel;
+		vr::RenderModel_ComponentState_t m_ComponentState;
+		bool m_bInitialized;
+
+		ControllerComponent()
+			: m_unComponentIndex(0)
+			, m_strComponentName("No name")
+			, m_pComponentRenderModel(NULL)
+			, m_bInitialized(false)
+		{}
+	};
+
+	std::vector<ControllerComponent> m_vComponents;
+
 	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices);
+
+	vr::VRControllerState_t m_ControllerState;
 
 	bool m_bSystemButtonClicked;
 	bool m_bMenuButtonClicked;
