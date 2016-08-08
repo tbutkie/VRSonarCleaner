@@ -379,3 +379,11 @@ std::string TrackedDevice::getPropertyString(vr::TrackedDeviceProperty prop, vr:
 	delete[] pchBuffer;
 	return sResult;
 }
+
+uint32_t TrackedDevice::getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError * peError)
+{
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
+	
+	return pHMD->GetInt32TrackedDeviceProperty(m_unDeviceID, prop, peError);;
+}

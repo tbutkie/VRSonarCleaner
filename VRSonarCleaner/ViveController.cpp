@@ -56,32 +56,54 @@ bool ViveController::BInit()
 
 		for (uint32_t i = 0; i < nModelComponents; ++i)
 		{
+			ControllerComponent c;
+			c.m_unComponentIndex = i;
+
 			uint32_t unRequiredBufferLen = pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
 			if (unRequiredBufferLen == 0)
-				continue;
-
-			char *pchBuffer1 = new char[unRequiredBufferLen];
-			unRequiredBufferLen = pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
-			std::string sComponentName = pchBuffer1;
-			delete[] pchBuffer1;
-
-			bool hasRenderModel = true;
-			unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
-			if (unRequiredBufferLen == 0)
-				hasRenderModel = false;
+			{
+				printf("Controller [device %d] component %d index out of range.\n", m_unDeviceID, i);
+			}
 			else
 			{
-				char *pchBuffer2 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-				std::string sComponentRenderModelName = pchBuffer2;
-				delete[] pchBuffer2;
+				char *pchBuffer1 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
+				c.m_strComponentName = pchBuffer1;
+				delete[] pchBuffer1;
 
-				CGLRenderModel *pComponentRenderModel = loadRenderModel(sComponentRenderModelName.c_str());
-				this->addComponentRenderModel(i, sComponentName, pComponentRenderModel);
+				unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), NULL, 0);
+				if (unRequiredBufferLen == 0)
+					c.m_bHasRenderModel = false;
+				else
+				{
+					char *pchBuffer2 = new char[unRequiredBufferLen];
+					unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+					std::string sComponentRenderModelName = pchBuffer2;
+
+					CGLRenderModel *pComponentRenderModel = loadRenderModel(pchBuffer2);
+					delete[] pchBuffer2;
+
+					c.m_pComponentRenderModel = pComponentRenderModel;
+					c.m_bHasRenderModel = true;					
+				}
+
+				c.m_bInitialized = true;
+
+				m_vComponents.push_back(c);
+
+				std::cout << "\t" << (c.m_bHasRenderModel ? "M -> " : "     ") << i << ": " << c.m_strComponentName << std::endl;
 			}
-
-			std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
 		}
+	}
+
+	
+	{
+		std::vector<uint32_t> axes;
+		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32));
+		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis1Type_Int32));
+		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis2Type_Int32));
+		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis3Type_Int32));
+		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis4Type_Int32));
 	}
 
 	createShaders();
@@ -93,10 +115,19 @@ void ViveController::update(const vr::VREvent_t *event)
 {
 	vr::EVRInitError eError = vr::VRInitError_None;
 	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
+	vr::IVRRenderModels *pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
 	
-	vr::VRControllerState_t state;
-	if (!pHMD->GetControllerState(m_unDeviceID, &state))
+	vr::VRControllerState_t controllerState;
+	if (!pHMD->GetControllerState(m_unDeviceID, &controllerState))
 		return;
+
+	vr::RenderModel_ControllerMode_State_t controllerModeState;
+	vr::RenderModel_ComponentState_t controllerComponentState;
+
+	pRenderModels->GetComponentState(m_strRenderModelName.c_str(), c->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
+
+	//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
+	ConvertSteamVRMatrixToMatrix4(controllerComponentState.mTrackingToComponentRenderModel);
 
 	if (event)
 	{
@@ -167,17 +198,17 @@ void ViveController::update(const vr::VREvent_t *event)
 		{
 			if (event->eventType == vr::VREvent_ButtonPress)
 			{
-				this->touchPadClicked(state.rAxis[0].x, state.rAxis[0].y);
+				this->touchPadClicked(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonUnpress)
 			{
-				this->touchPadUnclicked(state.rAxis[0].x, state.rAxis[0].y);
+				this->touchPadUnclicked(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonTouch)
 			{
-				this->touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
+				this->touchpadInitialTouch(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonUntouch)
@@ -194,11 +225,11 @@ void ViveController::update(const vr::VREvent_t *event)
 	// TOUCHPAD BEING TOUCHED
 	if (this->isTouchpadTouched())
 	{
-		this->touchpadTouch(state.rAxis[0].x, state.rAxis[0].y);
+		this->touchpadTouch(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
 	}
 
 	// TRIGGER INTERACTIONS
-	if (state.rAxis[1].x >= this->getTriggerThreshold())
+	if (controllerState.rAxis[1].x >= this->getTriggerThreshold())
 	{
 		// TRIGGER ENGAGED
 		if (!this->isTriggerEngaged())
@@ -209,16 +240,16 @@ void ViveController::update(const vr::VREvent_t *event)
 		// TRIGGER BEING PULLED
 		if (!this->isTriggerClicked())
 		{
-			this->triggerBeingPulled(state.rAxis[1].x);
+			this->triggerBeingPulled(controllerState.rAxis[1].x);
 		}
 
 		// TRIGGER CLICKED
-		if (state.rAxis[1].x == 1.f && !this->isTriggerClicked())
+		if (controllerState.rAxis[1].x == 1.f && !this->isTriggerClicked())
 		{
 			this->triggerClicked();
 		}
 		// TRIGGER UNCLICKED
-		if (state.rAxis[1].x != 1.f && this->isTriggerClicked())
+		if (controllerState.rAxis[1].x != 1.f && this->isTriggerClicked())
 		{
 			this->triggerUnclicked();
 		}
@@ -238,20 +269,9 @@ bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 	return m_Pose.bPoseIsValid;
 }
 
-void ViveController::addComponentRenderModel(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel * pComponentRenderModel)
-{
-	ControllerComponent newComponent;
-
-	newComponent.m_unComponentIndex = unComponentIndex;
-	newComponent.m_strComponentName = pchComponentName;
-	newComponent.m_pComponentRenderModel = pComponentRenderModel;
-
-	m_vComponents.push_back(newComponent);
-}
-
 Matrix4 ViveController::getComponentPose(uint32_t unComponentIndex)
 {
-	uint32_t nComponents = getComponentCount();
+	uint32_t nComponents = m_vComponents.size();
 	if (nComponents == 0 || unComponentIndex >= nComponents)
 		return Matrix4().identity();
 
@@ -261,15 +281,6 @@ Matrix4 ViveController::getComponentPose(uint32_t unComponentIndex)
 	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
 	vr::IVRRenderModels *pRenderModelsInterface = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
 
-	vr::VRControllerState_t pControllerState;
-	vr::RenderModel_ControllerMode_State_t pState;
-	vr::RenderModel_ComponentState_t pComponentState;
-
-	pHMD->GetControllerState(m_unDeviceID, &pControllerState);
-	pRenderModelsInterface->GetComponentState(m_strRenderModelName.c_str(), c->m_strComponentName.c_str(), &pControllerState, &pState, &pComponentState);
-
-	//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
-	return ConvertSteamVRMatrixToMatrix4(pComponentState.mTrackingToComponentRenderModel);
 }
 
 //-----------------------------------------------------------------------------

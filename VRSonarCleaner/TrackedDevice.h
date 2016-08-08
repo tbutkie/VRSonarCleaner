@@ -44,6 +44,7 @@ protected:
 	bool createShaders();
 	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
 	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 
 	vr::TrackedDeviceIndex_t m_unDeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;

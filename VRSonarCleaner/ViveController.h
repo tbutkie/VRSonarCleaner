@@ -16,8 +16,6 @@ public:
 	void update(const vr::VREvent_t *event = NULL);
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
-	void addComponentRenderModel(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel *pComponentRenderModel);
-	inline size_t getComponentCount() { return m_vComponents.size(); }
 	Matrix4 getComponentPose(uint32_t unComponentIndex);
 
 	virtual void prepareForRendering();
@@ -51,6 +49,7 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
+	void renderModel(Matrix4 & matVP);
 
 protected:
 	struct ControllerComponent {
@@ -59,6 +58,7 @@ protected:
 		CGLRenderModel *m_pComponentRenderModel;
 		vr::RenderModel_ComponentState_t m_ComponentState;
 		bool m_bInitialized;
+		bool m_bHasRenderModel;
 		bool m_bStatic;
 		bool m_bVisible;
 		bool m_bTouched;
@@ -95,6 +95,8 @@ protected:
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
 	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
+	uint32_t m_uiTriggerAxis;
+	uint32_t m_uiTouchpadAxis;
 
 	Icosphere m_TouchPointSphere;
 
