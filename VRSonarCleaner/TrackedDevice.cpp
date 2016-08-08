@@ -13,6 +13,8 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
 	, m_uiTriVertcount(0)
 	, m_unVAO(0)
 	, m_nMatrixLocation(-1)
+	, m_unRenderModelProgramID(0)
+	, m_nRenderModelMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
 {	
@@ -29,12 +31,14 @@ TrackedDevice::~TrackedDevice()
 	{
 		glDeleteProgram(m_unTransformProgramID);
 	}
+	if (m_unRenderModelProgramID)
+	{
+		glDeleteProgram(m_unRenderModelProgramID);
+	}
 }
 
 bool TrackedDevice::BInit()
 {
-	
-	// try to find a model we've already set up
 	std::string strRenderModelName = getPropertyString(vr::Prop_RenderModelName_String);
 
 	CGLRenderModel *pRenderModel = loadRenderModel(strRenderModelName.c_str());
@@ -43,6 +47,7 @@ bool TrackedDevice::BInit()
 	{
 		std::string sTrackingSystemName = getPropertyString(vr::Prop_TrackingSystemName_String);
 		printf("Unable to load render model for tracked device %d (%s.%s)", m_unDeviceID, sTrackingSystemName.c_str(), strRenderModelName.c_str());
+		return false;
 	}
 	else
 	{
@@ -52,9 +57,8 @@ bool TrackedDevice::BInit()
 		setRenderModel(pRenderModel);
 	}
 
+	createShaders();
 
-
-	createShader();
 	return true;
 }
 
@@ -197,10 +201,21 @@ void TrackedDevice::render(Matrix4 & matVP)
 	glBindVertexArray(0);
 }
 
-void TrackedDevice::renderModel()
+void TrackedDevice::renderModel(Matrix4 & matVP)
 {
-	if (m_pTrackedDeviceToRenderModel)
-		m_pTrackedDeviceToRenderModel->Draw();
+	if (!hasRenderModel() || !poseValid())
+		return;
+
+	// ----- Render Model rendering -----
+	glUseProgram(m_unRenderModelProgramID);
+
+	const Matrix4 & matDeviceToTracking = getPose();
+	Matrix4 matMVP = matVP * matDeviceToTracking;
+	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+
+	m_pTrackedDeviceToRenderModel->Draw();	
+
+	glUseProgram(0);
 }
 
 //-----------------------------------------------------------------------------
@@ -217,7 +232,7 @@ Matrix4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &ma
 	return matrixObj;
 }
 
-bool TrackedDevice::createShader()
+bool TrackedDevice::createShaders()
 {
 	m_unTransformProgramID = CompileGLShader(
 		"Controller",
@@ -250,7 +265,43 @@ bool TrackedDevice::createShader()
 		return false;
 	}
 
-	return m_unTransformProgramID != 0;
+
+	m_unRenderModelProgramID = CompileGLShader(
+		"render model",
+
+		// vertex shader
+		"#version 410\n"
+		"uniform mat4 matrix;\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec3 v3NormalIn;\n"
+		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
+		"out vec2 v2TexCoord;\n"
+		"void main()\n"
+		"{\n"
+		"	v2TexCoord = v2TexCoordsIn;\n"
+		"	gl_Position = matrix * vec4(position.xyz, 1);\n"
+		"}\n",
+
+		//fragment shader
+		"#version 410 core\n"
+		"uniform sampler2D diffuse;\n"
+		"in vec2 v2TexCoord;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"   outputColor = texture( diffuse, v2TexCoord);\n"
+		"}\n"
+
+	);
+	m_nRenderModelMatrixLocation = glGetUniformLocation(m_unRenderModelProgramID, "matrix");
+	if (m_nRenderModelMatrixLocation == -1)
+	{
+		printf("Unable to find matrix uniform in render model shader\n");
+		return false;
+	}
+
+	return m_unRenderModelProgramID != 0
+		&& m_unTransformProgramID != 0;
 }
 
 //-----------------------------------------------------------------------------

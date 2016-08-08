@@ -24,6 +24,71 @@ ViveController::~ViveController()
 
 }
 
+bool ViveController::BInit()
+{
+	std::string strRenderModelName = getPropertyString(vr::Prop_RenderModelName_String);
+
+	CGLRenderModel *pRenderModel = loadRenderModel(strRenderModelName.c_str());
+
+	if (!pRenderModel)
+	{
+		std::string sTrackingSystemName = getPropertyString(vr::Prop_TrackingSystemName_String);
+		printf("Unable to load render model for controller [device %d] (%s.%s)", m_unDeviceID, sTrackingSystemName.c_str(), strRenderModelName.c_str());
+		return false;
+	}
+	else
+	{
+		m_strRenderModelName = pRenderModel->GetName();
+
+		std::cout << "Device " << m_unDeviceID << "'s RenderModel name is " << m_strRenderModelName << std::endl;
+		setRenderModel(pRenderModel);
+	}
+
+	if (pRenderModel)
+	{
+		vr::EVRInitError eError = vr::VRInitError_None;
+
+		vr::IVRRenderModels *pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
+
+		const char* pchRenderName = m_strRenderModelName.c_str();
+
+		uint32_t nModelComponents = pRenderModels->GetComponentCount(pchRenderName);
+
+		for (uint32_t i = 0; i < nModelComponents; ++i)
+		{
+			uint32_t unRequiredBufferLen = pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
+			if (unRequiredBufferLen == 0)
+				continue;
+
+			char *pchBuffer1 = new char[unRequiredBufferLen];
+			unRequiredBufferLen = pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
+			std::string sComponentName = pchBuffer1;
+			delete[] pchBuffer1;
+
+			bool hasRenderModel = true;
+			unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
+			if (unRequiredBufferLen == 0)
+				hasRenderModel = false;
+			else
+			{
+				char *pchBuffer2 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+				std::string sComponentRenderModelName = pchBuffer2;
+				delete[] pchBuffer2;
+
+				CGLRenderModel *pComponentRenderModel = loadRenderModel(sComponentRenderModelName.c_str());
+				this->addComponentRenderModel(i, sComponentName, pComponentRenderModel);
+			}
+
+			std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
+		}
+	}
+
+	createShaders();
+
+	return true;
+}
+
 void ViveController::update(const vr::VREvent_t *event)
 {
 	vr::EVRInitError eError = vr::VRInitError_None;
@@ -467,11 +532,23 @@ bool ViveController::isTouchpadClicked()
 	return m_bTouchpadClicked;
 }
 
-void ViveController::renderModel()
+void ViveController::renderModel(Matrix4 & matVP)
 {
+	if (!poseValid())
+		return;
+
+	// ----- Render Model rendering -----
+	glUseProgram(m_unRenderModelProgramID);
+
+	const Matrix4 & matDeviceToTracking = getPose();
+	Matrix4 matMVP = matVP * matDeviceToTracking;
+	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+
 	for(size_t i = 0; i < m_vComponents.size(); ++i)
 		if (m_vComponents[i].m_pComponentRenderModel)
 			m_vComponents[i].m_pComponentRenderModel->Draw();
+
+	glUseProgram(0);
 }
 
 Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)

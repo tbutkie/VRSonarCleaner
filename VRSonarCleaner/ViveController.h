@@ -11,6 +11,8 @@ public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	~ViveController();
 
+	bool BInit();
+
 	void update(const vr::VREvent_t *event = NULL);
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
@@ -49,7 +51,6 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
-	void renderModel();
 
 protected:
 	struct ControllerComponent {

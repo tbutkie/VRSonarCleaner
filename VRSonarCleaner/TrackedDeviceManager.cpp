@@ -6,13 +6,11 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 , m_pRenderModels(NULL)
 , m_pEditController(NULL)
 , m_pManipController(NULL)
-, m_unRenderModelProgramID(0)
 , m_iTrackedControllerCount(0)
 , m_iTrackedControllerCount_Last(-1)
 , m_iValidPoseCount(0)
 , m_iValidPoseCount_Last(-1)
 , m_strPoseClasses("")
-, m_nRenderModelMatrixLocation(-1)
 {
 }
 
@@ -21,12 +19,6 @@ TrackedDeviceManager::~TrackedDeviceManager()
 {	
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 		delete m_rpTrackedDevices[nDevice];
-
-
-	if (m_unRenderModelProgramID)
-	{
-		glDeleteProgram(m_unRenderModelProgramID);
-	}
 }
 
 bool TrackedDeviceManager::BInit()
@@ -46,7 +38,6 @@ bool TrackedDeviceManager::BInit()
 	}
 
 	initDevices();
-	createShaders();
 
 	return true;
 }
@@ -172,8 +163,6 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	
 	m_rpTrackedDevices[unTrackedDeviceIndex]->BInit();
 
-
-
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
 		ViveController *thisController = NULL;
@@ -181,67 +170,21 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 		if (!m_pEditController)
 		{
 			m_pEditController = new EditingController(unTrackedDeviceIndex);
+			m_pEditController->BInit();
 			thisController = m_pEditController;
 		}
 		else if(!m_pManipController)
 		{
 			m_pManipController = new ViveController(unTrackedDeviceIndex);
+			m_pManipController->BInit();
 			thisController = m_pManipController;
-		}
-		
-		if (pRenderModel && thisController)
-		{
-			thisController->setRenderModel(pRenderModel);
-
-			const char* pchRenderName = pRenderModel->GetName().c_str();
-
-			uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
-
-			for (uint32_t i = 0; i < nModelComponents; ++i)
-			{
-				uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
-				if (unRequiredBufferLen == 0)
-					continue;
-
-				char *pchBuffer1 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
-				std::string sComponentName = pchBuffer1;
-				delete[] pchBuffer1;
-
-				bool hasRenderModel = true;
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), NULL, 0);
-				if (unRequiredBufferLen == 0)
-					hasRenderModel = false;
-				else
-				{
-					char *pchBuffer2 = new char[unRequiredBufferLen];
-					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, sComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-					std::string sComponentRenderModelName = pchBuffer2;
-					delete[] pchBuffer2;
-
-					CGLRenderModel *pComponentRenderModel = findOrLoadRenderModel(sComponentRenderModelName.c_str());
-					thisController->addComponentRenderModel(i, sComponentName, pComponentRenderModel);
-				}
-
-				std::cout << "\t" << (hasRenderModel ? "M -> " : "     ") << i << ": " << sComponentName << std::endl;
-			}
 		}
 	}
 }
 
 void TrackedDeviceManager::renderTrackedDevices(Matrix4 & matVP)
 {
-	if (m_pEditController) m_pEditController->render(matVP);
-	if (m_pManipController) m_pManipController->render(matVP);
-	renderDeviceModels(matVP);
-}
-
-void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
-{
-	// ----- Render Model rendering -----
-	glUseProgram(m_unRenderModelProgramID);
-
-	for (uint32_t unTrackedDevice = 0; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
+	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
 	{
 		if (!m_rpTrackedDevices[unTrackedDevice]->hasRenderModel())
 			continue;
@@ -252,33 +195,23 @@ void TrackedDeviceManager::renderDeviceModels(Matrix4 & matVP)
 		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
 		//	continue;
 
-		uint32_t nComponents = m_pEditController ? m_pEditController->getComponentCount() : 0;
-
-		if (nComponents == 0)
+		if (m_pEditController && m_pEditController->getIndex() == unTrackedDevice)
 		{
-			const Matrix4 & matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getPose();
-			Matrix4 matMVP = matVP * matDeviceToTracking;
-			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
-
-			m_rpTrackedDevices[unTrackedDevice]->renderModel();
+			m_pEditController->render(matVP);
+			m_pEditController->renderModel(matVP);
+			continue;
 		}
-		else
+
+		if (m_pManipController && m_pManipController->getIndex() == unTrackedDevice)
 		{
-			for (uint32_t i = 0; i < nComponents; ++i)
-			{
-				const Matrix4 & matDeviceToTracking = m_pEditController->getPose();
-				const Matrix4 & matComponentToDevice = m_pEditController->getComponentPose(i);
-				Matrix4 matMVP = matVP * matDeviceToTracking;
-				glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
-
-				m_pEditController->renderModel();
-			}
+			m_pManipController->render(matVP);
+			m_pManipController->renderModel(matVP);
+			continue;
 		}
+
+		m_rpTrackedDevices[unTrackedDevice]->renderModel(matVP);
 	}
-
-	glUseProgram(0);
 }
-
 
 void TrackedDeviceManager::postRenderUpdate()
 {
@@ -333,7 +266,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
 	}
-
+	
 	if(m_pEditController)
 		m_pEditController->updatePose(poses[m_pEditController->getIndex()]);
 
@@ -344,43 +277,4 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	{
 		m_mat4HMDPose = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose().invert();
 	}
-}
-
-bool TrackedDeviceManager::createShaders()
-{
-	m_unRenderModelProgramID = CompileGLShader(
-		"render model",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3NormalIn;\n"
-		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
-		"out vec2 v2TexCoord;\n"
-		"void main()\n"
-		"{\n"
-		"	v2TexCoord = v2TexCoordsIn;\n"
-		"	gl_Position = matrix * vec4(position.xyz, 1);\n"
-		"}\n",
-
-		//fragment shader
-		"#version 410 core\n"
-		"uniform sampler2D diffuse;\n"
-		"in vec2 v2TexCoord;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = texture( diffuse, v2TexCoord);\n"
-		"}\n"
-
-	);
-	m_nRenderModelMatrixLocation = glGetUniformLocation(m_unRenderModelProgramID, "matrix");
-	if (m_nRenderModelMatrixLocation == -1)
-	{
-		printf("Unable to find matrix uniform in render model shader\n");
-		return false;
-	}
-
-	return m_unRenderModelProgramID != 0;
 }

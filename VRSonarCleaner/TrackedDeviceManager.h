@@ -34,8 +34,6 @@ public:
 private:
 	void TrackedDeviceManager::initDevices();
 	void setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
-	bool createShaders();
-	void renderDeviceModels(Matrix4 & matVP);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
@@ -50,9 +48,6 @@ private:
 	int m_iTrackedControllerCount_Last;
 
 	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
-
-	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelMatrixLocation;
 
 	Matrix4 m_mat4HMDPose;
 };

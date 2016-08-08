@@ -16,7 +16,7 @@ public:
 	TrackedDevice(vr::TrackedDeviceIndex_t id);
 	~TrackedDevice();
 
-	bool BInit();
+	virtual bool BInit();
 
 	vr::TrackedDeviceIndex_t getIndex();
 	void setRenderModel(CGLRenderModel *renderModel);
@@ -36,12 +36,12 @@ public:
 	virtual void prepareForRendering();
 
 	virtual void render(Matrix4 & matVP); 
-	virtual void renderModel();
+	virtual void renderModel(Matrix4 & matVP);
 
 protected:
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
-	bool createShader();
+	bool createShaders();
 	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
 	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 
@@ -61,6 +61,9 @@ protected:
 	unsigned int m_uiTriVertcount;
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
+
+	GLuint m_unRenderModelProgramID;
+	GLint m_nRenderModelMatrixLocation;
 	
 	bool m_bShow;
 	bool m_bShowAxes;
