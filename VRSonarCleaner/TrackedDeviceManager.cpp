@@ -18,13 +18,7 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 
 
 TrackedDeviceManager::~TrackedDeviceManager()
-{
-	for (std::vector< CGLRenderModel * >::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
-	{
-		delete (*i);
-	}
-	m_vecRenderModels.clear();
-	
+{	
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 		delete m_rpTrackedDevices[nDevice];
 
@@ -51,10 +45,7 @@ bool TrackedDeviceManager::BInit()
 		return false;
 	}
 
-	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice);
-
-	setupRenderModels();
+	initDevices();
 	createShaders();
 
 	return true;
@@ -87,8 +78,8 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 {
 	if (event.eventType == vr::VREvent_TrackedDeviceActivated)
 	{
-		setupRenderModelForTrackedDevice(event.trackedDeviceIndex);
-		printf("Device %u attached. Setting up render model.\n", event.trackedDeviceIndex);
+		setupTrackedDevice(event.trackedDeviceIndex);
+		printf("Device %u attached. Setting up.\n", event.trackedDeviceIndex);
 	}
 	else if (event.eventType == vr::VREvent_TrackedDeviceDeactivated)
 	{
@@ -153,117 +144,35 @@ void TrackedDeviceManager::cleaningHit()
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models
 //-----------------------------------------------------------------------------
-void TrackedDeviceManager::setupRenderModels()
+void TrackedDeviceManager::initDevices()
 {
 	if (!m_pHMD)
 		return;
-
-	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
+	
+	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (!m_pHMD->IsTrackedDeviceConnected(unTrackedDevice))
+		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice);
+
+		if (!m_pHMD->IsTrackedDeviceConnected(nDevice))
 			continue;
 
-		setupRenderModelForTrackedDevice(unTrackedDevice);
+		setupTrackedDevice(nDevice);
 	}
 
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Finds a render model we've already loaded or loads a new one
-//-----------------------------------------------------------------------------
-CGLRenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderModelName)
-{
-	CGLRenderModel *pRenderModel = NULL;
-	for (std::vector< CGLRenderModel * >::iterator i = m_vecRenderModels.begin(); i != m_vecRenderModels.end(); i++)
-	{
-		if (!stricmp((*i)->GetName().c_str(), pchRenderModelName))
-		{
-			pRenderModel = *i;
-			break;
-		}
-	}
-
-	// load the model if we didn't find one
-	if (!pRenderModel)
-	{
-		vr::RenderModel_t *pModel;
-		vr::EVRRenderModelError error;
-		while (1)
-		{
-			error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
-			if (error != vr::VRRenderModelError_Loading)
-				break;
-
-			::Sleep(1);
-		}
-
-		if (error != vr::VRRenderModelError_None)
-		{
-			printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
-			return NULL; // move on to the next tracked device
-		}
-
-		vr::RenderModel_TextureMap_t *pTexture;
-		while (1)
-		{
-			error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
-			if (error != vr::VRRenderModelError_Loading)
-				break;
-
-			::Sleep(1);
-		}
-
-		if (error != vr::VRRenderModelError_None)
-		{
-			printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
-			vr::VRRenderModels()->FreeRenderModel(pModel);
-			return NULL; // move on to the next tracked device
-		}
-
-		pRenderModel = new CGLRenderModel(pchRenderModelName);
-		if (!pRenderModel->BInit(*pModel, *pTexture))
-		{
-			printf("Unable to create GL model from render model %s\n", pchRenderModelName);
-			delete pRenderModel;
-			pRenderModel = NULL;
-		}
-		else
-		{
-			m_vecRenderModels.push_back(pRenderModel);
-		}
-		vr::VRRenderModels()->FreeRenderModel(pModel);
-		vr::VRRenderModels()->FreeTexture(pTexture);
-	}
-	
-	return pRenderModel;
 }
 
 
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL a Render Model for a single tracked device
 //-----------------------------------------------------------------------------
-void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
+void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
 {
 	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
 		return;
+	
+	m_rpTrackedDevices[unTrackedDeviceIndex]->BInit();
 
-	// try to find a model we've already set up
-	std::string sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
 
-	CGLRenderModel *pRenderModel = findOrLoadRenderModel(sRenderModelName.c_str());
-
-	if (!pRenderModel)
-	{
-		std::string sTrackingSystemName = getTrackedDeviceString(unTrackedDeviceIndex, vr::Prop_TrackingSystemName_String);
-		printf("Unable to load render model for tracked device %d (%s.%s)", unTrackedDeviceIndex, sTrackingSystemName.c_str(), sRenderModelName.c_str());
-	}
-	else
-	{
-		const char* pchRenderName = pRenderModel->GetName().c_str();
-
-		std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << pchRenderName << std::endl;
-		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
-	}
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
@@ -318,23 +227,6 @@ void TrackedDeviceManager::setupRenderModelForTrackedDevice(vr::TrackedDeviceInd
 			}
 		}
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Helper to get a string from a tracked device property and turn it
-//			into a std::string
-//-----------------------------------------------------------------------------
-std::string TrackedDeviceManager::getTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError)
-{
-	uint32_t unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
-	if (unRequiredBufferLen == 0)
-		return "";
-
-	char *pchBuffer = new char[unRequiredBufferLen];
-	unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(unDevice, prop, pchBuffer, unRequiredBufferLen, peError);
-	std::string sResult = pchBuffer;
-	delete[] pchBuffer;
-	return sResult;
 }
 
 void TrackedDeviceManager::renderTrackedDevices(Matrix4 & matVP)

@@ -32,13 +32,10 @@ public:
 
 	void UpdateHMDMatrixPose();
 private:
-	void TrackedDeviceManager::setupRenderModels();
-	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
-	void setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	void TrackedDeviceManager::initDevices();
+	void setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	bool createShaders();
 	void renderDeviceModels(Matrix4 & matVP);
-	
-	std::string getTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
@@ -58,7 +55,5 @@ private:
 	GLint m_nRenderModelMatrixLocation;
 
 	Matrix4 m_mat4HMDPose;
-	
-	std::vector< CGLRenderModel * > m_vecRenderModels;
 };
 
