@@ -13,7 +13,7 @@
 class TrackedDevice
 {
 public:
-	TrackedDevice(vr::TrackedDeviceIndex_t id);
+	TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~TrackedDevice();
 
 	virtual bool BInit();
@@ -45,6 +45,9 @@ protected:
 	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
 	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+
+	vr::IVRSystem *m_pHMD;
+	vr::IVRRenderModels *m_pRenderModels;
 
 	vr::TrackedDeviceIndex_t m_unDeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;

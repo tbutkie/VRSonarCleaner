@@ -8,15 +8,13 @@ class ViveController :
 	public TrackedDevice
 {
 public:
-	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~ViveController();
 
 	bool BInit();
 
 	void update(const vr::VREvent_t *event = NULL);
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
-
-	Matrix4 getComponentPose(uint32_t unComponentIndex);
 
 	virtual void prepareForRendering();
 
@@ -57,6 +55,7 @@ protected:
 		std::string m_strComponentName;
 		CGLRenderModel *m_pComponentRenderModel;
 		vr::RenderModel_ComponentState_t m_ComponentState;
+		vr::HmdMatrix34_t m_mat3PoseTransform;
 		bool m_bInitialized;
 		bool m_bHasRenderModel;
 		bool m_bStatic;
@@ -69,7 +68,9 @@ protected:
 			: m_unComponentIndex(0)
 			, m_strComponentName("No name")
 			, m_pComponentRenderModel(NULL)
+			, m_mat3PoseTransform(vr::HmdMatrix34_t())
 			, m_bInitialized(false)
+			, m_bHasRenderModel(false)
 			, m_bStatic(false)
 			, m_bVisible(false)
 			, m_bTouched(false)

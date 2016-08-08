@@ -142,7 +142,7 @@ void TrackedDeviceManager::initDevices()
 	
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice);
+		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice, m_pHMD, m_pRenderModels);
 
 		if (!m_pHMD->IsTrackedDeviceConnected(nDevice))
 			continue;
@@ -169,13 +169,13 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 
 		if (!m_pEditController)
 		{
-			m_pEditController = new EditingController(unTrackedDeviceIndex);
+			m_pEditController = new EditingController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
 			m_pEditController->BInit();
 			thisController = m_pEditController;
 		}
 		else if(!m_pManipController)
 		{
-			m_pManipController = new ViveController(unTrackedDeviceIndex);
+			m_pManipController = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
 			m_pManipController->BInit();
 			thisController = m_pManipController;
 		}

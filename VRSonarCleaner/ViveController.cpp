@@ -1,7 +1,7 @@
 #include "ViveController.h"
 
-ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-	: TrackedDevice(unTrackedDeviceIndex)
+ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
+	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bTouchpadTouched(false)
 	, m_bTouchpadClicked(false)
 	, m_vec2TouchpadInitialTouchPoint(Vector2(0.f, 0.f))
@@ -46,20 +46,16 @@ bool ViveController::BInit()
 
 	if (pRenderModel)
 	{
-		vr::EVRInitError eError = vr::VRInitError_None;
-
-		vr::IVRRenderModels *pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
-
 		const char* pchRenderName = m_strRenderModelName.c_str();
 
-		uint32_t nModelComponents = pRenderModels->GetComponentCount(pchRenderName);
+		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
 
 		for (uint32_t i = 0; i < nModelComponents; ++i)
 		{
 			ControllerComponent c;
 			c.m_unComponentIndex = i;
 
-			uint32_t unRequiredBufferLen = pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
+			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
 			if (unRequiredBufferLen == 0)
 			{
 				printf("Controller [device %d] component %d index out of range.\n", m_unDeviceID, i);
@@ -67,17 +63,17 @@ bool ViveController::BInit()
 			else
 			{
 				char *pchBuffer1 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
+				unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
 				c.m_strComponentName = pchBuffer1;
 				delete[] pchBuffer1;
 
-				unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), NULL, 0);
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), NULL, 0);
 				if (unRequiredBufferLen == 0)
 					c.m_bHasRenderModel = false;
 				else
 				{
 					char *pchBuffer2 = new char[unRequiredBufferLen];
-					unRequiredBufferLen = pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
 					std::string sComponentRenderModelName = pchBuffer2;
 
 					CGLRenderModel *pComponentRenderModel = loadRenderModel(pchBuffer2);
@@ -113,21 +109,25 @@ bool ViveController::BInit()
 
 void ViveController::update(const vr::VREvent_t *event)
 {
-	vr::EVRInitError eError = vr::VRInitError_None;
-	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
-	vr::IVRRenderModels *pRenderModels = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
-	
 	vr::VRControllerState_t controllerState;
-	if (!pHMD->GetControllerState(m_unDeviceID, &controllerState))
+	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState))
 		return;
+
+	if (m_ControllerState.unPacketNum != controllerState.unPacketNum)
+		m_ControllerState = controllerState;
 
 	vr::RenderModel_ControllerMode_State_t controllerModeState;
 	vr::RenderModel_ComponentState_t controllerComponentState;
-
-	pRenderModels->GetComponentState(m_strRenderModelName.c_str(), c->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
-
-	//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
-	ConvertSteamVRMatrixToMatrix4(controllerComponentState.mTrackingToComponentRenderModel);
+	
+	for (std::vector<ControllerComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
+	{
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
+		
+		it->m_ComponentState = controllerComponentState;
+		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
+		//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
+		//ConvertSteamVRMatrixToMatrix4(controllerComponentState.mTrackingToComponentRenderModel);
+	}
 
 	if (event)
 	{
@@ -267,20 +267,6 @@ bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 
 	return m_Pose.bPoseIsValid;
-}
-
-Matrix4 ViveController::getComponentPose(uint32_t unComponentIndex)
-{
-	uint32_t nComponents = m_vComponents.size();
-	if (nComponents == 0 || unComponentIndex >= nComponents)
-		return Matrix4().identity();
-
-	ControllerComponent *c = &m_vComponents[unComponentIndex];
-
-	vr::EVRInitError eError = vr::VRInitError_None;
-	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
-	vr::IVRRenderModels *pRenderModelsInterface = (vr::IVRRenderModels *)vr::VR_GetGenericInterface(vr::IVRRenderModels_Version, &eError);
-
 }
 
 //-----------------------------------------------------------------------------
@@ -550,15 +536,16 @@ void ViveController::renderModel(Matrix4 & matVP)
 
 	// ----- Render Model rendering -----
 	glUseProgram(m_unRenderModelProgramID);
-
-	const Matrix4 & matDeviceToTracking = getPose();
-	Matrix4 matMVP = matVP * matDeviceToTracking;
-	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
-
+	
 	for(size_t i = 0; i < m_vComponents.size(); ++i)
 		if (m_vComponents[i].m_pComponentRenderModel)
+		{
+			vr::TrackedDevicePose_t p;
+			m_pHMD->ApplyTransform(&p, &m_Pose, &(m_vComponents[i].m_mat3PoseTransform));
+			Matrix4 matMVP = matVP * ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
 			m_vComponents[i].m_pComponentRenderModel->Draw();
-
+		}
 	glUseProgram(0);
 }
 

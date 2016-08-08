@@ -4,7 +4,7 @@ class EditingController :
 	public ViveController
 {
 public:
-	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~EditingController();
 
 	bool updatePose(vr::TrackedDevicePose_t pose);

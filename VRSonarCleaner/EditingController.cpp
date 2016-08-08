@@ -2,8 +2,8 @@
 
 
 
-EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-	: ViveController(unTrackedDeviceIndex)
+EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
+	: ViveController(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bShowCursor(true)
 	, m_bCleaningMode(false)
 	, m_bCursorRadiusResizeMode(false)

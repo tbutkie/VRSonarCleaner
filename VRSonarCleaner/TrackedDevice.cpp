@@ -2,8 +2,10 @@
 #include "ShaderUtils.h"
 
 
-TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id)
+TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: m_unDeviceID(id)
+	, m_pHMD(pHMD)
+	, m_pRenderModels(pRenderModels)
 	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_strRenderModelName("No model name")
 	, m_ClassChar(0)
