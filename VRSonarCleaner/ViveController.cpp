@@ -16,6 +16,7 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
 	, c_vec4TouchPadTop(Vector4(0.f, 0.00725f, 0.02924f, 1.f))
 	, c_vec4TouchPadBottom(Vector4(0.f, 0.00265f, 0.06943f, 1.f))
 {
+
 }
 
 ViveController::~ViveController()
@@ -23,9 +24,145 @@ ViveController::~ViveController()
 
 }
 
-void ViveController::update()
+void ViveController::update(const vr::VREvent_t *event)
 {
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
+	
+	vr::VRControllerState_t state;
+	if (!pHMD->GetControllerState(m_unDeviceID, &state))
+		return;
 
+	if (event)
+	{
+		switch (event->data.controller.button)
+		{
+		case vr::k_EButton_ApplicationMenu:
+		{
+			if (event->eventType == vr::VREvent_ButtonPress)
+			{
+				this->menuButtonPressed();
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUnpress)
+			{
+				this->menuButtonUnpressed();
+			}
+		}
+		case vr::k_EButton_System:
+		{
+			if (event->eventType == vr::VREvent_ButtonPress)
+			{
+				this->systemButtonPressed();
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUnpress)
+			{
+				this->systemButtonUnpressed();
+			}
+		}
+		break;
+		case vr::k_EButton_Grip:
+		{
+			if (event->eventType == vr::VREvent_ButtonPress)
+			{
+				this->gripButtonPressed();
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUnpress)
+			{
+				this->gripButtonUnpressed();
+			}
+		}
+		break;
+		case vr::k_EButton_SteamVR_Trigger:
+		{
+			if (event->eventType == vr::VREvent_ButtonPress)
+			{
+				//printf("(VR Event) Controller (device %u) trigger pressed.\n", event.trackedDeviceIndex);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUnpress)
+			{
+				//printf("(VR Event) Controller (device %u) trigger unpressed.\n", event.trackedDeviceIndex);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonTouch)
+			{
+				//printf("(VR Event) Controller (device %u) trigger touched.\n", event.trackedDeviceIndex);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUntouch)
+			{
+				//printf("(VR Event) Controller (device %u) trigger untouched.\n", event.trackedDeviceIndex);
+			}
+		}
+		break;
+		case vr::k_EButton_SteamVR_Touchpad:
+		{
+			if (event->eventType == vr::VREvent_ButtonPress)
+			{
+				this->touchPadClicked(state.rAxis[0].x, state.rAxis[0].y);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUnpress)
+			{
+				this->touchPadUnclicked(state.rAxis[0].x, state.rAxis[0].y);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonTouch)
+			{
+				this->touchpadInitialTouch(state.rAxis[0].x, state.rAxis[0].y);
+			}
+
+			if (event->eventType == vr::VREvent_ButtonUntouch)
+			{
+				this->touchpadUntouched();
+			}
+		}
+		break;
+		default:
+			;//printf("Controller (device %u) event not processed: %u.\n", event.trackedDeviceIndex, event.eventType);
+		}
+	}
+
+	// TOUCHPAD BEING TOUCHED
+	if (this->isTouchpadTouched())
+	{
+		this->touchpadTouch(state.rAxis[0].x, state.rAxis[0].y);
+	}
+
+	// TRIGGER INTERACTIONS
+	if (state.rAxis[1].x >= this->getTriggerThreshold())
+	{
+		// TRIGGER ENGAGED
+		if (!this->isTriggerEngaged())
+		{
+			this->triggerEngaged();
+		}
+
+		// TRIGGER BEING PULLED
+		if (!this->isTriggerClicked())
+		{
+			this->triggerBeingPulled(state.rAxis[1].x);
+		}
+
+		// TRIGGER CLICKED
+		if (state.rAxis[1].x == 1.f && !this->isTriggerClicked())
+		{
+			this->triggerClicked();
+		}
+		// TRIGGER UNCLICKED
+		if (state.rAxis[1].x != 1.f && this->isTriggerClicked())
+		{
+			this->triggerUnclicked();
+		}
+	}
+	// TRIGGER DISENGAGED
+	else if (this->isTriggerEngaged())
+	{
+		this->triggerDisengaged();
+	}
 }
 
 bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
@@ -36,7 +173,7 @@ bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 	return m_Pose.bPoseIsValid;
 }
 
-void ViveController::addComponent(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel * pComponentRenderModel)
+void ViveController::addComponentRenderModel(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel * pComponentRenderModel)
 {
 	ControllerComponent newComponent;
 

@@ -11,10 +11,10 @@ public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	~ViveController();
 
-	void update();
+	void update(const vr::VREvent_t *event = NULL);
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
-	void addComponent(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel *pComponentRenderModel);
+	void addComponentRenderModel(uint32_t unComponentIndex, std::string pchComponentName, CGLRenderModel *pComponentRenderModel);
 	inline size_t getComponentCount() { return m_vComponents.size(); }
 	Matrix4 getComponentPose(uint32_t unComponentIndex);
 
@@ -58,12 +58,22 @@ protected:
 		CGLRenderModel *m_pComponentRenderModel;
 		vr::RenderModel_ComponentState_t m_ComponentState;
 		bool m_bInitialized;
+		bool m_bStatic;
+		bool m_bVisible;
+		bool m_bTouched;
+		bool m_bPressed;
+		bool m_bScrolled;
 
 		ControllerComponent()
 			: m_unComponentIndex(0)
 			, m_strComponentName("No name")
 			, m_pComponentRenderModel(NULL)
 			, m_bInitialized(false)
+			, m_bStatic(false)
+			, m_bVisible(false)
+			, m_bTouched(false)
+			, m_bPressed(false)
+			, m_bScrolled(false)
 		{}
 	};
 

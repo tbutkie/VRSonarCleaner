@@ -19,10 +19,8 @@ public:
 	void handleEvents();
 
 	void processVREvent(const vr::VREvent_t & event);
-	void processControllerEvent(const vr::VREvent_t & event);
 
 	void updateControllerStates();
-	void updateState(ViveController *controller);
 
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
 	void cleaningHit();
