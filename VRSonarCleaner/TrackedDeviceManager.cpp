@@ -63,7 +63,8 @@ void TrackedDeviceManager::handleEvents()
 	}
 }
 //-----------------------------------------------------------------------------
-// Purpose: Processes a single VR event
+// Purpose: Processes a single VR event. Controller events are ignored; instead,
+//          the controller states are updated (if they've changed) every frame
 //-----------------------------------------------------------------------------
 void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 {
@@ -80,23 +81,9 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 	{
 		printf("Device %u updated.\n", event.trackedDeviceIndex);
 	}
-	else if (m_pHMD->GetTrackedDeviceClass(event.trackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-	{
-		if (m_pEditController && m_pEditController->getIndex() == event.trackedDeviceIndex)
-		{
-			m_pEditController->update(&event);
-		}
-
-		if (m_pManipController && m_pManipController->getIndex() == event.trackedDeviceIndex)
-		{
-			m_pManipController->update(&event);
-		}
-
-		return;		
-	}
 	else
 	{
-		; // This is where uncaught events go for now
+		; // This is where uncaught events go for now.
 	}
 }
 

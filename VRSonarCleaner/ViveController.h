@@ -13,7 +13,7 @@ public:
 
 	bool BInit();
 
-	void update(const vr::VREvent_t *event = NULL);
+	void update();
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
 	virtual void prepareForRendering();
@@ -37,7 +37,7 @@ public:
 	virtual void triggerUnclicked();
 	bool isTriggerEngaged();
 	bool isTriggerClicked();
-	float getTriggerThreshold();
+	float getHairTriggerThreshold();
 	
 	virtual void touchpadInitialTouch(float x, float y);
 	virtual void touchpadTouch(float x, float y);
@@ -82,8 +82,8 @@ protected:
 
 	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b);
-
-	vr::VRControllerState_t m_ControllerState;
+	
+	uint32_t m_unStatePacketNum;
 
 	bool m_bShowScrollWheel;
 	bool m_bSystemButtonClicked;
@@ -95,7 +95,7 @@ protected:
 	Vector2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
-	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
+	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
 	uint32_t m_unTriggerAxis;
 	uint32_t m_unTouchpadAxis;
 
