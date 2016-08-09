@@ -106,4 +106,6 @@ protected:
 	const Vector4 c_vec4TouchPadRight;
 	const Vector4 c_vec4TouchPadTop;
 	const Vector4 c_vec4TouchPadBottom;
+
+	vr::VROverlayHandle_t m_pOverlayHandle;
 };
