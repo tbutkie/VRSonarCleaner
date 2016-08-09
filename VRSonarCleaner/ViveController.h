@@ -96,8 +96,8 @@ protected:
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
 	float m_fTriggerLowerThreshold; // trigger pulled 5% before being considered engaged
-	uint32_t m_uiTriggerAxis;
-	uint32_t m_uiTouchpadAxis;
+	uint32_t m_unTriggerAxis;
+	uint32_t m_unTouchpadAxis;
 
 	Icosphere m_TouchPointSphere;
 

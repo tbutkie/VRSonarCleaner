@@ -10,6 +10,8 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
 	, m_fTriggerLowerThreshold(0.05f)
+	, m_unTriggerAxis(0u)
+	, m_unTouchpadAxis(0u)
 	, m_TouchPointSphere(Icosphere(2))
 	, c_vec4TouchPadCenter(Vector4(0.f, 0.00378f, 0.04920f, 1.f))
 	, c_vec4TouchPadLeft(Vector4(-0.02023f, 0.00495f, 0.04934f, 1.f))
@@ -94,14 +96,15 @@ bool ViveController::BInit()
 	}
 
 	
+	// Figure out controller axis indices
+	for (uint32_t i = 0u; i < vr::k_unControllerStateAxisCount; ++i)
 	{
-		std::vector<uint32_t> axes;
-		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32));
-		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis1Type_Int32));
-		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis2Type_Int32));
-		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis3Type_Int32));
-		axes.push_back(getPropertyInt32(vr::TrackedDeviceProperty::Prop_Axis4Type_Int32));
+		vr::ETrackedDeviceProperty p = static_cast<vr::TrackedDeviceProperty>(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32 + i);
+		vr::EVRControllerAxisType axisType = static_cast<vr::EVRControllerAxisType>(getPropertyInt32(p));
+		if (axisType == vr::k_eControllerAxis_Trigger) m_unTriggerAxis = i;
+		if (axisType == vr::k_eControllerAxis_TrackPad) m_unTouchpadAxis = i;
 	}
+	
 
 	createShaders();
 
@@ -204,17 +207,17 @@ void ViveController::update(const vr::VREvent_t *event)
 		{
 			if (event->eventType == vr::VREvent_ButtonPress)
 			{
-				this->touchPadClicked(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
+				this->touchPadClicked(controllerState.rAxis[m_unTouchpadAxis].x, controllerState.rAxis[m_unTouchpadAxis].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonUnpress)
 			{
-				this->touchPadUnclicked(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
+				this->touchPadUnclicked(controllerState.rAxis[m_unTouchpadAxis].x, controllerState.rAxis[m_unTouchpadAxis].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonTouch)
 			{
-				this->touchpadInitialTouch(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
+				this->touchpadInitialTouch(controllerState.rAxis[m_unTouchpadAxis].x, controllerState.rAxis[m_unTouchpadAxis].y);
 			}
 
 			if (event->eventType == vr::VREvent_ButtonUntouch)
@@ -231,7 +234,7 @@ void ViveController::update(const vr::VREvent_t *event)
 	// TOUCHPAD BEING TOUCHED
 	if (this->isTouchpadTouched())
 	{
-		this->touchpadTouch(controllerState.rAxis[0].x, controllerState.rAxis[0].y);
+		this->touchpadTouch(controllerState.rAxis[m_unTouchpadAxis].x, controllerState.rAxis[m_unTouchpadAxis].y);
 	}
 
 	// TRIGGER INTERACTIONS
@@ -246,16 +249,16 @@ void ViveController::update(const vr::VREvent_t *event)
 		// TRIGGER BEING PULLED
 		if (!this->isTriggerClicked())
 		{
-			this->triggerBeingPulled(controllerState.rAxis[1].x);
+			this->triggerBeingPulled(controllerState.rAxis[m_unTriggerAxis].x);
 		}
 
 		// TRIGGER CLICKED
-		if (controllerState.rAxis[1].x == 1.f && !this->isTriggerClicked())
+		if (controllerState.rAxis[m_unTriggerAxis].x == 1.f && !this->isTriggerClicked())
 		{
 			this->triggerClicked();
 		}
 		// TRIGGER UNCLICKED
-		if (controllerState.rAxis[1].x != 1.f && this->isTriggerClicked())
+		if (controllerState.rAxis[m_unTriggerAxis].x != 1.f && this->isTriggerClicked())
 		{
 			this->triggerUnclicked();
 		}
