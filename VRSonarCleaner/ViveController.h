@@ -54,7 +54,6 @@ protected:
 		uint32_t m_unComponentIndex;
 		std::string m_strComponentName;
 		CGLRenderModel *m_pComponentRenderModel;
-		vr::RenderModel_ComponentState_t m_ComponentState;
 		vr::HmdMatrix34_t m_mat3PoseTransform;
 		bool m_bInitialized;
 		bool m_bHasRenderModel;
@@ -82,10 +81,11 @@ protected:
 	std::vector<ControllerComponent> m_vComponents;
 
 	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
-	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices);
+	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b);
 
 	vr::VRControllerState_t m_ControllerState;
 
+	bool m_bShowScrollWheel;
 	bool m_bSystemButtonClicked;
 	bool m_bMenuButtonClicked;
 	bool m_bGripButtonClicked;

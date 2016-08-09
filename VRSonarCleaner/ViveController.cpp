@@ -2,6 +2,7 @@
 
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
+	, m_bShowScrollWheel(false)
 	, m_bTouchpadTouched(false)
 	, m_bTouchpadClicked(false)
 	, m_vec2TouchpadInitialTouchPoint(Vector2(0.f, 0.f))
@@ -119,14 +120,19 @@ void ViveController::update(const vr::VREvent_t *event)
 	vr::RenderModel_ControllerMode_State_t controllerModeState;
 	vr::RenderModel_ComponentState_t controllerComponentState;
 	
+	controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
+
 	for (std::vector<ControllerComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
 	{
 		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
-		
-		it->m_ComponentState = controllerComponentState;
+
 		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
-		//return ConvertSteamVRMatrixToMatrix4(pComponentState->mTrackingToComponentRenderModel);
-		//ConvertSteamVRMatrixToMatrix4(controllerComponentState.mTrackingToComponentRenderModel);
+
+		it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
+		it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
+		it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
+		it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
+		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
 	}
 
 	if (event)
@@ -350,7 +356,7 @@ void ViveController::prepareForRendering()
 	// Draw touchpad touch point sphere
 	if (m_bTouchpadTouched)
 	{
-		insertTouchpadCursor(vertdataarray, m_uiTriVertcount);
+		insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 0.35f, 0.35f, 0.35f);
 	}
 
 	// Setup the VAO the first time through.
@@ -424,6 +430,15 @@ void ViveController::gripButtonPressed()
 	//printf("Controller (device %u) grip pressed.\n", m_DeviceID);
 	m_bGripButtonClicked = true;
 	toggleAxes();
+
+	vr::EVRInitError eError = vr::VRInitError_None;
+	vr::IVROverlay *pOverlay = (vr::IVROverlay *)vr::VR_GetGenericInterface(vr::IVROverlay_Version, &eError);
+	vr::VROverlayHandle_t handle;
+	pOverlay->CreateOverlay("test","An Overlay Test", &handle);	
+	pOverlay->SetOverlayFromFile(handle, "cube_texture.png");
+	vr::HmdMatrix34_t mat;
+	pOverlay->SetOverlayTransformTrackedDeviceRelative(handle, m_unDeviceID, &mat);
+	pOverlay->ShowOverlay(handle);
 }
 
 void ViveController::gripButtonUnpressed()
@@ -538,11 +553,21 @@ void ViveController::renderModel(Matrix4 & matVP)
 	glUseProgram(m_unRenderModelProgramID);
 	
 	for(size_t i = 0; i < m_vComponents.size(); ++i)
-		if (m_vComponents[i].m_pComponentRenderModel)
+		if (m_vComponents[i].m_pComponentRenderModel && m_vComponents[i].m_bVisible)
 		{
-			vr::TrackedDevicePose_t p;
-			m_pHMD->ApplyTransform(&p, &m_Pose, &(m_vComponents[i].m_mat3PoseTransform));
-			Matrix4 matMVP = matVP * ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+			Matrix4 matMVP;
+
+			if (!m_vComponents[i].m_bStatic)
+			{
+				vr::TrackedDevicePose_t p;
+				m_pHMD->ApplyTransform(&p, &m_Pose, &(m_vComponents[i].m_mat3PoseTransform));
+				matMVP = matVP * ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+			}
+			else
+			{
+				matMVP = matVP * m_mat4Pose;
+			}
+
 			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
 			m_vComponents[i].m_pComponentRenderModel->Draw();
 		}
@@ -557,14 +582,14 @@ Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
 	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
 }
 
-void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices)
+void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b)
 {
 	std::vector<float> sphereVertdataarray;
 	std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
 	Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
 
 	//Vector3 color(.2f, .2f, .71f);
-	Vector3 color(.65f, .65f, .65f);
+	Vector3 color(r, g, b);
 
 	Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
 

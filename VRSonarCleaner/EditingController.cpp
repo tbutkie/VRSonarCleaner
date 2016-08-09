@@ -177,9 +177,11 @@ void EditingController::prepareForRendering()
 		}
 
 		// Draw touchpad touch point sphere
-		if (m_bTouchpadTouched)
+		if (m_bTouchpadTouched && !m_bShowScrollWheel)
 		{
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount);
+			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
+			float ratio = (m_fCursorRadiusMax - m_fCursorRadius) / range;
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 1.f - ratio, 0.f, ratio);
 		}
 	}
 
@@ -256,6 +258,7 @@ void EditingController::touchpadInitialTouch(float x, float y)
 		{
 			m_bCursorOffsetMode = true;
 			m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
+			m_bShowScrollWheel = true;
 		}
 		else
 		{
@@ -339,6 +342,7 @@ void EditingController::touchpadUntouched()
 	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
 	m_bCursorOffsetMode = false;
 	m_bCursorRadiusResizeMode = false;
+	m_bShowScrollWheel = false;
 }
 
 bool EditingController::touchpadActive()
