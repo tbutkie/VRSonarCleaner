@@ -123,6 +123,45 @@ void Quaternion::reset()
 	m_w = 1.0f;
 }
 
+void Quaternion::createOpenGLRotationMatrix(double *pMatrix)
+{
+	// Make sure the matrix has allocated memory to store the rotation data
+	if (!pMatrix) return;
+
+	// First row
+	pMatrix[0] = 1.0f - 2.0f * (m_y * m_y + m_z * m_z);
+	pMatrix[1] = 2.0f * (m_x * m_y + m_z * m_w);
+	pMatrix[2] = 2.0f * (m_x * m_z - m_y * m_w);
+	pMatrix[3] = 0.0f;
+
+	// Second row
+	pMatrix[4] = 2.0f * (m_x * m_y - m_z * m_w);
+	pMatrix[5] = 1.0f - 2.0f * (m_x * m_x + m_z * m_z);
+	pMatrix[6] = 2.0f * (m_z * m_y + m_x * m_w);
+	pMatrix[7] = 0.0f;
+
+	// Third row
+	pMatrix[8] = 2.0f * (m_x * m_z + m_y * m_w);
+	pMatrix[9] = 2.0f * (m_y * m_z - m_x * m_w);
+	pMatrix[10] = 1.0f - 2.0f * (m_x * m_x + m_y * m_y);
+	pMatrix[11] = 0.0f;
+
+	// Fourth row
+	pMatrix[12] = 0;
+	pMatrix[13] = 0;
+	pMatrix[14] = 0;
+	pMatrix[15] = 1.0f;
+
+	// Now pMatrix[] is a 4x4 homogeneous matrix that can be applied to an OpenGL Matrix
+}
+
+void Quaternion::applyOpenGLRotationMatrix()
+{
+	double rotateMatrix[16];
+	createOpenGLRotationMatrix(rotateMatrix);
+	glMultMatrixd(rotateMatrix);
+}
+
 Matrix4 Quaternion::createMatrix(const Vector3 & center)
 {
 	return createMatrix(center.x, center.y, center.z);
@@ -235,3 +274,80 @@ Quaternion & Quaternion::slerp(Quaternion q1, Quaternion q2, float a)
 	return Quaternion();
 }
 
+void Quaternion::createFromOpenGLMatrix(double *m)
+{
+	const float diag = m[0] + m[5] + m[10] + 1;
+
+	if (diag > 0.0f)
+	{
+		const float scale = sqrtf(diag) * 2.0f; // get scale from diagonal
+
+												// TODO: speed this up
+		m_x = (m[6] - m[9]) / scale;
+		m_y = (m[8] - m[2]) / scale;
+		m_z = (m[1] - m[4]) / scale;
+		m_w = 0.25f * scale;
+	}
+	else
+	{
+		if (m[0]>m[5] && m[0]>m[10])
+		{
+			// 1st element of diag is greatest value
+			// find scale according to 1st element, and double it
+			const float scale = sqrtf(1.0f + m[0] - m[5] - m[10]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = 0.25f * scale;
+			m_y = (m[4] + m[1]) / scale;
+			m_z = (m[2] + m[8]) / scale;
+			m_w = (m[6] - m[9]) / scale;
+		}
+		else if (m[5]>m[10])
+		{
+			// 2nd element of diag is greatest value
+			// find scale according to 2nd element, and double it
+			const float scale = sqrtf(1.0f + m[5] - m[0] - m[10]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = (m[4] + m[1]) / scale;
+			m_y = 0.25f * scale;
+			m_z = (m[9] + m[6]) / scale;
+			m_w = (m[8] - m[2]) / scale;
+		}
+		else
+		{
+			// 3rd element of diag is greatest value
+			// find scale according to 3rd element, and double it
+			const float scale = sqrtf(1.0f + m[10] - m[0] - m[5]) * 2.0f;
+
+			// TODO: speed this up
+			m_x = (m[8] + m[2]) / scale;
+			m_y = (m[9] + m[6]) / scale;
+			m_z = 0.25f * scale;
+			m_w = (m[1] - m[4]) / scale;
+		}
+	}
+
+	normalize();
+}
+
+
+Quaternion Quaternion::inverse()
+{
+	return getConjugate().scale(1 / norm());
+}
+
+Quaternion Quaternion::scale(float scalar)
+{
+	return Quaternion(m_w*scalar, m_x*scalar, m_y*scalar, m_z*scalar);
+}
+
+float Quaternion::norm()
+{
+	return (m_w*m_w + m_x*m_x + m_y*m_y + m_z*m_z);
+}
+
+Quaternion Quaternion::getQuaternionNeededToRotateTo(Quaternion otherQ)
+{
+	return inverse() * otherQ;
+}

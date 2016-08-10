@@ -29,6 +29,17 @@ public:
 
 	void reset();
 
+	void createOpenGLRotationMatrix(double *pMatrix);
+	void applyOpenGLRotationMatrix();
+
+	void createFromOpenGLMatrix(double *m);
+	
+	Quaternion getQuaternionNeededToRotateTo(Quaternion otherQ);
+	Quaternion inverse();
+	Quaternion scale(float scalar);
+	float norm();
+
+
 	Matrix4 createMatrix(const Vector3 & center);
 	Matrix4 createMatrix(float ctr_x = 0.f, float ctr_y = 0.f, float ctr_z = 0.f);
 	void createFromAxisAngle(float x, float y, float z, float degrees);
