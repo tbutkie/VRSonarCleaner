@@ -41,6 +41,7 @@ public:
 protected:
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose);
 	bool createShaders();
 	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
 	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);

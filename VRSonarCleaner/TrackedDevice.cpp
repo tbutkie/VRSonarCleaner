@@ -234,6 +234,22 @@ Matrix4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &ma
 	return matrixObj;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Converts our local matrix class to a SteamVR matrix
+//-----------------------------------------------------------------------------
+vr::HmdMatrix34_t TrackedDevice::ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose)
+{
+	vr::HmdMatrix34_t matrixObj;
+
+	memset(&matrixObj, 0, sizeof(matrixObj));
+	matrixObj.m[0][0] = matPose.get()[0]; matrixObj.m[1][0] = matPose.get()[1]; matrixObj.m[2][0] = matPose.get()[2];
+	matrixObj.m[0][1] = matPose.get()[4]; matrixObj.m[1][1] = matPose.get()[5]; matrixObj.m[2][1] = matPose.get()[6];
+	matrixObj.m[0][2] = matPose.get()[8]; matrixObj.m[1][2] = matPose.get()[9]; matrixObj.m[2][2] = matPose.get()[10];
+	matrixObj.m[0][3] = matPose.get()[12]; matrixObj.m[1][3] = matPose.get()[13]; matrixObj.m[2][3] = matPose.get()[14];
+
+	return matrixObj;
+}
+
 bool TrackedDevice::createShaders()
 {
 	m_unTransformProgramID = CompileGLShader(
