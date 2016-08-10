@@ -46,17 +46,20 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 			if (m_bTriggerClicked)
 			{
 				float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
-				Matrix4 mat = Matrix4().translate(-m_fCursorRadius * 1.5f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().scale(0.9f * ratio + 0.1f);
+				Matrix4 mat = Matrix4().translate(-m_fCursorRadius * 1.5f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f) * Matrix4().scale(0.9f * ratio + 0.1f);
 
 				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
 
 				oError = vr::VROverlay()->SetOverlayTransformAbsolute(m_pOverlayHandle, vr::TrackingUniverseStanding, &overlayDistanceMtx);
 				if (oError != vr::EVROverlayError::VROverlayError_None)
 					printf("Overlay transform could not be set.\n");
+
+				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.75f);
+				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, ratio, 0.f, 1.f - ratio);
 			}
 			else
 			{
-				Matrix4 mat = Matrix4().rotateX(-90.f) * Matrix4().rotateY(-90.f) * Matrix4().translate(-0.1f, -0.05f, 0.f);
+				Matrix4 mat = Matrix4().translate(0.0f, -0.1f, 0.05f) * Matrix4().rotateZ(90.f) * Matrix4().rotateY(90.f) * Matrix4().rotateX(-90.f);
 				Matrix4 triggerPose = ConvertSteamVRMatrixToMatrix4(m_vComponents[15].m_mat3PoseTransform);
 				Matrix4 offset = triggerPose * mat;
 
@@ -65,6 +68,9 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 				oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
 				if (oError != vr::EVROverlayError::VROverlayError_None)
 					printf("Overlay transform could not be set.\n");
+
+				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.5f  + 0.5f * m_fTriggerPull);
+				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, 0.f, m_fTriggerPull, 0.f);
 			}
 
 

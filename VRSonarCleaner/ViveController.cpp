@@ -128,7 +128,7 @@ bool ViveController::BInit()
 	if (m_pOverlayHandle == vr::k_ulOverlayHandleInvalid)
 	{
 		printf("Setting up overlay... ");
-		std::string filename = "C:\\Users\\field\\Documents\\GitHub\\VRSonarCleaner\\VRSonarCleaner\\test.png";
+		std::string filename = "overlay_thumb_placeholder.png"; // relative to SteamVR resources folder or absolute filepath
 
 		oError = vr::VROverlay()->CreateOverlay("test", "An Overlay Test", &m_pOverlayHandle);
 
