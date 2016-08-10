@@ -33,6 +33,58 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 	m_mat4CursorCurrentPose = m_mat4Pose * (Matrix4().identity()).translate(
 		Vector3(m_vec4CursorOffsetDirection.x, m_vec4CursorOffsetDirection.y, m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount);
 
+	
+	// Show overlay
+	if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
+	{
+		vr::EVROverlayError oError = vr::VROverlayError_None;
+
+		if (m_bTriggerEngaged)
+		{
+			vr::HmdMatrix34_t overlayDistanceMtx;
+
+			if (m_bTriggerClicked)
+			{
+				float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
+				Matrix4 mat = Matrix4().translate(-m_fCursorRadius * 1.5f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().scale(0.9f * ratio + 0.1f);
+
+				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
+
+				oError = vr::VROverlay()->SetOverlayTransformAbsolute(m_pOverlayHandle, vr::TrackingUniverseStanding, &overlayDistanceMtx);
+				if (oError != vr::EVROverlayError::VROverlayError_None)
+					printf("Overlay transform could not be set.\n");
+			}
+			else
+			{
+				Matrix4 mat = Matrix4().rotateX(-90.f) * Matrix4().rotateY(-90.f) * Matrix4().translate(-0.1f, -0.05f, 0.f);
+				Matrix4 triggerPose = ConvertSteamVRMatrixToMatrix4(m_vComponents[15].m_mat3PoseTransform);
+				Matrix4 offset = triggerPose * mat;
+
+				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(offset);
+
+				oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
+				if (oError != vr::EVROverlayError::VROverlayError_None)
+					printf("Overlay transform could not be set.\n");
+			}
+
+
+			oError = vr::VROverlay()->ShowOverlay(m_pOverlayHandle);
+			if (oError != vr::EVROverlayError::VROverlayError_None)
+				printf("Overlay could not be shown: %d\n", oError);
+		}
+		else
+		{
+			oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
+			if (oError != vr::EVROverlayError::VROverlayError_None)
+				printf("Overlay could not be hidden: %d\n", oError);
+		}
+	}
+	else
+	{
+		printf("Overlay handle invalid.\n");
+	}
+
+
 	return m_Pose.bPoseIsValid;
 }
 
