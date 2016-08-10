@@ -11,10 +11,10 @@ public:
 
 	void prepareForRendering();
 
-	void triggerEngaged();
+	void triggerEngaged(float amount);
 	void triggerDisengaged();
 	void triggerClicked();
-	void triggerUnclicked();
+	void triggerUnclicked(float amount);
 
 	void touchpadInitialTouch(float x, float y);
 	void touchpadTouch(float x, float y);

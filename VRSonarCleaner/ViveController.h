@@ -30,13 +30,14 @@ public:
 	virtual void gripButtonUnpressed();
 	bool isGripButtonPressed();
 
-	virtual void triggerEngaged();
+	virtual void triggerEngaged(float amount);
 	virtual void triggerBeingPulled(float amount);
 	virtual void triggerDisengaged();
 	virtual void triggerClicked();
-	virtual void triggerUnclicked();
+	virtual void triggerUnclicked(float amount);
 	bool isTriggerEngaged();
 	bool isTriggerClicked();
+	float getTriggerPullAmount();
 	float getHairTriggerThreshold();
 	
 	virtual void touchpadInitialTouch(float x, float y);
@@ -96,6 +97,7 @@ protected:
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
+	float m_fTriggerPull;
 	uint32_t m_unTriggerAxis;
 	uint32_t m_unTouchpadAxis;
 

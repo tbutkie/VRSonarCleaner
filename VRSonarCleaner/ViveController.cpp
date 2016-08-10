@@ -4,6 +4,9 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_unStatePacketNum(0)
 	, m_bShowScrollWheel(false)
+	, m_bSystemButtonClicked(false)
+	, m_bMenuButtonClicked(false)
+	, m_bGripButtonClicked(false)
 	, m_bTouchpadTouched(false)
 	, m_bTouchpadClicked(false)
 	, m_vec2TouchpadInitialTouchPoint(Vector2(0.f, 0.f))
@@ -11,8 +14,8 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
 	, m_fHairTriggerThreshold(0.05f)
-	, m_unTriggerAxis(0u)
-	, m_unTouchpadAxis(0u)
+	, m_unTriggerAxis(vr::k_unControllerStateAxisCount)
+	, m_unTouchpadAxis(vr::k_unControllerStateAxisCount)
 	, m_TouchPointSphere(Icosphere(2))
 	, c_vec4TouchPadCenter(Vector4(0.f, 0.00378f, 0.04920f, 1.f))
 	, c_vec4TouchPadLeft(Vector4(-0.02023f, 0.00495f, 0.04934f, 1.f))
@@ -45,7 +48,7 @@ bool ViveController::BInit()
 	{
 		m_strRenderModelName = pRenderModel->GetName();
 
-		std::cout << "Device " << m_unDeviceID << "'s RenderModel name is " << m_strRenderModelName << std::endl;
+		std::cout << "Controller (device " << m_unDeviceID << ")'s RenderModel name is " << m_strRenderModelName << std::endl;
 		setRenderModel(pRenderModel);
 	}
 
@@ -92,7 +95,7 @@ bool ViveController::BInit()
 
 				m_vComponents.push_back(c);
 
-				std::cout << "\t" << (c.m_bHasRenderModel ? "M -> " : "     ") << i << ": " << c.m_strComponentName << std::endl;
+				std::cout << "\t" << (c.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << c.m_strComponentName << std::endl;
 			}
 		}
 	}
@@ -106,8 +109,16 @@ bool ViveController::BInit()
 		if (axisType == vr::k_eControllerAxis_Trigger) m_unTriggerAxis = i;
 		if (axisType == vr::k_eControllerAxis_TrackPad) m_unTouchpadAxis = i;
 	}
-	
 
+	// Check if we were able to figure 'em out
+	if (m_unTriggerAxis == vr::k_unControllerStateAxisCount)
+		printf("Unable to find proper axis for controller trigger.\n");
+	
+	if (m_unTouchpadAxis == vr::k_unControllerStateAxisCount)
+		printf("Unable to find proper axes for controller touchpad.\n");
+
+
+	// Create shaders used for rendering controller model as well as our own custom geometry
 	createShaders();
 
 
@@ -139,6 +150,9 @@ bool ViveController::BInit()
 
 void ViveController::update()
 {
+	if (!m_Pose.bDeviceIsConnected || !m_Pose.bPoseIsValid)
+		return;
+
 	vr::VRControllerState_t controllerState;
 	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState))
 		return;
@@ -249,7 +263,7 @@ void ViveController::update()
 				// TRIGGER ENGAGED
 				if (!isTriggerEngaged())
 				{
-					triggerEngaged();
+					triggerEngaged(triggerPull);
 				}
 
 				// TRIGGER BEING PULLED
@@ -266,7 +280,7 @@ void ViveController::update()
 				// TRIGGER UNCLICKED
 				if (triggerPull < 1.f && isTriggerClicked())
 				{
-					triggerUnclicked();
+					triggerUnclicked(triggerPull);
 				}
 			}
 			// TRIGGER DISENGAGED
@@ -466,13 +480,13 @@ void ViveController::prepareForRendering()
 
 void ViveController::systemButtonPressed()
 {
-	//printf("Controller (device %u) system button pressed.\n", m_DeviceID);
+	//printf("Controller (device %u) system button pressed.\n", m_unDeviceID);
 	m_bSystemButtonClicked = true;
 }
 
 void ViveController::systemButtonUnpressed()
 {
-	//printf("Controller (device %u) system button unpressed.\n", m_DeviceID);
+	//printf("Controller (device %u) system button unpressed.\n", m_unDeviceID);
 	m_bSystemButtonClicked = false;
 }
 
@@ -483,13 +497,13 @@ bool ViveController::isSystemButtonPressed()
 
 void ViveController::menuButtonPressed()
 {
-	//printf("Controller (device %u) menu button pressed.\n", m_DeviceID);
+	//printf("Controller (device %u) menu button pressed.\n", m_unDeviceID);
 	m_bMenuButtonClicked = true;
 }
 
 void ViveController::menuButtonUnpressed()
 {
-	//printf("Controller (device %u) menu button unpressed.\n", m_DeviceID);
+	//printf("Controller (device %u) menu button unpressed.\n", m_unDeviceID);
 	m_bMenuButtonClicked = false;
 }
 
@@ -500,14 +514,14 @@ bool ViveController::isMenuButtonPressed()
 
 void ViveController::gripButtonPressed()
 {
-	//printf("Controller (device %u) grip pressed.\n", m_DeviceID);
+	//printf("Controller (device %u) grip pressed.\n", m_unDeviceID);
 	m_bGripButtonClicked = true;
 	toggleAxes();
 }
 
 void ViveController::gripButtonUnpressed()
 {
-	//printf("Controller (device %u) grip unpressed.\n", m_DeviceID);
+	//printf("Controller (device %u) grip unpressed.\n", m_unDeviceID);
 	m_bGripButtonClicked = false;
 	toggleAxes();
 }
@@ -517,33 +531,38 @@ bool ViveController::isGripButtonPressed()
 	return m_bGripButtonClicked;
 }
 
-void ViveController::triggerEngaged()
+void ViveController::triggerEngaged(float amount)
 {
-	//printf("Controller (device %u) trigger engaged).\n", m_DeviceID);
+	//printf("Controller (device %u) trigger engaged).\n", m_unDeviceID);
 	m_bTriggerEngaged = true;
+	m_fTriggerPull = amount;
 }
 
 void ViveController::triggerBeingPulled(float amount)
 {
-	//printf("Controller (device %u) trigger at %f%%).\n", m_DeviceID, amount * 100.f);
+	//printf("Controller (device %u) trigger at %f%%).\n", m_unDeviceID, amount * 100.f);
+	m_fTriggerPull = amount;
 }
 
 void ViveController::triggerDisengaged()
 {
-	//printf("Controller (device %u) trigger disengaged).\n", m_DeviceID);
+	//printf("Controller (device %u) trigger disengaged).\n", m_unDeviceID);
 	m_bTriggerEngaged = false;
+	m_fTriggerPull = 0.f;
 }
 
 void ViveController::triggerClicked()
 {
-	//printf("Controller (device %u) trigger clicked.\n", m_DeviceID);
+	//printf("Controller (device %u) trigger clicked.\n", m_unDeviceID);
 	m_bTriggerClicked = true;
+	m_fTriggerPull = 1.f;
 }
 
-void ViveController::triggerUnclicked()
+void ViveController::triggerUnclicked(float amount)
 {
-	//printf("Controller (device %u) trigger unclicked.\n", m_DeviceID);
+	//printf("Controller (device %u) trigger unclicked.\n", m_unDeviceID);
 	m_bTriggerClicked = false;
+	m_fTriggerPull = amount;
 }
 
 bool ViveController::isTriggerEngaged()
@@ -556,6 +575,11 @@ bool ViveController::isTriggerClicked()
 	return m_bTriggerClicked;
 }
 
+float ViveController::getTriggerPullAmount()
+{
+	return m_fTriggerPull;
+}
+
 float ViveController::getHairTriggerThreshold()
 {
 	return m_fHairTriggerThreshold;
@@ -563,7 +587,7 @@ float ViveController::getHairTriggerThreshold()
 
 void ViveController::touchpadInitialTouch(float x, float y)
 {
-	//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_DeviceID, x, y);
+	//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_unDeviceID, x, y);
 	m_bTouchpadTouched = true;
 	m_vec2TouchpadInitialTouchPoint = Vector2(x, y);
 	m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
@@ -572,7 +596,7 @@ void ViveController::touchpadInitialTouch(float x, float y)
 
 void ViveController::touchpadTouch(float x, float y)
 {
-	//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_DeviceID, x, y);
+	//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_unDeviceID, x, y);
 	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
 
 	if (m_vec2TouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
@@ -581,7 +605,7 @@ void ViveController::touchpadTouch(float x, float y)
 
 void ViveController::touchpadUntouched()
 {
-	//printf("Controller (device %u) touchpad untouched.\n", m_DeviceID);
+	//printf("Controller (device %u) touchpad untouched.\n", m_unDeviceID);
 	m_bTouchpadTouched = false;
 	m_vec2TouchpadInitialTouchPoint = Vector2(0.f, 0.f);
 	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
@@ -589,13 +613,13 @@ void ViveController::touchpadUntouched()
 
 void ViveController::touchPadClicked(float x, float y)
 {
-	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_DeviceID, x, y);
+	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
 	m_bTouchpadClicked = true;
 }
 
 void ViveController::touchPadUnclicked(float x, float y)
 {
-	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_DeviceID, x, y);
+	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
 	m_bTouchpadClicked = false;
 }
 

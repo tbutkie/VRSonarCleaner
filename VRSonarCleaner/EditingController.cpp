@@ -232,8 +232,8 @@ void EditingController::prepareForRendering()
 		if (m_bTouchpadTouched && !m_bShowScrollWheel)
 		{
 			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
-			float ratio = (m_fCursorRadiusMax - m_fCursorRadius) / range;
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 1.f - ratio, 0.f, ratio);
+			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / range;
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio);
 		}
 	}
 
@@ -269,10 +269,11 @@ void EditingController::prepareForRendering()
 	}
 }
 
-void EditingController::triggerEngaged()
+void EditingController::triggerEngaged(float amount)
 {
 	//printf("Controller (device %u) trigger engaged).\n", m_DeviceID);
 	m_bTriggerEngaged = true;
+	m_fTriggerPull = amount;
 	//m_bShowCursor = true;
 }
 
@@ -280,6 +281,7 @@ void EditingController::triggerDisengaged()
 {
 	//printf("Controller (device %u) trigger disengaged).\n", m_DeviceID);
 	m_bTriggerEngaged = false;
+	m_fTriggerPull = 0.f;
 	//m_bShowCursor = false;
 }
 
@@ -287,13 +289,15 @@ void EditingController::triggerClicked()
 {
 	//printf("Controller (device %u) trigger clicked.\n", m_DeviceID);
 	m_bTriggerClicked = true;
+	m_fTriggerPull = 1.f;
 	m_bCleaningMode = true;
 }
 
-void EditingController::triggerUnclicked()
+void EditingController::triggerUnclicked(float amount)
 {
 	//printf("Controller (device %u) trigger unclicked.\n", m_DeviceID);
 	m_bTriggerClicked = false;
+	m_fTriggerPull = amount;
 	m_bCleaningMode = false;
 }
 
