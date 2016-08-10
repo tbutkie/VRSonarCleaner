@@ -497,12 +497,17 @@ void ViveController::gripButtonPressed()
 		if (oError != vr::EVROverlayError::VROverlayError_None)
 			printf("Overlay file could not be loaded: %d\n", oError);
 
-		vr::HmdMatrix34_t mat;
-		oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &mat);
+		vr::HmdMatrix34_t overlayDistanceMtx;
+		memset(&overlayDistanceMtx, 0, sizeof(overlayDistanceMtx));
+		overlayDistanceMtx.m[0][0] = overlayDistanceMtx.m[1][1] = overlayDistanceMtx.m[2][2] = 1.f;
+		overlayDistanceMtx.m[0][3] = -0.25f;
+		overlayDistanceMtx.m[1][3] = 0.0f;
+		overlayDistanceMtx.m[2][3] = 0.0f;
+		oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
 		if (oError != vr::EVROverlayError::VROverlayError_None)
 			printf("Overlay transform could not be set.\n");
 
-		vr::VROverlay()->SetOverlayWidthInMeters(m_pOverlayHandle, 1.5f);
+		vr::VROverlay()->SetOverlayWidthInMeters(m_pOverlayHandle, 0.5f);
 		
 		printf("done!\n");
 	}
@@ -522,14 +527,14 @@ void ViveController::gripButtonUnpressed()
 	//printf("Controller (device %u) grip unpressed.\n", m_DeviceID);
 	m_bGripButtonClicked = false;
 	
-	//if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
-	//{
-	//	vr::EVROverlayError oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
-	//	if (oError != vr::EVROverlayError::VROverlayError_None)
-	//		printf("Overlay could not be hidden: %d\n", oError);
-	//}
-	//else
-	//	printf("Overlay handle invalid.\n");
+	if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
+	{
+		vr::EVROverlayError oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
+		if (oError != vr::EVROverlayError::VROverlayError_None)
+			printf("Overlay could not be hidden: %d\n", oError);
+	}
+	else
+		printf("Overlay handle invalid.\n");
 }
 
 bool ViveController::isGripButtonPressed()
