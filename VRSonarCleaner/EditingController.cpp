@@ -46,7 +46,10 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 			if (m_bTriggerClicked)
 			{
 				float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
-				Matrix4 mat = Matrix4().translate(-m_fCursorRadius * 1.5f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f) * Matrix4().scale(0.9f * ratio + 0.1f);
+				float overlayWidth;
+				vr::VROverlay()->GetOverlayWidthInMeters(m_pOverlayHandle, &overlayWidth);
+
+				Matrix4 mat = Matrix4().translate(-m_fCursorRadius - overlayWidth / 2.f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f);// *Matrix4().scale(0.9f * ratio + 0.1f);
 
 				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
 
