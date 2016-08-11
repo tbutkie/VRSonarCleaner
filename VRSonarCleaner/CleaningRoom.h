@@ -39,6 +39,7 @@ public:
 	void recalcVolumeBounds();
 
 	bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
+	bool gripCleaningTable(const Matrix4 *controllerPose);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;
@@ -49,6 +50,4 @@ private:
 
 	DataVolume *wallVolume;
 	DataVolume *tableVolume;
-
-
 };

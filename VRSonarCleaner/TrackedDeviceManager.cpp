@@ -114,6 +114,21 @@ bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix
 	return cleaningModeActive;
 }
 
+bool TrackedDeviceManager::getManipulationData(Matrix4 &controllerPose)
+{
+	if (!m_pManipController) return false;
+	
+	if (m_pManipController->poseValid() && m_pManipController->isGripButtonPressed())
+	{
+		controllerPose = m_pManipController->getPose();
+		return true;
+	}
+
+	controllerPose = Matrix4();
+
+	return false;
+}
+
 void TrackedDeviceManager::cleaningHit()
 {
 	m_pHMD->TriggerHapticPulse(m_pEditController->getIndex(), 0, 2000);

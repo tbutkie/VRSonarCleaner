@@ -35,9 +35,7 @@ public:
 	void startRotation(double *mat4x4);
 	void continueRotation(double *mat4x4);
 	void endRotation();
-
-
-	
+	bool isBeingRotated();	
 
 private:
 

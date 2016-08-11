@@ -372,6 +372,8 @@ void CMainApplication::RunMainLoop()
 
 		checkForHits();
 
+		checkForManipulations();
+
 		RenderFrame();
 	}
 
@@ -395,6 +397,16 @@ void CMainApplication::checkForHits()
 	// check point cloud for hits
 	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
 		m_pTDM->cleaningHit();
+}
+
+void CMainApplication::checkForManipulations()
+{
+	Matrix4 pose;
+
+	if (m_pTDM->getManipulationData(pose))
+		cleaningRoom->gripCleaningTable(&pose);
+	else
+		cleaningRoom->gripCleaningTable(NULL);
 }
 
 //-----------------------------------------------------------------------------

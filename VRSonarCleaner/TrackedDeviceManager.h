@@ -23,6 +23,7 @@ public:
 	void updateControllerStates();
 
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
+	bool getManipulationData(Matrix4 &controllerPose);
 	void cleaningHit();
 
 	void renderTrackedDevices(Matrix4 & matVP);

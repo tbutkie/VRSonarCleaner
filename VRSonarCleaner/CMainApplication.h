@@ -54,6 +54,7 @@ public:
 	bool CreateLensShader();
 
 	void checkForHits();
+	void checkForManipulations();
 
 	CleaningRoom* cleaningRoom;
 

@@ -452,3 +452,8 @@ void DataVolume::endRotation()
 {
 	rotationInProgress = false;
 }
+
+bool DataVolume::isBeingRotated()
+{
+	return rotationInProgress;
+}
