@@ -21,6 +21,7 @@ public:
 	
 	Quaternion operator +(const Quaternion & b) const;
 	Quaternion operator *(Quaternion q);
+	Quaternion operator =(Quaternion q);
 	Quaternion operator *(float s) const;
 	//Vec3 operator *(Vec3 vec);
 
@@ -35,9 +36,13 @@ public:
 	void createFromOpenGLMatrix(double *m);
 	
 	Quaternion getQuaternionNeededToRotateTo(Quaternion otherQ);
-	Quaternion inverse();
-	Quaternion scale(float scalar);
+	void invert();
+	void scaleBy(float scalar);
 	float norm();
+
+	void copy(Quaternion q);
+
+	void createByMultiplyingTwoQuaternions(Quaternion q1, Quaternion q2);
 
 
 	Matrix4 createMatrix(const Vector3 & center);
@@ -49,6 +54,8 @@ public:
 	Quaternion getConjugate();
 	Quaternion& lerp(Quaternion q1, Quaternion q2, float a);
 	Quaternion& slerp(const Quaternion q1, const Quaternion q2, float a);
+
+	void printValues(char* label);
 
 private:
 	float m_w;

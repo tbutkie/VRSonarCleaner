@@ -44,8 +44,7 @@ private:
 	//float minX, minY, minZ;
 	//float maxX, maxY, maxZ;
 
-	//int orientation; //0 z-up, 1 z-wall-worldy
-	Quaternion *orientation;
+	Quaternion orientation;
 
 	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
 	double innerSizeX, innerSizeY, innerSizeZ;
@@ -55,12 +54,15 @@ private:
 
 	//rotate action
 	bool rotationInProgress;
-	Quaternion *rotStart;
-	Quaternion *rotCurrent;
-	Quaternion *rotLast;
-	Quaternion *rotLastInverse;
-	double rotMatStart[16];
-	double rotMatCurrent[16];
-	double rotMatLast[16];
+	Quaternion orientationAtRotationStart;
+	float positionAtRotationStart[3];
+	Quaternion controllerOrientationAtRotationStart;
+	Quaternion controllerOrientationAtRotationStartInverted;
+	float controllerPositionAtRotationStart[3];
+	float vectorControllerToVolume[3];
+	Quaternion controllerOrientationLast;
+	float controllerPositionLast[3];
 
+	Quaternion controllerOrientationCurrent;
+	Quaternion controllerRotationNeeded;
 };

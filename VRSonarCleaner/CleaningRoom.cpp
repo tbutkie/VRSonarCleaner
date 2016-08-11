@@ -180,11 +180,11 @@ bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
 		printf("++ Rotation Started\n");
 		return true;
 	}
-
-	printf("==== Rotating\n");
-
-	tableVolume->continueRotation(md);
-
+	else
+	{
+		printf("==== Rotating\n");
+		tableVolume->continueRotation(md);
+	}
 	return false;
 }
 
