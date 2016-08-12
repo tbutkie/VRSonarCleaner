@@ -411,18 +411,18 @@ void ViveController::prepareForRendering()
 	}
 
 	// Draw pointing line
-	{
-		Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
-		Vector4 end = mat * Vector4(0, 0, -39.f, 1);
-		Vector3 color(.92f, .92f, .71f);
+	//{
+	//	Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
+	//	Vector4 end = mat * Vector4(0, 0, -39.f, 1);
+	//	Vector3 color(.92f, .92f, .71f);
 
-		vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+	//	vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
+	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-		m_uiLineVertcount += 2;
-	}
+	//	vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
+	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+	//	m_uiLineVertcount += 2;
+	//}
 
 	// Draw Touchpad line
 	if(m_bTouchpadTouched)
