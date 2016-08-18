@@ -14,17 +14,16 @@ public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
 	~TrackedDeviceManager();
 
-	void init();
+	bool BInit();
 
 	void handleEvents();
 
 	void processVREvent(const vr::VREvent_t & event);
-	void processControllerEvent(const vr::VREvent_t & event);
 
 	void updateControllerStates();
-	void updateState(ViveController *controller);
 
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
+	bool getManipulationData(Matrix4 &controllerPose);
 	void cleaningHit();
 
 	void renderTrackedDevices(Matrix4 & matVP);
@@ -34,15 +33,11 @@ public:
 
 	void UpdateHMDMatrixPose();
 private:
-	void TrackedDeviceManager::setupRenderModels();
-	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
-	void setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
-	bool createShaders();
-	void renderDeviceModels(Matrix4 & matVP);
-	
-	std::string getTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+	void TrackedDeviceManager::initDevices();
+	void setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	
 	vr::IVRSystem *m_pHMD;
+	vr::IVRRenderModels *m_pRenderModels;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	EditingController* m_pEditController;
@@ -55,12 +50,6 @@ private:
 
 	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
 
-	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelMatrixLocation;
-
 	Matrix4 m_mat4HMDPose;
-
-	
-	std::vector< CGLRenderModel * > m_vecRenderModels;
 };
 

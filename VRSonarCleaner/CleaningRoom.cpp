@@ -155,6 +155,33 @@ bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const M
 	return anyHits;
 }
 
+bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
+{
+	if (!controllerPose)
+	{
+		if (tableVolume->isBeingRotated())
+		{
+			tableVolume->endRotation();
+			printf("|| Rotation Ended\n");
+		}
+
+		return false;
+	}
+	
+	if (!tableVolume->isBeingRotated())
+	{
+		tableVolume->startRotation(controllerPose->get());
+		printf("++ Rotation Started\n");
+		return true;
+	}
+	else
+	{
+		printf("==== Rotating\n");
+		tableVolume->continueRotation(controllerPose->get());
+	}
+	return false;
+}
+
 // This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
 // with credit to Greg James @ Nvidia
 float CleaningRoom::cylTest(const Vector4 & pt1, const Vector4 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt)
@@ -225,4 +252,10 @@ void CleaningRoom::draw()
 	//wallVolume->deactivateTransformationMatrix();
 
 
+}
+
+void CleaningRoom::resetVolumes()
+{
+	wallVolume->resetPositionAndOrientation();
+	tableVolume->resetPositionAndOrientation();
 }

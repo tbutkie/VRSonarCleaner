@@ -36,11 +36,38 @@ Quaternion Quaternion::operator *(Quaternion q)
 	return(r);
 }
 
+void Quaternion::createByMultiplyingTwoQuaternions(Quaternion q1, Quaternion q2)
+{
+	m_x = q1.m_w*q2.m_x + q1.m_x*q2.m_w + q1.m_y*q2.m_z - q1.m_z*q2.m_y;
+	m_y = q1.m_w*q2.m_y + q1.m_y*q2.m_w + q1.m_z*q2.m_x - q1.m_x*q2.m_z;
+	m_z = q1.m_w*q2.m_z + q1.m_z*q2.m_w + q1.m_x*q2.m_y - q1.m_y*q2.m_x;
+	m_w = q1.m_w*q2.m_w - q1.m_x*q2.m_x - q1.m_y*q2.m_y - q1.m_z*q2.m_z;
+}
+
+Quaternion Quaternion::operator =(Quaternion q)
+{
+	Quaternion r;
+
+	r.m_x = q.m_x;
+	r.m_y = q.m_y;
+	r.m_z = q.m_z;
+	r.m_w = q.m_w;
+
+	return(r);
+}
+
 Quaternion Quaternion::operator*(float s) const
 {
 	return Quaternion(s*m_x, s*m_y, s*m_z, s*m_w);
 }
 
+void Quaternion::copy(Quaternion q)
+{
+	m_x = q.m_x;
+	m_y = q.m_y;
+	m_z = q.m_z;
+	m_w = q.m_w;
+}
 
 //Vec3 Quaternion::operator *(Vec3 vec)
 //{
@@ -128,7 +155,7 @@ void Quaternion::createOpenGLRotationMatrix(double *pMatrix)
 	// Make sure the matrix has allocated memory to store the rotation data
 	if (!pMatrix) return;
 
-	// First row
+	// First row (shouldn't these say column???)
 	pMatrix[0] = 1.0f - 2.0f * (m_y * m_y + m_z * m_z);
 	pMatrix[1] = 2.0f * (m_x * m_y + m_z * m_w);
 	pMatrix[2] = 2.0f * (m_x * m_z - m_y * m_w);
@@ -239,7 +266,7 @@ float Quaternion::dot(const Quaternion & q2) const
 
 Quaternion Quaternion::getConjugate()
 {
-	return Quaternion(-m_x, -m_y, -m_z, -m_w);	
+	return Quaternion(-m_x, -m_y, -m_z, m_w);	
 }
 
 Quaternion & Quaternion::lerp(Quaternion q1, Quaternion q2, float a)
@@ -332,14 +359,26 @@ void Quaternion::createFromOpenGLMatrix(double *m)
 }
 
 
-Quaternion Quaternion::inverse()
+void Quaternion::invert()
 {
-	return getConjugate().scale(1 / norm());
+	float norm = m_w*m_w + m_x*m_x + m_y*m_y + m_z*m_z;
+	float scaleBy = 1.0 / norm;
+	m_x = -m_x;
+	m_y = -m_y;
+	m_z = -m_z;
+
+	m_x = m_x * scaleBy;
+	m_y = m_y * scaleBy;
+	m_z = m_z * scaleBy;
+	m_w = m_w * scaleBy;
 }
 
-Quaternion Quaternion::scale(float scalar)
+void Quaternion::scaleBy(float scalar)
 {
-	return Quaternion(m_w*scalar, m_x*scalar, m_y*scalar, m_z*scalar);
+	m_x *= scalar;
+	m_y *= scalar;
+	m_z *= scalar;
+	m_w *= scalar;
 }
 
 float Quaternion::norm()
@@ -349,5 +388,10 @@ float Quaternion::norm()
 
 Quaternion Quaternion::getQuaternionNeededToRotateTo(Quaternion otherQ)
 {
-	return inverse() * otherQ;
+	//return inverse() * otherQ;
+}
+
+void Quaternion::printValues(char* label)
+{
+	printf("Q at %s: W:%f, X:%f, Y:%f, Z:%f\n", label, m_w, m_x, m_y, m_z);
 }

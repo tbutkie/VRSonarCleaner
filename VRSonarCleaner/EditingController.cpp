@@ -2,8 +2,8 @@
 
 
 
-EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-	: ViveController(unTrackedDeviceIndex)
+EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
+	: ViveController(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bShowCursor(true)
 	, m_bCleaningMode(false)
 	, m_bCursorRadiusResizeMode(false)
@@ -32,6 +32,67 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
 	m_mat4CursorCurrentPose = m_mat4Pose * (Matrix4().identity()).translate(
 		Vector3(m_vec4CursorOffsetDirection.x, m_vec4CursorOffsetDirection.y, m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount);
+
+	
+	// Show overlay
+	if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
+	{
+		vr::EVROverlayError oError = vr::VROverlayError_None;
+
+		if (m_bTriggerEngaged)
+		{
+			vr::HmdMatrix34_t overlayDistanceMtx;
+
+			if (m_bTriggerClicked)
+			{
+				float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
+				float overlayWidth;
+				vr::VROverlay()->GetOverlayWidthInMeters(m_pOverlayHandle, &overlayWidth);
+
+				Matrix4 mat = Matrix4().translate(-m_fCursorRadius - overlayWidth / 2.f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f);// *Matrix4().scale(0.9f * ratio + 0.1f);
+
+				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
+
+				oError = vr::VROverlay()->SetOverlayTransformAbsolute(m_pOverlayHandle, vr::TrackingUniverseStanding, &overlayDistanceMtx);
+				if (oError != vr::EVROverlayError::VROverlayError_None)
+					printf("Overlay transform could not be set.\n");
+
+				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.75f);
+				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, ratio, 0.f, 1.f - ratio);
+			}
+			else
+			{
+				Matrix4 mat = Matrix4().translate(0.0f, -0.1f, 0.05f) * Matrix4().rotateZ(90.f) * Matrix4().rotateY(90.f) * Matrix4().rotateX(-90.f);
+				Matrix4 triggerPose = ConvertSteamVRMatrixToMatrix4(m_vComponents[15].m_mat3PoseTransform);
+				Matrix4 offset = triggerPose * mat;
+
+				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(offset);
+
+				oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
+				if (oError != vr::EVROverlayError::VROverlayError_None)
+					printf("Overlay transform could not be set.\n");
+
+				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.5f  + 0.5f * m_fTriggerPull);
+				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, 0.f, m_fTriggerPull, 0.f);
+			}
+
+
+			oError = vr::VROverlay()->ShowOverlay(m_pOverlayHandle);
+			if (oError != vr::EVROverlayError::VROverlayError_None)
+				printf("Overlay could not be shown: %d\n", oError);
+		}
+		else
+		{
+			oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
+			if (oError != vr::EVROverlayError::VROverlayError_None)
+				printf("Overlay could not be hidden: %d\n", oError);
+		}
+	}
+	else
+	{
+		printf("Overlay handle invalid.\n");
+	}
+
 
 	return m_Pose.bPoseIsValid;
 }
@@ -177,9 +238,11 @@ void EditingController::prepareForRendering()
 		}
 
 		// Draw touchpad touch point sphere
-		if (m_bTouchpadTouched)
+		if (m_bTouchpadTouched && !m_bShowScrollWheel)
 		{
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount);
+			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
+			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / range;
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio);
 		}
 	}
 
@@ -215,10 +278,11 @@ void EditingController::prepareForRendering()
 	}
 }
 
-void EditingController::triggerEngaged()
+void EditingController::triggerEngaged(float amount)
 {
 	//printf("Controller (device %u) trigger engaged).\n", m_DeviceID);
 	m_bTriggerEngaged = true;
+	m_fTriggerPull = amount;
 	//m_bShowCursor = true;
 }
 
@@ -226,6 +290,7 @@ void EditingController::triggerDisengaged()
 {
 	//printf("Controller (device %u) trigger disengaged).\n", m_DeviceID);
 	m_bTriggerEngaged = false;
+	m_fTriggerPull = 0.f;
 	//m_bShowCursor = false;
 }
 
@@ -233,13 +298,15 @@ void EditingController::triggerClicked()
 {
 	//printf("Controller (device %u) trigger clicked.\n", m_DeviceID);
 	m_bTriggerClicked = true;
+	m_fTriggerPull = 1.f;
 	m_bCleaningMode = true;
 }
 
-void EditingController::triggerUnclicked()
+void EditingController::triggerUnclicked(float amount)
 {
 	//printf("Controller (device %u) trigger unclicked.\n", m_DeviceID);
 	m_bTriggerClicked = false;
+	m_fTriggerPull = amount;
 	m_bCleaningMode = false;
 }
 
@@ -256,6 +323,7 @@ void EditingController::touchpadInitialTouch(float x, float y)
 		{
 			m_bCursorOffsetMode = true;
 			m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
+			m_bShowScrollWheel = true;
 		}
 		else
 		{
@@ -339,6 +407,7 @@ void EditingController::touchpadUntouched()
 	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
 	m_bCursorOffsetMode = false;
 	m_bCursorRadiusResizeMode = false;
+	m_bShowScrollWheel = false;
 }
 
 bool EditingController::touchpadActive()

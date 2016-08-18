@@ -4,17 +4,17 @@ class EditingController :
 	public ViveController
 {
 public:
-	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~EditingController();
 
 	bool updatePose(vr::TrackedDevicePose_t pose);
 
 	void prepareForRendering();
 
-	void triggerEngaged();
+	void triggerEngaged(float amount);
 	void triggerDisengaged();
 	void triggerClicked();
-	void triggerUnclicked();
+	void triggerUnclicked(float amount);
 
 	void touchpadInitialTouch(float x, float y);
 	void touchpadTouch(float x, float y);

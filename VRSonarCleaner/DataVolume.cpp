@@ -1,6 +1,7 @@
 #include "DataVolume.h"
 
 #include <iostream>
+#include <math.h>
 
 DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientation, float SizeX, float SizeY, float SizeZ)
 {
@@ -21,25 +22,42 @@ DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientati
 	//maxZ = PosZ + (sizeZ / 2);
 
 
-	orientation = new Quaternion();
+	//orientation = new Quaternion();
 	
 
 	if (startingOrientation == 0)
-		orientation->createFromAxisAngle(0, 0, 0, 0);
+		orientation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
 	else
-		orientation->createFromAxisAngle(1, 0, 0, -90);
+		orientation = glm::angleAxis(-90.f, glm::vec3(1, 0, 0));
 
 	rotationInProgress = false;
-	rotStart = new Quaternion();
-	rotCurrent = new Quaternion();
-	rotLast = new Quaternion();
-	rotLastInverse = new Quaternion();
+
+	
+	originalPosition[0] = posX;
+	originalPosition[1] = posY;
+	originalPosition[2] = posZ;
+	originalOrientation = orientation;
+
+	//orientationAtRotationStart = new Quaternion();
+	//controllerOrientationAtRotationStart = new Quaternion();
+	//controllerOrientationCurrent = new Quaternion();
+	//controllerRotationNeeded = new Quaternion();
+
 }
 
 DataVolume::~DataVolume()
 {
 
 }
+
+void DataVolume::resetPositionAndOrientation()
+{
+	posX = originalPosition[0];
+	posY = originalPosition[1];
+	posZ = originalPosition[2];
+	orientation = originalOrientation;
+}
+
 
 void DataVolume::setSize(float SizeX, float SizeY, float SizeZ)
 {
@@ -91,7 +109,7 @@ void DataVolume::setInnerCoords(double MinX, double MaxX, double MinY, double Ma
 
 void DataVolume::recalcScaling()
 {
-	XZscale = (float)min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
+	XZscale = (float)std::min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
 	depthScale = sizeY / (float)innerSizeY;
 	printf("Scaling Factor is XZ: %f, Y: %f", XZscale, depthScale);
 	
@@ -164,8 +182,7 @@ void DataVolume::activateTransformationMatrix()
 
 	//rotate here
 	
-	orientation->applyOpenGLRotationMatrix();
-	
+	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
 	//scale/trans
 
 	glScalef(XZscale, depthScale, XZscale);
@@ -222,7 +239,7 @@ void DataVolume::drawBBox()
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glTranslatef(posX, posY, posZ);
-	orientation->applyOpenGLRotationMatrix();
+	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
 	glTranslatef(-posX, -posY, -posZ);
 	
 	glBegin(GL_LINES);
@@ -348,7 +365,7 @@ void DataVolume::drawBacking()
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glTranslatef(posX, posY, posZ);
-	orientation->applyOpenGLRotationMatrix();
+	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));                 
 	glTranslatef(-posX, -posY, -posZ);
 
 	glBegin(GL_QUADS);
@@ -375,7 +392,7 @@ void DataVolume::drawAxes()
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glTranslatef(posX, posY, posZ);
-	orientation->applyOpenGLRotationMatrix();
+	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
 	glTranslatef(-posX, -posY, -posZ);
 
 	glLineWidth(2.0);
@@ -413,42 +430,82 @@ void DataVolume::drawAxes()
 	*/
 }
 
-void DataVolume::startRotation(double *mat4x4)
+void DataVolume::startRotation(const float *mat4x4)
 {
-	for (int i = 0; i < 16; i++)
-	{
-		rotMatStart[i] = mat4x4[i];
-		rotMatLast[i] = mat4x4[i];
-	}
-	rotStart->createFromOpenGLMatrix(rotMatStart);
-	rotLast->createFromOpenGLMatrix(rotMatStart);
+	//orientation.printValues("orientation");
+
+	//save volume's starting position and orientation 
+	orientationAtRotationStart = orientation;
+	positionAtRotationStart.x = posX;
+	positionAtRotationStart.y = posY;
+	positionAtRotationStart.z = posZ;
+
+	//orientationAtRotationStart.printValues("orientationAtRotationStart");
+
+	//save controllers starting position and orientation
+	controllerPositionAtRotationStart.x = mat4x4[12];
+	controllerPositionAtRotationStart.y = mat4x4[13];
+	controllerPositionAtRotationStart.z = mat4x4[14];
+	//printf("Extracted controller starting position: %f, %f, %f\n", controllerPositionAtRotationStart[0], controllerPositionAtRotationStart[1], controllerPositionAtRotationStart[2]);
+	controllerOrientationAtRotationStart = glm::quat_cast(glm::make_mat4(mat4x4));
+
+	//controllerOrientationAtRotationStart.printValues("controllerOrientationAtRotationStart");
+
+	controllerOrientationAtRotationStartInverted = controllerOrientationAtRotationStart;
+	controllerOrientationAtRotationStartInverted = glm::inverse(controllerOrientationAtRotationStartInverted);
+
+	//controllerOrientationAtRotationStartInverted.printValues("controllerOrientationAtRotationStartInverted");
+
+	//save positional offset
+	vectorControllerToVolume = positionAtRotationStart - controllerPositionAtRotationStart;
+
 	rotationInProgress = true;
 }
 
-void DataVolume::continueRotation(double *mat4x4)
+void DataVolume::continueRotation(const float *mat4x4)
 {
 	if (!rotationInProgress)
 		return;
 
-	for (int i = 0; i < 16; i++)
-	{
-		rotMatCurrent[i] = mat4x4[i];
-	}
-	rotCurrent->createFromOpenGLMatrix(rotMatCurrent);
+	controllerOrientationCurrent = glm::quat_cast(glm::make_mat4(mat4x4));
 	
-	Quaternion rotationNeeded = rotLast->getQuaternionNeededToRotateTo(*rotCurrent);
+	//controllerOrientationAtRotationStartInverted.printValues("controllerOrientationAtRotationStartInverted");
+	//controllerOrientationCurrent.printValues("controllerOrientationCurrent");
+
+	//controllerRotationNeeded = controllerOrientationAtRotationStartInverted * controllerOrientationCurrent;
+	controllerRotationNeeded = controllerOrientationAtRotationStartInverted * controllerOrientationCurrent;
 	
-	*orientation = *orientation * rotationNeeded;
+	//controllerRotationNeeded.printValues("controllerRotationNeeded");
 
-	for (int i = 0; i < 16; i++)
-	{
-		rotMatLast[i] = mat4x4[i];
-	}
-	rotLast->createFromOpenGLMatrix(rotMatStart);
+	double tempMat[16];
+	IdentityMat(tempMat);
+	tempMat[12] = vectorControllerToVolume[0];
+	tempMat[13] = vectorControllerToVolume[1];
+	tempMat[14] = vectorControllerToVolume[2];
+	glm::vec4 tempOutMat;
+	tempOutMat = glm::rotate(controllerRotationNeeded, glm::vec4(vectorControllerToVolume, 0.f));
+	posX = tempOutMat.x + mat4x4[12];
+	posY = tempOutMat.y + mat4x4[13];
+	posZ = tempOutMat.z + mat4x4[14];
+	
+	//orientation.createFromOpenGLMatrix(tempOutMat);
 
+	//orientation.printValues("orientation");
+
+	//orientation = orientationAtRotationStart * controllerRotationNeeded;
+	orientation = orientationAtRotationStart * controllerRotationNeeded;
+	
+	//orientation.printValues("orientation");
 }
 
 void DataVolume::endRotation()
 {
 	rotationInProgress = false;
+
+	//could revert to old starting position and orientation here to have it always snap back in place
+}
+
+bool DataVolume::isBeingRotated()
+{
+	return rotationInProgress;
 }

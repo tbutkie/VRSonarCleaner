@@ -13,12 +13,14 @@
 class TrackedDevice
 {
 public:
-	TrackedDevice(vr::TrackedDeviceIndex_t id);
+	TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~TrackedDevice();
+
+	virtual bool BInit();
 
 	vr::TrackedDeviceIndex_t getIndex();
 	void setRenderModel(CGLRenderModel *renderModel);
-	bool hasRenderModel();
+	inline bool hasRenderModel() { return !(m_pTrackedDeviceToRenderModel == NULL); }
 
 	bool toggleAxes();
 	bool axesActive();
@@ -34,14 +36,23 @@ public:
 	virtual void prepareForRendering();
 
 	virtual void render(Matrix4 & matVP); 
-	void renderModel();
+	virtual void renderModel(Matrix4 & matVP);
 
 protected:
-	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
-	bool createShader();
 
-	vr::TrackedDeviceIndex_t m_nDeviceID;
+	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose);
+	bool createShaders();
+	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
+	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+
+	vr::IVRSystem *m_pHMD;
+	vr::IVRRenderModels *m_pRenderModels;
+
+	vr::TrackedDeviceIndex_t m_unDeviceID;
 	CGLRenderModel *m_pTrackedDeviceToRenderModel;
+	std::string m_strRenderModelName;
 	
 	char m_ClassChar;   // for each device, a character representing its class
 	
@@ -55,6 +66,9 @@ protected:
 	unsigned int m_uiTriVertcount;
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
+
+	GLuint m_unRenderModelProgramID;
+	GLint m_nRenderModelMatrixLocation;
 	
 	bool m_bShow;
 	bool m_bShowAxes;

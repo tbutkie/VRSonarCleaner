@@ -6,7 +6,9 @@
 #include <algorithm>
 #include "Vec3.h"
 #include "MatrixUtils.h"
-#include "Quaternion.h"
+#include "../shared/glm/gtc/quaternion.hpp"
+#include "../shared/glm/gtx/quaternion.hpp"
+#include "../shared//glm/gtc/type_ptr.hpp"
 //#include <string>
 //#include <cstdlib>
 
@@ -32,12 +34,12 @@ public:
 
 	void activateTransformationMatrix();
 
-	void startRotation(double *mat4x4);
-	void continueRotation(double *mat4x4);
+	void startRotation(const float *mat4x4);
+	void continueRotation(const float *mat4x4);
 	void endRotation();
+	bool isBeingRotated();	
 
-
-	
+	void resetPositionAndOrientation();
 
 private:
 
@@ -46,9 +48,10 @@ private:
 	//float minX, minY, minZ;
 	//float maxX, maxY, maxZ;
 
-	//int orientation; //0 z-up, 1 z-wall-worldy
-	Quaternion *orientation;
-
+	glm::quat orientation;
+	glm::quat originalOrientation;
+	float originalPosition[3];
+	
 	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
 	double innerSizeX, innerSizeY, innerSizeZ;
 
@@ -57,12 +60,15 @@ private:
 
 	//rotate action
 	bool rotationInProgress;
-	Quaternion *rotStart;
-	Quaternion *rotCurrent;
-	Quaternion *rotLast;
-	Quaternion *rotLastInverse;
-	double rotMatStart[16];
-	double rotMatCurrent[16];
-	double rotMatLast[16];
+	glm::quat orientationAtRotationStart;
+	glm::vec3 positionAtRotationStart;
+	glm::quat controllerOrientationAtRotationStart;
+	glm::quat controllerOrientationAtRotationStartInverted;
+	glm::vec3 controllerPositionAtRotationStart;
+	glm::vec3 vectorControllerToVolume;
+	glm::quat controllerOrientationLast;
+	glm::vec3 controllerPositionLast;
 
+	glm::quat controllerOrientationCurrent;
+	glm::quat controllerRotationNeeded;
 };
