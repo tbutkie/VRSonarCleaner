@@ -328,6 +328,7 @@ bool CMainApplication::HandleInput()
 			{
 				printf("Pressed r, resetting marks\n");
 				clouds->resetMarksInAllClouds();
+				cleaningRoom->resetVolumes();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_g)
 			{

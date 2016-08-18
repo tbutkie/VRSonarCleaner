@@ -259,3 +259,9 @@ void CleaningRoom::draw()
 
 
 }
+
+void CleaningRoom::resetVolumes()
+{
+	wallVolume->resetPositionAndOrientation();
+	tableVolume->resetPositionAndOrientation();
+}

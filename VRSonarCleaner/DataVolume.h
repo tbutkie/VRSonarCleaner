@@ -37,6 +37,8 @@ public:
 	void endRotation();
 	bool isBeingRotated();	
 
+	void resetPositionAndOrientation();
+
 private:
 
 	float sizeX, sizeY, sizeZ;
@@ -45,6 +47,8 @@ private:
 	//float maxX, maxY, maxZ;
 
 	Quaternion orientation;
+	Quaternion originalOrientation;
+	float originalPosition[3];
 
 	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
 	double innerSizeX, innerSizeY, innerSizeZ;
