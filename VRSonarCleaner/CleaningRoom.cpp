@@ -167,23 +167,17 @@ bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
 
 		return false;
 	}
-
-	const float *mf = controllerPose->get();
-	double md[16];
-
-	for (int i = 0; i < 16; ++i)
-		md[i] = static_cast<double>(mf[i]);
-
+	
 	if (!tableVolume->isBeingRotated())
 	{
-		tableVolume->startRotation(md);
+		tableVolume->startRotation(controllerPose->get());
 		printf("++ Rotation Started\n");
 		return true;
 	}
 	else
 	{
 		printf("==== Rotating\n");
-		tableVolume->continueRotation(md);
+		tableVolume->continueRotation(controllerPose->get());
 	}
 	return false;
 }
