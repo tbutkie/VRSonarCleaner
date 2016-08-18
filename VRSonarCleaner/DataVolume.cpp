@@ -36,7 +36,7 @@ DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientati
 	originalPosition[0] = posX;
 	originalPosition[1] = posY;
 	originalPosition[2] = posZ;
-	originalOrientation.copy(orientation);
+	originalOrientation = orientation;
 
 	//orientationAtRotationStart = new Quaternion();
 	//controllerOrientationAtRotationStart = new Quaternion();
@@ -55,7 +55,7 @@ void DataVolume::resetPositionAndOrientation()
 	posX = originalPosition[0];
 	posY = originalPosition[1];
 	posZ = originalPosition[2];
-	orientation.copy(originalOrientation);
+	orientation = originalOrientation;
 }
 
 
