@@ -14,6 +14,7 @@
 class DebugDrawer
 {
 public:
+	// Singleton instance access
 	static DebugDrawer& getInstance()
 	{
 		static DebugDrawer instance;
@@ -58,12 +59,12 @@ public:
 		drawLine(v1, v2, color);
 		drawLine(v2, v0, color);
 	}
-	void drawTransform(const glm::mat4 &transform, float orthoLen)
+	void drawTransform(float orthoLen)
 	{
-		glm::vec3 start(transform[3]);
-		drawLine(start, start + glm::vec3(transform * glm::vec4(orthoLen, 0, 0, 0)), glm::vec3(0.7f, 0, 0));
-		drawLine(start, start + glm::vec3(transform * glm::vec4(0, orthoLen, 0, 0)), glm::vec3(0, 0.7f, 0));
-		drawLine(start, start + glm::vec3(transform * glm::vec4(0, 0, orthoLen, 0)), glm::vec3(0, 0, 0.7f));
+		glm::vec3 start(m_mat4Transform[3]);
+		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(orthoLen, 0, 0, 0)), glm::vec3(0.7f, 0, 0));
+		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(0, orthoLen, 0, 0)), glm::vec3(0, 0.7f, 0));
+		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(0, 0, orthoLen, 0)), glm::vec3(0, 0, 0.7f));
 	}
 
 	void drawArc(const glm::vec3 &center, const glm::vec3 &normal, const glm::vec3 &axis, float radiusA, float radiusB, float minAngle, float maxAngle,
