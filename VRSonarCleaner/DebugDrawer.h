@@ -59,6 +59,7 @@ public:
 		drawLine(v1, v2, color);
 		drawLine(v2, v0, color);
 	}
+
 	void drawTransform(float orthoLen)
 	{
 		glm::vec3 start(0.f);
@@ -67,15 +68,16 @@ public:
 		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec3(0.f, 0.f, 0.7f));
 	}
 
-	void drawArc(const glm::vec3 &center, const glm::vec3 &normal, const glm::vec3 &axis, float radiusA, float radiusB, float minAngle, float maxAngle,
-		const glm::vec3 &color, bool drawSect, float stepDegrees = float(10.f))
+	void drawArc(float radiusX, float radiusY, float minAngle, float maxAngle, const glm::vec3 &color, bool drawSect, float stepDegrees = float(10.f))
 	{
-		const glm::vec3& vx = axis;
-		glm::vec3 vy = glm::cross(normal, axis);
-		float step = glm::degrees(stepDegrees);
+		glm::vec3 center(0.f);
+
+		const glm::vec3 vx(1.f, 0.f, 0.f);
+		glm::vec3 vy(0.f, 1.f, 0.f);
+		float step = glm::radians(stepDegrees);
 		int nSteps = (int)glm::abs((maxAngle - minAngle) / step);
 		if (!nSteps) nSteps = 1;
-		glm::vec3 prev = center + radiusA * vx * glm::cos(minAngle) + radiusB * vy * glm::sin(minAngle);
+		glm::vec3 prev = center + radiusX * vx * glm::cos(glm::radians(minAngle)) + radiusY * vy * glm::sin(glm::radians(minAngle));
 		if (drawSect)
 		{
 			drawLine(center, prev, color);
@@ -83,7 +85,7 @@ public:
 		for (int i = 1; i <= nSteps; i++)
 		{
 			float angle = minAngle + (maxAngle - minAngle) * float(i) / float(nSteps);
-			glm::vec3 next = center + radiusA * vx * glm::cos(angle) + radiusB * vy * glm::sin(angle);
+			glm::vec3 next = center + radiusX * vx * glm::cos(glm::radians(angle)) + radiusY * vy * glm::sin(glm::radians(angle));
 			drawLine(prev, next, color);
 			prev = next;
 		}
@@ -120,21 +122,6 @@ public:
 		drawLine(glm::vec3(bbMax[0], bbMin[1], bbMax[2]), glm::vec3(bbMax[0], bbMax[1], bbMax[2]), color);
 		drawLine(glm::vec3(bbMax[0], bbMax[1], bbMax[2]), glm::vec3(bbMin[0], bbMax[1], bbMax[2]), color);
 		drawLine(glm::vec3(bbMin[0], bbMax[1], bbMax[2]), glm::vec3(bbMin[0], bbMin[1], bbMax[2]), color);
-	}
-	virtual void drawBox(const glm::vec3 &bbMin, const glm::vec3 &bbMax, const glm::mat4 &trans, const glm::vec3 &color)
-	{
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMin[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMin[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMin[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMin[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMin[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMax[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMin[1], bbMax[2], 1.f)), glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMax[0], bbMax[1], bbMax[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMax[2], 1.f)), color);
-		drawLine(glm::vec3(trans * glm::vec4(bbMin[0], bbMax[1], bbMax[2], 1.f)), glm::vec3(trans * glm::vec4(bbMin[0], bbMin[1], bbMax[2], 1.f)), color);
 	}
 
 	// Render the mesh
