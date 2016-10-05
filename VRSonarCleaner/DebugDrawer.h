@@ -61,10 +61,10 @@ public:
 	}
 	void drawTransform(float orthoLen)
 	{
-		glm::vec3 start(m_mat4Transform[3]);
-		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(orthoLen, 0, 0, 0)), glm::vec3(0.7f, 0, 0));
-		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(0, orthoLen, 0, 0)), glm::vec3(0, 0.7f, 0));
-		drawLine(start, start + glm::vec3(m_mat4Transform * glm::vec4(0, 0, orthoLen, 0)), glm::vec3(0, 0, 0.7f));
+		glm::vec3 start(0.f);
+		drawLine(start, start + glm::vec3(glm::vec4(orthoLen, 0.f, 0.f, 0.f)), glm::vec3(0.7f, 0.f, 0.f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, orthoLen, 0.f, 0.f)), glm::vec3(0.f, 0.7f, 0.f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec3(0.f, 0.f, 0.7f));
 	}
 
 	void drawArc(const glm::vec3 &center, const glm::vec3 &normal, const glm::vec3 &axis, float radiusA, float radiusB, float minAngle, float maxAngle,

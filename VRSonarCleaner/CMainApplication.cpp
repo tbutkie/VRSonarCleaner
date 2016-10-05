@@ -787,6 +787,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glm::mat4 mat = glm::make_mat4(thisEyesProjectionMatrix.get());
 	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
 	DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
+	DebugDrawer::getInstance().drawTransform(0.1f);
 	DebugDrawer::getInstance().render(mat);
 		
 	// IMMEDIATE MODE
