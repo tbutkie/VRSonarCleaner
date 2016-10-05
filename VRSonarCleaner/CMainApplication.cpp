@@ -1,5 +1,6 @@
 #include "CMainApplication.h"
 #include "ShaderUtils.h"
+#include "DebugDrawer.h"
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -773,16 +774,24 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	
+
+	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
+
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
 	{
-		m_pTDM->renderTrackedDevices(GetCurrentViewProjectionMatrix(nEye));
+		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
-	
+
+	glm::mat4 mat = glm::make_mat4(thisEyesProjectionMatrix.get());
+	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
+	DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
+	DebugDrawer::getInstance().drawTransform(0.1f);
+	DebugDrawer::getInstance().render(mat);
+		
+	// IMMEDIATE MODE
 	glMatrixMode(GL_PROJECTION);
-	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
 	glLoadMatrixf(thisEyesProjectionMatrix.get());
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();	

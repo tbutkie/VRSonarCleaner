@@ -195,6 +195,7 @@
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="DataVolume.h" />
+    <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="EditingController.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="ShaderUtils.h" />

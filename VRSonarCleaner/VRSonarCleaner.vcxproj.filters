@@ -158,5 +158,8 @@
     <ClInclude Include="Icosphere.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DebugDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
