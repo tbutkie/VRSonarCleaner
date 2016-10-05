@@ -1,4 +1,5 @@
 #include "DataVolume.h"
+#include "DebugDrawer.h"
 
 #include <iostream>
 #include <math.h>
@@ -383,51 +384,37 @@ void DataVolume::drawBacking()
 void DataVolume::drawAxes()
 {
 	//printf("In Holodeck Draw()\n");
-	glColor3f(0.75, 0.0, 0.0);
-	glLineWidth(1.0);
+	//glColor3f(0.75, 0.0, 0.0);
+	//glLineWidth(1.0);
 
-	float smallSize = sizeX / 40;
-	float bigSize = sizeX / 20;
+	//float smallSize = sizeX / 40;
+	//float bigSize = sizeX / 20;
 
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glTranslatef(posX, posY, posZ);
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
-	glTranslatef(-posX, -posY, -posZ);
+	//glMatrixMode(GL_MODELVIEW);
+	//glPushMatrix();
+	//glTranslatef(posX, posY, posZ);
+	//glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
+	//glTranslatef(-posX, -posY, -posZ);
 
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(posX-smallSize, posY, posZ);
-	glVertex3f(posX+bigSize, posY, posZ);
+	//glLineWidth(2.0);
+	//glBegin(GL_LINES);
+	//glColor3f(1.0, 0.0, 0.0);
+	//glVertex3f(posX-smallSize, posY, posZ);
+	//glVertex3f(posX+bigSize, posY, posZ);
 
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(posX, posY -smallSize, posZ);
-	glVertex3f(posX, posY+bigSize, posZ);
+	//glColor3f(0.0, 1.0, 0.0);
+	//glVertex3f(posX, posY -smallSize, posZ);
+	//glVertex3f(posX, posY+bigSize, posZ);
 
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(posX, posY, posZ -smallSize);
-	glVertex3f(posX, posY, posZ+bigSize);
-	glEnd();
+	//glColor3f(0.0, 0.0, 1.0);
+	//glVertex3f(posX, posY, posZ -smallSize);
+	//glVertex3f(posX, posY, posZ+bigSize);
+	//glEnd();
 
-	glPopMatrix();
+	//glPopMatrix();
 
-	/*
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(posX - smallSize, 0, 0);
-	glVertex3f(posX + bigSize, 0, 0);
-
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(0, posX - smallSize, 0);
-	glVertex3f(0, posX + bigSize, 0);
-
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(0, 0, posX - smallSize);
-	glVertex3f(0, 0, posX + bigSize);
-	glEnd();
-	*/
+	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(posX, posY, posZ)) * glm::mat4_cast(orientation));
+	DebugDrawer::getInstance().drawTransform(0.1f);
 }
 
 void DataVolume::startRotation(const float *mat4x4)
