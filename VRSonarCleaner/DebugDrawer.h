@@ -140,8 +140,11 @@ public:
 		glBindVertexArray(0);
 
 		glUseProgram(0);
+	}
 
-		_flushLines();
+	void flushLines()
+	{
+		m_vVertices.clear();
 	}
 
 private:
@@ -274,11 +277,6 @@ private:
 			}
 			pT = pvA; pvA = pvB; pvB = pT;
 		}
-	}
-
-	void _flushLines()
-	{
-		m_vVertices.clear();
 	}
 
 	void _initGL()

@@ -457,6 +457,7 @@ void CMainApplication::RenderFrame()
 		glFinish();
 	}
 
+	DebugDrawer::getInstance().flushLines();
 	m_pTDM->postRenderUpdate();
 }
 
@@ -784,17 +785,6 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
 
-	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
-	if(0)
-	{
-		DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
-		DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
-		DebugDrawer::getInstance().drawTransform(0.1f);
-	}
-		
-	// DEBUG DRAWER RENDER CALL
-	DebugDrawer::getInstance().render(glm::make_mat4(thisEyesProjectionMatrix.get()));
-
 	// IMMEDIATE MODE
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixf(thisEyesProjectionMatrix.get());
@@ -802,7 +792,17 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glLoadIdentity();	
 
 	cleaningRoom->draw();
+	
+	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
+	if (0)
+	{
+		DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
+		DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
+		DebugDrawer::getInstance().drawTransform(0.1f);
+	}
 
+	// DEBUG DRAWER RENDER CALL
+	DebugDrawer::getInstance().render(glm::make_mat4(thisEyesProjectionMatrix.get()));
 }
 
 
