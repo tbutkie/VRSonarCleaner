@@ -1,6 +1,6 @@
 #include "EditingController.h"
 
-
+#include "DebugDrawer.h"
 
 EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: ViveController(unTrackedDeviceIndex, pHMD, pRenderModels)
@@ -112,34 +112,8 @@ void EditingController::prepareForRendering()
 	// Draw Axes
 	if (m_bShowAxes)
 	{
-		for (int i = 0; i < 3; ++i)
-		{
-			Vector3 color(0, 0, 0);
-			Vector4 center = m_mat4Pose * Vector4(0, 0, 0, 1);
-			Vector4 point(0, 0, 0, 1);
-			point[i] += 0.1f;  // offset in X, Y, Z
-			color[i] = 1.0;  // R, G, B
-			point = m_mat4Pose * point;
-			vertdataarray.push_back(center.x);
-			vertdataarray.push_back(center.y);
-			vertdataarray.push_back(center.z);
-
-			//printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
-
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
-
-			vertdataarray.push_back(point.x);
-			vertdataarray.push_back(point.y);
-			vertdataarray.push_back(point.z);
-
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
-
-			m_uiLineVertcount += 2;
-		}
+		DebugDrawer::getInstance().setTransform(m_mat4Pose.get());
+		DebugDrawer::getInstance().drawTransform(0.1f);
 	}
 
 	// Draw pointing line
@@ -176,6 +150,54 @@ void EditingController::prepareForRendering()
 			circlePt.x = m_fCursorRadius * cosf(theta);
 			circlePt.y = 0.f;
 			circlePt.z = m_fCursorRadius * sinf(theta);
+			circlePt.w = 1.f;
+
+			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
+
+			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			m_uiLineVertcount += 2;
+
+			prevVert = thisVert;
+		}
+
+		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
+		for (GLuint i = 1; i < num_segments; i++)
+		{
+			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+
+			Vector4 circlePt;
+			circlePt.x = 0.f;
+			circlePt.y = m_fCursorRadius * cosf(theta);
+			circlePt.z = m_fCursorRadius * sinf(theta);
+			circlePt.w = 1.f;
+
+			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
+
+			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+			m_uiLineVertcount += 2;
+
+			prevVert = thisVert;
+		}
+
+		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
+		for (GLuint i = 1; i < num_segments; i++)
+		{
+			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+
+			Vector4 circlePt;
+			circlePt.x = m_fCursorRadius * sinf(theta);
+			circlePt.y = m_fCursorRadius * cosf(theta);
+			circlePt.z = 0.f;
 			circlePt.w = 1.f;
 
 			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
