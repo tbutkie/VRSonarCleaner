@@ -35,6 +35,11 @@ public:
 	void setTransform(float *m)
 	{
 		m_mat4Transform = glm::make_mat4(m);
+	}	
+	
+	void setTransform(const float *m)
+	{
+		m_mat4Transform = glm::make_mat4(m);
 	}
 
 	// Reset the debug drawer's drawing transform so that it draws in world space
