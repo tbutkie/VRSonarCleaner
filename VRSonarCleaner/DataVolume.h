@@ -56,10 +56,7 @@ private:
 
 	//rotate action
 	bool rotationInProgress;
-	glm::quat orientationAtRotationStart;
-	glm::vec3 positionAtRotationStart;
-	glm::quat controllerOrientationAtRotationStart;
-	glm::vec3 controllerPositionAtRotationStart;
-	glm::mat4 mat4ControllerToVolumeOrientation;
-	glm::vec3 vec3ControllerToVolume;
+	glm::mat4 mat4PoseAtRotationStart;
+	glm::mat4 mat4ControllerPoseAtRotationStart;
+	glm::mat4 mat4ControllerToVolumePose;
 };
