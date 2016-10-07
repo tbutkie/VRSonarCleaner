@@ -34,23 +34,19 @@ public:
 
 	void activateTransformationMatrix();
 
-	void startRotation(const float *mat4Controller);
-	void continueRotation(const float *mat4Controller);
+	void startRotation(const float *controllerPose);
+	void continueRotation(const float *controllerPose);
 	void endRotation();
 	bool isBeingRotated();	
 
 	void resetPositionAndOrientation();
 
 private:
-
-	float sizeX, sizeY, sizeZ;
-	glm::vec3 pos;
-	//float minX, minY, minZ;
-	//float maxX, maxY, maxZ;
+	glm::vec3 pos, size;
 
 	glm::quat orientation;
 	glm::quat originalOrientation;
-	float originalPosition[3];
+	glm::vec3 originalPosition;
 	
 	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
 	double innerSizeX, innerSizeY, innerSizeZ;
@@ -64,10 +60,6 @@ private:
 	glm::vec3 positionAtRotationStart;
 	glm::quat controllerOrientationAtRotationStart;
 	glm::vec3 controllerPositionAtRotationStart;
-	glm::quat quatControllerToVolumeDifference;
-	glm::mat4 mat4ControllerToVolumeDifference;
-	glm::vec3 vectorControllerToVolume;
-	glm::quat controllerOrientationLast;
-	glm::vec3 controllerPositionLast;
-	glm::mat4 controllerToVolume;
+	glm::mat4 mat4ControllerToVolumeOrientation;
+	glm::vec3 vec3ControllerToVolume;
 };

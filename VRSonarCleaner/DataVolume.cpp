@@ -6,23 +6,11 @@
 
 DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientation, float SizeX, float SizeY, float SizeZ)
 {
-	sizeX = SizeX;
-	sizeY = SizeY;
-	sizeZ = SizeZ;
+	size.x = SizeX;
+	size.y = SizeY;
+	size.z = SizeZ;
 
-	pos = glm::vec3(PosX, PosY, PosZ);
-
-	//minX = PosX - (sizeX / 2);
-	//minY = PosY - (sizeY / 2);
-	//minZ = PosZ - (sizeZ / 2);
-
-	//maxX = PosX + (sizeX / 2);
-	//maxY = PosY + (sizeY / 2);
-	//maxZ = PosZ + (sizeZ / 2);
-
-
-	//orientation = new Quaternion();
-	
+	pos = glm::vec3(PosX, PosY, PosZ);	
 
 	if (startingOrientation == 0)
 		orientation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
@@ -32,16 +20,8 @@ DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientati
 	rotationInProgress = false;
 
 	
-	originalPosition[0] = pos.x;
-	originalPosition[1] = pos.y;
-	originalPosition[2] = pos.z;
+	originalPosition = pos;
 	originalOrientation = orientation;
-
-	//orientationAtRotationStart = new Quaternion();
-	//controllerOrientationAtRotationStart = new Quaternion();
-	//controllerOrientationCurrent = new Quaternion();
-	//controllerRotationNeeded = new Quaternion();
-
 }
 
 DataVolume::~DataVolume()
@@ -60,9 +40,9 @@ void DataVolume::resetPositionAndOrientation()
 
 void DataVolume::setSize(float SizeX, float SizeY, float SizeZ)
 {
-	sizeX = SizeX;
-	sizeY = SizeY;
-	sizeZ = SizeZ;
+	size.x = SizeX;
+	size.y = SizeY;
+	size.z = SizeZ;
 
 	//minX = posX - (sizeX / 2);
 	//minY = posY - (sizeY / 2);
@@ -108,8 +88,8 @@ void DataVolume::setInnerCoords(double MinX, double MaxX, double MinY, double Ma
 
 void DataVolume::recalcScaling()
 {
-	XZscale = (float)std::min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
-	depthScale = sizeY / (float)innerSizeY;
+	XZscale = (float)std::min((double)size.x / innerSizeX, (double)size.z / innerSizeZ);
+	depthScale = size.y / (float)innerSizeY;
 	printf("Scaling Factor is XZ: %f, Y: %f", XZscale, depthScale);
 	
 	/*
@@ -228,12 +208,12 @@ void DataVolume::drawBBox()
 	glLineWidth(1.0);
 	
 	float BBox[6];
-	BBox[0] = pos.x-(sizeX / 2);
-	BBox[1] = pos.x+(sizeX / 2);
-	BBox[2] = pos.y-(sizeY / 2);
-	BBox[3] = pos.y+(sizeY / 2);
-	BBox[4] = pos.z-(sizeZ / 2);
-	BBox[5] = pos.z+(sizeZ / 2);
+	BBox[0] = pos.x-(size.x / 2);
+	BBox[1] = pos.x+(size.x / 2);
+	BBox[2] = pos.y-(size.y / 2);
+	BBox[3] = pos.y+(size.y / 2);
+	BBox[4] = pos.z-(size.z / 2);
+	BBox[5] = pos.z+(size.z / 2);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -354,12 +334,12 @@ void DataVolume::drawBacking()
 	glColor4f(0.22, 0.25, 0.34, 1.0);
 
 	float BBox[6];
-	BBox[0] = pos.x-(sizeX / 2);
-	BBox[1] = pos.x+(sizeX / 2);
-	BBox[2] = pos.y -(sizeY / 2);
-	BBox[3] = pos.y+(sizeY / 2);
-	BBox[4] = pos.z-(sizeZ / 2);
-	BBox[5] = pos.z+(sizeZ / 2);
+	BBox[0] = pos.x-(size.x / 2);
+	BBox[1] = pos.x+(size.x / 2);
+	BBox[2] = pos.y -(size.y / 2);
+	BBox[3] = pos.y+(size.y / 2);
+	BBox[4] = pos.z-(size.z / 2);
+	BBox[5] = pos.z+(size.z / 2);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -415,50 +395,43 @@ void DataVolume::drawAxes()
 	DebugDrawer::getInstance().drawTransform(0.1f);
 }
 
-void DataVolume::startRotation(const float *mat4Controller)
+void DataVolume::startRotation(const float *controllerPose)
 {
+	glm::mat4 mat4Controller = glm::make_mat4(controllerPose);
+
 	//save volume's starting position and orientation 
 	orientationAtRotationStart = orientation;
 	positionAtRotationStart = pos;
 
 	//save controllers starting position and orientation
-	controllerPositionAtRotationStart = glm::vec3(glm::make_mat4(mat4Controller)[3]);	
-	controllerOrientationAtRotationStart = glm::quat_cast(glm::make_mat4(mat4Controller));
+	controllerPositionAtRotationStart = glm::vec3(mat4Controller[3]);
+	controllerOrientationAtRotationStart = glm::quat_cast(mat4Controller);
 	
-	//save orientation difference and positional offset
-	quatControllerToVolumeDifference = controllerOrientationAtRotationStart * glm::inverse(orientationAtRotationStart);
-	mat4ControllerToVolumeDifference = glm::inverse(glm::mat4_cast(controllerOrientationAtRotationStart)) * glm::mat4_cast(orientationAtRotationStart);
-	vectorControllerToVolume = glm::inverse(glm::mat3_cast(controllerOrientationAtRotationStart)) * (positionAtRotationStart - controllerPositionAtRotationStart); // model space
-
-	// in controller space
-	controllerToVolume = glm::inverse(glm::make_mat4(mat4Controller)) * (glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation));
-
+	//save orientation difference and positional offset in controller space
+	mat4ControllerToVolumeOrientation = glm::inverse(mat4Controller) * glm::mat4_cast(orientationAtRotationStart);
+	vec3ControllerToVolume = glm::inverse(glm::mat3(mat4Controller)) * (positionAtRotationStart - controllerPositionAtRotationStart);
+	
 	rotationInProgress = true;
-
-	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(controllerPositionAtRotationStart, controllerPositionAtRotationStart + vectorControllerToVolume, glm::vec3(0.f, 1.f, 0.f));
 }
 
-void DataVolume::continueRotation(const float *mat4Controller)
+void DataVolume::continueRotation(const float *controllerPose)
 {
 	if (!rotationInProgress)
 		return;
 
-	glm::quat controllerOrientationCurrent = glm::quat_cast(glm::make_mat4(mat4Controller));
-	glm::vec3 controllerPositionCurrent = glm::vec3(glm::make_mat4(mat4Controller)[3]);	
+	glm::mat4 mat4ControllerCurrent = glm::make_mat4(controllerPose);
 
-	glm::mat4 mat4NewVolume = glm::mat4_cast(controllerOrientationCurrent) * mat4ControllerToVolumeDifference;
-	glm::vec3 vectorNewControllerToVolume = glm::mat3_cast(controllerOrientationCurrent) * vectorControllerToVolume;
+	glm::quat controllerOrientationCurrent = glm::quat_cast(mat4ControllerCurrent);
+	glm::vec3 controllerPositionCurrent = glm::vec3(mat4ControllerCurrent[3]);
 
-	pos = controllerPositionCurrent + vectorNewControllerToVolume;
-	orientation = glm::quat(glm::mat4_cast(controllerOrientationCurrent) * mat4ControllerToVolumeDifference);
+	glm::vec3 vec3NewControllerToVolume = glm::mat3_cast(controllerOrientationCurrent) * vec3ControllerToVolume;
 
-	//pos = glm::vec3(glm::inverse(controllerToVolume) * glm::make_mat4(mat4Controller) * glm::vec4(0.f, 0.f, 0.f, 1.f));
-	//orientation = glm::quat_cast(controllerToVolume * glm::make_mat4(mat4Controller));
+	pos = controllerPositionCurrent + vec3NewControllerToVolume;
+	orientation = glm::quat(glm::mat4_cast(controllerOrientationCurrent) * mat4ControllerToVolumeOrientation);
 
 	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(controllerPositionAtRotationStart, controllerPositionAtRotationStart + glm::mat3_cast(controllerOrientationAtRotationStart) * vectorControllerToVolume, glm::vec3(0.f, 1.f, 0.f));
-	DebugDrawer::getInstance().drawLine(controllerPositionCurrent, controllerPositionCurrent + vectorNewControllerToVolume, glm::vec3(1.f, 0.f, 0.f));
+	DebugDrawer::getInstance().drawLine(controllerPositionAtRotationStart, controllerPositionAtRotationStart + glm::mat3_cast(controllerOrientationAtRotationStart) * vec3ControllerToVolume, glm::vec3(0.f, 1.f, 0.f));
+	DebugDrawer::getInstance().drawLine(controllerPositionCurrent, controllerPositionCurrent + vec3NewControllerToVolume, glm::vec3(1.f, 0.f, 0.f));
 }
 
 void DataVolume::endRotation()
