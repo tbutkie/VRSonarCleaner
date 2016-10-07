@@ -65,6 +65,7 @@ private:
 	glm::quat controllerOrientationAtRotationStart;
 	glm::vec3 controllerPositionAtRotationStart;
 	glm::quat quatControllerToVolumeDifference;
+	glm::mat4 mat4ControllerToVolumeDifference;
 	glm::vec3 vectorControllerToVolume;
 	glm::quat controllerOrientationLast;
 	glm::vec3 controllerPositionLast;

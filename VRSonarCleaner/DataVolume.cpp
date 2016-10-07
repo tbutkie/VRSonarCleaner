@@ -427,6 +427,7 @@ void DataVolume::startRotation(const float *mat4Controller)
 	
 	//save orientation difference and positional offset
 	quatControllerToVolumeDifference = controllerOrientationAtRotationStart * glm::inverse(orientationAtRotationStart);
+	mat4ControllerToVolumeDifference = glm::inverse(glm::mat4_cast(controllerOrientationAtRotationStart)) * glm::mat4_cast(orientationAtRotationStart);
 	vectorControllerToVolume = glm::inverse(glm::mat3_cast(controllerOrientationAtRotationStart)) * (positionAtRotationStart - controllerPositionAtRotationStart); // model space
 
 	// in controller space
@@ -446,10 +447,11 @@ void DataVolume::continueRotation(const float *mat4Controller)
 	glm::quat controllerOrientationCurrent = glm::quat_cast(glm::make_mat4(mat4Controller));
 	glm::vec3 controllerPositionCurrent = glm::vec3(glm::make_mat4(mat4Controller)[3]);	
 
+	glm::mat4 mat4NewVolume = glm::mat4_cast(controllerOrientationCurrent) * mat4ControllerToVolumeDifference;
 	glm::vec3 vectorNewControllerToVolume = glm::mat3_cast(controllerOrientationCurrent) * vectorControllerToVolume;
 
 	pos = controllerPositionCurrent + vectorNewControllerToVolume;
-	orientation = quatControllerToVolumeDifference * controllerOrientationCurrent;
+	orientation = glm::quat(glm::mat4_cast(controllerOrientationCurrent) * mat4ControllerToVolumeDifference);
 
 	//pos = glm::vec3(glm::inverse(controllerToVolume) * glm::make_mat4(mat4Controller) * glm::vec4(0.f, 0.f, 0.f, 1.f));
 	//orientation = glm::quat_cast(controllerToVolume * glm::make_mat4(mat4Controller));
