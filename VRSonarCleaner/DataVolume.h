@@ -68,4 +68,5 @@ private:
 	glm::vec3 vectorControllerToVolume;
 	glm::quat controllerOrientationLast;
 	glm::vec3 controllerPositionLast;
+	glm::mat4 controllerToVolume;
 };

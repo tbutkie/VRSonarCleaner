@@ -426,8 +426,11 @@ void DataVolume::startRotation(const float *mat4Controller)
 	controllerOrientationAtRotationStart = glm::quat_cast(glm::make_mat4(mat4Controller));
 	
 	//save orientation difference and positional offset
-	quatControllerToVolumeDifference = orientationAtRotationStart * glm::inverse(controllerOrientationAtRotationStart);
-	vectorControllerToVolume = positionAtRotationStart - controllerPositionAtRotationStart; // world space
+	quatControllerToVolumeDifference = controllerOrientationAtRotationStart * glm::inverse(orientationAtRotationStart);
+	vectorControllerToVolume = glm::inverse(glm::mat3_cast(controllerOrientationAtRotationStart)) * (positionAtRotationStart - controllerPositionAtRotationStart); // model space
+
+	// in controller space
+	controllerToVolume = glm::inverse(glm::make_mat4(mat4Controller)) * (glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation));
 
 	rotationInProgress = true;
 
@@ -441,16 +444,19 @@ void DataVolume::continueRotation(const float *mat4Controller)
 		return;
 
 	glm::quat controllerOrientationCurrent = glm::quat_cast(glm::make_mat4(mat4Controller));
-	glm::vec4 controllerPositionCurrent = glm::make_mat4(mat4Controller)[3];	
+	glm::vec3 controllerPositionCurrent = glm::vec3(glm::make_mat4(mat4Controller)[3]);	
 
-	glm::vec4 vectorNewControllerToVolume = glm::inverse(controllerOrientationCurrent) * glm::vec4(vectorControllerToVolume, 0.f);
+	glm::vec3 vectorNewControllerToVolume = glm::mat3_cast(controllerOrientationCurrent) * vectorControllerToVolume;
 
-	pos = glm::vec3(controllerPositionCurrent) + vectorControllerToVolume;
+	pos = controllerPositionCurrent + vectorNewControllerToVolume;
 	orientation = quatControllerToVolumeDifference * controllerOrientationCurrent;
 
+	//pos = glm::vec3(glm::inverse(controllerToVolume) * glm::make_mat4(mat4Controller) * glm::vec4(0.f, 0.f, 0.f, 1.f));
+	//orientation = glm::quat_cast(controllerToVolume * glm::make_mat4(mat4Controller));
+
 	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(controllerPositionAtRotationStart, controllerPositionAtRotationStart + vectorControllerToVolume, glm::vec3(0.f, 1.f, 0.f));
-	DebugDrawer::getInstance().drawLine(glm::vec3(controllerPositionCurrent), glm::vec3(controllerPositionCurrent) + vectorControllerToVolume, glm::vec3(1.f, 0.f, 0.f));
+	DebugDrawer::getInstance().drawLine(controllerPositionAtRotationStart, controllerPositionAtRotationStart + glm::mat3_cast(controllerOrientationAtRotationStart) * vectorControllerToVolume, glm::vec3(0.f, 1.f, 0.f));
+	DebugDrawer::getInstance().drawLine(controllerPositionCurrent, controllerPositionCurrent + vectorNewControllerToVolume, glm::vec3(1.f, 0.f, 0.f));
 }
 
 void DataVolume::endRotation()
