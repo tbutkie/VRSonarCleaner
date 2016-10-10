@@ -47,109 +47,165 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	roomSizeY = SizeY;
 	roomSizeZ = SizeZ;
 }
- // This function works but could be improved in efficiency if needed
-bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity)
+
+// This function works but could be improved in efficiency if needed
+//bool CleaningRoom::checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity)
+//{
+//	bool anyHits = false;
+//
+//	float radius_sq = radius * radius;
+//
+//	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
+//
+//	Vector4 currentCtrPos = currentCursorPose * ctr;
+//	Vector4 lastCtrPos = lastCursorPose * ctr;
+//
+//	Vector4 up(0.f, 1.f, 0.f, 0.f);
+//	Vector4 currentUpVec = (currentCursorPose * up).normalize();
+//	Vector4 lastUpVec = (lastCursorPose * up).normalize();
+//
+//	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
+//	float dist = lastToCurrentVec.length();	
+//	float verticalDistBetweenCursors = abs(lastToCurrentVec.dot(lastUpVec));
+//
+//	float cylLen = verticalDistBetweenCursors / static_cast<float>(sensitivity);
+//	if (cylLen < 0.001f) cylLen = 0.001f;
+//	float cylLen_sq = cylLen * cylLen;
+//
+//	float subCylOverlap = 0.25f; // overlap on each side of subcylinder; 0.f = no overlap, 1.f = 100% overlap
+//	float subCylLen = cylLen * (1.f + 2.f * subCylOverlap);
+//	float subCylLen_sq = subCylLen * subCylLen;
+//
+//	if (currentUpVec.dot(lastUpVec) <= 0.f)
+//	{
+//		printf("Last two cursor orientations don't look valid; aborting point check...");
+//		return false;
+//	}
+//	
+//	// used to flip the side of the cursor from which the cylinder is extended
+//	// -1 = below cursor (-y); 1 = above cursor (+y)
+//	float cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1.f : 1.f;
+//	
+//	// Initialize quaternions used for interpolating orientation
+//	Quaternion lastQuat, thisQuat;
+//	lastQuat = lastCursorPose;
+//	thisQuat = currentCursorPose;
+//
+//	// Initialize subcylinder axis endpoints
+//	Vector4 cylBeginLast, cylEndLast;
+//	Vector4 cylBeginCurrent, cylEndCurrent;
+//	std::vector<Vector4> cylAxisPtPairs; // organized as cyl1 begin, cyl1 end, cyl2 begin, cyl2 end, ...
+//
+//	cylBeginLast = lastCtrPos;
+//	cylEndLast = lastCtrPos + lastUpVec * cylLen * cylSide;
+//	cylBeginCurrent = currentCtrPos;
+//	cylEndCurrent = currentCtrPos - currentUpVec * cylLen * cylSide;
+//	cylAxisPtPairs.push_back(cylBeginLast);
+//	cylAxisPtPairs.push_back(cylEndLast);
+//	
+//	// Interpolate cursor positions and store the subcylinder axial endpoints
+//	for (unsigned int i = 1; i < sensitivity - 1; ++i)
+//	{
+//		float ratio = static_cast<float>(i) / static_cast<float>(sensitivity - 1);
+//		Vector4 ptOnPathLine = lastCtrPos + lastToCurrentVec * ratio;
+//		Quaternion q = Quaternion().slerp(lastQuat, thisQuat, ratio);
+//		Matrix4 mat = q.createMatrix();
+//		// move cylinder axis endpoints out from center point that lies along the path line of the cursor centers
+//		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
+//		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, -1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
+//	}
+//
+//	cylAxisPtPairs.push_back(cylBeginCurrent);
+//	cylAxisPtPairs.push_back(cylEndCurrent);
+//	
+//	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();	
+//
+//	// check if points are within volume
+//	bool refreshNeeded = false;
+//	for (int i = 0; i < pts.size(); ++i)
+//	{
+//		//skip already marked points
+//		if (clouds->getCloud(0)->getPointMark(i) != 0)
+//			continue;		
+//		
+//		Vector3 ptInWorldCoords;
+//		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
+//		
+//		for (int j = 0; j < cylAxisPtPairs.size() / 2; ++j)
+//		{
+//			float len_sq;
+//			if (j == 0 || j == cylAxisPtPairs.size() - 1)
+//				len_sq = cylLen_sq;
+//			else
+//				len_sq = subCylLen_sq;
+//
+//			if (cylTest(cylAxisPtPairs[j * 2], cylAxisPtPairs[j * 2 +1], len_sq, radius_sq, ptInWorldCoords) > 0.f)
+//			{
+//				anyHits = true;
+//				//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
+//				clouds->getCloud(0)->markPoint(i, 1);
+//				refreshNeeded = true;
+//				break;
+//			}
+//		}
+//	}
+//
+//	if (refreshNeeded)
+//		clouds->getCloud(0)->setRefreshNeeded();
+//
+//	return anyHits;
+//}
+
+bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints)
 {
+	glm::mat4 mat4CurrentVolumePose = tableVolume->getCurrentPose();
+	glm::mat4 mat4LastVolumePose = tableVolume->getLastPose();
+
+	if (mat4LastVolumePose == glm::mat4()) mat4LastVolumePose = mat4CurrentVolumePose;
+	
+	glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumePose) * glm::make_mat4(currentCursorPose.get());
+	glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumePose) * glm::make_mat4(lastCursorPose.get());
+
+	glm::vec3 vec3CurrentCursorPoseInVolume(mat4CurrentCursorPoseInVolume[3]);
+	glm::vec3 vec3LastCursorPoseInVolume(mat4LastCursorPoseInVolume[3]);
+
 	bool anyHits = false;
 
-	float radius_sq = radius * radius;
+	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
 
-	Vector4 ctr(0.f, 0.f, 0.f, 1.f);
-
-	Vector4 currentCtrPos = currentCursorPose * ctr;
-	Vector4 lastCtrPos = lastCursorPose * ctr;
-
-	Vector4 up(0.f, 1.f, 0.f, 0.f);
-	Vector4 currentUpVec = (currentCursorPose * up).normalize();
-	Vector4 lastUpVec = (lastCursorPose * up).normalize();
-
-	Vector4 lastToCurrentVec = currentCtrPos - lastCtrPos;
-	float dist = lastToCurrentVec.length();	
-	float verticalDistBetweenCursors = abs(lastToCurrentVec.dot(lastUpVec));
-
-	float cylLen = verticalDistBetweenCursors / static_cast<float>(sensitivity);
-	if (cylLen < 0.001f) cylLen = 0.001f;
-	float cylLen_sq = cylLen * cylLen;
-
-	float subCylOverlap = 0.25f; // overlap on each side of subcylinder; 0.f = no overlap, 1.f = 100% overlap
-	float subCylLen = cylLen * (1.f + 2.f * subCylOverlap);
-	float subCylLen_sq = subCylLen * subCylLen;
-
-	if (currentUpVec.dot(lastUpVec) <= 0.f)
-	{
-		printf("Last two cursor orientations don't look valid; aborting point check...");
-		return false;
-	}
-	
-	// used to flip the side of the cursor from which the cylinder is extended
-	// -1 = below cursor (-y); 1 = above cursor (+y)
-	float cylSide = currentUpVec.dot(lastToCurrentVec) < 0.f ? -1.f : 1.f;
-	
-	// Initialize quaternions used for interpolating orientation
-	Quaternion lastQuat, thisQuat;
-	lastQuat = lastCursorPose;
-	thisQuat = currentCursorPose;
-
-	// Initialize subcylinder axis endpoints
-	Vector4 cylBeginLast, cylEndLast;
-	Vector4 cylBeginCurrent, cylEndCurrent;
-	std::vector<Vector4> cylAxisPtPairs; // organized as cyl1 begin, cyl1 end, cyl2 begin, cyl2 end, ...
-
-	cylBeginLast = lastCtrPos;
-	cylEndLast = lastCtrPos + lastUpVec * cylLen * cylSide;
-	cylBeginCurrent = currentCtrPos;
-	cylEndCurrent = currentCtrPos - currentUpVec * cylLen * cylSide;
-	cylAxisPtPairs.push_back(cylBeginLast);
-	cylAxisPtPairs.push_back(cylEndLast);
-	
-	// Interpolate cursor positions and store the subcylinder axial endpoints
-	for (unsigned int i = 1; i < sensitivity - 1; ++i)
-	{
-		float ratio = static_cast<float>(i) / static_cast<float>(sensitivity - 1);
-		Vector4 ptOnPathLine = lastCtrPos + lastToCurrentVec * ratio;
-		Quaternion q = Quaternion().slerp(lastQuat, thisQuat, ratio);
-		Matrix4 mat = q.createMatrix();
-		// move cylinder axis endpoints out from center point that lies along the path line of the cursor centers
-		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, 1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
-		cylAxisPtPairs.push_back(ptOnPathLine + mat * Vector4(0.f, -1.f, 0.f, 1.f) * cylLen * (0.5f + subCylOverlap));
-	}
-
-	cylAxisPtPairs.push_back(cylBeginCurrent);
-	cylAxisPtPairs.push_back(cylEndCurrent);
-	
-	std::vector<Vector3> pts = clouds->getCloud(0)->getPointPositions();	
-
-	// check if points are within volume
-	bool refreshNeeded = false;
-	for (int i = 0; i < pts.size(); ++i)
+	for (size_t i = 0ull; i < points.size(); ++i)
 	{
 		//skip already marked points
-		if (clouds->getCloud(0)->getPointMark(i) != 0)
-			continue;		
-		
-		Vector3 ptInWorldCoords;
-		tableVolume->convertToWorldCoords(pts[i].x, pts[i].y, pts[i].z, &ptInWorldCoords.x, &ptInWorldCoords.y, &ptInWorldCoords.z);
-		
-		for (int j = 0; j < cylAxisPtPairs.size() / 2; ++j)
-		{
-			float len_sq;
-			if (j == 0 || j == cylAxisPtPairs.size() - 1)
-				len_sq = cylLen_sq;
-			else
-				len_sq = subCylLen_sq;
+		if (clouds->getCloud(0)->getPointMark(i) == 1)
+			continue;
 
-			if (cylTest(cylAxisPtPairs[j * 2], cylAxisPtPairs[j * 2 +1], len_sq, radius_sq, ptInWorldCoords) > 0.f)
+		Vector3 ptInVolumeCoords;
+		tableVolume->convertToInnerCoords(points[i].x, points[i].y, points[i].z, &ptInVolumeCoords.x, &ptInVolumeCoords.y, &ptInVolumeCoords.z);
+
+		if (ptInVolumeCoords.x < vec3CurrentCursorPoseInVolume.x - radius ||
+			ptInVolumeCoords.x > vec3CurrentCursorPoseInVolume.x + radius ||
+			ptInVolumeCoords.y < vec3CurrentCursorPoseInVolume.y - radius ||
+			ptInVolumeCoords.y > vec3CurrentCursorPoseInVolume.y + radius ||
+			ptInVolumeCoords.z < vec3CurrentCursorPoseInVolume.z - radius ||
+			ptInVolumeCoords.z > vec3CurrentCursorPoseInVolume.z + radius)
+			continue;
+
+		float radius_sq = radius * radius;
+		float dist_sq = (ptInVolumeCoords.x - vec3CurrentCursorPoseInVolume.x) * (ptInVolumeCoords.x - vec3CurrentCursorPoseInVolume.x) +
+			(ptInVolumeCoords.y - vec3CurrentCursorPoseInVolume.y) * (ptInVolumeCoords.y - vec3CurrentCursorPoseInVolume.y) +
+			(ptInVolumeCoords.z - vec3CurrentCursorPoseInVolume.z) * (ptInVolumeCoords.z - vec3CurrentCursorPoseInVolume.z);
+
+		if (dist_sq <= radius_sq)
+		{
+			if (clearPoints)
 			{
 				anyHits = true;
-				//printf("Cleaned point (%f, %f, %f) from cloud.\n", pts[i].x, pts[i].y, pts[i].z);
 				clouds->getCloud(0)->markPoint(i, 1);
-				refreshNeeded = true;
-				break;
 			}
 		}
 	}
 
-	if (refreshNeeded)
+	if (anyHits)
 		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;

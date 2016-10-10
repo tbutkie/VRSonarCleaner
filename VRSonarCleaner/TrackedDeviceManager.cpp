@@ -97,21 +97,19 @@ void TrackedDeviceManager::updateControllerStates()
 		m_pManipController->update();
 }
 
+bool TrackedDeviceManager::cleaningModeActive()
+{
+	return m_pEditController && m_pEditController->cleaningActive();
+}
+
 bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius)
 {
-	if (!m_pEditController) return false;
+	if (!m_pEditController || !m_pEditController->poseValid()) return false;
+	
+	m_pEditController->getCursorPoses(thisCursorPose, lastCursorPose);
+	*radius = m_pEditController->getCursorRadius();
 
-	float cursorRadius = 0.f;
-	bool cleaningModeActive = false;
-
-	if (m_pEditController->poseValid())
-	{
-		m_pEditController->getCursorPoses(thisCursorPose, lastCursorPose);
-		*radius = m_pEditController->getCursorRadius();
-		cleaningModeActive = m_pEditController->cleaningActive();
-	}
-
-	return cleaningModeActive;
+	return true;
 }
 
 bool TrackedDeviceManager::getManipulationData(Matrix4 &controllerPose)
