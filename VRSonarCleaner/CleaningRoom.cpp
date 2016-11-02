@@ -199,9 +199,9 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			continue;
 
 		float radius_sq = radius * radius;
-		float dist_sq = (outpt.x - glm::make_mat4(currentCursorPose.get())[3].x) * (outpt.x - glm::make_mat4(currentCursorPose.get())[3].x) +
-			(outpt.y - glm::make_mat4(currentCursorPose.get())[3].y) * (outpt.y - glm::make_mat4(currentCursorPose.get())[3].y) +
-			(outpt.z - glm::make_mat4(currentCursorPose.get())[3].z) * (outpt.z - glm::make_mat4(currentCursorPose.get())[3].z);
+		float dist_sq = (outpt.x - vec3CurrentCursorPos.x) * (outpt.x - vec3CurrentCursorPos.x) +
+			(outpt.y - vec3CurrentCursorPos.y) * (outpt.y - vec3CurrentCursorPos.y) +
+			(outpt.z - vec3CurrentCursorPos.z) * (outpt.z - vec3CurrentCursorPos.z);
 		
 		if (dist_sq <= radius_sq)
 		{
@@ -209,10 +209,6 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			{
 				anyHits = true;
 				clouds->getCloud(0)->markPoint(i, 1);
-			}
-			else if (clouds->getCloud(0)->getPointMark(i) != 1)
-			{
-				clouds->getCloud(0)->markPoint(i, 2);
 			}
 		}
 	}
