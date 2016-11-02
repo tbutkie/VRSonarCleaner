@@ -33,6 +33,8 @@ public:
 
 	void activateTransformationMatrix();
 
+	glm::mat4 getCurrentTransform();
+	glm::mat4 getLastTransform();
 	glm::mat4 getCurrentPose();
 	glm::mat4 getLastPose();
 

@@ -1,6 +1,8 @@
 #include "DataVolume.h"
 #include "DebugDrawer.h"
 
+#include "shared/glm/gtx/transform.hpp"
+
 #include <iostream>
 #include <math.h>
 
@@ -399,6 +401,28 @@ void DataVolume::drawAxes()
 
 	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation));
 	DebugDrawer::getInstance().drawTransform(0.1f);
+}
+
+glm::mat4 DataVolume::getCurrentTransform()
+{
+	glm::mat4 trans = glm::translate(glm::mat4(), pos);
+
+	glm::mat4 rot = glm::mat4_cast(orientation);
+
+	glm::mat4 scl = glm::scale(glm::vec3(XZscale, depthScale, XZscale));
+
+	glm::mat4 dataCenterTrans = glm::translate(glm::mat4(), glm::vec3((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ));
+
+	return trans * rot * scl * dataCenterTrans;
+}
+
+glm::mat4 DataVolume::getLastTransform()
+{
+	glm::mat4 scl = glm::scale(glm::vec3(XZscale, depthScale, XZscale));
+
+	glm::mat4 dataCenterTrans = glm::translate(glm::mat4(), glm::vec3((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ));
+
+	return m_mat4LastPose * scl * dataCenterTrans;
 }
 
 glm::mat4 DataVolume::getCurrentPose()
