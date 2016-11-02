@@ -1,5 +1,6 @@
 #include "CleaningRoom.h"
 #include "Quaternion.h"
+#include "DebugDrawer.h"
 
 CleaningRoom::CleaningRoom()
 {
@@ -162,7 +163,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 	glm::mat4 mat4LastVolumePose = tableVolume->getLastPose();
 
 	if (mat4LastVolumePose == glm::mat4()) mat4LastVolumePose = mat4CurrentVolumePose;
-	
+
 	glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumePose) * glm::make_mat4(currentCursorPose.get());
 	glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumePose) * glm::make_mat4(lastCursorPose.get());
 
@@ -180,27 +181,36 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			continue;
 
 		Vector3 ptInVolumeCoords;
-		tableVolume->convertToInnerCoords(points[i].x, points[i].y, points[i].z, &ptInVolumeCoords.x, &ptInVolumeCoords.y, &ptInVolumeCoords.z);
 
-		if (ptInVolumeCoords.x < vec3CurrentCursorPoseInVolume.x - radius ||
-			ptInVolumeCoords.x > vec3CurrentCursorPoseInVolume.x + radius ||
-			ptInVolumeCoords.y < vec3CurrentCursorPoseInVolume.y - radius ||
-			ptInVolumeCoords.y > vec3CurrentCursorPoseInVolume.y + radius ||
-			ptInVolumeCoords.z < vec3CurrentCursorPoseInVolume.z - radius ||
-			ptInVolumeCoords.z > vec3CurrentCursorPoseInVolume.z + radius)
-			continue;
+		DebugDrawer::getInstance().setTransformDefault();
+		glm::vec3 outpt, pt = glm::vec3(points[i].x, points[i].y, points[i].z);
+		tableVolume->convertToWorldCoords(points[i].x, points[i].y, points[i].z, &outpt.x, &outpt.y, &outpt.z);
+		//DebugDrawer::getInstance().drawLine(glm::vec3(glm::make_mat4(currentCursorPose.get())[3]), outpt, glm::vec3(0.f, 1.f, 1.f));
+
+		tableVolume->convertToInnerCoords(outpt.x, outpt.y, outpt.z, &ptInVolumeCoords.x, &ptInVolumeCoords.y, &ptInVolumeCoords.z);
+		//if (ptInVolumeCoords.x < vec3CurrentCursorPoseInVolume.x - radius ||
+		//	ptInVolumeCoords.x > vec3CurrentCursorPoseInVolume.x + radius ||
+		//	ptInVolumeCoords.y < vec3CurrentCursorPoseInVolume.y - radius ||
+		//	ptInVolumeCoords.y > vec3CurrentCursorPoseInVolume.y + radius ||
+		//	ptInVolumeCoords.z < vec3CurrentCursorPoseInVolume.z - radius ||
+		//	ptInVolumeCoords.z > vec3CurrentCursorPoseInVolume.z + radius)
+		//	continue;
 
 		float radius_sq = radius * radius;
-		float dist_sq = (ptInVolumeCoords.x - vec3CurrentCursorPoseInVolume.x) * (ptInVolumeCoords.x - vec3CurrentCursorPoseInVolume.x) +
-			(ptInVolumeCoords.y - vec3CurrentCursorPoseInVolume.y) * (ptInVolumeCoords.y - vec3CurrentCursorPoseInVolume.y) +
-			(ptInVolumeCoords.z - vec3CurrentCursorPoseInVolume.z) * (ptInVolumeCoords.z - vec3CurrentCursorPoseInVolume.z);
-
+		float dist_sq = (outpt.x - glm::make_mat4(currentCursorPose.get())[3].x) * (outpt.x - glm::make_mat4(currentCursorPose.get())[3].x) +
+			(outpt.y - glm::make_mat4(currentCursorPose.get())[3].y) * (outpt.y - glm::make_mat4(currentCursorPose.get())[3].y) +
+			(outpt.z - glm::make_mat4(currentCursorPose.get())[3].z) * (outpt.z - glm::make_mat4(currentCursorPose.get())[3].z);
+		
 		if (dist_sq <= radius_sq)
 		{
 			if (clearPoints)
 			{
 				anyHits = true;
 				clouds->getCloud(0)->markPoint(i, 1);
+			}
+			else if (clouds->getCloud(0)->getPointMark(i) != 1)
+			{
+				clouds->getCloud(0)->markPoint(i, 2);
 			}
 		}
 	}
