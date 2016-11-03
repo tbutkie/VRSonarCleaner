@@ -1,5 +1,7 @@
 #pragma once
 #include "ViveController.h"
+#include <chrono>
+
 class EditingController :
 	public ViveController
 {
@@ -45,5 +47,7 @@ private:
 	Vector4 m_vec4CursorOffsetDirection;
 	bool m_bCursorOffsetMode;
 	float m_fCursorOffsetModeInitialOffset;
+
+	std::chrono::time_point<std::chrono::steady_clock> m_StartTime;
 };
 

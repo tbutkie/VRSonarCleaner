@@ -794,6 +794,8 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	cleaningRoom->draw();
 	
+	// END IMMEDIATE MODE
+
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
 	{

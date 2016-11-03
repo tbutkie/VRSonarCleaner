@@ -15,6 +15,7 @@ EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceInd
 	, m_fCursorOffsetAmount(0.1f)
 	, m_fCursorOffsetAmountMin(0.1f)
 	, m_fCursorOffsetAmountMax(1.5f)
+	, m_StartTime(std::chrono::high_resolution_clock::now())
 {
 	m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadius;
 	m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
@@ -141,100 +142,74 @@ void EditingController::prepareForRendering()
 		else
 			color = Vector3(0.8f, 0.8f, 0.2f);
 
-		Vector4 prevVert = m_mat4CursorCurrentPose * Vector4(m_fCursorRadius, 0.f, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
+		std::vector<Vector4> circlePoints;
+		for (GLuint i = 0; i < num_segments; i++)
 		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+			GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
 
 			Vector4 circlePt;
-			circlePt.x = m_fCursorRadius * cosf(theta);
-			circlePt.y = 0.f;
-			circlePt.z = m_fCursorRadius * sinf(theta);
-			circlePt.w = 1.f;
-
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
-
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			m_uiLineVertcount += 2;
-
-			prevVert = thisVert;
-		}
-
-		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
-		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-			Vector4 circlePt;
-			circlePt.x = 0.f;
-			circlePt.y = m_fCursorRadius * cosf(theta);
-			circlePt.z = m_fCursorRadius * sinf(theta);
-			circlePt.w = 1.f;
-
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
-
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			m_uiLineVertcount += 2;
-
-			prevVert = thisVert;
-		}
-
-		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
-		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-			Vector4 circlePt;
-			circlePt.x = m_fCursorRadius * sinf(theta);
-			circlePt.y = m_fCursorRadius * cosf(theta);
+			circlePt.x = cosf(theta);
+			circlePt.y = sinf(theta);
 			circlePt.z = 0.f;
 			circlePt.w = 1.f;
 
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
+			circlePoints.push_back(circlePt);
+		}
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime);
 
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		long long rate_ms = 1000ll ;
 
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		Matrix4 scl = Matrix4().scale(m_fCursorRadius, m_fCursorRadius, m_fCursorRadius);
+		Matrix4 rot;
 
-			m_uiLineVertcount += 2;
+		for (int n = 0; n < 3; ++n)
+		{
+			if (n == 0)
+				rot = Matrix4().rotateX(360.f * (duration.count() % rate_ms) / rate_ms);
+			if (n == 1)
+				rot = Matrix4().rotateY(90.f).rotateY(360.f * (duration.count() % rate_ms) / rate_ms);
+			if (n == 2)
+				rot = Matrix4().rotateX(90.f).rotateZ(360.f * (duration.count() % rate_ms) / rate_ms);
 
-			prevVert = thisVert;
+			Vector4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
+			for (size_t i = 0; i < circlePoints.size(); ++i)
+			{
+				Vector4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
+
+				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+
+				m_uiLineVertcount += 2;
+
+				prevVert = thisVert;
+			}
 		}
 
 		// DISPLAY CURSOR DOT
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-		{
-			color = Vector3(1.f, 0.f, 0.f);
-			if (cursorActive())
-			{
-				Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
+		//{
+		//	color = Vector3(1.f, 0.f, 0.f);
+		//	if (cursorActive())
+		//	{
+		//		Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
+		//		Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
 
-				vertdataarray.push_back(lastCtrPos.x);
-				vertdataarray.push_back(lastCtrPos.y);
-				vertdataarray.push_back(lastCtrPos.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//		vertdataarray.push_back(lastCtrPos.x);
+		//		vertdataarray.push_back(lastCtrPos.y);
+		//		vertdataarray.push_back(lastCtrPos.z);
+		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				vertdataarray.push_back(thisCtrPos.x);
-				vertdataarray.push_back(thisCtrPos.y);
-				vertdataarray.push_back(thisCtrPos.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//		vertdataarray.push_back(thisCtrPos.x);
+		//		vertdataarray.push_back(thisCtrPos.y);
+		//		vertdataarray.push_back(thisCtrPos.z);
+		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiLineVertcount += 2;
-			}
-		}
+		//		m_uiLineVertcount += 2;
+		//	}
+		//}
 
 		// DISPLAY CONNECTING LINE TO CURSOR
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
