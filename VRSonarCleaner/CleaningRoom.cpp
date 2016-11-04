@@ -215,7 +215,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 				clouds->getCloud(0)->markPoint(i, 1);
 			}
 			else
-				clouds->getCloud(0)->markPoint(i, 2);
+				clouds->getCloud(0)->markPoint(i, 100.f + 100.f);
 		}
 		else
 			clouds->getCloud(0)->markPoint(i, 0);
