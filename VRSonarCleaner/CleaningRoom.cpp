@@ -190,13 +190,17 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		//DebugDrawer::getInstance().setTransformDefault();
 		//DebugDrawer::getInstance().drawLine(glm::vec3(glm::make_mat4(currentCursorPose.get())[3]), outpt, glm::vec3(0.f, 1.f, 1.f));
 
+		// fast point-in-AABB failure test
 		if (outpt.x < vec3CurrentCursorPos.x - radius ||
 			outpt.x > vec3CurrentCursorPos.x + radius ||
 			outpt.y < vec3CurrentCursorPos.y - radius ||
 			outpt.y > vec3CurrentCursorPos.y + radius ||
 			outpt.z < vec3CurrentCursorPos.z - radius ||
 			outpt.z > vec3CurrentCursorPos.z + radius)
+		{
+			clouds->getCloud(0)->markPoint(i, 0);			
 			continue;
+		}
 
 		float radius_sq = radius * radius;
 		float dist_sq = (outpt.x - vec3CurrentCursorPos.x) * (outpt.x - vec3CurrentCursorPos.x) +
@@ -210,10 +214,14 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 				anyHits = true;
 				clouds->getCloud(0)->markPoint(i, 1);
 			}
+			else
+				clouds->getCloud(0)->markPoint(i, 2);
 		}
+		else
+			clouds->getCloud(0)->markPoint(i, 0);
 	}
 
-	if (anyHits)
+	//if (anyHits)
 		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;

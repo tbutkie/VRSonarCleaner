@@ -171,17 +171,11 @@ void EditingController::prepareForRendering()
 		for (int n = 0; n < 3; ++n)
 		{
 			if (n == 0)
-			{
 				rot = Matrix4().rotateX(m_fCursorHoopAngle);
-			}
 			if (n == 1)
-			{
 				rot = Matrix4().rotateY(90.f).rotateY(m_fCursorHoopAngle);
-			}
 			if (n == 2)
-			{
 				rot = Matrix4().rotateX(90.f).rotateZ(m_fCursorHoopAngle);
-			}
 
 			Vector4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
 			for (size_t i = 0; i < circlePoints.size(); ++i)
