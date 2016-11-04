@@ -136,11 +136,11 @@ void EditingController::prepareForRendering()
 	{
 		GLuint num_segments = 64;
 
-		Vector3 color;
+		Vector4 color;
 		if (cleaningActive())
-			color = Vector3(1.f, 0.f, 0.f);
+			color = Vector4(1.f, 0.f, 0.f, 1.f);
 		else
-			color = Vector3(0.8f, 0.8f, 0.2f);
+			color = Vector4(1.f, 1.f - m_fTriggerPull, 1.f - m_fTriggerPull, 0.75f);
 
 		std::vector<Vector4> circlePoints;
 		for (GLuint i = 0; i < num_segments; i++)
@@ -157,7 +157,7 @@ void EditingController::prepareForRendering()
 		}
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime);
 
-		long long rate_ms = 1000ll ;
+		long long rate_ms = 1000ll;
 
 		Matrix4 scl = Matrix4().scale(m_fCursorRadius, m_fCursorRadius, m_fCursorRadius);
 		Matrix4 rot;
@@ -177,10 +177,10 @@ void EditingController::prepareForRendering()
 				Vector4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
 
 				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				m_uiLineVertcount += 2;
 
@@ -214,7 +214,7 @@ void EditingController::prepareForRendering()
 		// DISPLAY CONNECTING LINE TO CURSOR
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 		{
-			color = Vector3(1.f, 1.f, 1.f);
+			color = Vector4(1.f, 1.f, 1.f, 0.8f);
 			if (m_bShowCursor)
 			{
 				Vector4 controllerCtr = m_mat4Pose * Vector4(0.f, 0.f, 0.f, 1.f);
@@ -223,12 +223,12 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
 				vertdataarray.push_back(cursorEdge.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				vertdataarray.push_back(controllerCtr.x);
 				vertdataarray.push_back(controllerCtr.y);
 				vertdataarray.push_back(controllerCtr.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				m_uiLineVertcount += 2;
 			}
@@ -239,7 +239,7 @@ void EditingController::prepareForRendering()
 		{
 			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
 			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / range;
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio);
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio, 0.75f);
 		}
 	}
 
@@ -252,7 +252,7 @@ void EditingController::prepareForRendering()
 		glGenBuffers(1, &m_glVertBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
-		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint stride = 3 * sizeof(float) + 4 * sizeof(float);
 		GLuint offset = 0;
 
 		glEnableVertexAttribArray(0);
@@ -260,7 +260,7 @@ void EditingController::prepareForRendering()
 
 		offset += sizeof(Vector3);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		glBindVertexArray(0);
 	}

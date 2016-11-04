@@ -132,7 +132,7 @@ void TrackedDevice::prepareForRendering()
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			Vector3 color(0, 0, 0);
+			Vector4 color(0, 0, 0, 1);
 			Vector4 center = mat * Vector4(0, 0, 0, 1);
 			Vector4 point(0, 0, 0, 1);
 			point[i] += 0.1f;  // offset in X, Y, Z
@@ -147,6 +147,7 @@ void TrackedDevice::prepareForRendering()
 			vertdataarray.push_back(color.x);
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
+			vertdataarray.push_back(color.w);
 
 			vertdataarray.push_back(point.x);
 			vertdataarray.push_back(point.y);
@@ -155,6 +156,7 @@ void TrackedDevice::prepareForRendering()
 			vertdataarray.push_back(color.x);
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
+			vertdataarray.push_back(color.w);
 
 			m_uiLineVertcount += 2;
 		}
@@ -169,7 +171,7 @@ void TrackedDevice::prepareForRendering()
 		glGenBuffers(1, &m_glVertBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
-		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint stride = 3 * sizeof(float) + 4 * sizeof(float);
 		GLuint offset = 0;
 
 		glEnableVertexAttribArray(0);
@@ -177,7 +179,7 @@ void TrackedDevice::prepareForRendering()
 
 		offset += sizeof(Vector3);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		glBindVertexArray(0);
 	}
@@ -258,13 +260,13 @@ bool TrackedDevice::createShaders()
 		// vertex shader
 		"#version 410\n"
 		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3ColorIn;\n"
+		"layout(location = 0) in vec3 position;\n"
+		"layout(location = 1) in vec4 v4ColorIn;\n"
 		"out vec4 v4Color;\n"
 		"void main()\n"
 		"{\n"
-		"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
-		"	gl_Position = matrix * position;\n"
+		"	v4Color = v4ColorIn;\n"
+		"	gl_Position = matrix * vec4(position, 1.f);\n"
 		"}\n",
 
 		// fragment shader

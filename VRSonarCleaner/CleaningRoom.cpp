@@ -167,14 +167,14 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumePose;
 
-	glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumePose) * glm::make_mat4(currentCursorPose.get());
-	glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumePose) * glm::make_mat4(lastCursorPose.get());
+	glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(currentCursorPose.get());
+	glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(lastCursorPose.get());
 
 	glm::vec3 vec3CurrentCursorPos = glm::vec3(glm::make_mat4(currentCursorPose.get())[3]);
 	glm::vec3 vec3LastCursorPos = glm::vec3(glm::make_mat4(lastCursorPose.get())[3]);
 	glm::vec3 vec3CurrentCursorPosInVolume(mat4CurrentCursorPoseInVolume[3]);
 	glm::vec3 vec3LastCursorPosInVolume(mat4LastCursorPoseInVolume[3]);
-
+	 
 	bool anyHits = false;
 
 	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();

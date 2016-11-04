@@ -82,7 +82,7 @@ protected:
 	std::vector<ControllerComponent> m_vComponents;
 
 	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
-	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b);
+	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
 	
 	uint32_t m_unStatePacketNum;
 
