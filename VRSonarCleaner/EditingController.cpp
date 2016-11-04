@@ -15,7 +15,8 @@ EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceInd
 	, m_fCursorOffsetAmount(0.1f)
 	, m_fCursorOffsetAmountMin(0.1f)
 	, m_fCursorOffsetAmountMax(1.5f)
-	, m_StartTime(std::chrono::high_resolution_clock::now())
+	, m_LastTime(std::chrono::high_resolution_clock::now())
+	, m_fCursorHoopAngle(0.f)
 {
 	m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadius;
 	m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
@@ -140,7 +141,7 @@ void EditingController::prepareForRendering()
 		if (cleaningActive())
 			color = Vector4(1.f, 0.f, 0.f, 1.f);
 		else
-			color = Vector4(1.f, 1.f - m_fTriggerPull, 1.f - m_fTriggerPull, 0.75f);
+			color = Vector4(1.f, 1.f, 1.f - m_fTriggerPull, 0.75f);
 
 		std::vector<Vector4> circlePoints;
 		for (GLuint i = 0; i < num_segments; i++)
@@ -155,21 +156,32 @@ void EditingController::prepareForRendering()
 
 			circlePoints.push_back(circlePt);
 		}
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime);
 
-		long long rate_ms = 1000ll;
+		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+		m_LastTime = std::chrono::high_resolution_clock::now();
+
+		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_fTriggerPull);
 
 		Matrix4 scl = Matrix4().scale(m_fCursorRadius, m_fCursorRadius, m_fCursorRadius);
 		Matrix4 rot;
 
+		float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+		m_fCursorHoopAngle += angleNeeded;
+
 		for (int n = 0; n < 3; ++n)
 		{
 			if (n == 0)
-				rot = Matrix4().rotateX(360.f * (duration.count() % rate_ms) / rate_ms);
+			{
+				rot = Matrix4().rotateX(m_fCursorHoopAngle);
+			}
 			if (n == 1)
-				rot = Matrix4().rotateY(90.f).rotateY(360.f * (duration.count() % rate_ms) / rate_ms);
+			{
+				rot = Matrix4().rotateY(90.f).rotateY(m_fCursorHoopAngle);
+			}
 			if (n == 2)
-				rot = Matrix4().rotateX(90.f).rotateZ(360.f * (duration.count() % rate_ms) / rate_ms);
+			{
+				rot = Matrix4().rotateX(90.f).rotateZ(m_fCursorHoopAngle);
+			}
 
 			Vector4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
 			for (size_t i = 0; i < circlePoints.size(); ++i)

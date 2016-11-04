@@ -48,6 +48,7 @@ private:
 	bool m_bCursorOffsetMode;
 	float m_fCursorOffsetModeInitialOffset;
 
-	std::chrono::time_point<std::chrono::steady_clock> m_StartTime;
+	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
+	float m_fCursorHoopAngle;
 };
 
