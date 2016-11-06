@@ -29,6 +29,8 @@ CleaningRoom::CleaningRoom()
 	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
 	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
 
+	m_fPtHighlightAmt = 1.f;
+	m_LastTime = std::chrono::high_resolution_clock::now();
 }
 
 CleaningRoom::~CleaningRoom()
@@ -179,6 +181,16 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
 
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+	m_LastTime = std::chrono::high_resolution_clock::now();
+
+	float blink_rate_ms = 250.f;		
+	
+	float delta = static_cast<float>(elapsed_ms.count()) / blink_rate_ms;
+	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
+
+	std::cout << m_fPtHighlightAmt << std::endl;
+
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
 		//skip already marked points
@@ -215,7 +227,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 				clouds->getCloud(0)->markPoint(i, 1);
 			}
 			else
-				clouds->getCloud(0)->markPoint(i, 100.f + 100.f);
+				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
 		}
 		else
 			clouds->getCloud(0)->markPoint(i, 0);
@@ -234,7 +246,7 @@ bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
 		if (tableVolume->isBeingRotated())
 		{
 			tableVolume->endRotation();
-			printf("|| Rotation Ended\n");
+			//printf("|| Rotation Ended\n");
 		}
 
 		return false;
@@ -243,13 +255,13 @@ bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
 	if (!tableVolume->isBeingRotated())
 	{
 		tableVolume->startRotation(controllerPose->get());
-		printf("++ Rotation Started\n");
+		//printf("++ Rotation Started\n");
 		return true;
 	}
 	else
 	{
-		printf("==== Rotating\n");
 		tableVolume->continueRotation(controllerPose->get());
+		//printf("==== Rotating\n");
 	}
 	return false;
 }

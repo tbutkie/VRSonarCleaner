@@ -15,6 +15,7 @@
 #include <stdio.h>
 //#include <string>
 //#include <cstdlib>
+#include <chrono>
 
 //#include <openvr.h>
 
@@ -53,4 +54,7 @@ private:
 
 	DataVolume *wallVolume;
 	DataVolume *tableVolume;
+	
+	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
+	float m_fPtHighlightAmt;
 };
