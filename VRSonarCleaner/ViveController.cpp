@@ -159,7 +159,7 @@ void ViveController::update()
 
 
 	// check if anything has changed
-	if (m_unStatePacketNum == controllerState.unPacketNum)
+	if (controllerState.unPacketNum > 0 && m_unStatePacketNum == controllerState.unPacketNum)
 		return;
 
 	m_unStatePacketNum = controllerState.unPacketNum;
