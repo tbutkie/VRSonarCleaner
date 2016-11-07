@@ -175,7 +175,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 	glm::vec3 vec3CurrentCursorPos = glm::vec3(glm::make_mat4(currentCursorPose.get())[3]);
 	glm::vec3 vec3LastCursorPos = glm::vec3((glm::inverse(mat4CurrentVolumeXform) * mat4LastVolumeXform * glm::make_mat4(lastCursorPose.get()))[3]);
 	 
-	float cyl_dist_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
+	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
 		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
 		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
 
@@ -233,7 +233,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		}
 		else if (cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f), 
 			Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
-			cyl_dist_sq, 
+			cyl_len_sq,
 			radius_sq, 
 			Vector3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
 		{ 
