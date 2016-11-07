@@ -162,21 +162,23 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints)
 {
 	glm::mat4 mat4CurrentVolumePose = tableVolume->getCurrentPose();
-	glm::mat4 mat4LastVolumePose = tableVolume->getLastPose();
+	//glm::mat4 mat4LastVolumePose = tableVolume->getLastPose();
 
 	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentTransform();
 	glm::mat4 mat4LastVolumeXform = tableVolume->getLastTransform();
 
 	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumePose;
 
-	glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(currentCursorPose.get());
-	glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(lastCursorPose.get());
+	//glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(currentCursorPose.get());
+	//glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(lastCursorPose.get());
 
 	glm::vec3 vec3CurrentCursorPos = glm::vec3(glm::make_mat4(currentCursorPose.get())[3]);
-	glm::vec3 vec3LastCursorPos = glm::vec3(glm::make_mat4(lastCursorPose.get())[3]);
-	glm::vec3 vec3CurrentCursorPosInVolume(mat4CurrentCursorPoseInVolume[3]);
-	glm::vec3 vec3LastCursorPosInVolume(mat4LastCursorPoseInVolume[3]);
+	glm::vec3 vec3LastCursorPos = glm::vec3((glm::inverse(mat4CurrentVolumeXform) * mat4LastVolumeXform * glm::make_mat4(lastCursorPose.get()))[3]);
 	 
+	float cyl_dist_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
+		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
+		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
+
 	bool anyHits = false;
 
 	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
@@ -197,30 +199,44 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		if (clouds->getCloud(0)->getPointMark(i) == 1)
 			continue;
 
-		glm::vec3 outpt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
+		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
 
 		//DebugDrawer::getInstance().setTransformDefault();
 		//DebugDrawer::getInstance().drawLine(glm::vec3(glm::make_mat4(currentCursorPose.get())[3]), outpt, glm::vec3(0.f, 1.f, 1.f));
 
 		// fast point-in-AABB failure test
-		if (outpt.x < vec3CurrentCursorPos.x - radius ||
-			outpt.x > vec3CurrentCursorPos.x + radius ||
-			outpt.y < vec3CurrentCursorPos.y - radius ||
-			outpt.y > vec3CurrentCursorPos.y + radius ||
-			outpt.z < vec3CurrentCursorPos.z - radius ||
-			outpt.z > vec3CurrentCursorPos.z + radius)
+		if (thisPt.x < vec3CurrentCursorPos.x - radius ||
+			thisPt.x > vec3CurrentCursorPos.x + radius ||
+			thisPt.y < vec3CurrentCursorPos.y - radius ||
+			thisPt.y > vec3CurrentCursorPos.y + radius ||
+			thisPt.z < vec3CurrentCursorPos.z - radius ||
+			thisPt.z > vec3CurrentCursorPos.z + radius)
 		{
 			clouds->getCloud(0)->markPoint(i, 0);			
 			continue;
 		}
 
 		float radius_sq = radius * radius;
-		float dist_sq = (outpt.x - vec3CurrentCursorPos.x) * (outpt.x - vec3CurrentCursorPos.x) +
-			(outpt.y - vec3CurrentCursorPos.y) * (outpt.y - vec3CurrentCursorPos.y) +
-			(outpt.z - vec3CurrentCursorPos.z) * (outpt.z - vec3CurrentCursorPos.z);
+		float dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
+			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
+			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
 		
 		if (dist_sq <= radius_sq)
 		{
+			if (clearPoints)
+			{
+				anyHits = true;
+				clouds->getCloud(0)->markPoint(i, 1);
+			}
+			else
+				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+		}
+		else if (cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f), 
+			Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
+			cyl_dist_sq, 
+			radius_sq, 
+			Vector3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
+		{ 
 			if (clearPoints)
 			{
 				anyHits = true;
