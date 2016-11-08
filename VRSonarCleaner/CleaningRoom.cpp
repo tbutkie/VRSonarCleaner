@@ -161,37 +161,34 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 
 bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints)
 {
-	glm::mat4 mat4CurrentVolumePose = tableVolume->getCurrentPose();
-	//glm::mat4 mat4LastVolumePose = tableVolume->getLastPose();
-
 	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentTransform();
 	glm::mat4 mat4LastVolumeXform = tableVolume->getLastTransform();
 
-	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumePose;
-
-	//glm::mat4 mat4CurrentCursorPoseInVolume = glm::inverse(mat4CurrentVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(currentCursorPose.get());
-	//glm::mat4 mat4LastCursorPoseInVolume = glm::inverse(mat4LastVolumeXform) * glm::scale(glm::mat4(), glm::vec3(radius)) * glm::make_mat4(lastCursorPose.get());
+	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumeXform;
 
 	glm::vec3 vec3CurrentCursorPos = glm::vec3(glm::make_mat4(currentCursorPose.get())[3]);
-	glm::vec3 vec3LastCursorPos = glm::vec3((glm::inverse(mat4CurrentVolumeXform) * mat4LastVolumeXform * glm::make_mat4(lastCursorPose.get()))[3]);
+	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * glm::make_mat4(lastCursorPose.get()))[3]);
+
+	bool performCylTest = true;
+	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
 	 
 	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
 		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
 		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
 
-	bool anyHits = false;
-
-	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
-
+	// CLOCK UPDATE
 	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
 	m_LastTime = std::chrono::high_resolution_clock::now();
 
-	float blink_rate_ms = 250.f;		
-	
+	float blink_rate_ms = 250.f;
+
 	float delta = static_cast<float>(elapsed_ms.count()) / blink_rate_ms;
 	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
 
-	std::cout << m_fPtHighlightAmt << std::endl;
+	// POINTS CHECK
+	bool anyHits = false;
+
+	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
 
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
@@ -201,42 +198,36 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
 
-		//DebugDrawer::getInstance().setTransformDefault();
-		//DebugDrawer::getInstance().drawLine(glm::vec3(glm::make_mat4(currentCursorPose.get())[3]), outpt, glm::vec3(0.f, 1.f, 1.f));
-
-		// fast point-in-AABB failure test
-		if (thisPt.x < vec3CurrentCursorPos.x - radius ||
-			thisPt.x > vec3CurrentCursorPos.x + radius ||
-			thisPt.y < vec3CurrentCursorPos.y - radius ||
-			thisPt.y > vec3CurrentCursorPos.y + radius ||
-			thisPt.z < vec3CurrentCursorPos.z - radius ||
-			thisPt.z > vec3CurrentCursorPos.z + radius)
-		{
-			clouds->getCloud(0)->markPoint(i, 0);			
-			continue;
-		}
+		// fast point-in-AABB failure test (NEEDS REVISION)
+		//if (thisPt.x < vec3CurrentCursorPos.x - radius ||
+		//	thisPt.x > vec3CurrentCursorPos.x + radius ||
+		//	thisPt.y < vec3CurrentCursorPos.y - radius ||
+		//	thisPt.y > vec3CurrentCursorPos.y + radius ||
+		//	thisPt.z < vec3CurrentCursorPos.z - radius ||
+		//	thisPt.z > vec3CurrentCursorPos.z + radius)
+		//{
+		//	clouds->getCloud(0)->markPoint(i, 0);			
+		//	continue;
+		//}
 
 		float radius_sq = radius * radius;
-		float dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
+		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
 			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
 			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
+
+		float last_dist_sq = (thisPt.x - vec3LastCursorPos.x) * (thisPt.x - vec3LastCursorPos.x) +
+			(thisPt.y - vec3LastCursorPos.y) * (thisPt.y - vec3LastCursorPos.y) +
+			(thisPt.z - vec3LastCursorPos.z) * (thisPt.z - vec3LastCursorPos.z);
 		
-		if (dist_sq <= radius_sq)
+		if (current_dist_sq <= radius_sq ||
+			last_dist_sq <= radius_sq ||
+			(performCylTest && cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
+									   Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
+									   cyl_len_sq,
+									   radius_sq,
+									   Vector3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
+			)
 		{
-			if (clearPoints)
-			{
-				anyHits = true;
-				clouds->getCloud(0)->markPoint(i, 1);
-			}
-			else
-				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
-		}
-		else if (cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f), 
-			Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
-			cyl_len_sq,
-			radius_sq, 
-			Vector3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
-		{ 
 			if (clearPoints)
 			{
 				anyHits = true;
@@ -253,33 +244,6 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;
-}
-
-bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
-{
-	if (!controllerPose)
-	{
-		if (tableVolume->isBeingRotated())
-		{
-			tableVolume->endRotation();
-			//printf("|| Rotation Ended\n");
-		}
-
-		return false;
-	}
-	
-	if (!tableVolume->isBeingRotated())
-	{
-		tableVolume->startRotation(controllerPose->get());
-		//printf("++ Rotation Started\n");
-		return true;
-	}
-	else
-	{
-		tableVolume->continueRotation(controllerPose->get());
-		//printf("==== Rotating\n");
-	}
-	return false;
 }
 
 // This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
@@ -318,6 +282,33 @@ float CleaningRoom::cylTest(const Vector4 & pt1, const Vector4 & pt2, float leng
 		else
 			return(dsq);		// return distance squared to axis
 	}
+}
+
+bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
+{
+	if (!controllerPose)
+	{
+		if (tableVolume->isBeingRotated())
+		{
+			tableVolume->endRotation();
+			//printf("|| Rotation Ended\n");
+		}
+
+		return false;
+	}
+
+	if (!tableVolume->isBeingRotated())
+	{
+		tableVolume->startRotation(controllerPose->get());
+		//printf("++ Rotation Started\n");
+		return true;
+	}
+	else
+	{
+		tableVolume->continueRotation(controllerPose->get());
+		//printf("==== Rotating\n");
+	}
+	return false;
 }
 
 
