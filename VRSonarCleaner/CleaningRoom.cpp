@@ -214,13 +214,8 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
 			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
 			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
-
-		float last_dist_sq = (thisPt.x - vec3LastCursorPos.x) * (thisPt.x - vec3LastCursorPos.x) +
-			(thisPt.y - vec3LastCursorPos.y) * (thisPt.y - vec3LastCursorPos.y) +
-			(thisPt.z - vec3LastCursorPos.z) * (thisPt.z - vec3LastCursorPos.z);
 		
 		if (current_dist_sq <= radius_sq ||
-			last_dist_sq <= radius_sq ||
 			(performCylTest && cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
 									   Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
 									   cyl_len_sq,
