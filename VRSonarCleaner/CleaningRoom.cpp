@@ -199,16 +199,16 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
 
 		// fast point-in-AABB failure test (NEEDS REVISION)
-		//if (thisPt.x < vec3CurrentCursorPos.x - radius ||
-		//	thisPt.x > vec3CurrentCursorPos.x + radius ||
-		//	thisPt.y < vec3CurrentCursorPos.y - radius ||
-		//	thisPt.y > vec3CurrentCursorPos.y + radius ||
-		//	thisPt.z < vec3CurrentCursorPos.z - radius ||
-		//	thisPt.z > vec3CurrentCursorPos.z + radius)
-		//{
-		//	clouds->getCloud(0)->markPoint(i, 0);			
-		//	continue;
-		//}
+		if (thisPt.x < std::min(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - radius ||
+			thisPt.x > std::max(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + radius ||
+			thisPt.y < std::min(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - radius ||
+			thisPt.y > std::max(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
+			thisPt.z < std::min(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
+			thisPt.z > std::max(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
+		{
+			clouds->getCloud(0)->markPoint(i, 0);			
+			continue;
+		}
 
 		float radius_sq = radius * radius;
 		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +

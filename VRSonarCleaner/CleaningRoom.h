@@ -16,6 +16,7 @@
 //#include <string>
 //#include <cstdlib>
 #include <chrono>
+#include <algorithm>
 
 //#include <openvr.h>
 
