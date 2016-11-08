@@ -187,6 +187,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 	// POINTS CHECK
 	bool anyHits = false;
+	bool pointsRefresh = false;
 
 	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
 
@@ -205,8 +206,12 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			thisPt.y > std::max(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
 			thisPt.z < std::min(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
 			thisPt.z > std::max(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
-		{
-			clouds->getCloud(0)->markPoint(i, 0);			
+		{			
+			if (clouds->getCloud(0)->getPointMark(i) != 0)
+			{
+				clouds->getCloud(0)->markPoint(i, 0);
+				pointsRefresh = true;
+			}
 			continue;
 		}
 
@@ -230,12 +235,17 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			}
 			else
 				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+
+			pointsRefresh = true;
 		}
-		else
+		else if (clouds->getCloud(0)->getPointMark(i) != 0)
+		{
 			clouds->getCloud(0)->markPoint(i, 0);
+			pointsRefresh = true;
+		}
 	}
 
-	//if (anyHits)
+	if (pointsRefresh)
 		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;
