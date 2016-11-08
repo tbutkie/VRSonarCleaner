@@ -159,7 +159,7 @@ void ViveController::update()
 
 
 	// check if anything has changed
-	if (m_unStatePacketNum == controllerState.unPacketNum)
+	if (controllerState.unPacketNum > 0 && m_unStatePacketNum == controllerState.unPacketNum)
 		return;
 
 	m_unStatePacketNum = controllerState.unPacketNum;
@@ -382,7 +382,7 @@ void ViveController::prepareForRendering()
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			Vector3 color(0, 0, 0);
+			Vector4 color(0, 0, 0, 1);
 			Vector4 center = mat * Vector4(0, 0, 0, 1);
 			Vector4 point(0, 0, 0, 1);
 			point[i] += 0.1f;  // offset in X, Y, Z
@@ -397,6 +397,7 @@ void ViveController::prepareForRendering()
 			vertdataarray.push_back(color.x);
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
+			vertdataarray.push_back(color.w);
 
 			vertdataarray.push_back(point.x);
 			vertdataarray.push_back(point.y);
@@ -405,6 +406,7 @@ void ViveController::prepareForRendering()
 			vertdataarray.push_back(color.x);
 			vertdataarray.push_back(color.y);
 			vertdataarray.push_back(color.z);
+			vertdataarray.push_back(color.w);
 
 			m_uiLineVertcount += 2;
 		}
@@ -430,20 +432,20 @@ void ViveController::prepareForRendering()
 
 		Vector4 start = mat * transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint);
 		Vector4 end = mat * transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
-		Vector3 color(.9f, .2f, .1f);
+		Vector4 color(.9f, .2f, .1f, 0.75f);
 
 		vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-		vertdataarray.push_back(color.z); vertdataarray.push_back(color.y); vertdataarray.push_back(color.x);
+		vertdataarray.push_back(color.z); vertdataarray.push_back(color.y); vertdataarray.push_back(color.x); vertdataarray.push_back(color.w);
 		m_uiLineVertcount += 2;
 	}
 
 	// Draw touchpad touch point sphere
 	if (m_bTouchpadTouched)
 	{
-		insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 0.35f, 0.35f, 0.35f);
+		insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 0.35f, 0.35f, 0.35f, 0.75f);
 	}
 
 	// Setup the VAO the first time through.
@@ -455,7 +457,7 @@ void ViveController::prepareForRendering()
 		glGenBuffers(1, &m_glVertBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
-		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint stride = 3 * sizeof(float) + 4 * sizeof(float);
 		GLuint offset = 0;
 
 		glEnableVertexAttribArray(0);
@@ -463,7 +465,7 @@ void ViveController::prepareForRendering()
 
 		offset += sizeof(Vector3);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		glBindVertexArray(0);
 	}
@@ -671,14 +673,14 @@ Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
 	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
 }
 
-void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b)
+void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a)
 {
 	std::vector<float> sphereVertdataarray;
 	std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
 	Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
 
 	//Vector3 color(.2f, .2f, .71f);
-	Vector3 color(r, g, b);
+	Vector4 color(r, g, b, a);
 
 	Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
 
@@ -693,6 +695,7 @@ void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned
 		sphereVertdataarray.push_back(color.x);
 		sphereVertdataarray.push_back(color.y);
 		sphereVertdataarray.push_back(color.z);
+		sphereVertdataarray.push_back(color.w);
 
 		nTriangleVertices++;
 	}

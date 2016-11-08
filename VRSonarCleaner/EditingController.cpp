@@ -15,6 +15,8 @@ EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceInd
 	, m_fCursorOffsetAmount(0.1f)
 	, m_fCursorOffsetAmountMin(0.1f)
 	, m_fCursorOffsetAmountMax(1.5f)
+	, m_LastTime(std::chrono::high_resolution_clock::now())
+	, m_fCursorHoopAngle(0.f)
 {
 	m_fCursorRadiusResizeModeInitialRadius = m_fCursorRadius;
 	m_fCursorOffsetModeInitialOffset = m_fCursorOffsetAmount;
@@ -35,63 +37,63 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 
 	
 	// Show overlay
-	if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
-	{
-		vr::EVROverlayError oError = vr::VROverlayError_None;
+	//if (m_pOverlayHandle != vr::k_ulOverlayHandleInvalid)
+	//{
+	//	vr::EVROverlayError oError = vr::VROverlayError_None;
 
-		if (m_bTriggerEngaged)
-		{
-			vr::HmdMatrix34_t overlayDistanceMtx;
+	//	if (m_bTriggerEngaged)
+	//	{
+	//		vr::HmdMatrix34_t overlayDistanceMtx;
 
-			if (m_bTriggerClicked)
-			{
-				float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
-				float overlayWidth;
-				vr::VROverlay()->GetOverlayWidthInMeters(m_pOverlayHandle, &overlayWidth);
+	//		if (m_bTriggerClicked)
+	//		{
+	//			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / (m_fCursorRadiusMax - m_fCursorRadiusMin);
+	//			float overlayWidth;
+	//			vr::VROverlay()->GetOverlayWidthInMeters(m_pOverlayHandle, &overlayWidth);
 
-				Matrix4 mat = Matrix4().translate(-m_fCursorRadius - overlayWidth / 2.f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f);// *Matrix4().scale(0.9f * ratio + 0.1f);
+	//			Matrix4 mat = Matrix4().translate(-m_fCursorRadius - overlayWidth / 2.f, 0.f, 0.f) * Matrix4().rotateX(-90.f) * Matrix4().rotateZ(90.f);// *Matrix4().scale(0.9f * ratio + 0.1f);
 
-				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
+	//			overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(m_mat4CursorCurrentPose * mat);
 
-				oError = vr::VROverlay()->SetOverlayTransformAbsolute(m_pOverlayHandle, vr::TrackingUniverseStanding, &overlayDistanceMtx);
-				if (oError != vr::EVROverlayError::VROverlayError_None)
-					printf("Overlay transform could not be set.\n");
+	//			oError = vr::VROverlay()->SetOverlayTransformAbsolute(m_pOverlayHandle, vr::TrackingUniverseStanding, &overlayDistanceMtx);
+	//			if (oError != vr::EVROverlayError::VROverlayError_None)
+	//				printf("Overlay transform could not be set.\n");
 
-				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.75f);
-				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, ratio, 0.f, 1.f - ratio);
-			}
-			else
-			{
-				Matrix4 mat = Matrix4().translate(0.0f, -0.1f, 0.05f) * Matrix4().rotateZ(90.f) * Matrix4().rotateY(90.f) * Matrix4().rotateX(-90.f);
-				Matrix4 triggerPose = ConvertSteamVRMatrixToMatrix4(m_vComponents[15].m_mat3PoseTransform);
-				Matrix4 offset = triggerPose * mat;
+	//			vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.75f);
+	//			vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, ratio, 0.f, 1.f - ratio);
+	//		}
+	//		else
+	//		{
+	//			Matrix4 mat = Matrix4().translate(0.0f, -0.1f, 0.05f) * Matrix4().rotateZ(90.f) * Matrix4().rotateY(90.f) * Matrix4().rotateX(-90.f);
+	//			Matrix4 triggerPose = ConvertSteamVRMatrixToMatrix4(m_vComponents[15].m_mat3PoseTransform);
+	//			Matrix4 offset = triggerPose * mat;
 
-				overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(offset);
+	//			overlayDistanceMtx = ConvertMatrix4ToSteamVRMatrix(offset);
 
-				oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
-				if (oError != vr::EVROverlayError::VROverlayError_None)
-					printf("Overlay transform could not be set.\n");
+	//			oError = vr::VROverlay()->SetOverlayTransformTrackedDeviceRelative(m_pOverlayHandle, m_unDeviceID, &overlayDistanceMtx);
+	//			if (oError != vr::EVROverlayError::VROverlayError_None)
+	//				printf("Overlay transform could not be set.\n");
 
-				vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.5f  + 0.5f * m_fTriggerPull);
-				vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, 0.f, m_fTriggerPull, 0.f);
-			}
+	//			vr::VROverlay()->SetOverlayAlpha(m_pOverlayHandle, 0.5f  + 0.5f * m_fTriggerPull);
+	//			vr::VROverlay()->SetOverlayColor(m_pOverlayHandle, 0.f, m_fTriggerPull, 0.f);
+	//		}
 
 
-			oError = vr::VROverlay()->ShowOverlay(m_pOverlayHandle);
-			if (oError != vr::EVROverlayError::VROverlayError_None)
-				printf("Overlay could not be shown: %d\n", oError);
-		}
-		else
-		{
-			oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
-			if (oError != vr::EVROverlayError::VROverlayError_None)
-				printf("Overlay could not be hidden: %d\n", oError);
-		}
-	}
-	else
-	{
-		printf("Overlay handle invalid.\n");
-	}
+	//		oError = vr::VROverlay()->ShowOverlay(m_pOverlayHandle);
+	//		if (oError != vr::EVROverlayError::VROverlayError_None)
+	//			printf("Overlay could not be shown: %d\n", oError);
+	//	}
+	//	else
+	//	{
+	//		oError = vr::VROverlay()->HideOverlay(m_pOverlayHandle);
+	//		if (oError != vr::EVROverlayError::VROverlayError_None)
+	//			printf("Overlay could not be hidden: %d\n", oError);
+	//	}
+	//}
+	//else
+	//{
+	//	printf("Overlay handle invalid.\n");
+	//}
 
 
 	return m_Pose.bPoseIsValid;
@@ -135,111 +137,90 @@ void EditingController::prepareForRendering()
 	{
 		GLuint num_segments = 64;
 
-		Vector3 color;
+		Vector4 color;
 		if (cleaningActive())
-			color = Vector3(1.f, 0.f, 0.f);
+			color = Vector4(1.f, 0.f, 0.f, 1.f);
 		else
-			color = Vector3(0.8f, 0.8f, 0.2f);
+			color = Vector4(1.f, 1.f, 1.f - m_fTriggerPull, 0.75f);
 
-		Vector4 prevVert = m_mat4CursorCurrentPose * Vector4(m_fCursorRadius, 0.f, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
+		std::vector<Vector4> circlePoints;
+		for (GLuint i = 0; i < num_segments; i++)
 		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+			GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
 
 			Vector4 circlePt;
-			circlePt.x = m_fCursorRadius * cosf(theta);
-			circlePt.y = 0.f;
-			circlePt.z = m_fCursorRadius * sinf(theta);
-			circlePt.w = 1.f;
-
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
-
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			m_uiLineVertcount += 2;
-
-			prevVert = thisVert;
-		}
-
-		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
-		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-			Vector4 circlePt;
-			circlePt.x = 0.f;
-			circlePt.y = m_fCursorRadius * cosf(theta);
-			circlePt.z = m_fCursorRadius * sinf(theta);
-			circlePt.w = 1.f;
-
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
-
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-			m_uiLineVertcount += 2;
-
-			prevVert = thisVert;
-		}
-
-		prevVert = m_mat4CursorCurrentPose * Vector4(0.f, m_fCursorRadius, 0.f, 1.f);
-		for (GLuint i = 1; i < num_segments; i++)
-		{
-			GLfloat theta = 2.f * 3.14159f * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
-
-			Vector4 circlePt;
-			circlePt.x = m_fCursorRadius * sinf(theta);
-			circlePt.y = m_fCursorRadius * cosf(theta);
+			circlePt.x = cosf(theta);
+			circlePt.y = sinf(theta);
 			circlePt.z = 0.f;
 			circlePt.w = 1.f;
 
-			Vector4 thisVert = m_mat4CursorCurrentPose * circlePt;
+			circlePoints.push_back(circlePt);
+		}
 
-			vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+		m_LastTime = std::chrono::high_resolution_clock::now();
 
-			vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
-			vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_fTriggerPull);
 
-			m_uiLineVertcount += 2;
+		Matrix4 scl = Matrix4().scale(m_fCursorRadius, m_fCursorRadius, m_fCursorRadius);
+		Matrix4 rot;
 
-			prevVert = thisVert;
+		float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+		m_fCursorHoopAngle += angleNeeded;
+
+		for (int n = 0; n < 3; ++n)
+		{
+			if (n == 0)
+				rot = Matrix4().rotateX(m_fCursorHoopAngle);
+			if (n == 1)
+				rot = Matrix4().rotateY(90.f).rotateY(m_fCursorHoopAngle);
+			if (n == 2)
+				rot = Matrix4().rotateX(90.f).rotateZ(m_fCursorHoopAngle);
+
+			Vector4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
+			for (size_t i = 0; i < circlePoints.size(); ++i)
+			{
+				Vector4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
+
+				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
+
+				vertdataarray.push_back(thisVert.x); vertdataarray.push_back(thisVert.y); vertdataarray.push_back(thisVert.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
+
+				m_uiLineVertcount += 2;
+
+				prevVert = thisVert;
+			}
 		}
 
 		// DISPLAY CURSOR DOT
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-		{
-			color = Vector3(1.f, 0.f, 0.f);
-			if (cursorActive())
-			{
-				Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
+		//{
+		//	color = Vector3(1.f, 0.f, 0.f);
+		//	if (cursorActive())
+		//	{
+		//		Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
+		//		Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
 
-				vertdataarray.push_back(lastCtrPos.x);
-				vertdataarray.push_back(lastCtrPos.y);
-				vertdataarray.push_back(lastCtrPos.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//		vertdataarray.push_back(lastCtrPos.x);
+		//		vertdataarray.push_back(lastCtrPos.y);
+		//		vertdataarray.push_back(lastCtrPos.z);
+		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				vertdataarray.push_back(thisCtrPos.x);
-				vertdataarray.push_back(thisCtrPos.y);
-				vertdataarray.push_back(thisCtrPos.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//		vertdataarray.push_back(thisCtrPos.x);
+		//		vertdataarray.push_back(thisCtrPos.y);
+		//		vertdataarray.push_back(thisCtrPos.z);
+		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
 
-				m_uiLineVertcount += 2;
-			}
-		}
+		//		m_uiLineVertcount += 2;
+		//	}
+		//}
 
 		// DISPLAY CONNECTING LINE TO CURSOR
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 		{
-			color = Vector3(1.f, 1.f, 1.f);
+			color = Vector4(1.f, 1.f, 1.f, 0.8f);
 			if (m_bShowCursor)
 			{
 				Vector4 controllerCtr = m_mat4Pose * Vector4(0.f, 0.f, 0.f, 1.f);
@@ -248,12 +229,12 @@ void EditingController::prepareForRendering()
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
 				vertdataarray.push_back(cursorEdge.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				vertdataarray.push_back(controllerCtr.x);
 				vertdataarray.push_back(controllerCtr.y);
 				vertdataarray.push_back(controllerCtr.z);
-				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
 
 				m_uiLineVertcount += 2;
 			}
@@ -264,7 +245,7 @@ void EditingController::prepareForRendering()
 		{
 			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
 			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / range;
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio);
+			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio, 0.75f);
 		}
 	}
 
@@ -277,7 +258,7 @@ void EditingController::prepareForRendering()
 		glGenBuffers(1, &m_glVertBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
 
-		GLuint stride = 2 * 3 * sizeof(float);
+		GLuint stride = 3 * sizeof(float) + 4 * sizeof(float);
 		GLuint offset = 0;
 
 		glEnableVertexAttribArray(0);
@@ -285,7 +266,7 @@ void EditingController::prepareForRendering()
 
 		offset += sizeof(Vector3);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		glBindVertexArray(0);
 	}

@@ -549,6 +549,13 @@ void SonarPointCloud::buildPointsVBO()
 				b = 1.0;
 			}
 
+			if (pointsMarks[i] >= 100)
+			{
+				r = (1.f / r) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+				g = (1.f / g) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+				b = (1.f / b) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+			}
+
 			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
 			//g = 1;// pointsColors[(i * 3) + 1];
 			//b = 1;// pointsColors[(i * 3) + 2];

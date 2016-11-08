@@ -392,12 +392,13 @@ void CMainApplication::checkForHits()
 	Matrix4 lastCursorPose;
 	float cursorRadius;
 	
-	// if editing mode not active, abort
+	// if editing controller not available or pose isn't valid, abort
 	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
 		return;	
 
 	// check point cloud for hits
-	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
+	//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
+	if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
 		m_pTDM->cleaningHit();
 }
 
@@ -793,6 +794,8 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	cleaningRoom->draw();
 	
+	// END IMMEDIATE MODE
+
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
 	{

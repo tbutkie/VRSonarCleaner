@@ -15,6 +15,8 @@
 #include <stdio.h>
 //#include <string>
 //#include <cstdlib>
+#include <chrono>
+#include <algorithm>
 
 //#include <openvr.h>
 
@@ -38,7 +40,8 @@ public:
 
 	void recalcVolumeBounds();
 
-	bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
+	//bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
+	bool editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints);
 	bool gripCleaningTable(const Matrix4 *controllerPose);
 
 	void resetVolumes();
@@ -52,4 +55,7 @@ private:
 
 	DataVolume *wallVolume;
 	DataVolume *tableVolume;
+	
+	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
+	float m_fPtHighlightAmt;
 };

@@ -22,6 +22,7 @@ public:
 
 	void updateControllerStates();
 
+	bool cleaningModeActive();
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
 	bool getManipulationData(Matrix4 &controllerPose);
 	void cleaningHit();
