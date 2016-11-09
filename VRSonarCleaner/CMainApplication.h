@@ -51,6 +51,8 @@ public:
 	Matrix4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
 	Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye);
 
+	void savePoints();
+
 	bool CreateLensShader();
 
 	void checkForHits();

@@ -2,6 +2,9 @@
 #include "ShaderUtils.h"
 #include "DebugDrawer.h"
 
+#include <fstream>
+#include <string>
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -324,6 +327,10 @@ bool CMainApplication::HandleInput()
 				|| sdlEvent.key.keysym.sym == SDLK_q)
 			{
 				bRet = true;
+			}
+			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
+			{
+				savePoints();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_r)
 			{
@@ -896,4 +903,74 @@ Matrix4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 	}
 
 	return matMVP;
+}
+
+bool fileExists(const std::string &fname)
+{
+	struct stat buffer;
+	return (stat(fname.c_str(), &buffer) == 0);
+}
+
+std::string intToString(int i, unsigned int pad_to_magnitude)
+{
+	if (pad_to_magnitude < 1)
+		return std::to_string(i);
+
+	std::string ret;
+
+	int mag = i == 0 ? 0 : (int)log10(i);
+
+	for (int j = pad_to_magnitude - mag; j > 0; --j)
+		ret += std::to_string(0);
+
+	ret += std::to_string(i);
+
+	return ret;
+}
+
+std::string getTimeString()
+{
+	time_t t = time(0);   // get time now
+	struct tm *now = localtime(&t);
+
+	return 	  /*** DATE ***/
+		      intToString(now->tm_year + 1900, 3) + // year
+		"-" + intToString(now->tm_mon + 1, 1) +     // month
+		"-" + intToString(now->tm_mday, 1) +        // day
+		      /*** TIME ***/
+		"_" + intToString(now->tm_hour, 1) +        // hour
+		"-" + intToString(now->tm_min, 1) +         // minute
+		"-" + intToString(now->tm_sec, 1);          // second
+}
+
+void CMainApplication::savePoints()
+{	
+	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
+
+	// construct filename
+	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
+
+	// if file exists, keep trying until we find a filename that doesn't already exist
+	for (int i = 0; fileExists(outFileName); ++i)
+		outFileName = std::string("saved_points_" + intToString(points.size(), 0) + "_" /*+ getTimeString() + "_"*/ + "(" + std::to_string(i + 1) + ")" + ".csv");
+	
+	std::ofstream outFile;
+	outFile.open(outFileName);
+
+	if (outFile.is_open())
+	{
+		std::cout << "Opened file " << outFileName << " for writing output" << std::endl;
+		outFile << "x,y,z,flag" << std::endl;
+	}
+	else
+		std::cout << "Error opening file " << outFileName << " for writing output" << std::endl;
+
+	for (size_t i = 0ull; i < points.size(); ++i)
+	{
+		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (clouds->getCloud(0)->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+	}
+
+	outFile.close();
+
+	std::cout << "File " << outFileName << " successfully written" << std::endl;
 }
