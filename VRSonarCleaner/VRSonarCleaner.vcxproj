@@ -175,9 +175,12 @@
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
+    <ClCompile Include="Observer.cpp" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="Subject.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
     <ClCompile Include="Vec3.cpp" />
@@ -188,6 +191,7 @@
     <ClInclude Include="..\shared\lodepng.h" />
     <ClInclude Include="..\shared\Matrices.h" />
     <ClInclude Include="..\shared\pathtools.h" />
+    <ClInclude Include="..\shared\Texture.h" />
     <ClInclude Include="..\shared\Vectors.h" />
     <ClInclude Include="CGLRenderModel.h" />
     <ClInclude Include="CleaningRoom.h" />
@@ -198,12 +202,15 @@
     <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="EditingController.h" />
     <ClInclude Include="Icosphere.h" />
+    <ClInclude Include="Observer.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
     <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />
+    <ClInclude Include="InfoBoxManager.h" />
+    <ClInclude Include="Subject.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="Vec3.h" />
