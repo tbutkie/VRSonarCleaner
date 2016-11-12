@@ -1,6 +1,7 @@
 #include "CMainApplication.h"
 #include "ShaderUtils.h"
 #include "DebugDrawer.h"
+#include "InfoBoxManager.h"
 
 #include <fstream>
 #include <string>
@@ -228,6 +229,8 @@ bool CMainApplication::BInitGL()
 
 
 	cleaningRoom = new CleaningRoom();
+
+	InfoBoxManager::getInstance().addInfoBox("cube_texture.png", 1.f, glm::translate(glm::mat4(), glm::vec3(0.f, 2.f, 0.f)));
 	
 	return true;
 }
@@ -792,6 +795,8 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	{
 		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
+
+	InfoBoxManager::getInstance().render(thisEyesProjectionMatrix.get());
 
 	// IMMEDIATE MODE
 	glMatrixMode(GL_PROJECTION);
