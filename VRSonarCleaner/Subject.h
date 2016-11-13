@@ -14,7 +14,7 @@ public:
 
 	void detach(Observer *obs)
 	{
-		observers.erase(std::remove(observers.begin(), observers.end(), obs), observers.end);
+		observers.erase(std::remove(observers.begin(), observers.end(), obs), observers.end());
 	}
 
 protected:

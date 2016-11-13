@@ -230,7 +230,8 @@ bool CMainApplication::BInitGL()
 
 	cleaningRoom = new CleaningRoom();
 
-	InfoBoxManager::getInstance().addInfoBox("cube_texture.png", 1.f, glm::translate(glm::mat4(), glm::vec3(0.f, 2.f, 0.f)));
+	InfoBoxManager::getInstance().addInfoBox("Test 1", "cube_texture.png", 1.f, glm::translate(glm::mat4(), glm::vec3(0.f, 2.f, 0.f)));
+	InfoBoxManager::getInstance().addInfoBox("Test 2", "test.png", 10.f, glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
 	
 	return true;
 }
@@ -364,6 +365,9 @@ bool CMainApplication::HandleInput()
 	}
 	
 	m_pTDM->handleEvents();
+
+	glm::mat4 newInfoBoxMat = glm::inverse(glm::make_mat4(m_pTDM->getHMDPose().get())) * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f));
+	InfoBoxManager::getInstance().updateInfoBoxPose("Test 1", newInfoBoxMat);
 
 	return bRet;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <tuple>
 #include <openvr.h>
 
 #include <shared\glm\glm.hpp>
@@ -16,12 +17,13 @@ public:
 	// Singleton instance access
 	static InfoBoxManager& getInstance();
 	
-	void addInfoBox(std::string pngFileName, float width, glm::mat4 pose);
+	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose);
 
 	virtual void update();
 
 	void render(const float *matVP);
 
+	bool updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose);
 
 private:
 	InfoBoxManager();
@@ -30,7 +32,7 @@ private:
 	void createGeometry();
 	bool createShaders();
 
-	std::vector<std::pair<Texture*, glm::mat4>> m_vInfoBoxes;
+	std::map<std::string, std::tuple<Texture*, float, glm::mat4>> m_mapInfoBoxes;
 	std::map<std::string, Texture*> m_mapTextureBank;
 
 	GLuint m_unTransformProgramID;

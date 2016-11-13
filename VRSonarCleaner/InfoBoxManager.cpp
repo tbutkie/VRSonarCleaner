@@ -9,7 +9,7 @@ InfoBoxManager & InfoBoxManager::getInstance()
 	return instance;	
 }
 
-void InfoBoxManager::addInfoBox(std::string pngFileName, float width, glm::mat4 pose)
+void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose)
 {
 	Texture* tex = m_mapTextureBank[pngFileName];
 	if (!tex)
@@ -18,7 +18,7 @@ void InfoBoxManager::addInfoBox(std::string pngFileName, float width, glm::mat4 
 		m_mapTextureBank[pngFileName] = tex;
 	}
 	float ar = static_cast<float>(tex->getWidth()) / static_cast<float>(tex->getHeight());
-	m_vInfoBoxes.push_back(std::pair<Texture*, glm::mat4>(tex, glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(width, width / ar, 1.f)))));
+	m_mapInfoBoxes[name] = std::tuple<Texture*, float, glm::mat4>(tex, width, glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(width, width / ar, 1.f))));
 }
 
 InfoBoxManager::InfoBoxManager()
@@ -44,15 +44,24 @@ void InfoBoxManager::render(const float *matVP)
 	glm::mat4 VP = glm::make_mat4(matVP);
 	glUseProgram(m_unTransformProgramID);
 	glBindVertexArray(m_unVAO);
-	for (auto const& ib : m_vInfoBoxes)
+	for (auto const& ib : m_mapInfoBoxes)
 	{
-		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * ib.second));
-		ib.first->activate();
-		glDrawArrays(GL_QUADS, 0, 4);
-		ib.first->deactivate();
+		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * std::get<2>(ib.second)));
+		std::get<0>(ib.second)->activate();
+		glDrawArrays(GL_QUADS, 0, 4); 
+		std::get<0>(ib.second)->deactivate();
 	}
 	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+bool InfoBoxManager::updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose)
+{
+	float width = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getWidth());
+	float height = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getHeight());
+	float ar = width / height;
+	std::get<2>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(std::get<1>(m_mapInfoBoxes[infoBoxName]), std::get<1>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
+	return true;
 }
 
 void InfoBoxManager::createGeometry()

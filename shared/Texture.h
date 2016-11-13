@@ -48,6 +48,7 @@ public:
 
 	unsigned getWidth() { return m_uiWidth; }
 	unsigned getHeight() { return m_uiHeight; }
+	std::string getName() { return m_strFileName; }
 
 	void activate()
 	{
