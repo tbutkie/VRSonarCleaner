@@ -1,5 +1,6 @@
 #include "TrackedDeviceManager.h"
 #include "ShaderUtils.h"
+#include "InfoBoxManager.h"
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
@@ -177,6 +178,8 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 			m_pManipController->BInit();
 			thisController = m_pManipController;
 		}
+
+		thisController->attach(&InfoBoxManager::getInstance());
 	}
 }
 

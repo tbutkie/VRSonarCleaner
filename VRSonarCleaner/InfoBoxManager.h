@@ -24,6 +24,7 @@ public:
 	void render(const float *matVP);
 
 	bool updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose);
+	bool updateInfoBoxSize(std::string infoBoxName, float size);
 
 private:
 	InfoBoxManager();

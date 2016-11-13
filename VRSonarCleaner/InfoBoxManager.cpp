@@ -37,6 +37,7 @@ InfoBoxManager::~InfoBoxManager()
 
 void InfoBoxManager::update()
 {
+	updateInfoBoxSize("Test 1", 5.f);
 }
 
 void InfoBoxManager::render(const float *matVP)
@@ -62,6 +63,16 @@ bool InfoBoxManager::updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose)
 	float ar = width / height;
 	std::get<2>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(std::get<1>(m_mapInfoBoxes[infoBoxName]), std::get<1>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
 	return true;
+}
+
+bool InfoBoxManager::updateInfoBoxSize(std::string infoBoxName, float size)
+{
+	std::get<1>(m_mapInfoBoxes[infoBoxName]) = size;
+	float width = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getWidth());
+	float height = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getHeight());
+	float ar = width / height;
+	std::get<2>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(std::get<2>(m_mapInfoBoxes[infoBoxName]) * glm::scale(glm::mat4(), glm::vec3(std::get<1>(m_mapInfoBoxes[infoBoxName]), std::get<1>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
+	return false;
 }
 
 void InfoBoxManager::createGeometry()
