@@ -164,6 +164,7 @@
     <ClCompile Include="..\shared\lodepng.cpp" />
     <ClCompile Include="..\shared\Matrices.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
+    <ClCompile Include="arcball.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="CleaningRoom.cpp" />
     <ClCompile Include="CloudCollection.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
+    <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
@@ -189,6 +191,7 @@
     <ClInclude Include="..\shared\Matrices.h" />
     <ClInclude Include="..\shared\pathtools.h" />
     <ClInclude Include="..\shared\Vectors.h" />
+    <ClInclude Include="arcball.h" />
     <ClInclude Include="CGLRenderModel.h" />
     <ClInclude Include="CleaningRoom.h" />
     <ClInclude Include="CloudCollection.h" />
@@ -198,6 +201,7 @@
     <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="EditingController.h" />
     <ClInclude Include="Icosphere.h" />
+    <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
