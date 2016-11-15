@@ -129,10 +129,6 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 
 	dataVolume = new DataVolume(0, 0, 0, 0, 4, 1.5, 4);
 	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
-
-	init_system_cursor(arrow);
-	SDL_ShowCursor(SDL_ENABLE);
-
 }
 
 
@@ -220,6 +216,10 @@ bool LassoWindow::BInit()
 		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
+
+	//SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW));
+	SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR));
+	//SDL_SetCursor(init_system_cursor(arrow));
 
 	return true;
 }
@@ -396,7 +396,6 @@ void LassoWindow::RunMainLoop()
 	bool bQuit = false;
 
 	SDL_StartTextInput();
-	SDL_ShowCursor(SDL_DISABLE);
 
 	while (!bQuit)
 	{
