@@ -4,6 +4,7 @@ SonarPointCloud::SonarPointCloud()
 {
 	markedForDeletion = false;
 	buffersGenerated = false;
+	previewBuffersGenerated = false;
 
 	firstMinMaxSet = false;
 
@@ -465,24 +466,24 @@ void SonarPointCloud::buildPointsVBO()
 	
 	//build VBO out of mesh
 	//printf("checking before gen buffers\n");
-	if (!previewBuffersGenerated)
+	if (!buffersGenerated)
 	{
-		//printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
+		printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
 		glGenBuffers(1, &pointsPositionsVBO);
 		glGenBuffers(1, &pointsColorsVBO);
 		
-		previewBuffersGenerated = true;
+		buffersGenerated = true;
 	}
 	else
 	{
-		//printf("deleting buffers\n");
+		printf("deleting buffers\n");
 		glDeleteBuffers(1, &pointsPositionsVBO);
 		glDeleteBuffers(1, &pointsColorsVBO);
 		
 		glGenBuffers(1, &pointsPositionsVBO);
 		glGenBuffers(1, &pointsColorsVBO);
 
-		previewBuffersGenerated = true;
+		buffersGenerated = true;
 	}
 
 	//figure out how many point to draw
@@ -613,13 +614,13 @@ void SonarPointCloud::buildPreviewVBO()
 
 	//build VBO out of mesh
 	//printf("checking before gen buffers\n");
-	if (!buffersGenerated)
+	if (!previewBuffersGenerated)
 	{
 		//printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
 		glGenBuffers(1, &previewPointsPositionsVBO);
 		glGenBuffers(1, &previewPointsColorsVBO);
 
-		buffersGenerated = true;
+		previewBuffersGenerated = true;
 	}
 	else
 	{
@@ -630,7 +631,7 @@ void SonarPointCloud::buildPreviewVBO()
 		glGenBuffers(1, &previewPointsPositionsVBO);
 		glGenBuffers(1, &previewPointsColorsVBO);
 
-		buffersGenerated = true;
+		previewBuffersGenerated = true;
 	}
 
 	int reductionFactor = 20;
