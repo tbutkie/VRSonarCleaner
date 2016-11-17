@@ -88,6 +88,8 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InfoBoxManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LassoWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -169,7 +171,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\Texture.h">
-      <Filter>Header Files</Filter>
+      <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="InfoBoxManager.h">
       <Filter>Header Files</Filter>
@@ -178,6 +180,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Subject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="LassoWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
