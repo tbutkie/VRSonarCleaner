@@ -113,17 +113,14 @@ bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix
 	return true;
 }
 
-bool TrackedDeviceManager::getManipulationData(Matrix4 &controllerPose)
+Matrix4* TrackedDeviceManager::getManipulationData()
 {	
 	if (m_pManipController && m_pManipController->poseValid() && m_pManipController->isGripButtonPressed())
 	{
-		controllerPose = m_pManipController->getPose();
-		return true;
+		return &m_pManipController->getPose();
 	}
 
-	controllerPose = Matrix4();
-
-	return false;
+	return NULL;
 }
 
 void TrackedDeviceManager::cleaningHit()

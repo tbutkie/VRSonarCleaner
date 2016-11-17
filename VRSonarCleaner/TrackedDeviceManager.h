@@ -24,7 +24,7 @@ public:
 
 	bool cleaningModeActive();
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
-	bool getManipulationData(Matrix4 &controllerPose);
+	Matrix4* getManipulationData();
 	void cleaningHit();
 
 	void renderTrackedDevices(Matrix4 & matVP);

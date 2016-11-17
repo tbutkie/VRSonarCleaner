@@ -418,12 +418,7 @@ void CMainApplication::checkForHits()
 
 void CMainApplication::checkForManipulations()
 {
-	Matrix4 pose;
-
-	if (m_pTDM->getManipulationData(pose))
-		cleaningRoom->gripCleaningTable(&pose);
-	else
-		cleaningRoom->gripCleaningTable(NULL);
+	cleaningRoom->gripCleaningTable(m_pTDM->getManipulationData());
 }
 
 //-----------------------------------------------------------------------------

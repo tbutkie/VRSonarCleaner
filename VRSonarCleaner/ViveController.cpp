@@ -518,14 +518,14 @@ void ViveController::gripButtonPressed()
 {
 	//printf("Controller (device %u) grip pressed.\n", m_unDeviceID);
 	m_bGripButtonClicked = true;
-	toggleAxes();
+	//toggleAxes();
 }
 
 void ViveController::gripButtonUnpressed()
 {
 	//printf("Controller (device %u) grip unpressed.\n", m_unDeviceID);
 	m_bGripButtonClicked = false;
-	toggleAxes();
+	//toggleAxes();
 }
 
 bool ViveController::isGripButtonPressed()
