@@ -19,7 +19,7 @@ public:
 	
 	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose);
 
-	virtual void update();
+	virtual void update(TrackedDevice* device, const int event);
 
 	void render(const float *matVP);
 

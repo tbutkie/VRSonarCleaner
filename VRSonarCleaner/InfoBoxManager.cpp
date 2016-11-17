@@ -35,9 +35,17 @@ InfoBoxManager::~InfoBoxManager()
 {
 }
 
-void InfoBoxManager::update()
+void InfoBoxManager::update(TrackedDevice* device, const int event)
 {
-	updateInfoBoxSize("Test 1", 5.f);
+	switch (event)
+	{
+	case EVENT_EDIT_TRIGGER_PRESSED:
+		updateInfoBoxSize("Test 1", 0.f);
+		break;
+	default:
+		;
+	}
+	
 }
 
 void InfoBoxManager::render(const float *matVP)

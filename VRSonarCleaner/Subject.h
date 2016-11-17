@@ -4,6 +4,8 @@
 
 #include "Observer.h"
 
+class TrackedDevice;
+
 class Subject
 {
 public:
@@ -18,9 +20,9 @@ public:
 	}
 
 protected:
-	void notify()
+	virtual void notify(TrackedDevice* device, const int event)
 	{
-		for (auto obs : observers) obs->update();
+		for (auto obs : observers) obs->update(device, event);
 	}
 	
 private:

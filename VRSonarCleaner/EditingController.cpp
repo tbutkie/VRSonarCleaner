@@ -303,7 +303,7 @@ void EditingController::triggerClicked()
 	m_bTriggerClicked = true;
 	m_fTriggerPull = 1.f;
 	m_bCleaningMode = true;
-	notify();
+	notify(this, Observer::NOTIFICATION::EVENT_EDIT_TRIGGER_PRESSED);
 }
 
 void EditingController::triggerUnclicked(float amount)
