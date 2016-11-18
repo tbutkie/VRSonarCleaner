@@ -123,6 +123,7 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
+
 	int nWindowPosX = 10;// 700;
 	int nWindowPosY = 30;// 100;
 	m_nWindowWidth = 1660;// 1280;
@@ -227,11 +228,9 @@ bool CMainApplication::BInitGL()
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not get render model interface", NULL);
 	}
 
+	InfoBoxManager::getInstance().BInit(m_pTDM);
 
 	cleaningRoom = new CleaningRoom();
-
-	InfoBoxManager::getInstance().addInfoBox("Test 1", "cube_texture.png", 1.f, glm::translate(glm::mat4(), glm::vec3(0.f, 2.f, 0.f)));
-	InfoBoxManager::getInstance().addInfoBox("Test 2", "test.png", 10.f, glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
 	
 	return true;
 }
@@ -365,10 +364,7 @@ bool CMainApplication::HandleInput()
 	}
 	
 	m_pTDM->handleEvents();
-
-	glm::mat4 newInfoBoxMat = glm::inverse(glm::make_mat4(m_pTDM->getHMDPose().get())) * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Test 1", newInfoBoxMat);
-
+	
 	return bRet;
 }
 

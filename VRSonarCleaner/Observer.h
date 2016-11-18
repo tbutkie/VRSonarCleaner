@@ -6,10 +6,10 @@ class Observer
 {
 public:
 	virtual ~Observer() {}
-	virtual void update(TrackedDevice* device, const int event) = 0;
+	virtual void receiveEvent(TrackedDevice* device, const int event) = 0;
 
 public:
-	virtual enum NOTIFICATION {
-		EVENT_EDIT_TRIGGER_PRESSED
+	virtual enum EVENT {
+		EDIT_TRIGGER_CLICKED
 	};
 };

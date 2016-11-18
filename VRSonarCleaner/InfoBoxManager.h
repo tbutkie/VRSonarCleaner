@@ -8,18 +8,30 @@
 
 #include "shared/Texture.h"
 #include "Observer.h"
+#include "TrackedDeviceManager.h"
 
 #define MAX_N_INFO_BOXES 16
 
 class InfoBoxManager : public Observer
 {
 public:
+	enum RELATIVE_TO {
+		WORLD = 0,
+		HMD,
+		EDIT_CONTROLLER,
+		MANIP_CONTROLLER
+	};
+
+public:
 	// Singleton instance access
 	static InfoBoxManager& getInstance();
 	
-	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose);
+	bool BInit(TrackedDeviceManager* tdm);
 
-	virtual void update(TrackedDevice* device, const int event);
+	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what);
+	bool removeInfoBox(std::string name);
+
+	virtual void receiveEvent(TrackedDevice* device, const int event);
 
 	void render(const float *matVP);
 
@@ -33,13 +45,18 @@ private:
 	void createGeometry();
 	bool createShaders();
 
-	std::map<std::string, std::tuple<Texture*, float, glm::mat4>> m_mapInfoBoxes;
+	typedef std::tuple<Texture*, float, glm::mat4, RELATIVE_TO> InfoBoxT;
+	typedef std::map<std::string, InfoBoxT> IBMapT;
+
+	IBMapT m_mapInfoBoxes;
 	std::map<std::string, Texture*> m_mapTextureBank;
 
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
 	GLuint m_glVertBuffer;
 	GLuint m_unVAO;
+
+	TrackedDeviceManager* m_pTDM;
 		
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:

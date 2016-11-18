@@ -22,7 +22,7 @@ public:
 protected:
 	virtual void notify(TrackedDevice* device, const int event)
 	{
-		for (auto obs : observers) obs->update(device, event);
+		for (auto obs : observers) obs->receiveEvent(device, event);
 	}
 	
 private:

@@ -31,6 +31,8 @@ public:
 	void postRenderUpdate();
 
 	Matrix4 & getHMDPose();
+	Matrix4 & getEditControllerPose();
+	Matrix4 & getManipControllerPose();
 
 	void UpdateHMDMatrixPose();
 private:

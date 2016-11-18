@@ -9,7 +9,13 @@ InfoBoxManager & InfoBoxManager::getInstance()
 	return instance;	
 }
 
-void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose)
+bool InfoBoxManager::BInit(TrackedDeviceManager * tdm)
+{
+	m_pTDM = tdm;
+	return true;
+}
+
+void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what)
 {
 	Texture* tex = m_mapTextureBank[pngFileName];
 	if (!tex)
@@ -18,7 +24,12 @@ void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float
 		m_mapTextureBank[pngFileName] = tex;
 	}
 	float ar = static_cast<float>(tex->getWidth()) / static_cast<float>(tex->getHeight());
-	m_mapInfoBoxes[name] = std::tuple<Texture*, float, glm::mat4>(tex, width, glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(width, width / ar, 1.f))));
+	m_mapInfoBoxes[name] = InfoBoxT(tex, width, glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(width, width / ar, 1.f))), what);
+}
+
+bool InfoBoxManager::removeInfoBox(std::string name)
+{		
+	return m_mapInfoBoxes.erase(name);
 }
 
 InfoBoxManager::InfoBoxManager()
@@ -26,24 +37,45 @@ InfoBoxManager::InfoBoxManager()
 	, m_glVertBuffer(0)
 	, m_nMatrixLocation(0)
 	, m_unVAO(0)
+	, m_pTDM(NULL)
 {
 	createGeometry();
 	createShaders();
+	
+	addInfoBox(
+		"Test 1",
+		"cube_texture.png",
+		1.f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
+		RELATIVE_TO::HMD);
+	addInfoBox(
+		"Test 2", 
+		"test.png", 
+		10.f, 
+		glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), 
+		RELATIVE_TO::WORLD);
+	addInfoBox(
+		"Test 3",
+		"test.png",
+		0.5f,
+		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)),
+		RELATIVE_TO::EDIT_CONTROLLER);
 }
 
 InfoBoxManager::~InfoBoxManager()
 {
 }
 
-void InfoBoxManager::update(TrackedDevice* device, const int event)
+void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event)
 {
 	switch (event)
 	{
-	case EVENT_EDIT_TRIGGER_PRESSED:
-		updateInfoBoxSize("Test 1", 0.f);
+	case EDIT_TRIGGER_CLICKED:
+		updateInfoBoxSize("Test 1", 0.1f);
+		removeInfoBox("Test 2");
 		break;
 	default:
-		;
+		break;
 	}
 	
 }
@@ -51,11 +83,22 @@ void InfoBoxManager::update(TrackedDevice* device, const int event)
 void InfoBoxManager::render(const float *matVP)
 {
 	glm::mat4 VP = glm::make_mat4(matVP);
+
+	glm::mat4 HMDXform = glm::inverse(glm::make_mat4(m_pTDM->getHMDPose().get()));
+	glm::mat4 EditCtrlrXform = glm::make_mat4(m_pTDM->getEditControllerPose().get());
+	glm::mat4 ManipCtrlrXform = glm::make_mat4(m_pTDM->getManipControllerPose().get());
+
 	glUseProgram(m_unTransformProgramID);
 	glBindVertexArray(m_unVAO);
 	for (auto const& ib : m_mapInfoBoxes)
 	{
-		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * std::get<2>(ib.second)));
+		glm::mat4 relXform;
+		if (std::get<3>(ib.second) == WORLD) relXform = glm::mat4();
+		if (std::get<3>(ib.second) == HMD) relXform = HMDXform;
+		if (std::get<3>(ib.second) == EDIT_CONTROLLER) relXform = EditCtrlrXform;
+		if (std::get<3>(ib.second) == MANIP_CONTROLLER) relXform = ManipCtrlrXform;
+
+		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * std::get<2>(ib.second)));
 		std::get<0>(ib.second)->activate();
 		glDrawArrays(GL_QUADS, 0, 4); 
 		std::get<0>(ib.second)->deactivate();

@@ -230,6 +230,22 @@ Matrix4 & TrackedDeviceManager::getHMDPose()
 	return m_mat4HMDPose;
 }
 
+Matrix4 & TrackedDeviceManager::getEditControllerPose()
+{
+	if(m_pEditController)
+		return m_pEditController->getPose();
+
+	return Matrix4().identity();
+}
+
+Matrix4 & TrackedDeviceManager::getManipControllerPose()
+{
+	if (m_pEditController)
+		return m_pManipController->getPose();
+
+	return Matrix4().identity();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
