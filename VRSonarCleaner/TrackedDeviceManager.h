@@ -8,7 +8,7 @@
 #include "CGLRenderModel.h"
 
 
-class TrackedDeviceManager
+class TrackedDeviceManager : public Subject
 {
 public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);

@@ -123,7 +123,6 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-
 	int nWindowPosX = 10;// 700;
 	int nWindowPosY = 30;// 100;
 	m_nWindowWidth = 1660;// 1280;
@@ -229,6 +228,7 @@ bool CMainApplication::BInitGL()
 	}
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
+	m_pTDM->attach(&InfoBoxManager::getInstance());
 
 	cleaningRoom = new CleaningRoom();
 	

@@ -258,6 +258,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
 
 	m_iValidPoseCount = 0;
+	m_iTrackedControllerCount = 0;
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
@@ -269,7 +270,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); break;
+				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); m_iTrackedControllerCount++; break;
 				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
 				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
 				case vr::TrackedDeviceClass_Other:             m_rpTrackedDevices[nDevice]->setClassChar('O'); break;
@@ -290,5 +291,5 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
 		m_mat4HMDPose = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose().invert();
-	}
+	} 
 }
