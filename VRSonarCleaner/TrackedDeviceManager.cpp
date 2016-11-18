@@ -291,5 +291,15 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
 		m_mat4HMDPose = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose().invert();
-	} 
+
+		Matrix4 tempMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose();
+		glm::vec3 HMDpos = glm::vec3(tempMat[12], tempMat[13], tempMat[14]);
+		float widthX, widthZ;
+		vr::IVRChaperone* chap = vr::VRChaperone();
+		chap->GetPlayAreaSize(&widthX, &widthZ);
+		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::OUT_OF_PLAY_AREA);
+		else
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::INSIDE_PLAY_AREA);
+	}
 }

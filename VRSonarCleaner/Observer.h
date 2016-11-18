@@ -10,6 +10,8 @@ public:
 
 public:
 	virtual enum EVENT {
-		EDIT_TRIGGER_CLICKED
+		EDIT_TRIGGER_CLICKED,
+		OUT_OF_PLAY_AREA,
+		INSIDE_PLAY_AREA
 	};
 };

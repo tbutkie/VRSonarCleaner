@@ -23,8 +23,8 @@ void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float
 		tex = new Texture(pngFileName);
 		m_mapTextureBank[pngFileName] = tex;
 	}
-	float ar = static_cast<float>(tex->getWidth()) / static_cast<float>(tex->getHeight());
-	m_mapInfoBoxes[name] = InfoBoxT(tex, width, glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(width, width / ar, 1.f))), what);
+
+	m_mapInfoBoxes[name] = InfoBoxT(tex, width, pose, what);
 }
 
 bool InfoBoxManager::removeInfoBox(std::string name)
@@ -58,7 +58,7 @@ InfoBoxManager::InfoBoxManager()
 		"Test 3",
 		"test.png",
 		0.5f,
-		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)),
+		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		RELATIVE_TO::EDIT_CONTROLLER);
 	addInfoBox(
 		"Editing Label",
@@ -85,6 +85,12 @@ void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event)
 	case EDIT_TRIGGER_CLICKED:
 		updateInfoBoxSize("Test 1", 0.1f);
 		removeInfoBox("Test 2");
+		break;
+	case OUT_OF_PLAY_AREA:
+		updateInfoBoxSize("Test 3", 1.0f);
+		break;
+	case INSIDE_PLAY_AREA:
+		updateInfoBoxSize("Test 3", 0.5f);
 		break;
 	default:
 		break;
@@ -118,7 +124,13 @@ void InfoBoxManager::render(const float *matVP)
 
 		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);
 
-		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat));
+		float widthPx = static_cast<float>(std::get<IBIndex::TEXTURE>(ib.second)->getWidth());
+		float heightPx = static_cast<float>(std::get<IBIndex::TEXTURE>(ib.second)->getHeight());
+		float ar = widthPx / heightPx;
+		float sizeM = std::get<IBIndex::SIZE_METERS>(ib.second);
+		glm::mat4 scaleMat = glm::scale(glm::mat4(), glm::vec3(sizeM, sizeM / ar, 1.f));
+
+		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat * scaleMat));
 		std::get<IBIndex::TEXTURE>(ib.second)->activate();
 		glDrawArrays(GL_QUADS, 0, 4); 
 		std::get<IBIndex::TEXTURE>(ib.second)->deactivate();
@@ -129,25 +141,18 @@ void InfoBoxManager::render(const float *matVP)
 
 bool InfoBoxManager::updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose)
 {
-	float width  = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getWidth());
-	float height = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getHeight());
-	float ar = width / height;
-	std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]), std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
+	if (m_mapInfoBoxes.count(infoBoxName) == 0) return false;
+
+	std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) = pose;
 	return true;
 }
 
 bool InfoBoxManager::updateInfoBoxSize(std::string infoBoxName, float size)
 {
-	float oldSize = std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]);
+	if (m_mapInfoBoxes.count(infoBoxName) == 0) return false;
+
 	std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) = size;
-
-	float sizeDelta = size / oldSize;
-
-	float width  = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getWidth());
-	float height = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getHeight());
-	float ar = width / height;
-	std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) * glm::scale(glm::mat4(), glm::vec3(sizeDelta, sizeDelta / ar, 1.f)));
-	return false;
+	return true;
 }
 
 void InfoBoxManager::createGeometry()
