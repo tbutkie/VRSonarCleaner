@@ -240,7 +240,7 @@ Matrix4 & TrackedDeviceManager::getEditControllerPose()
 
 Matrix4 & TrackedDeviceManager::getManipControllerPose()
 {
-	if (m_pEditController)
+	if (m_pManipController)
 		return m_pManipController->getPose();
 
 	return Matrix4().identity();

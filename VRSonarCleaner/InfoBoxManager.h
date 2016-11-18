@@ -57,6 +57,13 @@ private:
 	GLuint m_unVAO;
 
 	TrackedDeviceManager* m_pTDM;
+
+	enum IBIndex {
+		TEXTURE = 0,
+		SIZE_METERS,
+		TRANSFORM_MATRIX,
+		TRANSFORM_RELATION
+	};
 		
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:

@@ -60,6 +60,18 @@ InfoBoxManager::InfoBoxManager()
 		0.5f,
 		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)),
 		RELATIVE_TO::EDIT_CONTROLLER);
+	addInfoBox(
+		"Editing Label",
+		"editctrlrlabel.png",
+		0.25f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		RELATIVE_TO::EDIT_CONTROLLER);
+	addInfoBox(
+		"Manipulation Label",
+		"manipctrlrlabel.png",
+		0.25f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		RELATIVE_TO::MANIP_CONTROLLER);
 }
 
 InfoBoxManager::~InfoBoxManager()
@@ -92,16 +104,24 @@ void InfoBoxManager::render(const float *matVP)
 	glBindVertexArray(m_unVAO);
 	for (auto const& ib : m_mapInfoBoxes)
 	{
-		glm::mat4 relXform;
-		if (std::get<3>(ib.second) == WORLD) relXform = glm::mat4();
-		if (std::get<3>(ib.second) == HMD) relXform = HMDXform;
-		if (std::get<3>(ib.second) == EDIT_CONTROLLER) relXform = EditCtrlrXform;
-		if (std::get<3>(ib.second) == MANIP_CONTROLLER) relXform = ManipCtrlrXform;
+		RELATIVE_TO relToWhat = std::get<IBIndex::TRANSFORM_RELATION>(ib.second); // get fourth element of infobox tuple
 
-		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * std::get<2>(ib.second)));
-		std::get<0>(ib.second)->activate();
+		glm::mat4 relXform;
+		if (relToWhat == WORLD) relXform = glm::mat4();
+		if (relToWhat == HMD) relXform = HMDXform;
+		if (relToWhat == EDIT_CONTROLLER) relXform = EditCtrlrXform;
+		if (relToWhat == MANIP_CONTROLLER) relXform = ManipCtrlrXform;
+
+		// short-circuit if controller is not active
+		if (relXform == glm::mat4() && (relToWhat == EDIT_CONTROLLER || relToWhat == MANIP_CONTROLLER))
+			continue;
+
+		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);
+
+		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat));
+		std::get<IBIndex::TEXTURE>(ib.second)->activate();
 		glDrawArrays(GL_QUADS, 0, 4); 
-		std::get<0>(ib.second)->deactivate();
+		std::get<IBIndex::TEXTURE>(ib.second)->deactivate();
 	}
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -109,20 +129,24 @@ void InfoBoxManager::render(const float *matVP)
 
 bool InfoBoxManager::updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose)
 {
-	float width = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getWidth());
-	float height = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getHeight());
+	float width  = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getWidth());
+	float height = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getHeight());
 	float ar = width / height;
-	std::get<2>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(std::get<1>(m_mapInfoBoxes[infoBoxName]), std::get<1>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
+	std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(pose * glm::scale(glm::mat4(), glm::vec3(std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]), std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
 	return true;
 }
 
 bool InfoBoxManager::updateInfoBoxSize(std::string infoBoxName, float size)
 {
-	std::get<1>(m_mapInfoBoxes[infoBoxName]) = size;
-	float width = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getWidth());
-	float height = static_cast<float>(std::get<0>(m_mapInfoBoxes[infoBoxName])->getHeight());
+	float oldSize = std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]);
+	std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) = size;
+
+	float sizeDelta = size / oldSize;
+
+	float width  = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getWidth());
+	float height = static_cast<float>(std::get<IBIndex::TEXTURE>(m_mapInfoBoxes[infoBoxName])->getHeight());
 	float ar = width / height;
-	std::get<2>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(std::get<2>(m_mapInfoBoxes[infoBoxName]) * glm::scale(glm::mat4(), glm::vec3(std::get<1>(m_mapInfoBoxes[infoBoxName]), std::get<1>(m_mapInfoBoxes[infoBoxName]) / ar, 1.f)));
+	std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) = glm::mat4(std::get<IBIndex::TRANSFORM_MATRIX>(m_mapInfoBoxes[infoBoxName]) * glm::scale(glm::mat4(), glm::vec3(sizeDelta, sizeDelta / ar, 1.f)));
 	return false;
 }
 
@@ -204,7 +228,10 @@ bool InfoBoxManager::createShaders()
 		"uniform sampler2D texSampler;\n"
 		"void main()\n"
 		"{\n"
-		"   outputColor = texture(texSampler, v2TexCoord);\n"
+		"   vec4 col = texture(texSampler, v2TexCoord);\n"
+		"   if (col.a < 0.2f)\n"
+		"      discard;\n"
+		"   outputColor = col;\n"
 		"}\n"
 	);
 

@@ -784,6 +784,16 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
 
+	// IMMEDIATE MODE
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(thisEyesProjectionMatrix.get());
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	cleaningRoom->draw();
+
+	// END IMMEDIATE MODE
+
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
@@ -792,16 +802,6 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	}
 
 	InfoBoxManager::getInstance().render(thisEyesProjectionMatrix.get());
-
-	// IMMEDIATE MODE
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(thisEyesProjectionMatrix.get());
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();	
-
-	cleaningRoom->draw();
-	
-	// END IMMEDIATE MODE
 
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
