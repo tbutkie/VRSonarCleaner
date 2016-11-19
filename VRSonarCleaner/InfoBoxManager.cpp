@@ -15,7 +15,7 @@ bool InfoBoxManager::BInit(TrackedDeviceManager * tdm)
 	return true;
 }
 
-void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what)
+void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what, bool billboarded)
 {
 	Texture* tex = m_mapTextureBank[pngFileName];
 	if (!tex)
@@ -24,7 +24,7 @@ void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float
 		m_mapTextureBank[pngFileName] = tex;
 	}
 
-	m_mapInfoBoxes[name] = InfoBoxT(tex, width, pose, what);
+	m_mapInfoBoxes[name] = InfoBoxT(tex, width, pose, what, billboarded);
 }
 
 bool InfoBoxManager::removeInfoBox(std::string name)
@@ -47,31 +47,36 @@ InfoBoxManager::InfoBoxManager()
 		"cube_texture.png",
 		1.f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
-		RELATIVE_TO::HMD);
+		RELATIVE_TO::HMD,
+		false);
 	addInfoBox(
 		"Test 2", 
 		"test.png", 
-		10.f, 
+		1.f, 
 		glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), 
-		RELATIVE_TO::WORLD);
+		RELATIVE_TO::WORLD,
+		true);
 	addInfoBox(
 		"Test 3",
 		"test.png",
 		0.5f,
 		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::EDIT_CONTROLLER);
+		RELATIVE_TO::EDIT_CONTROLLER,
+		false);
 	addInfoBox(
 		"Editing Label",
 		"editctrlrlabel.png",
 		0.25f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::EDIT_CONTROLLER);
+		RELATIVE_TO::EDIT_CONTROLLER,
+		false);
 	addInfoBox(
 		"Manipulation Label",
 		"manipctrlrlabel.png",
 		0.25f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::MANIP_CONTROLLER);
+		RELATIVE_TO::MANIP_CONTROLLER,
+		false);
 }
 
 InfoBoxManager::~InfoBoxManager()
@@ -129,6 +134,13 @@ void InfoBoxManager::render(const float *matVP)
 		float ar = widthPx / heightPx;
 		float sizeM = std::get<IBIndex::SIZE_METERS>(ib.second);
 		glm::mat4 scaleMat = glm::scale(glm::mat4(), glm::vec3(sizeM, sizeM / ar, 1.f));
+
+		if (std::get<IBIndex::BILLBOARDED>(ib.second))
+		{
+			infoBoxMat[0] = HMDXform[0];
+			infoBoxMat[1] = HMDXform[1];
+			infoBoxMat[2] = HMDXform[2];
+		}
 
 		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat * scaleMat));
 		std::get<IBIndex::TEXTURE>(ib.second)->activate();
