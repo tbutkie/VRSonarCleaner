@@ -2,6 +2,7 @@
 
 #include <map>
 #include <tuple>
+#include <queue>
 #include <openvr.h>
 
 #include <shared\glm\glm.hpp>
@@ -20,6 +21,15 @@ public:
 		HMD,
 		EDIT_CONTROLLER,
 		MANIP_CONTROLLER
+	};
+
+private:
+	enum IBIndex {
+		TEXTURE = 0,
+		SIZE_METERS,
+		TRANSFORM_MATRIX,
+		TRANSFORM_RELATION,
+		BILLBOARDED
 	};
 
 public:
@@ -45,6 +55,8 @@ private:
 	void createGeometry();
 	bool createShaders();
 
+	void createTutorial();
+
 	typedef std::tuple<Texture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
 	typedef std::map<std::string, InfoBoxT> IBMapT;
 
@@ -58,13 +70,7 @@ private:
 
 	TrackedDeviceManager* m_pTDM;
 
-	enum IBIndex {
-		TEXTURE = 0,
-		SIZE_METERS,
-		TRANSFORM_MATRIX,
-		TRANSFORM_RELATION,
-		BILLBOARDED
-	};
+	std::queue<std::vector<InfoBoxT>> m_Tutorial;
 		
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:

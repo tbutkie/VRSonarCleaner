@@ -41,40 +41,21 @@ InfoBoxManager::InfoBoxManager()
 {
 	createGeometry();
 	createShaders();
+
+	createTutorial();
 	
-	addInfoBox(
-		"Test 1",
-		"cube_texture.png",
-		1.f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
-		RELATIVE_TO::HMD,
-		false);
-	addInfoBox(
-		"Test 2", 
-		"test.png", 
-		1.f, 
-		glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), 
-		RELATIVE_TO::WORLD,
-		true);
-	addInfoBox(
-		"Test 3",
-		"test.png",
-		0.5f,
-		glm::translate(glm::mat4(), glm::vec3(-0.3f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::EDIT_CONTROLLER,
-		false);
 	addInfoBox(
 		"Editing Label",
 		"editctrlrlabel.png",
-		0.25f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		0.05f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		RELATIVE_TO::EDIT_CONTROLLER,
-		false);
+		false);                                                                                                   
 	addInfoBox(
 		"Manipulation Label",
 		"manipctrlrlabel.png",
-		0.25f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.3f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		0.1f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		RELATIVE_TO::MANIP_CONTROLLER,
 		false);
 }
@@ -260,4 +241,8 @@ bool InfoBoxManager::createShaders()
 	}
 
 	return m_unTransformProgramID != 0;
+}
+
+void InfoBoxManager::createTutorial()
+{
 }
