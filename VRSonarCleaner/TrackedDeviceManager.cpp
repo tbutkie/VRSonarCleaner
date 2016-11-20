@@ -1,5 +1,6 @@
 #include "TrackedDeviceManager.h"
 #include "ShaderUtils.h"
+#include "InfoBoxManager.h"
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
@@ -112,17 +113,14 @@ bool TrackedDeviceManager::getCleaningCursorData(Matrix4 *thisCursorPose, Matrix
 	return true;
 }
 
-bool TrackedDeviceManager::getManipulationData(Matrix4 &controllerPose)
+Matrix4* TrackedDeviceManager::getManipulationData()
 {	
-	if (m_pManipController && m_pManipController->poseValid() && m_pManipController->isGripButtonPressed())
+	if (m_pManipController && m_pManipController->poseValid() && m_pManipController->isTriggerClicked())
 	{
-		controllerPose = m_pManipController->getPose();
-		return true;
+		return &m_pManipController->getPose();
 	}
 
-	controllerPose = Matrix4();
-
-	return false;
+	return NULL;
 }
 
 void TrackedDeviceManager::cleaningHit()
@@ -177,6 +175,8 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 			m_pManipController->BInit();
 			thisController = m_pManipController;
 		}
+
+		thisController->attach(&InfoBoxManager::getInstance());
 	}
 }
 
@@ -230,6 +230,22 @@ Matrix4 & TrackedDeviceManager::getHMDPose()
 	return m_mat4HMDPose;
 }
 
+Matrix4 & TrackedDeviceManager::getEditControllerPose()
+{
+	if(m_pEditController)
+		return m_pEditController->getPose();
+
+	return Matrix4().identity();
+}
+
+Matrix4 & TrackedDeviceManager::getManipControllerPose()
+{
+	if (m_pManipController)
+		return m_pManipController->getPose();
+
+	return Matrix4().identity();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -242,6 +258,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
 
 	m_iValidPoseCount = 0;
+	m_iTrackedControllerCount = 0;
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
@@ -253,7 +270,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); break;
+				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); m_iTrackedControllerCount++; break;
 				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
 				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
 				case vr::TrackedDeviceClass_Other:             m_rpTrackedDevices[nDevice]->setClassChar('O'); break;
@@ -274,5 +291,15 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
 		m_mat4HMDPose = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose().invert();
+
+		Matrix4 tempMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose();
+		glm::vec3 HMDpos = glm::vec3(tempMat[12], tempMat[13], tempMat[14]);
+		float widthX, widthZ;
+		vr::IVRChaperone* chap = vr::VRChaperone();
+		chap->GetPlayAreaSize(&widthX, &widthZ);
+		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::OUT_OF_PLAY_AREA);
+		else
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::INSIDE_PLAY_AREA);
 	}
 }

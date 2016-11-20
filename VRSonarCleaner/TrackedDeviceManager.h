@@ -8,7 +8,7 @@
 #include "CGLRenderModel.h"
 
 
-class TrackedDeviceManager
+class TrackedDeviceManager : public Subject
 {
 public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
@@ -24,13 +24,15 @@ public:
 
 	bool cleaningModeActive();
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
-	bool getManipulationData(Matrix4 &controllerPose);
+	Matrix4* getManipulationData();
 	void cleaningHit();
 
 	void renderTrackedDevices(Matrix4 & matVP);
 	void postRenderUpdate();
 
 	Matrix4 & getHMDPose();
+	Matrix4 & getEditControllerPose();
+	Matrix4 & getManipControllerPose();
 
 	void UpdateHMDMatrixPose();
 private:

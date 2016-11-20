@@ -1,6 +1,7 @@
 #include "CMainApplication.h"
 #include "ShaderUtils.h"
 #include "DebugDrawer.h"
+#include "InfoBoxManager.h"
 
 #include <fstream>
 #include <string>
@@ -226,6 +227,8 @@ bool CMainApplication::BInitGL()
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not get render model interface", NULL);
 	}
 
+	InfoBoxManager::getInstance().BInit(m_pTDM);
+	m_pTDM->attach(&InfoBoxManager::getInstance());
 
 	cleaningRoom = new CleaningRoom();
 	
@@ -361,7 +364,7 @@ bool CMainApplication::HandleInput()
 	}
 	
 	m_pTDM->handleEvents();
-
+	
 	return bRet;
 }
 
@@ -411,12 +414,7 @@ void CMainApplication::checkForHits()
 
 void CMainApplication::checkForManipulations()
 {
-	Matrix4 pose;
-
-	if (m_pTDM->getManipulationData(pose))
-		cleaningRoom->gripCleaningTable(&pose);
-	else
-		cleaningRoom->gripCleaningTable(NULL);
+	cleaningRoom->gripCleaningTable(m_pTDM->getManipulationData());
 }
 
 //-----------------------------------------------------------------------------
@@ -786,6 +784,16 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
 
+	// IMMEDIATE MODE
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(thisEyesProjectionMatrix.get());
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	cleaningRoom->draw();
+
+	// END IMMEDIATE MODE
+
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
@@ -793,15 +801,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
 
-	// IMMEDIATE MODE
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(thisEyesProjectionMatrix.get());
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();	
-
-	cleaningRoom->draw();
-	
-	// END IMMEDIATE MODE
+	InfoBoxManager::getInstance().render(thisEyesProjectionMatrix.get());
 
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
