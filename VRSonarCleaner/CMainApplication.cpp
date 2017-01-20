@@ -4,6 +4,7 @@
 #include "InfoBoxManager.h"
 
 #include <fstream>
+#include <sstream>
 #include <string>
 
 //-----------------------------------------------------------------------------
@@ -973,4 +974,65 @@ void CMainApplication::savePoints()
 	outFile.close();
 
 	std::cout << "File " << outFileName << " successfully written" << std::endl;
+}
+
+bool CMainApplication::loadPoints(std::string fileName)
+{
+	std::ifstream inFile(fileName);
+
+	if (inFile.is_open())
+	{
+		std::cout << "Opened file " << fileName << " for reading" << std::endl;
+	}
+	else
+	{
+		std::cout << "Error opening file " << fileName << " for reading" << std::endl;
+		return false;
+	}
+
+	std::string line;
+
+	if (!std::getline(inFile, line))
+	{
+		std::cout << "Empty file; aborting..." << std::endl;
+		return false;
+	}
+
+	//make sure header is correct before proceeding
+	if (line.compare("x,y,z,flag"))
+	{
+		std::cout << "Unrecognized file header (expected: x,y,z,flag); aborting..." << std::endl;
+		return false;
+	}
+	
+	std::vector<Vector3> points;
+	std::vector<int> flags;
+
+	int lineNo = 2; // already checked header at line 1
+	while (std::getline(inFile, line))
+	{
+		std::istringstream iss(line);
+		std::string xStr, yStr, zStr, flagStr;
+
+		if (!std::getline(iss, xStr, ',')
+			|| !std::getline(iss, yStr, ',')
+			|| !std::getline(iss, zStr, ',')
+			|| !std::getline(iss, flagStr, ',')
+			)
+		{
+			std::cout << "Error reading line " << lineNo << " from file " << fileName << std::endl;
+			return false;
+		}
+
+		points.push_back(Vector3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
+		flags.push_back(std::stoi(flagStr));
+
+		lineNo++;
+	}
+
+	inFile.close();
+
+	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
+
+	return true;
 }
