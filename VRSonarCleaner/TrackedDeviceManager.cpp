@@ -76,6 +76,7 @@ void TrackedDeviceManager::processVREvent(const vr::VREvent_t & event)
 	}
 	else if (event.eventType == vr::VREvent_TrackedDeviceDeactivated)
 	{
+		removeTrackedDevice(event.trackedDeviceIndex);
 		printf("Device %u detached.\n", event.trackedDeviceIndex);
 	}
 	else if (event.eventType == vr::VREvent_TrackedDeviceUpdated)
@@ -156,7 +157,7 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 {
 	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
 		return;
-	
+
 	m_rpTrackedDevices[unTrackedDeviceIndex]->BInit();
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
@@ -169,7 +170,7 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 			m_pEditController->BInit();
 			thisController = m_pEditController;
 		}
-		else if(!m_pManipController)
+		else if (!m_pManipController)
 		{
 			m_pManipController = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
 			m_pManipController->BInit();
@@ -177,6 +178,28 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 		}
 
 		thisController->attach(&InfoBoxManager::getInstance());
+	}
+}
+
+void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
+{
+	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
+		return;
+
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
+	{
+		if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pEditController->getIndex())
+		{
+			m_pEditController->detach(&InfoBoxManager::getInstance());
+			delete m_pEditController;
+			m_pEditController = NULL;
+		}
+		else if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pManipController->getIndex())
+		{
+			m_pManipController->detach(&InfoBoxManager::getInstance());
+			delete m_pManipController;
+			m_pManipController = NULL;
+		}
 	}
 }
 
