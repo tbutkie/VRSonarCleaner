@@ -12,6 +12,33 @@ ColorScaler *colorScalerTPU;
 //-----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+	bool lassoMode = false;
+
+	std::string inputBuffer;
+
+
+	AllocConsole();
+	freopen("CONOUT$", "wb", stdout);
+	freopen("CONIN$", "r", stdin);
+
+	while (1)
+	{
+		std::cout << "Enter VR Cleaning Mode (\"vr\") or Desktop Lasso Mode (\"lasso\")? ";
+		std::cin >> inputBuffer;
+		if (inputBuffer.compare("lasso") == 0)
+		{
+			lassoMode = true;
+			break;
+		}
+
+		if (inputBuffer.compare("vr") == 0)
+		{
+			lassoMode = false;
+			break;
+		}
+	}
+
+	FreeConsole();
 
 	AllocConsole();
 	freopen("CONOUT$", "wb", stdout);
@@ -29,8 +56,6 @@ int main(int argc, char *argv[])
 ///	clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_XL_901_1458.txt");  //TO BIG AND LONG at 90 degree angle to others
 	//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt");	
 	clouds->calculateCloudBoundsAndAlign();
-	
-	bool lassoMode = false;
 
 	if (lassoMode)
 	{
@@ -49,7 +74,6 @@ int main(int argc, char *argv[])
 		FreeConsole();
 
 		lassoWindow->Shutdown();
-
 	}
 	else //run regular VR Sonar Cleaner
 	{
