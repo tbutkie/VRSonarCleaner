@@ -354,7 +354,7 @@ bool LassoWindow::HandleInput()
 			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{ 
 				leftMouseDown = true;
-				arcball_start(sdlEvent.button.x, sdlEvent.button.y);
+				arcball_start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 			
 		}//end mouse down 
@@ -375,7 +375,7 @@ bool LassoWindow::HandleInput()
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
 		{
-			ballEye.z += ((float)sdlEvent.wheel.y*0.5);
+			ballEye.z -= ((float)sdlEvent.wheel.y*0.5);
 			if (ballEye.z  < 0.5)
 				ballEye.z = 0.5;
 			if (ballEye.z  > 10)
