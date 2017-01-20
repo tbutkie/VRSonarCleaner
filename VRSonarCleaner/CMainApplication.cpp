@@ -336,6 +336,10 @@ bool CMainApplication::HandleInput()
 			{
 				savePoints();
 			}
+			//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_l)
+			//{
+			//	loadPoints("test.txt");
+			//}
 			if (sdlEvent.key.keysym.sym == SDLK_r)
 			{
 				printf("Pressed r, resetting marks\n");
