@@ -10,9 +10,9 @@
 #include <GL\gl.h>
 #include <GL\glu.h>
 
-GLfloat ab_quat[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-GLfloat ab_last[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-GLfloat ab_next[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+#include <shared/glm/gtc/type_ptr.hpp>
+
+glm::quat ab_quat, ab_last, ab_next;
 
 // the distance from the origin to the eye
 GLfloat ab_zoom = 1.0;
@@ -62,7 +62,7 @@ void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up)
 }
 
 // affect the arcball's orientation on openGL
-void arcball_rotate() { glMultMatrixf(ab_quat); }
+void arcball_rotate() { glMultMatrixf(glm::value_ptr(glm::mat4_cast(ab_quat))); }
 
 // convert the quaternion into a rotation matrix
 static void quaternion(GLfloat* q, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
@@ -171,15 +171,15 @@ static glm::vec3 planar_coords(GLdouble mx, GLdouble my)
 // reset the arcball
 void arcball_reset()
 {
-  quatidentity(ab_quat);
-  quatidentity(ab_last);
+	ab_quat = glm::quat();
+	ab_last = glm::quat();
 }
 
 // begin arcball rotation
 void arcball_start(int mx, int my)
 {
   // saves a copy of the current rotation for comparison
-  quatcopy(ab_last,ab_quat);
+  ab_last = ab_quat;
   if(ab_planar) ab_start = planar_coords((GLdouble)mx,(GLdouble)my);
   else ab_start = sphere_coords((GLdouble)mx,(GLdouble)my);
 }
@@ -201,10 +201,10 @@ void arcball_move(int mx, int my)
     // p is perpendicular to d
 	glm::vec3 p = glm::normalize((ab_out*d.x)-(ab_up*d.y)) * sina;
 
-    quaternion(ab_next,p.x,p.y,p.z,cosa);
-    quatnext(ab_quat,ab_last,ab_next);
+    ab_next = glm::quat(cosa, p.x, p.y, p.z);
+    ab_quat = ab_next * ab_last;
     // planar style only ever relates to the last point
-    quatcopy(ab_last,ab_quat);
+    ab_last = ab_quat;
     ab_start = ab_curr;
     
   } else {
@@ -212,7 +212,7 @@ void arcball_move(int mx, int my)
     ab_curr = sphere_coords((GLdouble)mx,(GLdouble)my);
     if(ab_curr == ab_start)
     { // avoid potential rare divide by tiny
-      quatcopy(ab_quat, ab_last);
+      ab_quat = ab_last;
       return;
     }
 
@@ -222,9 +222,9 @@ void arcball_move(int mx, int my)
     GLfloat sina = sqrt((1.f - cos2a)*0.5f);
     GLfloat cosa = sqrt((1.f + cos2a)*0.5f);
 	glm::vec3 cross = glm::normalize(glm::cross(ab_start, ab_curr)) * sina;
-    quaternion(ab_next,cross.x,cross.y,cross.z,cosa);
+    ab_next = glm::quat(cosa, cross.x, cross.y, cross.z);
 
     // update the rotation matrix
-    quatnext(ab_quat,ab_last,ab_next);
+    ab_quat = ab_next * ab_last;
   }
 }
