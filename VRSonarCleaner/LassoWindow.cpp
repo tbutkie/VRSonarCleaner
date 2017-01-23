@@ -124,10 +124,11 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	ballUp.y = 1.0f;
 	ballUp.z = 0.0f;
 	ballRadius = 2;
+	arcball = new Arcball(false);
 
 	leftMouseDown = false;
 
-	dataVolume = new DataVolume(0, 0, 0, 0, 4, 1.5, 4);
+	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0.f, 4.f, 1.5f, 4.f);
 	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
 }
 
@@ -354,7 +355,7 @@ bool LassoWindow::HandleInput()
 			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{ 
 				leftMouseDown = true;
-				arcball_start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				arcball->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 			
 		}//end mouse down 
@@ -370,7 +371,7 @@ bool LassoWindow::HandleInput()
 		{
 			if (leftMouseDown)
 			{
-				arcball_move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				arcball->move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
@@ -520,17 +521,17 @@ void LassoWindow::display()
 		ballCenter.x, ballCenter.y, ballCenter.z,
 		ballUp.x, ballUp.y, ballUp.z);
 	//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
-	arcball_getProjectionMatrix();
-	arcball_getViewport();
+	arcball->getProjectionMatrix();
+	arcball->getViewport();
 
 	glMatrixMode(GL_MODELVIEW);
 	// set up the arcball using the current projection matrix
 	glLoadIdentity();
 
-	arcball_setzoom(ballRadius, ballEye, ballUp);
+	arcball->setZoom(ballRadius, ballEye, ballUp);
 	// now render the regular scene under the arcball rotation about 0,0,0
 	// (generally you would want to render everything here)
-	arcball_rotate();
+	arcball->rotate();
 	
 	dataVolume->drawBBox();
 

@@ -40,15 +40,51 @@
  */
 
 #include <GL/glew.h>
-#include <cmath> // for sqrt
 
 #include <shared/glm/glm.hpp>
+#include <shared/glm/gtc/quaternion.hpp>
 
-extern void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up);
-extern void arcball_rotate();
-extern void arcball_start(int mx, int my);
-extern void arcball_move(int mx, int my);
-extern void arcball_getViewport();
-extern void arcball_getProjectionMatrix();
+class Arcball
+{
+public:
+	Arcball(bool usePlanar = false);
+	~Arcball();
+
+	void setZoom(float radius, glm::vec3 eye, glm::vec3 up);
+	void rotate();
+	void start(int mx, int my);
+	void move(int mx, int my);
+	void getViewport();
+	void getProjectionMatrix();
+
+private:
+	glm::quat m_quatOrientation, m_quatLast, m_quatNext;
+
+	// the distance from the origin to the eye
+	GLfloat m_fZoom, m_fZoom_sq;
+	// the radius of the arcball
+	GLfloat m_fSphereRadius, m_fSphereRadius_sq;
+	// the distance from the origin of the plane that intersects
+	// the edge of the visible sphere (tangent to a ray from the eye)
+	GLfloat m_fEdgeDistance;
+	// whether we are using a sphere or plane
+	bool m_bPlanar;
+	GLfloat m_fPlaneDistance;
+
+	glm::vec3 m_vec3Start;
+	glm::vec3 m_vec3Current;
+	glm::vec3 m_vec3Eye;
+	glm::vec3 m_vec3Forward;
+	glm::vec3 m_vec3Up;
+	glm::vec3 m_vec3Out;
+
+	glm::mat4 m_mat4Projection, m_mat4Model;
+	glm::vec4 m_vec4Viewport;
+
+private:
+	glm::vec3 edge_coords(glm::vec3 m);
+	glm::vec3 sphere_coords(GLdouble mx, GLdouble my);
+	glm::vec3 planar_coords(GLdouble mx, GLdouble my);
+};
 
 #endif

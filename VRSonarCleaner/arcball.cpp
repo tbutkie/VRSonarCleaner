@@ -7,38 +7,33 @@
 
 
 #include "arcball.h"
-#include <GL\gl.h>
-#include <GL\glu.h>
 
 #include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
 #include <shared/glm/gtc/matrix_transform.hpp> // glm::unproject
 
-glm::quat m_quatOrientation, m_quatLast, m_quatNext;
+Arcball::Arcball(bool usePlanar)
+	: m_fZoom(1.f)
+	, m_fZoom_sq(1.f)
+	, m_fSphereRadius(1.f)
+	, m_fSphereRadius_sq(1.f)
+	, m_fEdgeDistance(1.f)
+	, m_bPlanar(usePlanar)
+	, m_fPlaneDistance(0.5f)	
+	, m_vec3Start(glm::vec3(0.f, 0.f, 1.f))
+	, m_vec3Current(glm::vec3(0.f, 0.f, 1.f))
+	, m_vec3Eye(glm::vec3(0.f, 0.f, 1.f))
+	, m_vec3Forward(glm::vec3(0.f, 0.f, 1.f))
+	, m_vec3Up(glm::vec3(0.f, 1.f, 0.f))
+	, m_vec3Out(glm::vec3(1.f, 0.f, 0.f))
+	, m_vec4Viewport(glm::vec4(0.f, 0.f, 640.f, 480.f))
+{
+}
 
-// the distance from the origin to the eye
-GLfloat m_fZoom = 1.0;
-GLfloat m_fZoom_sq = 1.0;
-// the radius of the arcball
-GLfloat m_fSphereRadius = 1.0;
-GLfloat m_fSphereRadius_sq = 1.0;
-// the distance from the origin of the plane that intersects
-// the edge of the visible sphere (tangent to a ray from the eye)
-GLfloat m_fEdgeDistance = 1.0;
-// whether we are using a sphere or plane
-bool m_bPlanar = false;
-GLfloat m_fPlaneDistance = 0.5;
+Arcball::~Arcball()
+{
+}
 
-glm::vec3 m_vec3Start = glm::vec3(0,0,1);
-glm::vec3 m_vec3Current = glm::vec3(0,0,1);
-glm::vec3 m_vec3Eye = glm::vec3(0,0,1);
-glm::vec3 m_vec3Forward = glm::vec3(0,0,1);
-glm::vec3 m_vec3Up = glm::vec3(0,1,0);
-glm::vec3 m_vec3Out = glm::vec3(1,0,0);
-
-glm::mat4 m_mat4Projection, m_mat4Model;
-glm::vec4 m_vec4Viewport(0.f, 0.f, 640.f, 480.f);
-
-void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up)
+void Arcball::setZoom(float radius, glm::vec3 eye, glm::vec3 up)
 {
 	m_vec3Eye = eye; // store eye vector
 	m_fZoom_sq = glm::dot(m_vec3Eye, m_vec3Eye);
@@ -59,14 +54,18 @@ void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up)
 }
 
 // affect the arcball's orientation on openGL
-void arcball_rotate() { glMultMatrixf(glm::value_ptr(glm::mat4_cast(m_quatOrientation))); }
+void Arcball::rotate()
+{ 
+	glMultMatrixf(glm::value_ptr(glm::mat4_cast(m_quatOrientation))); 
+}
 
 // find the intersection with the plane through the visible edge
-static glm::vec3 edge_coords(glm::vec3 m)
+glm::vec3 Arcball::edge_coords(glm::vec3 m)
 {
 	// find the intersection of the edge plane and the ray
 	float t = (m_fEdgeDistance - m_fZoom) / glm::dot(m_vec3Forward, m);
 	glm::vec3 a = m_vec3Eye + (m*t);
+
 	// find the direction of the eye-axis from that point
 	// along the edge plane
 	glm::vec3 c = (m_vec3Forward * m_fEdgeDistance) - a;
@@ -81,12 +80,11 @@ static glm::vec3 edge_coords(glm::vec3 m)
 }
 
 // find the intersection with the sphere
-static glm::vec3 sphere_coords(GLdouble mx, GLdouble my)
+glm::vec3 Arcball::sphere_coords(GLdouble mx, GLdouble my)
 {
 	glm::vec3 window(mx, my, 0.f);
 
 	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
-	//gluUnProject(mx,my,0,ab_glm,ab_glp,ab_glv,&ax,&ay,&az);
 	glm::vec3 m = coords_unProj - m_vec3Eye;
   
 	// mouse position represents ray: eye + t*m
@@ -100,7 +98,7 @@ static glm::vec3 sphere_coords(GLdouble mx, GLdouble my)
 }
 
 // get intersection with plane for "trackball" style rotation
-static glm::vec3 planar_coords(GLdouble mx, GLdouble my)
+glm::vec3 Arcball::planar_coords(GLdouble mx, GLdouble my)
 {
 	glm::vec3 window(mx, my, 0.f);
 	
@@ -114,7 +112,7 @@ static glm::vec3 planar_coords(GLdouble mx, GLdouble my)
 }
 
 // begin arcball rotation
-void arcball_start(int mx, int my)
+void Arcball::start(int mx, int my)
 {
 	// saves a copy of the current rotation for comparison
 	m_quatLast = m_quatOrientation;
@@ -123,7 +121,7 @@ void arcball_start(int mx, int my)
 }
 
 // update current arcball rotation
-void arcball_move(int mx, int my)
+void Arcball::move(int mx, int my)
 {
 	if(m_bPlanar)
 	{
@@ -167,12 +165,12 @@ void arcball_move(int mx, int my)
 	}
 }
 
-void arcball_getViewport()
+void Arcball::getViewport()
 {
 	glGetFloatv(GL_VIEWPORT, glm::value_ptr(m_vec4Viewport));
 }
 
-void arcball_getProjectionMatrix()
+void Arcball::getProjectionMatrix()
 {
 	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(m_mat4Projection));
 }

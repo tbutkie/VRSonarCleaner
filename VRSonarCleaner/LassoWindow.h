@@ -52,6 +52,7 @@ private:
 	
 	//ARCBALL STUFF
 	// scene parameters
+	Arcball *arcball;
 	glm::vec3 ballEye;
 	glm::vec3 ballCenter;
 	glm::vec3 ballUp;
