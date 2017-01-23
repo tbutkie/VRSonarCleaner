@@ -7,12 +7,16 @@
 
 #include <GL/glew.h>
 
-const glm::vec3 g_vec3ActiveLineColor(0.25, 0.65, 0.25);
-const glm::vec3 g_vec3LineColor(0.65, 0.25, 0.25);
-const glm::vec3 g_vec3ConnectorColor(0.75, 0.75, 0.75);
+const glm::vec3 g_vec3ActiveLineColor(0.25f, 0.65f, 0.25f);
+const glm::vec3 g_vec3LineColor(0.65f, 0.25f, 0.25f);
+const glm::vec3 g_vec3ConnectorColor(0.75f, 0.75f, 0.75f);
+const glm::vec3 g_vec3BBoxColor(1.f, 1.f, 1.f);
+
+const float g_fBBoxPadding(2.f);
 
 LassoTool::LassoTool()
 	: m_bLassoActive(false)
+	, m_bShowBBox(true)
 	, m_vec2MinBB(glm::vec2(0.f))
 	, m_vec2MaxBB(glm::vec2(0.f))
 {
@@ -91,7 +95,7 @@ void LassoTool::draw()
 	else
 		glColor3f(g_vec3LineColor.r, g_vec3LineColor.g, g_vec3LineColor.b);
 
-	glLineWidth(1.5);
+	glLineWidth(1);
 	glBegin(GL_LINES);
 		for (int i = 0; i < n - 1; ++i)
 		{
@@ -103,6 +107,23 @@ void LassoTool::draw()
 		if (m_bLassoActive) glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
 		glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
 		glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
+
+		if (m_bShowBBox)
+		{
+			glColor3f(g_vec3BBoxColor.r, g_vec3BBoxColor.g, g_vec3BBoxColor.b);
+			
+			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
+			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
+
+			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
+			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
+
+			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
+			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
+
+			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
+			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
+		}
 	glEnd();	
 }
 

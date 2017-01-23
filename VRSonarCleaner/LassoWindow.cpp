@@ -378,6 +378,7 @@ bool LassoWindow::HandleInput()
 			{
 				rightMouseDown = false;
 				lasso->end();
+				checkForHits();
 			}
 
 		}//end mouse up
@@ -394,14 +395,12 @@ bool LassoWindow::HandleInput()
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
 		{
-			ballEye.z -= ((float)sdlEvent.wheel.y*0.5);
-			if (ballEye.z  < 0.5)
-				ballEye.z = 0.5;
-			if (ballEye.z  > 10)
-				ballEye.z = 10;
-
-		}
-		
+			ballEye.z -= ((float)sdlEvent.wheel.y*0.5f);
+			if (ballEye.z  < 0.5f)
+				ballEye.z = 0.5f;
+			if (ballEye.z  > 10.f)
+				ballEye.z = 10.f;
+		}		
 	}
 
 	return bRet;
@@ -432,22 +431,45 @@ void LassoWindow::RunMainLoop()
 	SDL_StopTextInput();
 }
 
-/*
-void LassoWindow::checkForHits()
+
+bool LassoWindow::checkForHits()
 {
-	Matrix4 currentCursorPose;
-	Matrix4 lastCursorPose;
-	float cursorRadius;
+	bool hit = false;
 
-	// if editing mode not active, abort
-	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
-		return;
+	std::vector<Vector3> inPts = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> outPts;
+	glm::mat4 mat4Projection, mat4ModelView;
+	glm::vec4 vec4Viewport;
 
-	// check point cloud for hits
-	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-		m_pTDM->cleaningHit();
+	glGetFloatv(GL_VIEWPORT, glm::value_ptr(vec4Viewport));
+	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(mat4Projection));
+
+	glPushMatrix();
+	{
+		dataVolume->activateTransformationMatrix();
+		glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
+	}
+	glPopMatrix();
+
+	for (int i = 0; i < inPts.size(); ++i)
+	{
+		glm::vec3 in(inPts[i].x, m_nWindowHeight - inPts[i].y, inPts[i].z);
+		glm::vec3 out = glm::unProject(in, mat4ModelView, mat4Projection, vec4Viewport);
+		outPts.push_back(out);
+		if (lasso->checkPoint(glm::vec2(out)))
+		{
+			clouds->getCloud(0)->markPoint(i, 2);
+			hit = true;
+		}
+
+		//std::cout << " IN: (" << in.x << ", " << in.y << ", " << in.z << ")" << std::endl;
+		//std::cout << "OUT: (" << out.x << ", " << out.y << ", " << out.z << ")" << std::endl << std::endl;
+	}
+
+	return hit;
 }
 
+/*
 void LassoWindow::checkForManipulations()
 {
 	Matrix4 pose;
@@ -531,49 +553,60 @@ void LassoWindow::display()
 	float aspect_ratio = (float)m_nWindowWidth / (float)m_nWindowHeight;
 
 	glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
-
-
-	//draw 2D interface elements:
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix(); // save current projection matrix
-	glLoadIdentity(); // start fresh
-	glOrtho(0.0, m_nWindowWidth, 0.0, m_nWindowHeight, -1.0, 1.0);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	lasso->draw();
-
-	glPopMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-			
-	glLoadIdentity();
-	gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
-	gluLookAt(
-		ballEye.x, ballEye.y, ballEye.z,
-		ballCenter.x, ballCenter.y, ballCenter.z,
-		ballUp.x, ballUp.y, ballUp.z);
-	//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
-	arcball->getProjectionMatrix();
-	arcball->getViewport();
-
-	glMatrixMode(GL_MODELVIEW);
-	// set up the arcball using the current projection matrix
-	glLoadIdentity();
-
-	arcball->setZoom(ballRadius, ballEye, ballUp);
-	// now render the regular scene under the arcball rotation about 0,0,0
-	// (generally you would want to render everything here)
-	arcball->rotate();
 	
-	dataVolume->drawBBox();
+	//draw 2D interface elements
+	{
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix(); // save current projection matrix
+		{
+			glLoadIdentity(); // start fresh
+			glOrtho(0.0, m_nWindowWidth, 0.0, m_nWindowHeight, -1.0, 1.0);
 
-	//draw table
-	glPushMatrix();
-		dataVolume->activateTransformationMatrix();
-		clouds->drawCloud(0);
-	glPopMatrix();		
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			{
+				glLoadIdentity();
+
+				lasso->draw();
+			}
+			glPopMatrix();
+			glMatrixMode(GL_PROJECTION);
+		}
+		glPopMatrix();
+	}
+
+	//draw 3D elements
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
+		gluLookAt(
+			ballEye.x, ballEye.y, ballEye.z,
+			ballCenter.x, ballCenter.y, ballCenter.z,
+			ballUp.x, ballUp.y, ballUp.z);
+		//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
+		arcball->getProjectionMatrix();
+		arcball->getViewport();
+
+		glMatrixMode(GL_MODELVIEW);
+		// set up the arcball using the current projection matrix
+		glLoadIdentity();
+
+		arcball->setZoom(ballRadius, ballEye, ballUp);
+		// now render the regular scene under the arcball rotation about 0,0,0
+		// (generally you would want to render everything here)
+		arcball->rotate();
+
+		dataVolume->drawBBox();
+
+		//draw table
+		glPushMatrix();
+		{
+			dataVolume->activateTransformationMatrix();
+			clouds->drawCloud(0);
+		}
+		glPopMatrix();
+	}
 	// Flush and wait for swap.
 	if (m_bVblank)
 	{

@@ -50,6 +50,7 @@ public:
 	//FocalCamera *cam;
 
 private:
+	bool checkForHits();
 	
 	//ARCBALL STUFF
 	// scene parameters

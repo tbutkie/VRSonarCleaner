@@ -24,7 +24,7 @@ public:
 private:
 	std::vector<glm::vec2> m_vvec3LassoPoints;
 
-	bool m_bLassoActive;
+	bool m_bLassoActive, m_bShowBBox;
 	glm::vec2 m_vec2MinBB, m_vec2MaxBB;
 };
 
