@@ -52,9 +52,9 @@ private:
 	
 	//ARCBALL STUFF
 	// scene parameters
-	vec ballEye;
-	vec ballCenter;
-	vec ballUp;
+	glm::vec3 ballEye;
+	glm::vec3 ballCenter;
+	glm::vec3 ballUp;
 	float ballRadius;
 	
 	DataVolume *dataVolume;
