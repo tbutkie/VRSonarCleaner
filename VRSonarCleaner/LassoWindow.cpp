@@ -507,6 +507,7 @@ void LassoWindow::display()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
+	glEnable(GL_DEPTH_TEST);
 
 	float aspect_ratio = (float)m_nWindowWidth / (float)m_nWindowHeight;
 
@@ -525,19 +526,6 @@ void LassoWindow::display()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	
-	//draw scene
-	glPushMatrix();
-	glDisable(GL_DEPTH_TEST);
-	glTranslatef(ballEye.x, ballEye.y, ballEye.z);
-	arcball_rotate();
-	//draw_stars();
-	glEnable(GL_DEPTH_TEST);
-	glPopMatrix();
-
 	// now render the regular scene under the arcball rotation about 0,0,0
 	// (generally you would want to render everything here)
 	arcball_rotate();
@@ -546,14 +534,9 @@ void LassoWindow::display()
 
 	//draw table
 	glPushMatrix();
-	dataVolume->activateTransformationMatrix();
-	clouds->drawCloud(0);
-	//clouds->getCloud(0)->drawAxes();
-	//tableVolume->deactivateTransformationMatrix();
-	glPopMatrix();
-
-	//clouds->drawCloud(0);
-		
+		dataVolume->activateTransformationMatrix();
+		clouds->drawCloud(0);
+	glPopMatrix();		
 
 	// Flush and wait for swap.
 	if (m_bVblank)
@@ -563,7 +546,6 @@ void LassoWindow::display()
 	}
 
 	DebugDrawer::getInstance().flushLines();
-
 }
 
 

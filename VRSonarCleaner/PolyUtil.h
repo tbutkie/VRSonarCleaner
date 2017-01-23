@@ -2,7 +2,14 @@
 #define POLYUTIL_H
 
 #include <vector>
-#include <shared/glm/glm.hpp>
+
+#ifndef M_PI
+#define M_PI 3.14159f
+#endif
+
+#ifndef M_2PI
+#define M_2PI 6.28318f
+#endif
 
 class PolyUtil
 {
@@ -30,10 +37,10 @@ public:
 		theta1 = atan2(y1, x1);
 		theta2 = atan2(y2, x2);
 		dtheta = theta2 - theta1;
-		while (dtheta > 3.14159)
-			dtheta -= 6.28318;
-		while (dtheta < -3.14159)
-			dtheta += 6.28318;
+		while (dtheta > M_PI)
+			dtheta -= M_2PI;
+		while (dtheta < -M_PI)
+			dtheta += M_2PI;
 
 		return(dtheta);
 	}
@@ -54,7 +61,7 @@ public:
 			angle += Angle2D(p1x, p1y, p2x, p2y);
 		}
 
-		if (abs(angle) < 3.14159)
+		if (abs(angle) < M_PI)
 			return 0;
 		else
 			return 1;
