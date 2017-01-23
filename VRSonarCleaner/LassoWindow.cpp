@@ -113,6 +113,8 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
 	, m_unLensVAO(0)
+	, leftMouseDown(false)
+	, rightMouseDown(false)
 {
 	ballEye.x = 0.0f;
 	ballEye.y = 0.0f;
@@ -126,7 +128,7 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	ballRadius = 2;
 	arcball = new Arcball(false);
 
-	leftMouseDown = false;
+	lasso = new LassoTool();
 
 	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0.f, 4.f, 1.5f, 4.f);
 	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
@@ -356,6 +358,12 @@ bool LassoWindow::HandleInput()
 			{ 
 				leftMouseDown = true;
 				arcball->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				lasso->reset();
+			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				rightMouseDown = true;
+				lasso->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 			
 		}//end mouse down 
@@ -364,6 +372,12 @@ bool LassoWindow::HandleInput()
 			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{
 				leftMouseDown = false;
+				lasso->reset();
+			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				rightMouseDown = false;
+				lasso->end();
 			}
 
 		}//end mouse up
@@ -372,6 +386,10 @@ bool LassoWindow::HandleInput()
 			if (leftMouseDown)
 			{
 				arcball->move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+			}
+			if (rightMouseDown && !leftMouseDown)
+			{
+				lasso->move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
@@ -513,7 +531,23 @@ void LassoWindow::display()
 	float aspect_ratio = (float)m_nWindowWidth / (float)m_nWindowHeight;
 
 	glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
+
+
+	//draw 2D interface elements:
 	glMatrixMode(GL_PROJECTION);
+	glPushMatrix(); // save current projection matrix
+	glLoadIdentity(); // start fresh
+	glOrtho(0.0, m_nWindowWidth, 0.0, m_nWindowHeight, -1.0, 1.0);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	lasso->draw();
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+			
 	glLoadIdentity();
 	gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
 	gluLookAt(

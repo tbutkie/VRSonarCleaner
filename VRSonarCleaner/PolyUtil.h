@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include <shared/glm/glm.hpp>
+
 #ifndef M_PI
 #define M_PI 3.14159f
 #endif
@@ -14,7 +16,7 @@
 class PolyUtil
 {
 public:
-	int inMultiPartPoly2(std::vector<float> xs, std::vector<float> ys, int startVert, int endVert, float testX, float testY)
+	static int inMultiPartPoly2(std::vector<float> xs, std::vector<float> ys, int startVert, int endVert, float testX, float testY)
 	{
 		int i, j, c = 0;
 		for (i = startVert, j = endVert; i < endVert; j = i++)
@@ -30,12 +32,12 @@ public:
 	The angle is from vector 1 to vector 2, positive anticlockwise
 	The result is between -pi -> pi
 	*/
-	double Angle2D(double x1, double y1, double x2, double y2)
+	static float Angle2D(glm::vec2 pt1, glm::vec2 pt2)
 	{
 		double dtheta, theta1, theta2;
 
-		theta1 = atan2(y1, x1);
-		theta2 = atan2(y2, x2);
+		theta1 = atan2(pt1.y, pt1.x);
+		theta2 = atan2(pt2.y, pt2.x);
 		dtheta = theta2 - theta1;
 		while (dtheta > M_PI)
 			dtheta -= M_2PI;
@@ -45,26 +47,24 @@ public:
 		return(dtheta);
 	}
 
-	int inMultiPartPoly(std::vector<float> xs, std::vector<float> ys, int startVert, int endVert, float testX, float testY)
+	static bool inMultiPartPoly(const std::vector<glm::vec2> &polyPts, const glm::vec2 &testPt)
 	{
 		int i;
-		double angle = 0;
-		float p1x, p1y, p2x, p2y;
-		int n = endVert - startVert;
+		float angle = 0.f;
+		glm::vec2 p1, p2;
+		int n = polyPts.size();
 
-		for (i = startVert; i<endVert; i++)
+		for (i = 0; i < n; i++)
 		{
-			p1x = xs.at(i) - testX;
-			p1y = ys.at(i) - testY;
-			p2x = xs.at(startVert + ((i + 1) % n)) - testX;
-			p2y = ys.at(startVert + ((i + 1) % n)) - testY;
-			angle += Angle2D(p1x, p1y, p2x, p2y);
+			p1 = polyPts.at(i) - testPt;
+			p2 = polyPts.at((i + 1) % n) - testPt;
+			angle += Angle2D(p1, p2);
 		}
 
 		if (abs(angle) < M_PI)
-			return 0;
+			return false;
 		else
-			return 1;
+			return true;
 	}
 };
 

@@ -175,6 +175,7 @@
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="InteractionManager.cpp" />
+    <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="Quaternion.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="EditingController.h" />
     <ClInclude Include="Icosphere.h" />
+    <ClInclude Include="LassoTool.h" />
     <ClInclude Include="Observer.h" />
     <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="PolyUtil.h" />

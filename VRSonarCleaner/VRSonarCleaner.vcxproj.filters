@@ -96,6 +96,9 @@
     <ClCompile Include="arcball.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LassoTool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -189,6 +192,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PolyUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LassoTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
