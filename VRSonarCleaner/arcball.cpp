@@ -64,59 +64,6 @@ void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up)
 // affect the arcball's orientation on openGL
 void arcball_rotate() { glMultMatrixf(glm::value_ptr(glm::mat4_cast(ab_quat))); }
 
-// convert the quaternion into a rotation matrix
-static void quaternion(GLfloat* q, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
-{
-  GLfloat x2 = x*x;
-  GLfloat y2 = y*y;
-  GLfloat z2 = z*z;
-  GLfloat xy = x*y;
-  GLfloat xz = x*z;
-  GLfloat yz = y*z;
-  GLfloat wx = w*x;
-  GLfloat wy = w*y;
-  GLfloat wz = w*z;
-
-  q[0] = 1 - 2*y2 - 2*z2;
-  q[1] = 2*xy + 2*wz;
-  q[2] = 2*xz - 2*wy;
-  
-  q[4] = 2*xy - 2*wz;
-  q[5] = 1 - 2*x2 - 2*z2;
-  q[6] = 2*yz + 2*wx;
-  
-  q[8] = 2*xz + 2*wy;
-  q[9] = 2*yz - 2*wx;
-  q[10]= 1 - 2*x2 - 2*y2;
-}
-
-// reset the rotation matrix
-static void quatidentity(GLfloat* q)
-{ q[0]=1;  q[1]=0;  q[2]=0;  q[3]=0;
-  q[4]=0;  q[5]=1;  q[6]=0;  q[7]=0;
-  q[8]=0;  q[9]=0;  q[10]=1; q[11]=0;
-  q[12]=0; q[13]=0; q[14]=0; q[15]=1; }
-
-// copy a rotation matrix
-static void quatcopy(GLfloat* dst, GLfloat* src)
-{ dst[0]=src[0]; dst[1]=src[1]; dst[2]=src[2];
-  dst[4]=src[4]; dst[5]=src[5]; dst[6]=src[6];
-  dst[8]=src[8]; dst[9]=src[9]; dst[10]=src[10]; }
-
-// multiply two rotation matrices
-static void quatnext(GLfloat* dest, GLfloat* left, GLfloat* right)
-{
-  dest[0] = left[0]*right[0] + left[1]*right[4] + left[2] *right[8];
-  dest[1] = left[0]*right[1] + left[1]*right[5] + left[2] *right[9];
-  dest[2] = left[0]*right[2] + left[1]*right[6] + left[2] *right[10];
-  dest[4] = left[4]*right[0] + left[5]*right[4] + left[6] *right[8];
-  dest[5] = left[4]*right[1] + left[5]*right[5] + left[6] *right[9];
-  dest[6] = left[4]*right[2] + left[5]*right[6] + left[6] *right[10];
-  dest[8] = left[8]*right[0] + left[9]*right[4] + left[10]*right[8];
-  dest[9] = left[8]*right[1] + left[9]*right[5] + left[10]*right[9];
-  dest[10]= left[8]*right[2] + left[9]*right[6] + left[10]*right[10];
-}
-
 // find the intersection with the plane through the visible edge
 static glm::vec3 edge_coords(glm::vec3 m)
 {
