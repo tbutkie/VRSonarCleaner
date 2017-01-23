@@ -519,13 +519,15 @@ void LassoWindow::display()
 		ballEye.x, ballEye.y, ballEye.z,
 		ballCenter.x, ballCenter.y, ballCenter.z,
 		ballUp.x, ballUp.y, ballUp.z);
-	// set up the arcball using the current projection matrix
-	arcball_setzoom(ballRadius, ballEye, ballUp);
 	//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
+	arcball_getProjectionMatrix();
+	arcball_getViewport();
 
 	glMatrixMode(GL_MODELVIEW);
+	// set up the arcball using the current projection matrix
 	glLoadIdentity();
 
+	arcball_setzoom(ballRadius, ballEye, ballUp);
 	// now render the regular scene under the arcball rotation about 0,0,0
 	// (generally you would want to render everything here)
 	arcball_rotate();
@@ -537,7 +539,6 @@ void LassoWindow::display()
 		dataVolume->activateTransformationMatrix();
 		clouds->drawCloud(0);
 	glPopMatrix();		
-
 	// Flush and wait for swap.
 	if (m_bVblank)
 	{

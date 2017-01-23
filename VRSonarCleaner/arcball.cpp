@@ -10,168 +10,169 @@
 #include <GL\gl.h>
 #include <GL\glu.h>
 
-#include <shared/glm/gtc/type_ptr.hpp>
+#include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
+#include <shared/glm/gtc/matrix_transform.hpp> // glm::unproject
 
-glm::quat ab_quat, ab_last, ab_next;
+glm::quat m_quatOrientation, m_quatLast, m_quatNext;
 
 // the distance from the origin to the eye
-GLfloat ab_zoom = 1.0;
-GLfloat ab_zoom2 = 1.0;
+GLfloat m_fZoom = 1.0;
+GLfloat m_fZoom_sq = 1.0;
 // the radius of the arcball
-GLfloat ab_sphere = 1.0;
-GLfloat ab_sphere2 = 1.0;
+GLfloat m_fSphereRadius = 1.0;
+GLfloat m_fSphereRadius_sq = 1.0;
 // the distance from the origin of the plane that intersects
 // the edge of the visible sphere (tangent to a ray from the eye)
-GLfloat ab_edge = 1.0;
+GLfloat m_fEdgeDistance = 1.0;
 // whether we are using a sphere or plane
-bool ab_planar = false;
-GLfloat ab_planedist = 0.5;
+bool m_bPlanar = false;
+GLfloat m_fPlaneDistance = 0.5;
 
-glm::vec3 ab_start = glm::vec3(0,0,1);
-glm::vec3 ab_curr = glm::vec3(0,0,1);
-glm::vec3 ab_eye = glm::vec3(0,0,1);
-glm::vec3 ab_eyedir = glm::vec3(0,0,1);
-glm::vec3 ab_up = glm::vec3(0,1,0);
-glm::vec3 ab_out = glm::vec3(1,0,0);
+glm::vec3 m_vec3Start = glm::vec3(0,0,1);
+glm::vec3 m_vec3Current = glm::vec3(0,0,1);
+glm::vec3 m_vec3Eye = glm::vec3(0,0,1);
+glm::vec3 m_vec3Forward = glm::vec3(0,0,1);
+glm::vec3 m_vec3Up = glm::vec3(0,1,0);
+glm::vec3 m_vec3Out = glm::vec3(1,0,0);
 
-GLdouble ab_glp[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-GLdouble ab_glm[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-int ab_glv[4] = {0,0,640,480};
+glm::mat4 m_mat4Projection, m_mat4Model;
+glm::vec4 m_vec4Viewport(0.f, 0.f, 640.f, 480.f);
 
 void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up)
 {
-  ab_eye = eye; // store eye vector
-  ab_zoom2 = glm::dot(ab_eye, ab_eye);
-  ab_zoom = sqrt(ab_zoom2); // store eye distance
-  ab_sphere = radius; // sphere radius
-  ab_sphere2 = glm::dot(ab_sphere, ab_sphere);
-  ab_eyedir = ab_eye * (1.f / ab_zoom); // distance to eye
-  ab_edge = ab_sphere2 / ab_zoom; // plane of visible edge
+	m_vec3Eye = eye; // store eye vector
+	m_fZoom_sq = glm::dot(m_vec3Eye, m_vec3Eye);
+	m_fZoom = sqrt(m_fZoom_sq); // store eye distance
+	m_fSphereRadius = radius; // sphere radius
+	m_fSphereRadius_sq = m_fSphereRadius * m_fSphereRadius;
+	m_vec3Forward = m_vec3Eye * (1.f / m_fZoom); // distance to eye
+	m_fEdgeDistance = m_fSphereRadius_sq / m_fZoom; // plane of visible edge
   
-  if(ab_sphere <= 0.0) // trackball mode
-  {
-    ab_planar = true;
-    ab_up = up;
-    ab_out = glm::cross( ab_eyedir, ab_up );
-    ab_planedist = (0.f - ab_sphere) * ab_zoom;
-  } else
-    ab_planar = false;
-    
-  glGetDoublev(GL_PROJECTION_MATRIX,ab_glp);
-  glGetIntegerv(GL_VIEWPORT,ab_glv);
+	if(m_fSphereRadius <= 0.f) // trackball mode
+	{
+		m_bPlanar = true;
+		m_vec3Up = up;
+		m_vec3Out = glm::cross(m_vec3Forward, m_vec3Up);
+		m_fPlaneDistance = (0.f - m_fSphereRadius) * m_fZoom;
+	} else
+		m_bPlanar = false;
 }
 
 // affect the arcball's orientation on openGL
-void arcball_rotate() { glMultMatrixf(glm::value_ptr(glm::mat4_cast(ab_quat))); }
+void arcball_rotate() { glMultMatrixf(glm::value_ptr(glm::mat4_cast(m_quatOrientation))); }
 
 // find the intersection with the plane through the visible edge
 static glm::vec3 edge_coords(glm::vec3 m)
 {
-  // find the intersection of the edge plane and the ray
-  float t = (ab_edge - ab_zoom) / glm::dot(ab_eyedir, m);
-  glm::vec3 a = ab_eye + (m*t);
-  // find the direction of the eye-axis from that point
-  // along the edge plane
-  glm::vec3 c = (ab_eyedir * ab_edge) - a;
+	// find the intersection of the edge plane and the ray
+	float t = (m_fEdgeDistance - m_fZoom) / glm::dot(m_vec3Forward, m);
+	glm::vec3 a = m_vec3Eye + (m*t);
+	// find the direction of the eye-axis from that point
+	// along the edge plane
+	glm::vec3 c = (m_vec3Forward * m_fEdgeDistance) - a;
 
-  // find the intersection of the sphere with the ray going from
-  // the plane outside the sphere toward the eye-axis.
-  float ac = glm::dot(a, c);
-  float c2 = glm::dot(c, c);
-  float q = (0.f - ac - sqrt( glm::dot(ac, ac) - c2*(glm::dot(a, a)-ab_sphere2) ) ) / c2;
+	// find the intersection of the sphere with the ray going from
+	// the plane outside the sphere toward the eye-axis.
+	float ac = glm::dot(a, c);
+	float c2 = glm::dot(c, c);
+	float q = (0.f - ac - sqrt( glm::dot(ac, ac) - c2*(glm::dot(a, a)- m_fSphereRadius_sq) ) ) / c2;
   
-  return glm::normalize(a+(c*q));
+	return glm::normalize(a+(c*q));
 }
 
 // find the intersection with the sphere
 static glm::vec3 sphere_coords(GLdouble mx, GLdouble my)
 {
-  GLdouble ax,ay,az;
+	glm::vec3 window(mx, my, 0.f);
 
-  gluUnProject(mx,my,0,ab_glm,ab_glp,ab_glv,&ax,&ay,&az);
-  glm::vec3 m = glm::vec3((float)ax,(float)ay,(float)az) - ab_eye;
+	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
+	//gluUnProject(mx,my,0,ab_glm,ab_glp,ab_glv,&ax,&ay,&az);
+	glm::vec3 m = coords_unProj - m_vec3Eye;
   
-  // mouse position represents ray: eye + t*m
-  // intersecting with a sphere centered at the origin
-  GLfloat a = glm::dot(m, m);
-  GLfloat b = glm::dot(ab_eye, m);
-  GLfloat root = (b*b) - a*(ab_zoom2 - ab_sphere2);
-  if(root <= 0) return edge_coords(m);
-  GLfloat t = (0.f - b - sqrt(root)) / a;
-  return glm::normalize(ab_eye+(m*t));
+	// mouse position represents ray: eye + t*m
+	// intersecting with a sphere centered at the origin
+	GLfloat a = glm::dot(m, m);
+	GLfloat b = glm::dot(m_vec3Eye, m);
+	GLfloat root = (b*b) - a*(m_fZoom_sq - m_fSphereRadius_sq);
+	if(root <= 0) return edge_coords(m);
+	GLfloat t = (0.f - b - sqrt(root)) / a;
+	return glm::normalize(m_vec3Eye +(m*t));
 }
 
 // get intersection with plane for "trackball" style rotation
 static glm::vec3 planar_coords(GLdouble mx, GLdouble my)
 {
-  GLdouble ax,ay,az;
+	glm::vec3 window(mx, my, 0.f);
+	
+	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
+	glm::vec3 m = coords_unProj - m_vec3Eye;
+	// intersect the point with the trackball plane
+	GLfloat t = (m_fPlaneDistance - m_fZoom) / glm::dot(m_vec3Forward, m);
+	glm::vec3 d = m_vec3Eye + m*t;
 
-  gluUnProject(mx,my,0,ab_glm,ab_glp,ab_glv,&ax,&ay,&az);
-  glm::vec3 m = glm::vec3((float)ax,(float)ay,(float)az) - ab_eye;
-  // intersect the point with the trackball plane
-  GLfloat t = (ab_planedist - ab_zoom) / glm::dot(ab_eyedir, m);
-  glm::vec3 d = ab_eye + m*t;
-
-  return glm::vec3(glm::dot(d, ab_up), glm::dot(d, ab_out),0.f);
-}
-
-// reset the arcball
-void arcball_reset()
-{
-	ab_quat = glm::quat();
-	ab_last = glm::quat();
+	return glm::vec3(glm::dot(d, m_vec3Up), glm::dot(d, m_vec3Out),0.f);
 }
 
 // begin arcball rotation
 void arcball_start(int mx, int my)
 {
-  // saves a copy of the current rotation for comparison
-  ab_last = ab_quat;
-  if(ab_planar) ab_start = planar_coords((GLdouble)mx,(GLdouble)my);
-  else ab_start = sphere_coords((GLdouble)mx,(GLdouble)my);
+	// saves a copy of the current rotation for comparison
+	m_quatLast = m_quatOrientation;
+	if(m_bPlanar) m_vec3Start = planar_coords((GLdouble)mx,(GLdouble)my);
+	else m_vec3Start = sphere_coords((GLdouble)mx,(GLdouble)my);
 }
 
 // update current arcball rotation
 void arcball_move(int mx, int my)
 {
-  if(ab_planar)
-  {
-    ab_curr = planar_coords((GLdouble)mx,(GLdouble)my);
-    if(ab_curr == ab_start) return;
+	if(m_bPlanar)
+	{
+		m_vec3Current = planar_coords((GLdouble)mx,(GLdouble)my);
+		if(m_vec3Current == m_vec3Start) return;
     
-    // d is motion since the last position
-	glm::vec3 d = ab_curr - ab_start;
+		// d is motion since the last position
+		glm::vec3 d = m_vec3Current - m_vec3Start;
     
-    GLfloat angle = d.length() * 0.5f;
-    GLfloat cosa = cos( angle );
-    GLfloat sina = sin( angle );
-    // p is perpendicular to d
-	glm::vec3 p = glm::normalize((ab_out*d.x)-(ab_up*d.y)) * sina;
+		GLfloat angle = d.length() * 0.5f;
+		GLfloat cosa = cos( angle );
+		GLfloat sina = sin( angle );
+		// p is perpendicular to d
+		glm::vec3 p = glm::normalize((m_vec3Out*d.x)-(m_vec3Up*d.y)) * sina;
 
-    ab_next = glm::quat(cosa, p.x, p.y, p.z);
-    ab_quat = ab_next * ab_last;
-    // planar style only ever relates to the last point
-    ab_last = ab_quat;
-    ab_start = ab_curr;
+		m_quatNext = glm::quat(cosa, p.x, p.y, p.z);
+		m_quatOrientation = m_quatNext * m_quatLast;
+		// planar style only ever relates to the last point
+		m_quatLast = m_quatOrientation;
+		m_vec3Start = m_vec3Current;
     
-  } else {
+	} else {
 
-    ab_curr = sphere_coords((GLdouble)mx,(GLdouble)my);
-    if(ab_curr == ab_start)
-    { // avoid potential rare divide by tiny
-      ab_quat = ab_last;
-      return;
-    }
+		m_vec3Current = sphere_coords((GLdouble)mx,(GLdouble)my);
+		if(m_vec3Current == m_vec3Start)
+		{ // avoid potential rare divide by tiny
+			m_quatOrientation = m_quatLast;
+			return;
+		}
 
-    // use a dot product to get the angle between them
-    // use a cross product to get the vector to rotate around
-    GLfloat cos2a = glm::dot(ab_start, ab_curr);
-    GLfloat sina = sqrt((1.f - cos2a)*0.5f);
-    GLfloat cosa = sqrt((1.f + cos2a)*0.5f);
-	glm::vec3 cross = glm::normalize(glm::cross(ab_start, ab_curr)) * sina;
-    ab_next = glm::quat(cosa, cross.x, cross.y, cross.z);
+		// use a dot product to get the angle between them
+		// use a cross product to get the vector to rotate around
+		GLfloat cos2a = glm::dot(m_vec3Start, m_vec3Current);
+		GLfloat sina = sqrt((1.f - cos2a)*0.5f);
+		GLfloat cosa = sqrt((1.f + cos2a)*0.5f);
+		glm::vec3 cross = glm::normalize(glm::cross(m_vec3Start, m_vec3Current)) * sina;
+		m_quatNext = glm::quat(cosa, cross.x, cross.y, cross.z);
 
-    // update the rotation matrix
-    ab_quat = ab_next * ab_last;
-  }
+		// update the rotation matrix
+		m_quatOrientation = m_quatNext * m_quatLast;
+	}
+}
+
+void arcball_getViewport()
+{
+	glGetFloatv(GL_VIEWPORT, glm::value_ptr(m_vec4Viewport));
+}
+
+void arcball_getProjectionMatrix()
+{
+	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(m_mat4Projection));
 }

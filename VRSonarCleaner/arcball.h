@@ -46,8 +46,9 @@
 
 extern void arcball_setzoom(float radius, glm::vec3 eye, glm::vec3 up);
 extern void arcball_rotate();
-extern void arcball_reset();
 extern void arcball_start(int mx, int my);
 extern void arcball_move(int mx, int my);
+extern void arcball_getViewport();
+extern void arcball_getProjectionMatrix();
 
 #endif
