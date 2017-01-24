@@ -434,7 +434,11 @@ void LassoWindow::RunMainLoop()
 
 bool LassoWindow::checkForHits()
 {
+
 	bool hit = false;
+
+	if(!lasso->precalc())
+		return false;
 
 	std::vector<Vector3> inPts = clouds->getCloud(0)->getPointPositions();
 	std::vector<glm::vec3> outPts;
@@ -443,22 +447,17 @@ bool LassoWindow::checkForHits()
 
 	glGetFloatv(GL_VIEWPORT, glm::value_ptr(vec4Viewport));
 	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(mat4Projection));
-
-	glPushMatrix();
-	{
-		dataVolume->activateTransformationMatrix();
-		glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
-	}
-	glPopMatrix();
+	glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
 
 	for (int i = 0; i < inPts.size(); ++i)
 	{
-		glm::vec3 in(inPts[i].x, m_nWindowHeight - inPts[i].y, inPts[i].z);
-		glm::vec3 out = glm::unProject(in, mat4ModelView, mat4Projection, vec4Viewport);
+		glm::vec3 in(inPts[i].x, inPts[i].y, inPts[i].z);
+		glm::vec3 out = glm::project(in, mat4ModelView, mat4Projection, vec4Viewport);
+		out.y = m_nWindowHeight - out.y;
 		outPts.push_back(out);
 		if (lasso->checkPoint(glm::vec2(out)))
 		{
-			clouds->getCloud(0)->markPoint(i, 2);
+			clouds->getCloud(0)->markPoint(i, 1);
 			hit = true;
 		}
 
@@ -603,6 +602,7 @@ void LassoWindow::display()
 		glPushMatrix();
 		{
 			dataVolume->activateTransformationMatrix();
+			checkForHits();
 			clouds->drawCloud(0);
 		}
 		glPopMatrix();

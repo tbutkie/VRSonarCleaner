@@ -66,22 +66,22 @@ void LassoTool::end()
 	m_bLassoActive = false;
 }
 
-bool LassoTool::checkPoint(glm::vec2 testPt)
-{
-	// no lasso = no check
-	if (m_vvec3LassoPoints.size() < 1)
-		return false;
-
-	// fast-fail via bounding box
-	if (testPt.x < m_vec2MinBB.x
-		|| testPt.y < m_vec2MinBB.y
-		|| testPt.x > m_vec2MaxBB.x
-		|| testPt.y > m_vec2MaxBB.y)
-		return false;
-
-	// the meat
-	return PolyUtil::inMultiPartPoly(m_vvec3LassoPoints, testPt);
-}
+//bool LassoTool::checkPoint(glm::vec2 testPt)
+//{
+//	// no lasso = no check
+//	if (m_vvec3LassoPoints.size() < 1)
+//		return false;
+//
+//	// fast-fail via bounding box
+//	if (testPt.x < m_vec2MinBB.x
+//		|| testPt.y < m_vec2MinBB.y
+//		|| testPt.x > m_vec2MaxBB.x
+//		|| testPt.y > m_vec2MaxBB.y)
+//		return false;
+//
+//	// the meat
+//	return PolyUtil::inMultiPartPoly(m_vvec3LassoPoints, testPt);
+//}
 
 void LassoTool::draw()
 {	
@@ -132,4 +132,47 @@ void LassoTool::reset()
 	m_vvec3LassoPoints.clear();
 	m_vec2MinBB = glm::vec2(0.f);
 	m_vec2MaxBB = glm::vec2(0.f);
+}
+
+bool LassoTool::precalc()
+{
+	size_t n = m_vvec3LassoPoints.size();
+
+	if (m_bLassoActive || n < 3)
+		return false;
+
+	m_vfConstants.resize(n);
+	m_vfMultiplicands.resize(n);
+	int i, j = n - 1;
+
+	for (i = 0; i<n; i++) {
+		if (m_vvec3LassoPoints[j].y == m_vvec3LassoPoints[i].y) {
+			m_vfConstants[i] = m_vvec3LassoPoints[i].x;
+			m_vfMultiplicands[i] = 0;
+		}
+		else {
+			m_vfConstants[i] = m_vvec3LassoPoints[i].x - (m_vvec3LassoPoints[i].y * m_vvec3LassoPoints[j].x) / (m_vvec3LassoPoints[j].y - m_vvec3LassoPoints[i].y) + (m_vvec3LassoPoints[i].y * m_vvec3LassoPoints[i].x) / (m_vvec3LassoPoints[j].y - m_vvec3LassoPoints[i].y);
+			m_vfMultiplicands[i] = (m_vvec3LassoPoints[j].x - m_vvec3LassoPoints[i].x) / (m_vvec3LassoPoints[j].y - m_vvec3LassoPoints[i].y);
+		}
+		j = i;
+	}
+
+	return true;
+}
+
+bool LassoTool::checkPoint(glm::vec2 testPt)
+{
+	int polyCorners = m_vvec3LassoPoints.size();
+	int   i, j = polyCorners - 1;
+	bool  oddNodes = false;
+
+	for (i = 0; i<polyCorners; i++) {
+		if ((m_vvec3LassoPoints[i].y < testPt.y && m_vvec3LassoPoints[j].y >= testPt.y
+			|| m_vvec3LassoPoints[j].y < testPt.y && m_vvec3LassoPoints[i].y >= testPt.y)) {
+			oddNodes ^= (testPt.y * m_vfMultiplicands[i] + m_vfConstants[i] < testPt.x);
+		}
+		j = i;
+	}
+
+	return oddNodes;
 }
