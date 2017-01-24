@@ -191,9 +191,6 @@
     <ClInclude Include="arcball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PolyUtil.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LassoTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>

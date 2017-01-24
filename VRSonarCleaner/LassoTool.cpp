@@ -1,9 +1,7 @@
 #include "LassoTool.h"
 
-#include "PolyUtil.h"
-
 #include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
-#include <shared/glm/gtc/matrix_transform.hpp> // glm::unproject
+#include <shared/glm/gtc/matrix_transform.hpp> // glm::project
 
 #include <GL/glew.h>
 
@@ -78,23 +76,6 @@ bool LassoTool::readyToCheck()
 
 	return true;
 }
-
-//bool LassoTool::checkPoint(glm::vec2 testPt)
-//{
-//	// no lasso = no check
-//	if (m_vvec3LassoPoints.size() < 1)
-//		return false;
-//
-//	// fast-fail via bounding box
-//	if (testPt.x < m_vec2MinBB.x
-//		|| testPt.y < m_vec2MinBB.y
-//		|| testPt.x > m_vec2MaxBB.x
-//		|| testPt.y > m_vec2MaxBB.y)
-//		return false;
-//
-//	// the meat
-//	return PolyUtil::inMultiPartPoly(m_vvec3LassoPoints, testPt);
-//}
 
 void LassoTool::draw()
 {	

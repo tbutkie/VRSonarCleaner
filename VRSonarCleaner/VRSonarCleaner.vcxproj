@@ -207,7 +207,6 @@
     <ClInclude Include="LassoTool.h" />
     <ClInclude Include="Observer.h" />
     <ClInclude Include="LassoWindow.h" />
-    <ClInclude Include="PolyUtil.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="InteractionManager.h" />
