@@ -17,6 +17,7 @@ const float g_fBBoxPadding(2.f);
 LassoTool::LassoTool()
 	: m_bLassoActive(false)
 	, m_bShowBBox(true)
+	, m_bPrecalcsDone(false)
 	, m_vec2MinBB(glm::vec2(0.f))
 	, m_vec2MaxBB(glm::vec2(0.f))
 {
@@ -64,6 +65,17 @@ void LassoTool::move(int mx, int my)
 void LassoTool::end()
 {
 	m_bLassoActive = false;
+}
+
+bool LassoTool::readyToCheck()
+{
+	if (m_bLassoActive || m_vvec3LassoPoints.size() < 3)
+		return false;
+
+	if (!m_bPrecalcsDone)
+		precalc();
+
+	return true;
 }
 
 //bool LassoTool::checkPoint(glm::vec2 testPt)
@@ -132,20 +144,52 @@ void LassoTool::reset()
 	m_vvec3LassoPoints.clear();
 	m_vec2MinBB = glm::vec2(0.f);
 	m_vec2MaxBB = glm::vec2(0.f);
+	m_bPrecalcsDone = false;
+	m_vfConstants.clear();
+	m_vfMultiplicands.clear();
 }
 
-bool LassoTool::precalc()
+bool LassoTool::checkPoint(glm::vec2 testPt)
 {
 	size_t n = m_vvec3LassoPoints.size();
 
 	if (m_bLassoActive || n < 3)
 		return false;
 
+	if (!m_bPrecalcsDone)
+		precalc();
+
+	// fast-fail via bounding box
+	if (testPt.x < m_vec2MinBB.x
+		|| testPt.y < m_vec2MinBB.y
+		|| testPt.x > m_vec2MaxBB.x
+		|| testPt.y > m_vec2MaxBB.y)
+		return false;
+
+	// within bounding box, so do a full check
+	int j = n - 1;
+	bool oddNodes = false;
+
+	for (int i = 0; i < n; ++i) {
+		if ((m_vvec3LassoPoints[i].y < testPt.y && m_vvec3LassoPoints[j].y >= testPt.y
+			|| m_vvec3LassoPoints[j].y < testPt.y && m_vvec3LassoPoints[i].y >= testPt.y)) {
+			oddNodes ^= (testPt.y * m_vfMultiplicands[i] + m_vfConstants[i] < testPt.x);
+		}
+		j = i;
+	}
+
+	return oddNodes;
+}
+
+void LassoTool::precalc()
+{
+	size_t n = m_vvec3LassoPoints.size();
+
 	m_vfConstants.resize(n);
 	m_vfMultiplicands.resize(n);
-	int i, j = n - 1;
 
-	for (i = 0; i<n; i++) {
+	int j = n - 1;
+	for (int i = 0; i < n; ++i) {
 		if (m_vvec3LassoPoints[j].y == m_vvec3LassoPoints[i].y) {
 			m_vfConstants[i] = m_vvec3LassoPoints[i].x;
 			m_vfMultiplicands[i] = 0;
@@ -157,22 +201,5 @@ bool LassoTool::precalc()
 		j = i;
 	}
 
-	return true;
-}
-
-bool LassoTool::checkPoint(glm::vec2 testPt)
-{
-	int polyCorners = m_vvec3LassoPoints.size();
-	int   i, j = polyCorners - 1;
-	bool  oddNodes = false;
-
-	for (i = 0; i<polyCorners; i++) {
-		if ((m_vvec3LassoPoints[i].y < testPt.y && m_vvec3LassoPoints[j].y >= testPt.y
-			|| m_vvec3LassoPoints[j].y < testPt.y && m_vvec3LassoPoints[i].y >= testPt.y)) {
-			oddNodes ^= (testPt.y * m_vfMultiplicands[i] + m_vfConstants[i] < testPt.x);
-		}
-		j = i;
-	}
-
-	return oddNodes;
+	m_bPrecalcsDone = true;
 }

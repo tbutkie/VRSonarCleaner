@@ -340,16 +340,10 @@ bool LassoWindow::HandleInput()
 				clouds->calculateCloudBoundsAndAlign();
 				cleaningRoom->recalcVolumeBounds();
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_l)
+			if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 			{
-				/*
-				printf("Controller Locations:\n");
-				// Process SteamVR controller state
-				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-				{
-				printf("Controller %d\n", unDevice);
-				}
-				*/
+				if(lasso->readyToCheck())
+					checkForHits();
 			}
 		}
 		else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
@@ -378,7 +372,6 @@ bool LassoWindow::HandleInput()
 			{
 				rightMouseDown = false;
 				lasso->end();
-				checkForHits();
 			}
 
 		}//end mouse up
@@ -434,12 +427,8 @@ void LassoWindow::RunMainLoop()
 
 bool LassoWindow::checkForHits()
 {
-
 	bool hit = false;
-
-	if(!lasso->precalc())
-		return false;
-
+	
 	std::vector<Vector3> inPts = clouds->getCloud(0)->getPointPositions();
 	std::vector<glm::vec3> outPts;
 	glm::mat4 mat4Projection, mat4ModelView;
@@ -447,22 +436,20 @@ bool LassoWindow::checkForHits()
 
 	glGetFloatv(GL_VIEWPORT, glm::value_ptr(vec4Viewport));
 	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(mat4Projection));
-	glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
+	//glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
 
 	for (int i = 0; i < inPts.size(); ++i)
 	{
-		glm::vec3 in(inPts[i].x, inPts[i].y, inPts[i].z);
+		glm::vec3 in;
+		dataVolume->convertToWorldCoords(inPts[i].x, inPts[i].y, inPts[i].z, &in.x, &in.y, &in.z);
 		glm::vec3 out = glm::project(in, mat4ModelView, mat4Projection, vec4Viewport);
-		out.y = m_nWindowHeight - out.y;
 		outPts.push_back(out);
 		if (lasso->checkPoint(glm::vec2(out)))
 		{
 			clouds->getCloud(0)->markPoint(i, 1);
 			hit = true;
+			clouds->getCloud(0)->setRefreshNeeded();
 		}
-
-		//std::cout << " IN: (" << in.x << ", " << in.y << ", " << in.z << ")" << std::endl;
-		//std::cout << "OUT: (" << out.x << ", " << out.y << ", " << out.z << ")" << std::endl << std::endl;
 	}
 
 	return hit;
@@ -602,7 +589,6 @@ void LassoWindow::display()
 		glPushMatrix();
 		{
 			dataVolume->activateTransformationMatrix();
-			checkForHits();
 			clouds->drawCloud(0);
 		}
 		glPopMatrix();

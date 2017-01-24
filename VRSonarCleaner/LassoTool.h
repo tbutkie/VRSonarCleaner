@@ -15,7 +15,8 @@ public:
 	void move(int mx, int my);
 	void end();
 
-	bool precalc();
+	bool readyToCheck();
+
 	bool checkPoint(glm::vec2 testPt);
 
 	void draw();
@@ -23,9 +24,11 @@ public:
 	void reset();
 
 private:
+	void precalc();
+
 	std::vector<glm::vec2> m_vvec3LassoPoints;
 
-	bool m_bLassoActive, m_bShowBBox;
+	bool m_bLassoActive, m_bShowBBox, m_bPrecalcsDone;
 	glm::vec2 m_vec2MinBB, m_vec2MaxBB;
 
 	// variables for precomputations to speed up Point-in-Poly test
