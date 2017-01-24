@@ -342,8 +342,11 @@ bool LassoWindow::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 			{
-				if(lasso->readyToCheck())
+				if (lasso->readyToCheck())
+				{
 					checkForHits();
+					lasso->reset();
+				}
 			}
 		}
 		else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN

@@ -16,7 +16,8 @@ const float g_fBBoxPadding(2.f);
 
 LassoTool::LassoTool()
 	: m_bLassoActive(false)
-	, m_bShowBBox(true)
+	, m_bShowBBox(false)
+	, m_bShowConnector(false)
 	, m_bPrecalcsDone(false)
 	, m_vec2MinBB(glm::vec2(0.f))
 	, m_vec2MaxBB(glm::vec2(0.f))
@@ -116,9 +117,21 @@ void LassoTool::draw()
 		}
 
 		// connecting line from last to first points
-		if (m_bLassoActive) glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
-		glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
-		glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
+		if (m_bLassoActive)
+		{
+			glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
+
+			if (m_bShowConnector)
+			{
+				glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
+				glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
+			}
+		}
+		else
+		{
+			glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
+			glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
+		}
 
 		if (m_bShowBBox)
 		{

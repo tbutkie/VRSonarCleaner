@@ -28,7 +28,7 @@ private:
 
 	std::vector<glm::vec2> m_vvec3LassoPoints;
 
-	bool m_bLassoActive, m_bShowBBox, m_bPrecalcsDone;
+	bool m_bLassoActive, m_bShowBBox, m_bShowConnector, m_bPrecalcsDone;
 	glm::vec2 m_vec2MinBB, m_vec2MaxBB;
 
 	// variables for precomputations to speed up Point-in-Poly test
