@@ -352,12 +352,17 @@ bool LassoWindow::HandleInput()
 			{ 
 				leftMouseDown = true;
 				arcball->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				if (rightMouseDown)
+				{
+					lasso->end();
+				}
 				lasso->reset();
 			}
 			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
 			{
 				rightMouseDown = true;
-				lasso->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				if(!leftMouseDown)
+					lasso->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 			
 		}//end mouse down 
@@ -388,6 +393,7 @@ bool LassoWindow::HandleInput()
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
 		{
+			lasso->reset();
 			ballEye.z -= ((float)sdlEvent.wheel.y*0.5f);
 			if (ballEye.z  < 0.5f)
 				ballEye.z = 0.5f;
