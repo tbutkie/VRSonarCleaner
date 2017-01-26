@@ -40,46 +40,51 @@
  */
 
 #include <GL/glew.h>
-#include <cmath> // for sqrt
 
-typedef float vec_float;
+#include <shared/glm/glm.hpp>
+#include <shared/glm/gtc/quaternion.hpp>
 
-class vec // simple 3D vector class
+class Arcball
 {
-  public:
-    vec_float x,y,z;
+public:
+	Arcball(bool usePlanar = false);
+	~Arcball();
 
-    vec() {}
-    vec( vec_float xx, vec_float yy, vec_float zz )
-    { x=xx; y=yy; z=zz; }
+	void setZoom(float radius, glm::vec3 eye, glm::vec3 up);
+	void rotate();
+	void start(int mx, int my);
+	void move(int mx, int my);
+	void getViewport();
+	void getProjectionMatrix();
 
-    inline vec operator + (vec t) // addition
-    { return vec(x+t.x,y+t.y,z+t.z); }
-    inline vec operator - (vec t) // subtraction
-    { return vec(x-t.x,y-t.y,z-t.z); }
-    inline vec operator * (vec_float t) // dot product
-    { return vec(x*t,y*t,z*t); }
-    inline vec_float operator * (vec t) // scalar product
-    { return x*t.x + y*t.y + z*t.z; }
-    inline vec operator ^ (vec t) // cross product
-    { return vec( y*t.z-z*t.y, t.x*z-x*t.z, x*t.y-y*t.x ); }
+private:
+	glm::quat m_quatOrientation, m_quatLast, m_quatNext;
 
-    inline vec_float length() // pythagorean length
-    { return sqrt(x*x + y*y + z*z); }
-    inline vec unit() // normalized to a length of 1
-    { vec_float l = length();
-      if (l == 0.0) return vec(0.0,0.0,0.0);
-      return vec(x/l,y/l,z/l); }
-    inline bool zero() // returns true if a zero vector
-    { return x==0 && y==0 && z==0; }
-    inline bool equals(vec t) // returns true if exactly equal
-    { return x==t.x && y==t.y && z==t.z; }
+	// the distance from the origin to the eye
+	GLfloat m_fZoom, m_fZoom_sq;
+	// the radius of the arcball
+	GLfloat m_fSphereRadius, m_fSphereRadius_sq;
+	// the distance from the origin of the plane that intersects
+	// the edge of the visible sphere (tangent to a ray from the eye)
+	GLfloat m_fEdgeDistance;
+	// whether we are using a sphere or plane
+	bool m_bPlanar;
+	GLfloat m_fPlaneDistance;
+
+	glm::vec3 m_vec3Start;
+	glm::vec3 m_vec3Current;
+	glm::vec3 m_vec3Eye;
+	glm::vec3 m_vec3Forward;
+	glm::vec3 m_vec3Up;
+	glm::vec3 m_vec3Out;
+
+	glm::mat4 m_mat4Projection, m_mat4Model;
+	glm::vec4 m_vec4Viewport;
+
+private:
+	glm::vec3 edge_coords(glm::vec3 m);
+	glm::vec3 sphere_coords(GLdouble mx, GLdouble my);
+	glm::vec3 planar_coords(GLdouble mx, GLdouble my);
 };
-
-extern void arcball_setzoom(float radius, vec eye, vec up);
-extern void arcball_rotate();
-extern void arcball_reset();
-extern void arcball_start(int mx, int my);
-extern void arcball_move(int mx, int my);
 
 #endif

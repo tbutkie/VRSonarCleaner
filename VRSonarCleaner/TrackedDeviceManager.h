@@ -38,6 +38,7 @@ public:
 private:
 	void TrackedDeviceManager::initDevices();
 	void setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	void removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;

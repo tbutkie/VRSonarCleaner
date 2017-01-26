@@ -113,6 +113,8 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
 	, m_unLensVAO(0)
+	, leftMouseDown(false)
+	, rightMouseDown(false)
 {
 	ballEye.x = 0.0f;
 	ballEye.y = 0.0f;
@@ -124,10 +126,11 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	ballUp.y = 1.0f;
 	ballUp.z = 0.0f;
 	ballRadius = 2;
+	arcball = new Arcball(false);
 
-	leftMouseDown = false;
+	lasso = new LassoTool();
 
-	dataVolume = new DataVolume(0, 0, 0, 0, 4, 1.5, 4);
+	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0.f, 4.f, 1.5f, 4.f);
 	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
 }
 
@@ -337,16 +340,13 @@ bool LassoWindow::HandleInput()
 				clouds->calculateCloudBoundsAndAlign();
 				cleaningRoom->recalcVolumeBounds();
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_l)
+			if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 			{
-				/*
-				printf("Controller Locations:\n");
-				// Process SteamVR controller state
-				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+				if (lasso->readyToCheck())
 				{
-				printf("Controller %d\n", unDevice);
+					checkForHits();
+					lasso->reset();
 				}
-				*/
 			}
 		}
 		else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
@@ -354,7 +354,18 @@ bool LassoWindow::HandleInput()
 			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{ 
 				leftMouseDown = true;
-				arcball_start(sdlEvent.button.x, sdlEvent.button.y);
+				arcball->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				if (rightMouseDown)
+				{
+					lasso->end();
+				}
+				lasso->reset();
+			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				rightMouseDown = true;
+				if(!leftMouseDown)
+					lasso->start(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 			
 		}//end mouse down 
@@ -363,6 +374,12 @@ bool LassoWindow::HandleInput()
 			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{
 				leftMouseDown = false;
+				lasso->reset();
+			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				rightMouseDown = false;
+				lasso->end();
 			}
 
 		}//end mouse up
@@ -370,19 +387,22 @@ bool LassoWindow::HandleInput()
 		{
 			if (leftMouseDown)
 			{
-				arcball_move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+				arcball->move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
+			}
+			if (rightMouseDown && !leftMouseDown)
+			{
+				lasso->move(sdlEvent.button.x, m_nWindowHeight - sdlEvent.button.y);
 			}
 		}
 		if (sdlEvent.type == SDL_MOUSEWHEEL)
 		{
-			ballEye.z += ((float)sdlEvent.wheel.y*0.5);
-			if (ballEye.z  < 0.5)
-				ballEye.z = 0.5;
-			if (ballEye.z  > 10)
-				ballEye.z = 10;
-
-		}
-		
+			lasso->reset();
+			ballEye.z -= ((float)sdlEvent.wheel.y*0.5f);
+			if (ballEye.z  < 0.5f)
+				ballEye.z = 0.5f;
+			if (ballEye.z  > 10.f)
+				ballEye.z = 10.f;
+		}		
 	}
 
 	return bRet;
@@ -413,22 +433,38 @@ void LassoWindow::RunMainLoop()
 	SDL_StopTextInput();
 }
 
-/*
-void LassoWindow::checkForHits()
+
+bool LassoWindow::checkForHits()
 {
-	Matrix4 currentCursorPose;
-	Matrix4 lastCursorPose;
-	float cursorRadius;
+	bool hit = false;
+	
+	std::vector<Vector3> inPts = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> outPts;
+	glm::mat4 mat4Projection, mat4ModelView;
+	glm::vec4 vec4Viewport;
 
-	// if editing mode not active, abort
-	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
-		return;
+	glGetFloatv(GL_VIEWPORT, glm::value_ptr(vec4Viewport));
+	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(mat4Projection));
+	//glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
 
-	// check point cloud for hits
-	if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-		m_pTDM->cleaningHit();
+	for (int i = 0; i < inPts.size(); ++i)
+	{
+		glm::vec3 in;
+		dataVolume->convertToWorldCoords(inPts[i].x, inPts[i].y, inPts[i].z, &in.x, &in.y, &in.z);
+		glm::vec3 out = glm::project(in, mat4ModelView, mat4Projection, vec4Viewport);
+		outPts.push_back(out);
+		if (lasso->checkPoint(glm::vec2(out)))
+		{
+			clouds->getCloud(0)->markPoint(i, 1);
+			hit = true;
+			clouds->getCloud(0)->setRefreshNeeded();
+		}
+	}
+
+	return hit;
 }
 
+/*
 void LassoWindow::checkForManipulations()
 {
 	Matrix4 pose;
@@ -507,54 +543,65 @@ void LassoWindow::display()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
+	glEnable(GL_DEPTH_TEST);
 
 	float aspect_ratio = (float)m_nWindowWidth / (float)m_nWindowHeight;
 
 	glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
-	gluLookAt(
-		ballEye.x, ballEye.y, ballEye.z,
-		ballCenter.x, ballCenter.y, ballCenter.z,
-		ballUp.x, ballUp.y, ballUp.z);
-	// set up the arcball using the current projection matrix
-	arcball_setzoom(ballRadius, ballEye, ballUp);
-	//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
 	
-	//draw scene
-	glPushMatrix();
-	glDisable(GL_DEPTH_TEST);
-	glTranslatef(ballEye.x, ballEye.y, ballEye.z);
-	arcball_rotate();
-	//draw_stars();
-	glEnable(GL_DEPTH_TEST);
-	glPopMatrix();
+	//draw 2D interface elements
+	{
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix(); // save current projection matrix
+		{
+			glLoadIdentity(); // start fresh
+			glOrtho(0.0, m_nWindowWidth, 0.0, m_nWindowHeight, -1.0, 1.0);
 
-	// now render the regular scene under the arcball rotation about 0,0,0
-	// (generally you would want to render everything here)
-	arcball_rotate();
-	
-	dataVolume->drawBBox();
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			{
+				glLoadIdentity();
 
-	//draw table
-	glPushMatrix();
-	dataVolume->activateTransformationMatrix();
-	clouds->drawCloud(0);
-	//clouds->getCloud(0)->drawAxes();
-	//tableVolume->deactivateTransformationMatrix();
-	glPopMatrix();
+				lasso->draw();
+			}
+			glPopMatrix();
+			glMatrixMode(GL_PROJECTION);
+		}
+		glPopMatrix();
+	}
 
-	//clouds->drawCloud(0);
-		
+	//draw 3D elements
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
+		gluLookAt(
+			ballEye.x, ballEye.y, ballEye.z,
+			ballCenter.x, ballCenter.y, ballCenter.z,
+			ballUp.x, ballUp.y, ballUp.z);
+		//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
+		arcball->getProjectionMatrix();
+		arcball->getViewport();
 
+		glMatrixMode(GL_MODELVIEW);
+		// set up the arcball using the current projection matrix
+		glLoadIdentity();
+
+		arcball->setZoom(ballRadius, ballEye, ballUp);
+		// now render the regular scene under the arcball rotation about 0,0,0
+		// (generally you would want to render everything here)
+		arcball->rotate();
+
+		dataVolume->drawBBox();
+
+		//draw table
+		glPushMatrix();
+		{
+			dataVolume->activateTransformationMatrix();
+			clouds->drawCloud(0);
+		}
+		glPopMatrix();
+	}
 	// Flush and wait for swap.
 	if (m_bVblank)
 	{
@@ -563,7 +610,6 @@ void LassoWindow::display()
 	}
 
 	DebugDrawer::getInstance().flushLines();
-
 }
 
 

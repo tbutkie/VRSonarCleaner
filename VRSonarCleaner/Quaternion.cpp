@@ -386,9 +386,11 @@ float Quaternion::norm()
 	return (m_w*m_w + m_x*m_x + m_y*m_y + m_z*m_z);
 }
 
+// NOT WORKING
 Quaternion Quaternion::getQuaternionNeededToRotateTo(Quaternion otherQ)
 {
 	//return inverse() * otherQ;
+	return Quaternion();
 }
 
 void Quaternion::printValues(char* label)

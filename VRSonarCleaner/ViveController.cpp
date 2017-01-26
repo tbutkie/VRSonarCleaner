@@ -13,6 +13,7 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_vec2TouchpadCurrentTouchPoint(Vector2(0.f, 0.f))
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
+	, m_fTriggerPull(0.f)
 	, m_fHairTriggerThreshold(0.05f)
 	, m_unTriggerAxis(vr::k_unControllerStateAxisCount)
 	, m_unTouchpadAxis(vr::k_unControllerStateAxisCount)
@@ -29,7 +30,7 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 
 ViveController::~ViveController()
 {
-
+	m_vComponents.clear();
 }
 
 bool ViveController::BInit()

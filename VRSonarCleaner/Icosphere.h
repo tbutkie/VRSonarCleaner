@@ -33,12 +33,11 @@ private:
     };
 
 	int addVertex(Vector3 p);
-	int getMiddlePoint(int p1, int p2);
+	int getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap);
 
 	std::vector<Vector3> vertices;
 	std::vector<unsigned int> indices;
 	
     int index;
-    std::unordered_map<int64_t, int> middlePointIndexCache;
 };
 

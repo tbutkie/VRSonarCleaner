@@ -14,6 +14,7 @@
 //#include "FocalCamera.h"
 #include "DataVolume.h"
 #include "arcball.h"
+#include "LassoTool.h"
 
 #include "../shared/lodepng.h"
 #include "../shared/Matrices.h"
@@ -49,17 +50,22 @@ public:
 	//FocalCamera *cam;
 
 private:
+	bool checkForHits();
 	
 	//ARCBALL STUFF
 	// scene parameters
-	vec ballEye;
-	vec ballCenter;
-	vec ballUp;
+	Arcball *arcball;
+	glm::vec3 ballEye;
+	glm::vec3 ballCenter;
+	glm::vec3 ballUp;
 	float ballRadius;
+
+	LassoTool *lasso;
 	
 	DataVolume *dataVolume;
 
 	bool leftMouseDown;
+	bool rightMouseDown;
 
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;

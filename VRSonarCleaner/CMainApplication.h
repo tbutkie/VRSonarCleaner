@@ -53,6 +53,7 @@ public:
 	Matrix4 GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye);
 
 	void savePoints();
+	bool loadPoints(std::string fileName);
 
 	bool CreateLensShader();
 

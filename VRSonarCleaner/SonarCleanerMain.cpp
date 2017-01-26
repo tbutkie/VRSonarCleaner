@@ -4,6 +4,7 @@
 #include "CloudCollection.h"
 #include "LassoWindow.h"
 #include <conio.h>
+#include <cstdio> // fclose
 
 CloudCollection *clouds;
 ColorScaler *colorScalerTPU;
@@ -14,7 +15,6 @@ ColorScaler *colorScalerTPU;
 //-----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-
 	AllocConsole();
 	freopen("CONOUT$", "wb", stdout);
 
@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
 	char selectedMode;
 	selectedMode = getch();
 	//scanf("%d", &selectedMode);
-	
-		
+
+
 	//bool lassoMode = false;
 	if (selectedMode == '0') //VR Cleaner
 	{

@@ -10,17 +10,20 @@ Icosphere::Icosphere(int recursionLevel)
 
 Icosphere::~Icosphere(void)
 {
-	this->vertices.clear();
-	this->indices.clear();
-	this->middlePointIndexCache.clear();
+	if (this->vertices.size() > 0)
+		this->vertices.clear();
+
+	if (this->indices.size() > 0)
+		this->indices.clear();
 }
 
 void Icosphere::recalculate(int recursionLevel)
 {
 	this->vertices.clear();
 	this->indices.clear();
-	this->middlePointIndexCache.clear();
 	this->index = 0;
+
+	std::unordered_map<int64_t, int> middlePointIndexCache;
 
 	// create 12 vertices of a icosahedron
 	float t = (1.f + sqrt(5.f)) / 2.f;
@@ -80,9 +83,9 @@ void Icosphere::recalculate(int recursionLevel)
 		for (auto &tri : faces)
 		{
 			// replace triangle by 4 triangles
-			int a = getMiddlePoint(tri.v1, tri.v2);
-			int b = getMiddlePoint(tri.v2, tri.v3);
-			int c = getMiddlePoint(tri.v3, tri.v1);
+			int a = getMiddlePoint(tri.v1, tri.v2, middlePointIndexCache);
+			int b = getMiddlePoint(tri.v2, tri.v3, middlePointIndexCache);
+			int c = getMiddlePoint(tri.v3, tri.v1, middlePointIndexCache);
 
 			faces2.push_back(TriangleIndices(tri.v1, a, c));
 			faces2.push_back(TriangleIndices(tri.v2, b, a));
@@ -125,7 +128,7 @@ int Icosphere::addVertex(Vector3 p)
 }
 
 // return index of point in the middle of p1 and p2
-int Icosphere::getMiddlePoint(int p1, int p2)
+int Icosphere::getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap)
 {
     // first check if we have it already
     bool firstIsSmaller = p1 < p2;
@@ -134,8 +137,8 @@ int Icosphere::getMiddlePoint(int p1, int p2)
     int64_t key = (smallerIndex << 32) + greaterIndex;
 
 	// look to see if middle point already computed
-    if (this->middlePointIndexCache.find(key) != this->middlePointIndexCache.end())
-    	return this->middlePointIndexCache[key];    
+    if (midPointMap.find(key) != midPointMap.end())
+    	return midPointMap[key];
 
     // not in cache, calculate it
 	Vector3 point1 = this->vertices[p1];
@@ -146,6 +149,6 @@ int Icosphere::getMiddlePoint(int p1, int p2)
     int i = addVertex(middle); 
 
     // store it, return index
-    this->middlePointIndexCache[key] = i;
+	midPointMap[key] = i;
     return i;
 }
