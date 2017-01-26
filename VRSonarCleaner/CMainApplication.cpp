@@ -28,7 +28,7 @@ void dprintf(const char *fmt, ...)
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CMainApplication::CMainApplication(int argc, char *argv[])
+CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
 	: m_pWindow(NULL)
 	, m_pContext(NULL)
 	, m_nWindowWidth(1280)
@@ -42,6 +42,8 @@ CMainApplication::CMainApplication(int argc, char *argv[])
 	, m_bGlFinishHack(true)
 	, m_unLensVAO(0)
 {
+
+	mode = Mode;
 
 	for (int i = 1; i < argc; i++)
 	{
@@ -168,8 +170,16 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-	SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+	if (mode == 0)
+	{
+		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
+		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+	}
+	else
+	{
+		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
+		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+	}
 
 	m_fNearClip = 0.1f;
 	m_fFarClip = 30.0f;
@@ -209,7 +219,7 @@ bool CMainApplication::BInitGL()
 {
 	if (m_bDebugOpenGL)
 	{
-		glDebugMessageCallback( (GLDEBUGPROC)DebugCallback, nullptr);
+		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	}
@@ -230,8 +240,16 @@ bool CMainApplication::BInitGL()
 	InfoBoxManager::getInstance().BInit(m_pTDM);
 	m_pTDM->attach(&InfoBoxManager::getInstance());
 
-	cleaningRoom = new CleaningRoom();
-	
+	if (mode == 0)
+	{
+		cleaningRoom = new CleaningRoom();
+	}
+	else if (mode == 1)
+	{
+		flowRoom = new FlowRoom();
+	}
+
+
 	return true;
 }
 
@@ -331,24 +349,37 @@ bool CMainApplication::HandleInput()
 			{
 				bRet = true;
 			}
-			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
+			
+			if (mode == 0) //cleaning
 			{
-				savePoints();
-			}
-			if (sdlEvent.key.keysym.sym == SDLK_r)
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
+				{
+					savePoints();
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_r)
+				{
+					printf("Pressed r, resetting marks\n");
+					clouds->resetMarksInAllClouds();
+					cleaningRoom->resetVolumes();
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_g)
+				{
+					printf("Pressed g, generating fake test cloud\n");
+					clouds->clearAllClouds();
+					clouds->generateFakeTestCloud(150, 150, 25, 40000);
+					clouds->calculateCloudBoundsAndAlign();
+					cleaningRoom->recalcVolumeBounds();
+				}
+			}//end if mode==0
+			else if (mode == 1) //flow
 			{
-				printf("Pressed r, resetting marks\n");
-				clouds->resetMarksInAllClouds();
-				cleaningRoom->resetVolumes();
+				if (sdlEvent.key.keysym.sym == SDLK_r)
+				{
+					printf("Pressed r, resetting something...\n");
+					flowRoom->reset();
+				}
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_g)
-			{
-				printf("Pressed g, generating fake test cloud\n");
-				clouds->clearAllClouds();
-				clouds->generateFakeTestCloud(150, 150, 25, 40000);
-				clouds->calculateCloudBoundsAndAlign();
-				cleaningRoom->recalcVolumeBounds();
-			}
+			
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
 				/*
@@ -382,9 +413,20 @@ void CMainApplication::RunMainLoop()
 	{
 		bQuit = HandleInput();
 
-		checkForHits();
+		if (mode == 0)
+		{
+			checkForHits();
 
-		checkForManipulations();
+			checkForManipulations();
+		}
+
+		if (mode == 1)
+		{
+			//grip rotate if needed
+			flowRoom->gripModel(m_pTDM->getManipulationData());
+
+			flowRoom->preRenderUpdates();
+		}
 
 		RenderFrame();
 	}
@@ -790,7 +832,15 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	cleaningRoom->draw();
+	if (mode == 0)
+	{
+		cleaningRoom->draw();
+	}
+	else if (mode == 1)
+	{
+		flowRoom->draw();
+	}
+
 
 	// END IMMEDIATE MODE
 
