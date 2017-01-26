@@ -10,6 +10,7 @@
 
 #include "CGLRenderModel.h"
 #include "CleaningRoom.h"
+#include "FlowRoom.h"
 #include "TrackedDeviceManager.h"
 
 #include <openvr.h>
@@ -26,7 +27,7 @@ static bool g_bPrintf = true;
 class CMainApplication
 {
 public:
-	CMainApplication(int argc, char *argv[]);
+	CMainApplication(int argc, char *argv[], int Mode);
 	virtual ~CMainApplication();
 
 	bool BInit();
@@ -60,8 +61,12 @@ public:
 	void checkForManipulations();
 
 	CleaningRoom* cleaningRoom;
+	FlowRoom* flowRoom;
 
 private:
+
+	int mode; //0=Cleaner, 1=Flow
+
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
 	bool m_bPerf;
