@@ -415,8 +415,19 @@ void CMainApplication::RunMainLoop()
 	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 
+	float fps_interval = 1.0; // sec
+	Uint32 fps_lasttime = SDL_GetTicks();
+	Uint32 fps_current = 0;
+	Uint32 fps_frames = 0;
+
+	std::clock_t start;
+
 	while (!bQuit)
 	{
+		start = std::clock();
+
+		std::cout << "--------------------------------------------------" << std::endl;
+
 		bQuit = HandleInput();
 
 		if (mode == 0)
@@ -433,14 +444,30 @@ void CMainApplication::RunMainLoop()
 
 			flowRoom->preRenderUpdates();
 		}
+		
+		std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+		start = std::clock();
 
 		RenderFrame();
+
+		std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+
+		fps_frames++;
+		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
+		{
+			fps_lasttime = SDL_GetTicks();
+			fps_current = fps_frames;
+			fps_frames = 0;
+		}
+
+		std::cout << "FPS: " << fps_current << std::endl;
+		std::cout << "--------------------------------------------------" << std::endl << std::endl;
 	}
 
 	////doesn't help here either
 	fclose(stdout);
 	FreeConsole();
-
+	
 	SDL_StopTextInput();
 }
 

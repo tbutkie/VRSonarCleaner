@@ -128,15 +128,15 @@ void FlowGrid::init()
 	lastTimeRequested = true;
 
 	enableIllustrativeParticles = true;
-	numIllustrativeParticles = 20000;
-	illustrativeParticleTrailTime = 500;
-	illustrativeParticleLifetime = 3000;
+	numIllustrativeParticles = 2000;
+	illustrativeParticleTrailTime = 1000;
+	illustrativeParticleLifetime = 10000;
 	illustrativeParticleSize = 1;
 
 	colorIllustrativeParticles[0] = 0.25;
 	colorIllustrativeParticles[1] = 0.95;
 	colorIllustrativeParticles[2] = 1.0;
-	illustrativeParticleVelocityScale = .1;//0.000001;
+	illustrativeParticleVelocityScale = .01;//0.000001;
 }
 
 void FlowGrid::deleteSelf()

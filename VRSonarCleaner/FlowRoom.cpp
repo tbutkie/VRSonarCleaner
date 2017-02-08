@@ -26,7 +26,7 @@ FlowRoom::FlowRoom()
 
 	flowGridCollection = new std::vector <FlowGrid*>;
 
-	FlowGrid *tempFG = new FlowGrid("tidalwalls.fg");
+	FlowGrid *tempFG = new FlowGrid("test.fg");
 	tempFG->setCoordinateScaler(scaler);
 	flowGridCollection->push_back(tempFG);
 	flowRoomMinTime = flowGridCollection->at(0)->minTime;
@@ -38,7 +38,7 @@ FlowRoom::FlowRoom()
 
 
 	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	mainModelVolume = new DataVolume(0, 1.10, 0, 0, 2.25, 0.75, 2.25);
+	mainModelVolume = new DataVolume(0, 1.125, 0, 0, 2.25, 2.25, 2.25);
 	//	wallVolume = new DataVolume(0, (roomSizeY / 2) + (roomSizeY*0.09), (roomSizeZ / 2) - 0.42, 1, (roomSizeX*0.9), 0.8, (roomSizeY*0.80));
 
 	mainModelVolume->setInnerCoords(flowGridCollection->at(0)->getScaledXMin(), flowGridCollection->at(0)->getScaledXMax(), flowGridCollection->at(0)->getScaledMaxDepth(), flowGridCollection->at(0)->getScaledMinDepth(), flowGridCollection->at(0)->getScaledYMin(), flowGridCollection->at(0)->getScaledYMax());
@@ -121,6 +121,8 @@ void FlowRoom::reset()
 
 void FlowRoom::preRenderUpdates()
 {
+	std::clock_t start = std::clock();
+
 	//update time
 	ULONGLONG tick = GetTickCount64();
 	ULONGLONG timeSinceLast = tick - lastTimeUpdate;
@@ -136,7 +138,7 @@ void FlowRoom::preRenderUpdates()
 		{
 			if (true) ///playing v paused
 			{
-				float factorToAdvance = (float)timeSinceLast / 35000; //35 second loop time		
+				float factorToAdvance = (float)timeSinceLast / 120000; //35 second loop time		
 				float newTime = currentTime + (factorToAdvance * timeRange);
 				if (newTime > maxTime)
 					newTime = minTime;
@@ -149,8 +151,13 @@ void FlowRoom::preRenderUpdates()
 		}
 	}//end if need update
 
-
+	std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
 	particleSystem->update(flowRoomTime);
+	std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+	start = std::clock();
 	particleSystem->loadStreakVBOs();
+	std::cout << "Particle System Load Streaks Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+	start = std::clock();
 	particleSystem->loadParticleVBOs();
+	std::cout << "Particle System Load Particles Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 }
