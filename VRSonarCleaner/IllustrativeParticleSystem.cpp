@@ -185,14 +185,14 @@ void IllustrativeParticleSystem::update(float time)
 				//get current position
 				particles[i]->getCurrentXYZ(&x, &y, &z);
 				//get UVW at current position
-				result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVat(x, y, z, time, &u, &v);
+				result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVWat(x, y, z, time, &u, &v, &w);
 				//printf("Result: %d, U: %f, V: %f\n", result, u ,v);
 				//calc new position
 				prodTimeVelocity = timeSinceLastUpdate*flowGridCollection->at(particles[i]->flowGridIndex)->illustrativeParticleVelocityScale;
 				//printf("Current Pos: %f, %f, %f\n", x, y, z);
 				newPos[0] = x + u*prodTimeVelocity;
 				newPos[1] = y + v*prodTimeVelocity;
-				newPos[2] = z + (particles[i]->gravity/prodTimeSeconds);
+				newPos[2] = z + w*prodTimeVelocity + (particles[i]->gravity/prodTimeSeconds);
 
 				//check in bounds or not
 				if (!flowGridCollection->at(particles[i]->flowGridIndex)->contains(newPos[0], newPos[1]))
@@ -223,12 +223,12 @@ void IllustrativeParticleSystem::update(float time)
 							//printf("particle %d moved to grid %d\n", i, grid);
 							//update
 							//get UVW at current position
-							result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVat(x, y, z, time, &u, &v);
+							result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVWat(x, y, z, time, &u, &v, &w);
 							//calc new position
 							prodTimeVelocity = timeSinceLastUpdate*flowGridCollection->at(particles[i]->flowGridIndex)->illustrativeParticleVelocityScale;
 							newPos[0] = x + u*prodTimeVelocity;
 							newPos[1] = y + v*prodTimeVelocity;
-							newPos[2] = z + (particles[i]->gravity/prodTimeSeconds);
+							newPos[2] = z + w*prodTimeVelocity + (particles[i]->gravity/prodTimeSeconds);
 							particles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
 							foundGrid = true;
 							break;

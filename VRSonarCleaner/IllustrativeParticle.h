@@ -80,7 +80,7 @@ private:
 
 	//update() vars, put them here so no alloc needed each frame
 	ULONGLONG timeSinceLast;
-	float U, V, T, S;
+	float U, V, W, T, S;
 	float rand1, rand2, rand3;
 	bool inWater;
 	float currentPos[3];

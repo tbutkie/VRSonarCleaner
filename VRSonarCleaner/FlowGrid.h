@@ -31,11 +31,13 @@ class FlowGrid
 		void setTimeValue(int timeIndex, float timeValue);		
 		
 		void setCellValue(int x, int y, int z, int timestep, float u, float v);
+		void setCellValue(int x, int y, int z, int timestep, float u, float v, float w);
 		//void setCellValue(int x, int y, int z, int timestep, float u, float v, float t, float s);
 
 		void setIsWaterValue(int x, int y, int z, int t, bool isCellWater);
 		
 		bool getUVat(float lonX, float latY, float depth, float time, float *u, float *v);
+		bool getUVWat(float lonX, float latY, float depth, float time, float *u, float *v, float *w);
 		bool getVelocityAt(float lonX, float latY, float depth, float time, float *velocity);
 		//bool getUVTSat(float lonX, float latY, float depth, float time, float *u, float *v, float *t, float *s);
 		bool getIsWaterAt(float lonX, float latY, float depth, float time);
@@ -92,6 +94,7 @@ class FlowGrid
 
 		float* uValues;
 		float* vValues;
+		float* wValues;
 		float* velocityValues;
 		//float* tValues;
 		//float* sValues;
