@@ -151,13 +151,13 @@ void FlowRoom::preRenderUpdates()
 		}
 	}//end if need update
 
-	std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
+	//std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
 	particleSystem->update(flowRoomTime);
-	std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-	start = std::clock();
+	//std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+	//start = std::clock();
 	particleSystem->loadStreakVBOs();
-	std::cout << "Particle System Load Streaks Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-	start = std::clock();
+	//std::cout << "Particle System Load Streaks Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+	//start = std::clock();
 	particleSystem->loadParticleVBOs();
-	std::cout << "Particle System Load Particles Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+	//std::cout << "Particle System Load Particles Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 }

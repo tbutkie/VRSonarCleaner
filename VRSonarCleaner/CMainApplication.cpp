@@ -384,6 +384,9 @@ bool CMainApplication::HandleInput()
 					printf("Pressed r, resetting something...\n");
 					flowRoom->reset();
 				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_f)
+					printf("FPS: %u\n", m_uiCurrentFPS);
 			}
 			
 			if (sdlEvent.key.keysym.sym == SDLK_l)
@@ -417,7 +420,7 @@ void CMainApplication::RunMainLoop()
 
 	float fps_interval = 1.0; // sec
 	Uint32 fps_lasttime = SDL_GetTicks();
-	Uint32 fps_current = 0;
+	m_uiCurrentFPS = 0u;
 	Uint32 fps_frames = 0;
 
 	std::clock_t start;
@@ -426,7 +429,7 @@ void CMainApplication::RunMainLoop()
 	{
 		start = std::clock();
 
-		std::cout << "--------------------------------------------------" << std::endl;
+		//std::cout << "--------------------------------------------------" << std::endl;
 
 		bQuit = HandleInput();
 
@@ -445,23 +448,23 @@ void CMainApplication::RunMainLoop()
 			flowRoom->preRenderUpdates();
 		}
 		
-		std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-		start = std::clock();
+		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+		//start = std::clock();
 
 		RenderFrame();
 
-		std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 
 		fps_frames++;
 		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
 		{
 			fps_lasttime = SDL_GetTicks();
-			fps_current = fps_frames;
+			m_uiCurrentFPS = fps_frames;
 			fps_frames = 0;
 		}
 
-		std::cout << "FPS: " << fps_current << std::endl;
-		std::cout << "--------------------------------------------------" << std::endl << std::endl;
+		//std::cout << "FPS: " << m_uiCurrentFPS << std::endl;
+		//std::cout << "--------------------------------------------------" << std::endl << std::endl;
 	}
 
 	////doesn't help here either

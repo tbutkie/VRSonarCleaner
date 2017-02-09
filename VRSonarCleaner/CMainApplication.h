@@ -67,6 +67,8 @@ private:
 
 	int mode; //0=Cleaner, 1=Flow
 
+	unsigned int m_uiCurrentFPS;
+
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
 	bool m_bPerf;
