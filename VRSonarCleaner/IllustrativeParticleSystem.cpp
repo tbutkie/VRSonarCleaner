@@ -195,7 +195,7 @@ void IllustrativeParticleSystem::update(float time)
 				newPos[2] = z + w*prodTimeVelocity + (particles[i]->gravity/prodTimeSeconds);
 
 				//check in bounds or not
-				if (!flowGridCollection->at(particles[i]->flowGridIndex)->contains(newPos[0], newPos[1]))
+				if (!flowGridCollection->at(particles[i]->flowGridIndex)->contains(newPos[0], newPos[1], newPos[2]))
 				{
 					//no begin killing off particle
 					//printf("OOB: ", newPos[0], newPos[1], newPos[2]);
