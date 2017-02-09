@@ -200,12 +200,6 @@
     <ClInclude Include="InfoBoxManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Observer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Subject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LassoWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -237,6 +231,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LassoTool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BroadcastSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

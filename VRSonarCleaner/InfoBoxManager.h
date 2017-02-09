@@ -8,12 +8,12 @@
 #include <shared\glm\glm.hpp>
 
 #include "shared/Texture.h"
-#include "Observer.h"
+#include "BroadcastSystem.h"
 #include "TrackedDeviceManager.h"
 
 #define MAX_N_INFO_BOXES 16
 
-class InfoBoxManager : public Observer
+class InfoBoxManager : public BroadcastSystem::Listener
 {
 public:
 	enum RELATIVE_TO {
@@ -41,7 +41,7 @@ public:
 	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what, bool billboarded);
 	bool removeInfoBox(std::string name);
 
-	virtual void receiveEvent(TrackedDevice* device, const int event);
+	virtual void receiveEvent(TrackedDevice* device, const int event, void* data = NULL);
 
 	void render(const float *matVP);
 

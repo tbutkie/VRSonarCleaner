@@ -64,18 +64,18 @@ InfoBoxManager::~InfoBoxManager()
 {
 }
 
-void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event)
+void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event, void* data)
 {
 	switch (event)
 	{
-	case EDIT_TRIGGER_CLICKED:
+	case BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED:
 		updateInfoBoxSize("Test 1", 0.1f);
 		removeInfoBox("Test 2");
 		break;
-	case OUT_OF_PLAY_AREA:
+	case BroadcastSystem::EVENT::EXIT_PLAY_AREA:
 		updateInfoBoxSize("Test 3", 1.0f);
 		break;
-	case INSIDE_PLAY_AREA:
+	case BroadcastSystem::EVENT::ENTER_PLAY_AREA:
 		updateInfoBoxSize("Test 3", 0.5f);
 		break;
 	default:

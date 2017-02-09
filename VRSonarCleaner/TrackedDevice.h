@@ -5,13 +5,13 @@
 
 #include <openvr.h>
 
-#include "Subject.h"
+#include "BroadcastSystem.h"
 #include "CGLRenderModel.h"
 #include "Icosphere.h"
 
 #include "../shared/Matrices.h"
 
-class TrackedDevice : public Subject
+class TrackedDevice : public BroadcastSystem::Broadcaster
 {
 public:
 	TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);

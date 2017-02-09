@@ -202,6 +202,7 @@
     <ClInclude Include="..\shared\Texture.h" />
     <ClInclude Include="..\shared\Vectors.h" />
     <ClInclude Include="arcball.h" />
+    <ClInclude Include="BroadcastSystem.h" />
     <ClInclude Include="CGLRenderModel.h" />
     <ClInclude Include="CleaningRoom.h" />
     <ClInclude Include="CloudCollection.h" />
@@ -220,7 +221,6 @@
     <ClInclude Include="IllustrativeParticleEmitter.h" />
     <ClInclude Include="IllustrativeParticleSystem.h" />
     <ClInclude Include="LassoTool.h" />
-    <ClInclude Include="Observer.h" />
     <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
@@ -229,7 +229,6 @@
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
-    <ClInclude Include="Subject.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="Vec3.h" />

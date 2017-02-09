@@ -321,8 +321,8 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 		vr::IVRChaperone* chap = vr::VRChaperone();
 		chap->GetPlayAreaSize(&widthX, &widthZ);
 		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
-			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::OUT_OF_PLAY_AREA);
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], BroadcastSystem::EVENT::EXIT_PLAY_AREA);
 		else
-			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], Observer::EVENT::INSIDE_PLAY_AREA);
+			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], BroadcastSystem::EVENT::ENTER_PLAY_AREA);
 	}
 }

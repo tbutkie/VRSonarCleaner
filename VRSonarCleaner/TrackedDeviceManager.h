@@ -6,9 +6,9 @@
 #include "ViveController.h"
 #include "EditingController.h"
 #include "CGLRenderModel.h"
+#include "BroadcastSystem.h"
 
-
-class TrackedDeviceManager : public Subject
+class TrackedDeviceManager : public BroadcastSystem::Broadcaster
 {
 public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
