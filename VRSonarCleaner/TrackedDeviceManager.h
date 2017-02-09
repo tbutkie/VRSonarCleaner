@@ -22,6 +22,9 @@ public:
 
 	void updateControllerStates();
 
+	virtual void attach(BroadcastSystem::Listener *obs);
+	virtual void detach(BroadcastSystem::Listener *obs);
+
 	bool cleaningModeActive();
 	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
 	Matrix4* getManipulationData();

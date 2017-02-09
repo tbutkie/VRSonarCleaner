@@ -38,8 +38,8 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 	double thisY = scaler->getUnscaledLatY(y);
 	double thisZ = scaler->getUnscaledDepth(z);
 
-	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
+	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
+	printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
 
 	addDyeParticle(thisX, thisY, thisZ, r, g, b, lifetime);
 }

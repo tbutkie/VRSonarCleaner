@@ -30,12 +30,12 @@ namespace BroadcastSystem
 	class Broadcaster
 	{
 	public:
-		void attach(Listener *obs)
+		virtual void attach(Listener *obs)
 		{
 			m_vpListeners.push_back(obs);
 		}
 
-		void detach(Listener *obs)
+		virtual void detach(Listener *obs)
 		{
 			m_vpListeners.erase(std::remove(m_vpListeners.begin(), m_vpListeners.end(), obs), m_vpListeners.end());
 		}
@@ -46,7 +46,7 @@ namespace BroadcastSystem
 			for (auto obs : m_vpListeners) obs->receiveEvent(device, event, data);
 		}
 
-	private:
+	protected:
 		std::vector<Listener *> m_vpListeners;
 	};
  }

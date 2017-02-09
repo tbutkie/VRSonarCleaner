@@ -181,7 +181,6 @@
     <ClCompile Include="IllustrativeParticle.cpp" />
     <ClCompile Include="IllustrativeParticleEmitter.cpp" />
     <ClCompile Include="IllustrativeParticleSystem.cpp" />
-    <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
@@ -224,7 +223,6 @@
     <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
-    <ClInclude Include="InteractionManager.h" />
     <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />

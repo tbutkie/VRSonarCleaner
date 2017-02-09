@@ -248,6 +248,7 @@ bool CMainApplication::BInitGL()
 	else if (mode == 1)
 	{
 		flowRoom = new FlowRoom();
+		m_pTDM->attach(flowRoom);
 	}
 
 

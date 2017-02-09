@@ -99,6 +99,28 @@ void TrackedDeviceManager::updateControllerStates()
 		m_pManipController->update();
 }
 
+void TrackedDeviceManager::attach(BroadcastSystem::Listener * obs)
+{
+	m_vpListeners.push_back(obs);
+
+	if (m_pEditController)
+		m_pEditController->attach(obs);
+
+	if (m_pManipController)
+		m_pManipController->attach(obs);
+}
+
+void TrackedDeviceManager::detach(BroadcastSystem::Listener * obs)
+{
+	m_vpListeners.erase(std::remove(m_vpListeners.begin(), m_vpListeners.end(), obs), m_vpListeners.end());
+
+	if (m_pEditController)
+		m_pEditController->detach(obs);
+
+	if (m_pManipController)
+		m_pManipController->detach(obs);
+}
+
 bool TrackedDeviceManager::cleaningModeActive()
 {
 	return m_pEditController && m_pEditController->cleaningActive();
@@ -177,7 +199,10 @@ void TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 			thisController = m_pManipController;
 		}
 
-		thisController->attach(&InfoBoxManager::getInstance());
+		//thisController->attach(&InfoBoxManager::getInstance());
+
+		for (auto &l : m_vpListeners)
+			thisController->attach(l);
 	}
 }
 
@@ -191,16 +216,25 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 		if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pEditController->getIndex())
 		{
 			m_pEditController->detach(&InfoBoxManager::getInstance());
+
+			for (auto &l : m_vpListeners)
+				m_pEditController->detach(l);
+
 			delete m_pEditController;
 			m_pEditController = NULL;
 		}
 		else if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pManipController->getIndex())
 		{
 			m_pManipController->detach(&InfoBoxManager::getInstance());
+
+			for (auto &l : m_vpListeners)
+				m_pManipController->detach(l);
+
 			delete m_pManipController;
 			m_pManipController = NULL;
 		}
 	}
+
 }
 
 void TrackedDeviceManager::renderTrackedDevices(Matrix4 & matVP)

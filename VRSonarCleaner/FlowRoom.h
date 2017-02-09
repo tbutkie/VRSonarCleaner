@@ -24,7 +24,9 @@
 #include "../shared/Matrices.h"
 //#include "../shared/pathtools.h"
 
-class FlowRoom
+#include "BroadcastSystem.h"
+
+class FlowRoom : public BroadcastSystem::Listener
 {
 public:
 	FlowRoom();
@@ -43,6 +45,8 @@ public:
 	bool gripModel(const Matrix4 *controllerPose);
 
 	void reset();
+
+	virtual void receiveEvent(TrackedDevice* device, const int event, void* data);
 
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;

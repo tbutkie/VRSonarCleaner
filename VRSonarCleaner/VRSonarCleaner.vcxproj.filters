@@ -45,9 +45,6 @@
     <ClCompile Include="HolodeckBackground.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InteractionManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ViveController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -144,9 +141,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HolodeckBackground.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InteractionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ViveController.h">

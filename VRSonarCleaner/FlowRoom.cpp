@@ -119,6 +119,18 @@ void FlowRoom::reset()
 	mainModelVolume->resetPositionAndOrientation();
 }
 
+void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
+{
+	if (event == BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED)
+	{
+		Matrix4 cursorPose;
+		memcpy(&cursorPose, data, sizeof(cursorPose));
+		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
+		
+		particleSystem->addDyeParticleWorldCoords(cursorPos.x, cursorPos.y, cursorPos.z, 1, 0, 0, 10.f);
+	}
+}
+
 void FlowRoom::preRenderUpdates()
 {
 	std::clock_t start = std::clock();
