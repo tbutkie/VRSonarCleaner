@@ -38,10 +38,10 @@ FlowRoom::FlowRoom()
 
 
 	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	mainModelVolume = new DataVolume(0, 1.125, 0, 0, 2.25, 2.25, 2.25);
+	mainModelVolume = new DataVolume(0.f, 1.f, 0.f, 0, 1.f, 1.f, 1.f);
 	//	wallVolume = new DataVolume(0, (roomSizeY / 2) + (roomSizeY*0.09), (roomSizeZ / 2) - 0.42, 1, (roomSizeX*0.9), 0.8, (roomSizeY*0.80));
 
-	mainModelVolume->setInnerCoords(flowGridCollection->at(0)->getScaledXMin(), flowGridCollection->at(0)->getScaledXMax(), flowGridCollection->at(0)->getScaledMaxDepth(), flowGridCollection->at(0)->getScaledMinDepth(), flowGridCollection->at(0)->getScaledYMin(), flowGridCollection->at(0)->getScaledYMax());
+	mainModelVolume->setInnerCoords(flowGridCollection->at(0)->getScaledXMin(), flowGridCollection->at(0)->getScaledXMax(), flowGridCollection->at(0)->getScaledMinDepth(), flowGridCollection->at(0)->getScaledMaxDepth(), flowGridCollection->at(0)->getScaledYMin(), flowGridCollection->at(0)->getScaledYMax());
 	
 	m_fPtHighlightAmt = 1.f;
 	m_LastTime = std::chrono::high_resolution_clock::now();
@@ -138,7 +138,7 @@ void FlowRoom::preRenderUpdates()
 		{
 			if (true) ///playing v paused
 			{
-				float factorToAdvance = (float)timeSinceLast / 120000; //35 second loop time		
+				float factorToAdvance = (float)timeSinceLast / 35000; //35 second loop time		
 				float newTime = currentTime + (factorToAdvance * timeRange);
 				if (newTime > maxTime)
 					newTime = minTime;
