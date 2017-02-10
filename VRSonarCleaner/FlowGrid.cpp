@@ -55,7 +55,7 @@ FlowGrid::FlowGrid(char* filename)
 	}
 
 	int index4d;
-	bool tempIsWater;
+	int tempIsWater;
 	float tempU, tempV, tempW;
 	for (int x = 0; x<xCells; x++)
 	{
@@ -128,7 +128,7 @@ void FlowGrid::init()
 	lastTimeRequested = true;
 
 	enableIllustrativeParticles = true;
-	numIllustrativeParticles = 2000;
+	numIllustrativeParticles = 1;
 	illustrativeParticleTrailTime = 1000;
 	illustrativeParticleLifetime = 10000;
 	illustrativeParticleSize = 1;

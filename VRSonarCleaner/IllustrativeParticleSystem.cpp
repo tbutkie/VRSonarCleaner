@@ -38,8 +38,8 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 	double thisY = scaler->getUnscaledLatY(y);
 	double thisZ = scaler->getUnscaledDepth(z);
 
-	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-	printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
+	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
+	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
 
 	addDyeParticle(thisX, thisY, thisZ, r, g, b, lifetime);
 }
@@ -85,83 +85,24 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 
 	delete particles[particleToReplace];
 	particles[particleToReplace] = tmpPart;
+
+	flowGridCollection->at(0)->numIllustrativeParticles++;
 }
 
 void IllustrativeParticleSystem::update(float time)
 {
-	//if (flowGridCollection.size() < 1)
-	//  return;
-
-	//printf("Updating Particle System...\n");
-
-	float randX;
-	float randY;
-	float randZ;
-	float lifetime;	
 	ULONGLONG tick = GetTickCount64();
 	ULONGLONG timeSinceLastUpdate = tick - lastParticleUpdate;
 	//printf("time since last: %f\n", (float)timeSinceLastUpdate);
 	if (timeSinceLastUpdate > 1000)
 		timeSinceLastUpdate = 1000; //dont skip or jump start
 
-
 	//dont update too often
 	if (timeSinceLastUpdate <= PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL)
 		return;
 	else
 		lastParticleUpdate = tick;
-
-
-	//keep seeding streaklets as needed
-
-	/*
-
-	//count current particles
-	int numParticlesAlive = 0;
-	int numUserParticlesAlive = 0;
-	int numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->dead)
-			numParticlesDead++;
-		else
-		{
-			numParticlesAlive++;
-			if (particles[i]->userCreated)
-				numUserParticlesAlive++;
-
-		}
-	}
-
-	*/
-
-	//lastCountLiveParticles = maxNumParticles - numParticlesDead;
-	//lastCountLiveSeeds = numSeedsActive;
-
-	/*
-
-	//printf("1seedsActive = %d, partsDead = %d\n", numSeedsActive, numParticlesDead);
-	if (numSeedsActive > numSeedsToMaintain) //kill off some seeds if too many exist
-	{
-		int numToKill = numSeedsActive - numSeedsToMaintain;
-		//printf("Need to kill %d seeds.\b", numToKill);
-		for (int i=0;i<maxNumParticles && numToKill > 0;i++)
-		{
-			if (!particles[i]->userCreated && !particles[i]->dead)
-			{
-				particles[i]->kill();
-				numToKill--;
-				numSeedsActive--;
-				numParticlesDead++;
-			}
-		}	
-	}
 	
-	*/
-
-	//
-
-
 	//printf("Updating existing particles..\n");
 	
 	float x, y, z;
@@ -258,20 +199,8 @@ void IllustrativeParticleSystem::update(float time)
 		}//end if not dead
 	}//end for all particles
 	//printf("Updated Particles in %f ms.\n", GetTickCount()-tick);
-
-
+	
 	//handle dyepoles/emitters
-	int numToSpawn;
-
-	/*
-	//recount the available particles
-	int numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->dead)
-			numParticlesDead++;
-	}
-	*/
 	
 	//printf("Counting dead...\n");
 
@@ -298,6 +227,8 @@ void IllustrativeParticleSystem::update(float time)
 
 	//printf("Emitting from Emitters...\n");
 
+	float lifetime;
+	int numToSpawn;
 	for (int i=0;i<dyePoles.size();i++)
 	{
 		for (int j=0;j<dyePoles.at(i)->emitters.size();j++)
@@ -367,46 +298,7 @@ void IllustrativeParticleSystem::update(float time)
 		else if (particles[i]->dead)
 			numParticlesDead++;
 	}
-	//lastCountLiveParticles = maxNumParticles - numParticlesDead;
-	//printf("After seedsActive = %d, partsDead = %d\n", numSeedsActive, numParticlesDead);
 
-	/*
-	int numSeedsToAdd = numSeedsToMaintain - numSeedsActive;
-	if (numSeedsToAdd < 1)
-		numSeedsToAdd = 0;
-	if (numParticlesDead < numSeedsToAdd)
-		numSeedsToAdd = numParticlesDead;
-	int searchIndex = 0;
-	//printf("Adding %d seeds..\n", numSeedsToAdd); 
-	int randZlevel;
-	*/
-
-
-	/*
-	float seedBBox[4];
-	if (onscreenModelCoordsBBox[0] < dataset->minLonVal)
-		seedBBox[0] = dataset->minLonVal;
-	else
-		seedBBox[0] = onscreenModelCoordsBBox[0];
-	if (onscreenModelCoordsBBox[1] > dataset->maxLonVal)
-		seedBBox[1] = dataset->maxLonVal;
-	else
-		seedBBox[1] = onscreenModelCoordsBBox[1];
-	if (onscreenModelCoordsBBox[2] < dataset->minLatVal)
-		seedBBox[2] = dataset->minLatVal;
-	else
-		seedBBox[2] = onscreenModelCoordsBBox[2];
-	if (onscreenModelCoordsBBox[3] > dataset->maxLatVal)
-		seedBBox[3] = dataset->maxLatVal;
-	else
-		seedBBox[3] = onscreenModelCoordsBBox[3];
-
-	float onscreenXRange = seedBBox[1]-seedBBox[0];
-	float onscreenYRange = seedBBox[3]-seedBBox[2];
-
-	if (onscreenXRange <= 0 || onscreenYRange <= 0)
-		numSeedsToAdd = 0;
-	*/
 	//printf("LatLonMinMAx: %f, %f, %f, %f\n", dataset->minLonVal, dataset->maxLonVal, dataset->minLatVal, dataset->maxLatVal);
 	//printf("CORners: %f, %f, %f, %f\n", seedBBox[0], seedBBox[1], seedBBox[2], seedBBox[3]);
 
@@ -428,6 +320,9 @@ void IllustrativeParticleSystem::update(float time)
 		}
 	}
 
+	float randX;
+	float randY;
+	float randZ;
 
 	//for each grid
 	int searchIndex = 0;
@@ -521,61 +416,6 @@ void IllustrativeParticleSystem::update(float time)
 			}//end if numneeed > 0
 		}//end if illust. parts enabled
 	}//end for each flowgrid
-
-	/*
-	bool inWater;
-	int chancesNotInWater;
-	float minScaledZ = abs(getScaledDepth(dataset->minDepthVal));
-	float maxScaledZ = abs(getScaledDepth(dataset->maxDepthVal));
-	float scaledZRange = maxScaledZ - minScaledZ;
-	while (numSeedsToAdd > 0 && searchIndex < maxNumParticles)// && seeding)
-	{
-		if (particles[searchIndex]->dead)
-		{
-			inWater = false;
-			chancesNotInWater = 10000;
-			while (!inWater && chancesNotInWater > 0)
-			{
-
-		//	randX = dataset->minLonVal + rand()%(int)dataset->rangeLonVal;
-		//	randY = dataset->minLatVal + rand()%(int)dataset->rangeLatVal;
-			randX = seedBBox[0] + onscreenXRange*(((float)(rand()%10000))/10000);
-			randY = seedBBox[2] + onscreenYRange*(((float)(rand()%10000))/10000);
-		
-			//randZ = dataset->minDepthVal + rand()%(int)dataset->rangeDepthVal; 
-			//randZlevel = rand()%(int)dataset->cellsD;
-			//randZ = dataset->getActualDepthAtLayer(randZlevel);
-
-			if ( (rand()%100) < 20) //10% surface particles
-				randZ = 0;
-			else
-				randZ = getUnscaledDepth(   (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
-
-			//randZ = 50;
-				//randZ = 10;//TEMP TO MAKE ONLY SURFACE STREAKLETS
-				if (dataset->isWaterAt(randX, randY, randZ))
-					inWater = true;
-				else
-					chancesNotInWater--;
-			}
-			if (chancesNotInWater < 1)
-			{
-				numSeedsToAdd = 0; //if cant find a water spot in 10k chances, stop trying this frame
-			}
-			else
-			{
-				lifetime = SEED_LIFETIME*((float)(rand()%50)/100) + SEED_LIFETIME*0.5;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously
-				Particle* tmpPart = new Particle(randX, randY, randZ, lifetime, SEED_LENGTH);
-				delete particles[searchIndex];
-				particles[searchIndex] = tmpPart;
-				numSeedsToAdd--;
-			}
-		}//if found dead particle
-		else
-			searchIndex++;
-	}//while more seeds to add and not out of dead particles to revive
-	//printf("Added Seeds in %f ms.\n", GetTickCount()-tick);
-	*/
 
 	//final count
 	numSeedsActive = 0;
