@@ -129,7 +129,9 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		float x, y, z;
 		mainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-		particleSystem->addDyeParticle(x, -y, z, 1, 0, 0, 10.f);
+		int dyePoleID = particleSystem->addDyePole(x, z, y - 0.1f, y + 0.1f);
+		particleSystem->dyePoles[dyePoleID]->emitters[0]->setRate(particleSystem->dyePoles[dyePoleID]->emitters[0]->getRate() * 0.1f);
+		//particleSystem->addDyeParticle(x, z, y, 1.f, 0.f, 0.f, 10.f);
 	}
 }
 
