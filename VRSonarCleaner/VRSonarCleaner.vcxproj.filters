@@ -117,6 +117,9 @@
     <ClCompile Include="LassoTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PointEmitterTool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -228,6 +231,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BroadcastSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PointEmitterTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

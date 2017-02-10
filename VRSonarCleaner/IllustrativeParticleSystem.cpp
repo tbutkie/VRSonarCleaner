@@ -226,9 +226,108 @@ void IllustrativeParticleSystem::update(float time)
 	//printf("Dead: %d\n", numDeadParticles);
 
 	//printf("Emitting from Emitters...\n");
-
+	
 	float lifetime;
 	int numToSpawn;
+
+	// DYE POTS
+	for (int i = 0; i<dyePots.size(); i++)
+	{
+		numToSpawn = dyePots.at(i)->getNumParticlesToEmit(tick);
+		if (numToSpawn > 0)
+		{
+			float* vertsToSpawn = dyePots.at(i)->getParticlesToEmit(numToSpawn);//new float[numToSpawn*3];
+			for (int k = 0; k<numToSpawn; k++)
+			{
+				lifetime = dyePots.at(i)->getLifetime()*((float)(rand() % 25) / 100) + dyePots.at(i)->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
+				IllustrativeParticle* tmpPart = new IllustrativeParticle(vertsToSpawn[k * 3], vertsToSpawn[k * 3 + 1], vertsToSpawn[k * 3 + 2], lifetime, dyePots.at(i)->trailTime, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
+				tmpPart->gravity = dyePots.at(i)->getGravity();
+				tmpPart->userCreated = true;
+
+				switch(dyePots.at(i)->getColor())
+				{
+				case 0:
+					tmpPart->color[0] = COLOR_0_R;
+					tmpPart->color[1] = COLOR_0_G;
+					tmpPart->color[2] = COLOR_0_B;
+					break;
+				case 1:
+					tmpPart->color[0] = COLOR_1_R;
+					tmpPart->color[1] = COLOR_1_G;
+					tmpPart->color[2] = COLOR_1_B;
+					break;
+				case 2:
+					tmpPart->color[0] = COLOR_2_R;
+					tmpPart->color[1] = COLOR_2_G;
+					tmpPart->color[2] = COLOR_2_B;
+					break;
+				case 3:
+					tmpPart->color[0] = COLOR_3_R;
+					tmpPart->color[1] = COLOR_3_G;
+					tmpPart->color[2] = COLOR_3_B;
+					break;
+				case 4:
+					tmpPart->color[0] = COLOR_4_R;
+					tmpPart->color[1] = COLOR_4_G;
+					tmpPart->color[2] = COLOR_4_B;
+					break;
+				case 5:
+					tmpPart->color[0] = COLOR_5_R;
+					tmpPart->color[1] = COLOR_5_G;
+					tmpPart->color[2] = COLOR_5_B;
+					break;
+				case 6:
+					tmpPart->color[0] = COLOR_6_R;
+					tmpPart->color[1] = COLOR_6_G;
+					tmpPart->color[2] = COLOR_6_B;
+					break;
+				case 7:
+					tmpPart->color[0] = COLOR_7_R;
+					tmpPart->color[1] = COLOR_7_G;
+					tmpPart->color[2] = COLOR_7_B;
+					break;
+				case 8:
+					tmpPart->color[0] = COLOR_8_R;
+					tmpPart->color[1] = COLOR_8_G;
+					tmpPart->color[2] = COLOR_8_B;
+					break;
+				}
+
+				//= dyePoles.at(i)->emitters.at(j)->getColor();
+				if (!resortedToKilling) //if we havent already resorted to killing particles because no dead ones left
+				{
+					if (numDeadParticles > 0)
+					{
+						delete particles[deadParticles[numDeadParticles - 1]];
+						particles[deadParticles[numDeadParticles - 1]] = tmpPart;
+						numDeadParticles--;
+					}
+					else
+					{
+						resortedToKilling = true;
+					}
+				}
+				else //replace a live seed particle
+				{
+					if (numKillableSeeds > 0)
+					{
+						delete particles[killableSeeds[numKillableSeeds - 1]];
+						particles[killableSeeds[numKillableSeeds - 1]] = tmpPart;
+						numKillableSeeds--;
+					}
+					else
+					{
+						//no particles left, what do we do here?
+						//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
+					}
+				}
+
+			}//end for numToSpawn
+			delete vertsToSpawn;
+		}
+	}
+
+	// DYE POLES
 	for (int i=0;i<dyePoles.size();i++)
 	{
 		for (int j=0;j<dyePoles.at(i)->emitters.size();j++)
@@ -819,6 +918,29 @@ IllustrativeDyePole* IllustrativeParticleSystem::getDyePoleClosestTo(double x, d
 		}
 	}
 	return dyePoles.at(closestIndex);
+}
+
+IllustrativeParticleEmitter * IllustrativeParticleSystem::getDyePotClosestTo(float x, float y, float z)
+{
+	Vec3 target(x, y, z);
+	float minDist = 10000000.f;
+	int closestIndex = -1;
+	float dist;
+	for (int i = 0; i < dyePots.size(); i++)
+	{
+		Vec3 candidate(dyePots.at(i)->x, dyePots.at(i)->y, (dyePots.at(i)->depthTop - dyePots.at(i)->depthBottom) * 0.5f);
+		dist = target.dist(candidate);
+		if (dist < minDist)
+		{
+			minDist = dist;
+			closestIndex = i;
+		}
+	}
+
+	if (closestIndex < 0)
+		return NULL;
+
+	return dyePots.at(closestIndex);
 }
 
 void IllustrativeParticleSystem::pause()

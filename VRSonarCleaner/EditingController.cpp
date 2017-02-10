@@ -314,6 +314,12 @@ void EditingController::triggerUnclicked(float amount)
 	m_bCleaningMode = false;
 }
 
+void EditingController::gripButtonPressed()
+{
+	m_bGripButtonClicked = true;
+	notify(this, BroadcastSystem::EVENT::EDIT_GRIP_PRESSED, &m_mat4CursorCurrentPose);
+}
+
 void EditingController::touchpadInitialTouch(float x, float y)
 {
 	m_bTouchpadTouched = true;

@@ -129,9 +129,32 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		float x, y, z;
 		mainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-		int dyePoleID = particleSystem->addDyePole(x, z, y - 0.1f, y + 0.1f);
-		particleSystem->dyePoles[dyePoleID]->emitters[0]->setRate(particleSystem->dyePoles[dyePoleID]->emitters[0]->getRate() * 0.1f);
+		//int dyePoleID = particleSystem->addDyePole(x, z, y - 0.1f, y + 0.1f);
+		//particleSystem->dyePoles[dyePoleID]->emitters[0]->setRate(particleSystem->dyePoles[dyePoleID]->emitters[0]->getRate() * 0.1f);
+
+		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(x, z, y - 0.1f, y + 0.1f, scaler);
+		tmp->setRate(10.f);
+		tmp->changeColor(particleSystem->dyePots.size() % 9);
+		particleSystem->dyePots.push_back(tmp);
 		//particleSystem->addDyeParticle(x, z, y, 1.f, 0.f, 0.f, 10.f);
+	}
+
+	if (event == BroadcastSystem::EVENT::EDIT_GRIP_PRESSED)
+	{
+		Matrix4 cursorPose;
+		memcpy(&cursorPose, data, sizeof(cursorPose));
+		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
+		float x, y, z;
+		mainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
+
+		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", x, y, z);
+		
+		IllustrativeParticleEmitter *tmp = particleSystem->getDyePotClosestTo(x, z, y);
+		if (tmp)
+		{
+			particleSystem->dyePots.erase(std::remove(particleSystem->dyePots.begin(), particleSystem->dyePots.end(), tmp), particleSystem->dyePots.end());
+			delete tmp;
+		}		
 	}
 }
 

@@ -25,6 +25,7 @@ public:
 
 	int addDyePole(double x, double y, float minZ, float maxZ);
 	std::vector <IllustrativeDyePole*> dyePoles;
+	std::vector <IllustrativeParticleEmitter*> dyePots;
 	void drawDyePoles();
 	void deleteAllDyePoles();
 	void deleteDyePole(int index);
@@ -33,6 +34,7 @@ public:
 	void addDyeParticle(double x, double y, double z, float r, float g, float b, float lifetime);
 
 	IllustrativeDyePole* getDyePoleClosestTo(double x, double y);
+	IllustrativeParticleEmitter* getDyePotClosestTo(float x, float y, float z);
 
 	void update(float time);
 	void pause();

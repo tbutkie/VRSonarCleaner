@@ -17,6 +17,8 @@ public:
 	void triggerDisengaged();
 	void triggerClicked();
 	void triggerUnclicked(float amount);
+	
+	void gripButtonPressed();
 
 	void touchpadInitialTouch(float x, float y);
 	void touchpadTouch(float x, float y);
