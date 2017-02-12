@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
-#include "MatrixUtils.h"
 #include "../shared/glm/gtc/quaternion.hpp"
 #include "../shared/glm/gtx/quaternion.hpp"
 #include "../shared//glm/gtc/type_ptr.hpp"
@@ -54,7 +53,7 @@ private:
 	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
 	double innerSizeX, innerSizeY, innerSizeZ;
 
-	double storedMatrix[16];
+	glm::mat4 m_mat4StoredMatrix;
 	float XZscale, depthScale;
 
 	glm::mat4 m_mat4LastPose;

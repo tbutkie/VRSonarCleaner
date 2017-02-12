@@ -183,14 +183,12 @@
     <ClCompile Include="IllustrativeParticleSystem.cpp" />
     <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LassoWindow.cpp" />
-    <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="PointEmitterTool.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
-    <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -223,12 +221,10 @@
     <ClInclude Include="PointEmitterTool.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
-    <ClInclude Include="MatrixUtils.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
-    <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

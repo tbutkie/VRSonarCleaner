@@ -123,18 +123,9 @@ void DataVolume::recalcScaling()
 
 void DataVolume::convertToInnerCoords(float xWorld, float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
 {
-	double inverted[16];
-	InvertMat(storedMatrix, inverted);
-	
-	//Vec3 pointIn(xWorld, yWorld, zWorld);
-	double pointIn[3];
-	double pointOut[3];
+	glm::vec4 pointIn(xWorld, yWorld, zWorld, 1.f);
 
-	pointIn[0] = xWorld;
-	pointIn[1] = yWorld;
-	pointIn[2] = zWorld;
-
-	MVMult(inverted, pointIn, pointOut, true);
+	glm::vec4 pointOut = glm::inverse(m_mat4StoredMatrix) * pointIn;
 
 	*xInner = pointOut[0];
 	*yInner = pointOut[1];
@@ -143,18 +134,13 @@ void DataVolume::convertToInnerCoords(float xWorld, float yWorld, float zWorld, 
 
 void DataVolume::convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld)
 {
-	double pointIn[3];
-	double pointOut[3];
+	glm::vec4 pointIn(xInner, yInner, zInner, 1.f);
+	
+	glm::vec4 pointOut = m_mat4StoredMatrix * pointIn;
 
-	pointIn[0] = xInner;
-	pointIn[1] = yInner;
-	pointIn[2] = zInner;
-
-	MVMult(storedMatrix, pointIn, pointOut, true);
-
-	*xWorld = pointOut[0];
-	*yWorld = pointOut[1];
-	*zWorld = pointOut[2];
+	*xWorld = pointOut.x;
+	*yWorld = pointOut.y;
+	*zWorld = pointOut.z;
 }
 
 void DataVolume::activateTransformationMatrix()
@@ -177,7 +163,7 @@ void DataVolume::activateTransformationMatrix()
 	glTranslatef((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ); //tried this and it seems fine for now
 
 	glMatrixMode(GL_MODELVIEW);
-	glGetDoublev(GL_MODELVIEW_MATRIX, storedMatrix);
+	glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(m_mat4StoredMatrix));
 
 	/*
 	if (orientation == 0) //table view 

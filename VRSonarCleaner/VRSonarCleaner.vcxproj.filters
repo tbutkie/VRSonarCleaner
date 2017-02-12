@@ -48,16 +48,10 @@
     <ClCompile Include="ViveController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Vec3Double.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SonarPointCloud.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DataVolume.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MatrixUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ColorScaler.cpp">
@@ -143,16 +137,10 @@
     <ClInclude Include="ViveController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vec3Double.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SonarPointCloud.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DataVolume.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MatrixUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorScaler.h">
