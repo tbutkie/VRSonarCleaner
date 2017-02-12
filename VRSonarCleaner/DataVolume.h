@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
-#include "Vec3.h"
 #include "MatrixUtils.h"
 #include "../shared/glm/gtc/quaternion.hpp"
 #include "../shared/glm/gtx/quaternion.hpp"

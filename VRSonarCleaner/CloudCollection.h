@@ -6,7 +6,6 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
-#include "Vec3.h"
 #include "Vec3Double.h"
 #include "ColorScaler.h"
 #include <vector>

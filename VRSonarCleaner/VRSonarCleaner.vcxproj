@@ -190,7 +190,6 @@
     <ClCompile Include="InfoBoxManager.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
-    <ClCompile Include="Vec3.cpp" />
     <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
   </ItemGroup>
@@ -229,7 +228,6 @@
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
-    <ClInclude Include="Vec3.h" />
     <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />
   </ItemGroup>
