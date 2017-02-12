@@ -185,7 +185,6 @@
     <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="MatrixUtils.cpp" />
     <ClCompile Include="PointEmitterTool.cpp" />
-    <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
@@ -226,7 +225,6 @@
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="MatrixUtils.h" />
-    <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="TrackedDevice.h" />

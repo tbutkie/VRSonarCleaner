@@ -1,5 +1,4 @@
 #include "CleaningRoom.h"
-#include "Quaternion.h"
 #include "DebugDrawer.h"
 
 CleaningRoom::CleaningRoom()
