@@ -1,6 +1,8 @@
 #include "CleaningRoom.h"
 #include "DebugDrawer.h"
 
+#include <algorithm>
+
 CleaningRoom::CleaningRoom()
 {
 	//X-Right-Left
@@ -198,13 +200,13 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
 
-		// fast point-in-AABB failure test (NEEDS REVISION)
-		if (thisPt.x < std::min(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - radius ||
-			thisPt.x > std::max(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + radius ||
-			thisPt.y < std::min(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - radius ||
-			thisPt.y > std::max(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
-			thisPt.z < std::min(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
-			thisPt.z > std::max(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
+		// fast point-in-AABB failure test
+		if (thisPt.x < (std::min)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - radius ||
+			thisPt.x > (std::max)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + radius ||
+			thisPt.y < (std::min)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - radius ||
+			thisPt.y > (std::max)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
+			thisPt.z < (std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
+			thisPt.z > (std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
 		{			
 			if (clouds->getCloud(0)->getPointMark(i) != 0)
 			{
