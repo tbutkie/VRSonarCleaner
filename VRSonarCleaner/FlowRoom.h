@@ -49,23 +49,22 @@ public:
 	virtual void receiveEvent(TrackedDevice* device, const int event, void* data);
 
 private:
-	float roomSizeX, roomSizeY, roomSizeZ;
-	float minX, minY, minZ;
-	float maxX, maxY, maxZ;
+	glm::vec3 m_vec3RoomSize;
+	glm::vec3 m_vec3Min, m_vec3Max;
+	
+	HolodeckBackground *m_pHolodeck;
 
-	HolodeckBackground* holodeck;
+	CoordinateScaler *m_pScaler;
 
-	CoordinateScaler *scaler;
+	float m_fFlowRoomTime;
+	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
+	ULONGLONG m_ullLastTimeUpdate;
 
-	float flowRoomTime;
-	float flowRoomMinTime, flowRoomMaxTime;
-	ULONGLONG lastTimeUpdate;
-
-	DataVolume *mainModelVolume;
+	DataVolume *m_pMainModelVolume;
 		
-	std::vector <FlowGrid *> *flowGridCollection;
+	std::vector<FlowGrid*> m_vpFlowGridCollection;
 			
-	IllustrativeParticleSystem *particleSystem;
+	IllustrativeParticleSystem *m_pParticleSystem;
 
 	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fPtHighlightAmt;

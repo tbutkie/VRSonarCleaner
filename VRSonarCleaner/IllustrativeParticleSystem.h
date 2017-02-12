@@ -17,15 +17,12 @@
 class IllustrativeParticleSystem
 {
 public:
-	IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector <FlowGrid *> *FlowGridCollection);
+	IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection);
 	virtual ~IllustrativeParticleSystem();
-		
-	
-	
-
+			
 	int addDyePole(double x, double y, float minZ, float maxZ);
-	std::vector <IllustrativeDyePole*> dyePoles;
-	std::vector <IllustrativeParticleEmitter*> dyePots;
+	std::vector<IllustrativeDyePole*> m_vpDyePoles;
+	std::vector<IllustrativeParticleEmitter*> m_vpDyePots;
 	void drawDyePoles();
 	void deleteAllDyePoles();
 	void deleteDyePole(int index);
@@ -39,22 +36,19 @@ public:
 	void update(float time);
 	void pause();
 	void unPause();
-	ULONGLONG lastParticleUpdate;
-	ULONGLONG lastSeeding;
-	ULONGLONG pauseTime;
+	ULONGLONG m_ullLastParticleUpdate;
+	ULONGLONG m_ullPauseTime;
 	
-
-	int numSeedsToMaintain;
-	int maxNumParticles;
+	int m_nMaxParticles;
 
 	//void draw();
 
 	//vector <Particle> particles;
-	IllustrativeParticle* particles[MAX_PARTICLES];
+	std::vector<IllustrativeParticle*> m_vpParticles;
 	
-	CoordinateScaler *scaler;
+	CoordinateScaler *m_pScaler;
 
-	std::vector <FlowGrid *> *flowGridCollection;
+	std::vector<FlowGrid*> m_vpFlowGridCollection;
 		
 	
 	//int getNumParticles();
@@ -63,26 +57,23 @@ public:
 	int getNumDyePoles();
 	int getNumDyeEmitters();
 	int getNumDyeParticles();
-	int lastCountLiveParticles;
-	int lastCountLiveSeeds;
+	int m_nLastCountLiveParticles;
+	int m_nLastCountLiveSeeds;
 
 
-	GLuint streakletPositionsVBO;
-	GLuint streakletColorsVBO;
-	bool streakletBuffersGenerated;
-	int numStreakSegments;
+	GLuint m_glStreakletPositionsVBO;
+	GLuint m_glStreakletColorsVBO;
+	bool m_bStreakletBuffersGenerated;
+	int m_nStreakSegments;
 	void loadStreakVBOs();
 	void drawStreakVBOs();
 
-	GLuint particlePositionsVBO;
-	GLuint particleColorsVBO;
-	bool particleBuffersGenerated;
-	int numParticlePoints;
+	GLuint m_glParticlePositionsVBO;
+	GLuint m_glParticleColorsVBO;
+	bool m_bParticleBuffersGenerated;
+	int m_nParticlePoints;
 	void loadParticleVBOs();
 	void drawParticleVBOs();
-
-
-
 };
 
 #endif

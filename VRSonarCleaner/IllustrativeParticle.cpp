@@ -3,35 +3,30 @@
 IllustrativeParticle::IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime)
 {
 	reset();
-	timeToLive = TimeToLive;
-	timeToStartDying = currentTime + TimeToLive;
-	startingPosition[0] = x;
-	startingPosition[1] = y;
-	startingPosition[2] = z;
-	trailTime = TrailTime;
-	userCreated = false;
-	color[0] = 0.25;
-	color[1] = 0.95;
-	color[2] = 1.0;
-	oldLastSpeed = -1;
-	lastSpeed = -1;
-	gravity = 0;
+	m_ullTimeToStartDying = currentTime + TimeToLive;
+	m_vec3StartingPosition = glm::vec3(x, y, z);
+	m_fTrailTime = TrailTime;
+	m_bUserCreated = false;
+	m_vec3Color.r = 0.25;
+	m_vec3Color.g = 0.95;
+	m_vec3Color.b = 1.0;
+	m_fGravity = 0;
 
-	flowGridIndex = 0;
+	m_iFlowGridIndex = -1;
 
-	birthTime = currentTime;
-	times[0] = currentTime;
-	positions[0] = startingPosition[0];
-	positions[1] = startingPosition[1];
-	positions[2] = startingPosition[2];
+	m_ullBirthTime = currentTime;
 
-	positions[3] = startingPosition[0];
-	positions[4] = startingPosition[1];
-	positions[5] = startingPosition[2];
+	m_vullTimes.resize(MAX_NUM_POSITIONS);
+	m_vullTimes[0] = currentTime;
 
-	liveStartIndex = 0;
-	liveEndIndex = 1;
-	liveTimeElapsed = .001;
+	m_vvec3Positions.resize(MAX_NUM_POSITIONS);
+
+	m_vvec3Positions[0] = m_vec3StartingPosition;
+	m_vvec3Positions[1] = m_vec3StartingPosition;
+
+	m_iLiveStartIndex = 0;
+	m_iLiveEndIndex = 1;
+	m_ullLiveTimeElapsed = 0ull;
 }
 
 IllustrativeParticle::~IllustrativeParticle()
@@ -41,129 +36,76 @@ IllustrativeParticle::~IllustrativeParticle()
 
 void IllustrativeParticle::reset()
 {
-	dead = false;
-	dying = false;
+	m_bDead = false;
+	m_bDying = false;
 	//updated = false;
-	liveTimeElapsed = .001;
-	liveStartIndex = 0;
-	liveEndIndex = 0;
+	m_ullLiveTimeElapsed = 0ull;
+	m_iLiveStartIndex = 0;
+	m_iLiveEndIndex = 0;
 }
 
 void IllustrativeParticle::reset(float x, float y, float z)
 {
 	reset();
-	startingPosition[0] = x;
-	startingPosition[1] = y;
-	startingPosition[2] = z;
+	m_vec3StartingPosition = glm::vec3(x, y, z);
 }
 
 void IllustrativeParticle::kill()
 {
 	//printf("K");
-	dead = true;
-	dying = true;
+	m_bDead = true;
+	m_bDying = true;
 	//updated = false;
-	liveStartIndex = 0;
-	liveEndIndex = 0;
-	liveTimeElapsed = .001;
+	m_iLiveStartIndex = 0;
+	m_iLiveEndIndex = 0;
+	m_ullLiveTimeElapsed = 0ull;
 }
 
 //returns true if needs to be deleted
 void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ)
 {
-	if (dead)
+	if (m_bDead)
 		return;
 	else
-		lastUpdateTimestamp = currentTime;
-	//update time and check if should die off
-	//if (!updated)
-	//{
-	//	updated = true;
-	//	birthTime = currentTime;
-	//	times[0] = currentTime;
-	//	positions[0] = startingPosition[0];
-	//	positions[1] = startingPosition[1];
-	//	positions[2] = startingPosition[2];
-	//	liveStartIndex = 0;
-	//	liveEndIndex = 1;
-	//	liveTimeElapsed = .001;
-	//	return; //first update always just starts the particle at its starting position with the current time
-	//}
-	//else
-	if (currentTime >= timeToStartDying && !dying)
+		m_ullLastUpdateTimestamp = currentTime;
+
+	glm::vec3 m_vec3NewPos(newX, newY, newZ);
+
+	if (currentTime >= m_ullTimeToStartDying && !m_bDying)
 	{
-		timeOfDeath = currentTime;
-		dying = true;
+		m_ullTimeOfDeath = currentTime;
+		m_bDying = true;
 	}
 
-	if (!dying)//translate particle, filling next spot in array with new position/timestamp
+	if (!m_bDying)//translate particle, filling next spot in array with new position/timestamp
 	{
-		//timeSinceLast = currentTime - times[liveEndIndex-1];
-		//if (liveEndIndex == 0)
-		//{
-		//	currentPos[0] = positions[(MAX_NUM_POSITIONS-1)*3];
-		//	currentPos[1] = positions[(MAX_NUM_POSITIONS-1)*3+1];
-		//	currentPos[2] = positions[(MAX_NUM_POSITIONS-1)*3+2];
-		//}
-		//else
-		//{
-		//	currentPos[0] = positions[(liveEndIndex-1)*3];
-		//	currentPos[1] = positions[(liveEndIndex-1)*3+1];
-		//	currentPos[2] = positions[(liveEndIndex-1)*3+2];
-		//}
-		//	
-		if (liveEndIndex < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
+		if (m_iLiveEndIndex < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
 		{
-			positions[liveEndIndex*3] = newX;
-			positions[liveEndIndex*3+1] = newY;
-			positions[liveEndIndex*3+2] = newZ;
-			times[liveEndIndex] = currentTime;
-			liveEndIndex++;
+			m_vvec3Positions[m_iLiveEndIndex] = m_vec3NewPos;
+			m_vullTimes[m_iLiveEndIndex] = currentTime;
+			m_iLiveEndIndex++;
 		}
-		else if (liveEndIndex == 0 || liveEndIndex == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
+		else if (m_iLiveEndIndex == 0 || m_iLiveEndIndex == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
 		{
-			positions[0] = newX;
-			positions[1] = newY;
-			positions[2] = newZ;
-			times[0] = currentTime;
-			liveEndIndex = 1;
+			m_vvec3Positions[0] = m_vec3NewPos;
+			m_vullTimes[0] = currentTime;
+			m_iLiveEndIndex = 1;
 		}
-		//store speed of this movement
-		//oldLastSpeed = lastSpeed;
-		//lastSpeed = sqrt( (newPos[0]-currentPos[0])*(newPos[0]-currentPos[0]) + (newPos[1]-currentPos[1])* (newPos[1]-currentPos[1]) +  (newPos[2]-currentPos[2])* (newPos[2]-currentPos[2]) ) / timeSinceLast;
-		//check if moved away from starting position yet
-		//if (!movedAway)
-		//{
-		//	if ( sqrt( (newPos[0]-startingPosition[0])*(newPos[0]-startingPosition[0]) + (newPos[1]-startingPosition[1])* (newPos[1]-startingPosition[1]) +  (newPos[2]-startingPosition[2])* (newPos[2]-startingPosition[2]) ) > MOVED_AWAY_THRESHOLD)
-		//	{
-		//		movedAway = true;
-		//	}
-		//}
-		//else //check if back at start
-		//{
-		//	if (!movedBack)
-		//	{
-		//		if ( sqrt( (newPos[0]-startingPosition[0])*(newPos[0]-startingPosition[0]) + (newPos[1]-startingPosition[1])* (newPos[1]-startingPosition[1]) +  (newPos[2]-startingPosition[2])* (newPos[2]-startingPosition[2]) ) < MOVED_BACK_THRESHOLD)
-		//		{
-		//			movedBack = true;
-		//		}
-		//	}
-		//}
 	}//end if not dying
 
 	//move liveStartIndex up past too-old positions
-	if (liveStartIndex < liveEndIndex) //no wrap around
+	if (m_iLiveStartIndex < m_iLiveEndIndex) //no wrap around
 	{
-		for (int i=liveStartIndex;i<liveEndIndex;i++)
+		for (int i = m_iLiveStartIndex; i < m_iLiveEndIndex; i++)
 		{
-			timeSince = currentTime-times[i];
-			if (timeSince > trailTime)
+			m_ullTimeSince = currentTime - m_vullTimes[i];
+			if (m_ullTimeSince > m_fTrailTime)
 			{
-				liveStartIndex = i+1;
-				if (liveStartIndex == MAX_NUM_POSITIONS)
+				m_iLiveStartIndex = i + 1;
+				if (m_iLiveStartIndex == MAX_NUM_POSITIONS)
 				{
-					liveStartIndex = 0;
-					liveEndIndex = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
+					m_iLiveStartIndex = 0;
+					m_iLiveEndIndex = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
 					break;
 				}
 			}
@@ -171,19 +113,19 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 		}
 	}
 	
-	if (liveStartIndex > liveEndIndex) //wrap around
+	if (m_iLiveStartIndex > m_iLiveEndIndex) //wrap around
 	{
 		//check start to end of array
 		foundValid = false;
-		for (int i=liveStartIndex;i<MAX_NUM_POSITIONS;i++)
+		for (int i = m_iLiveStartIndex; i < MAX_NUM_POSITIONS; i++)
 		{
-			timeSince = currentTime-times[i];
-			if (timeSince > trailTime)
+			m_ullTimeSince = currentTime - m_vullTimes[i];
+			if (m_ullTimeSince > m_fTrailTime)
 			{
-				liveStartIndex = i+1;
-				if (liveStartIndex == MAX_NUM_POSITIONS)
+				m_iLiveStartIndex = i + 1;
+				if (m_iLiveStartIndex == MAX_NUM_POSITIONS)
 				{
-					liveStartIndex = 0;
+					m_iLiveStartIndex = 0;
 					break;
 				}
 			}
@@ -196,52 +138,43 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 
 		if (!foundValid)//check start to end of array
 		{
-			for (int i=0;i<liveEndIndex;i++)
+			for (int i = 0; i < m_iLiveEndIndex; i++)
 			{
-				timeSince = currentTime-times[i];
-				if (timeSince > trailTime)
+				m_ullTimeSince = currentTime - m_vullTimes[i];
+				if (m_ullTimeSince > m_fTrailTime)
 				{
-					liveStartIndex = i+1;
-					/*if (liveStartIndex == liveEndIndex)
-					{
-						if (dying)
-						{
-							dead = true;
-							return true;
-						}
-					}*/
+					m_iLiveStartIndex = i+1;
 				}
 				else break;
 			}
 		}
 	}
 	
-	if (dying && liveStartIndex == liveEndIndex)
+	if (m_bDying && m_iLiveStartIndex == m_iLiveEndIndex)
 	{
 		//printf("F");
-		dead = true;
+		m_bDead = true;
 	}
-	if (dying)
-		liveTimeElapsed = currentTime - times[liveStartIndex] + 0.001;
-	else
-		liveTimeElapsed = currentTime - times[liveStartIndex] + 0.001;
+	
+	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iLiveStartIndex];
+
 	return;
 }
 
 
 int IllustrativeParticle::getNumLivePositions()
 {
-	if (dead)//	if (!updated || dead)
+	if (m_bDead)//	if (!updated || dead)
 		return 0;
-	if (liveStartIndex < liveEndIndex) //no wrap around
+	if (m_iLiveStartIndex < m_iLiveEndIndex) //no wrap around
 	{
-		return liveEndIndex - liveStartIndex;
+		return m_iLiveEndIndex - m_iLiveStartIndex;
 	}
-	else if (liveStartIndex > liveEndIndex) //wrap around
+	else if (m_iLiveStartIndex > m_iLiveEndIndex) //wrap around
 	{
-		return (MAX_NUM_POSITIONS - liveStartIndex ) + liveEndIndex;
+		return (MAX_NUM_POSITIONS - m_iLiveStartIndex) + m_iLiveEndIndex;
 	}
-	else if (liveStartIndex = liveEndIndex) //this should not happen
+	else if (m_iLiveStartIndex = m_iLiveEndIndex) //this should not happen
 	{
 		printf("ERROR in get num: liveStartIndex equals liveEndIndex!!!\n");
 		return 0;
@@ -250,72 +183,62 @@ int IllustrativeParticle::getNumLivePositions()
 
 int IllustrativeParticle::getLivePosition(int index)
 {
-	if (liveStartIndex + index < MAX_NUM_POSITIONS) //no wrap around needed
+	if (m_iLiveStartIndex + index < MAX_NUM_POSITIONS) //no wrap around needed
 	{
-		return liveStartIndex + index;
+		return m_iLiveStartIndex + index;
 	}
 	else //wrap around needed
 	{
-		return index - (MAX_NUM_POSITIONS - liveStartIndex);
+		return index - (MAX_NUM_POSITIONS - m_iLiveStartIndex);
 	}
-}
-
-float IllustrativeParticle::getLastSpeed()
-{
-	return lastSpeed;	
-}
-
-float IllustrativeParticle::getOldLastSpeed()
-{
-	return oldLastSpeed;	
 }
 
 float IllustrativeParticle::getCurrentX()
 {
-	if (liveEndIndex == 0)
-		return positions[(MAX_NUM_POSITIONS-1)*3];
+	if (m_iLiveEndIndex == 0)
+		return m_vvec3Positions[MAX_NUM_POSITIONS-1].x;
 	else
-		return positions[(liveEndIndex-1)*3];	
+		return m_vvec3Positions[m_iLiveEndIndex -1].x;
 }
 
 float IllustrativeParticle::getCurrentY()
 {
-	if (liveEndIndex == 0)
-		return positions[(MAX_NUM_POSITIONS-1)*3+1];
+	if (m_iLiveEndIndex == 0)
+		return m_vvec3Positions[MAX_NUM_POSITIONS-1].y;
 	else
-		return positions[(liveEndIndex-1)*3+1];
+		return m_vvec3Positions[m_iLiveEndIndex -1].y;
 }
 
 float IllustrativeParticle::getCurrentZ()
 {
-	if (liveEndIndex == 0)
-		return positions[(MAX_NUM_POSITIONS-1)*3+2];
+	if (m_iLiveEndIndex == 0)
+		return m_vvec3Positions[MAX_NUM_POSITIONS - 1].z;
 	else
-		return positions[(liveEndIndex-1)*3+2];
+		return m_vvec3Positions[m_iLiveEndIndex - 1].z;
 }
 
 void IllustrativeParticle::getCurrentXYZ(float *x, float *y, float *z)
 {
 	int index;
-	if (liveEndIndex == 0)
+	if (m_iLiveEndIndex == 0)
 	{
-		index = (MAX_NUM_POSITIONS-1)*3;
+		index = MAX_NUM_POSITIONS-1;
 	}
 	else
 	{
-		index = (liveEndIndex-1)*3;
+		index = m_iLiveEndIndex -1;
 	}
 
-	*x = positions[index];
-	*y = positions[index+1];
-	*z = positions[index+2];
+	*x = m_vvec3Positions[index].x;
+	*y = m_vvec3Positions[index].y;
+	*z = m_vvec3Positions[index].z;
 }
 
 float IllustrativeParticle::getFadeInFadeOutOpacity()
 {
-	if (dying)
+	if (m_bDying)
 	{
-		float opacity = (lastUpdateTimestamp-timeOfDeath)/trailTime;
+		float opacity = (m_ullLastUpdateTimestamp - m_ullTimeOfDeath) / m_fTrailTime;
 		if (opacity > 1)
 			return 0;
 		else if (opacity < 0)
@@ -325,7 +248,7 @@ float IllustrativeParticle::getFadeInFadeOutOpacity()
 	}
 	else
 	{
-		float timeSinceStart = lastUpdateTimestamp - birthTime;
+		float timeSinceStart = m_ullLastUpdateTimestamp - m_ullBirthTime;
 		if (timeSinceStart < 200) //first 200 ms
 		{
 			return (timeSinceStart)/200;
@@ -337,17 +260,17 @@ float IllustrativeParticle::getFadeInFadeOutOpacity()
 
 void IllustrativeParticle::getColor(float *r, float *g, float *b)
 {
-	*r = color[0];
-	*g = color[1];
-	*b = color[2];
+	*r = m_vec3Color.r;
+	*g = m_vec3Color.g;
+	*b = m_vec3Color.b;
 }
 
 void IllustrativeParticle::setFlowGridIndex(int index)
 {
-	flowGridIndex = index;
+	m_iFlowGridIndex = index;
 }
 
 int IllustrativeParticle::getFlowGridIndex()
 {
-	return flowGridIndex;
+	return m_iFlowGridIndex;
 }

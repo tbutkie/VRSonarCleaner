@@ -8,40 +8,45 @@ FlowRoom::FlowRoom()
 	//Y-UP-vertical
 	//Z-toward monitor
 
-	scaler = new CoordinateScaler();
+	m_pScaler = new CoordinateScaler();
 
-	roomSizeX = 10;
-	roomSizeY = 4;
-	roomSizeZ = 6;
+	m_vec3RoomSize.x = 10;
+	m_vec3RoomSize.y = 4;
+	m_vec3RoomSize.z = 6;
 
-	holodeck = new HolodeckBackground(roomSizeX, roomSizeY, roomSizeZ, 0.25);
+	m_pHolodeck = new HolodeckBackground(m_vec3RoomSize.x, m_vec3RoomSize.y, m_vec3RoomSize.z, 0.25);
 
-	minX = 0 - (roomSizeX / 2);
-	minY = 0 - (roomSizeY / 2);
-	minZ = 0;
+	m_vec3Min.x = 0 - (m_vec3RoomSize.x / 2);
+	m_vec3Min.y = 0 - (m_vec3RoomSize.y / 2);
+	m_vec3Min.z = 0;
 
-	maxX = (roomSizeX / 2);
-	maxY = (roomSizeY / 2);
-	maxZ = roomSizeZ;
-
-	flowGridCollection = new std::vector <FlowGrid*>;
-
-	FlowGrid *tempFG = new FlowGrid("test.fg");
-	tempFG->setCoordinateScaler(scaler);
-	flowGridCollection->push_back(tempFG);
-	flowRoomMinTime = flowGridCollection->at(0)->minTime;
-	flowRoomMaxTime = flowGridCollection->at(0)->maxTime;
-	flowRoomTime = flowRoomMinTime;
-	lastTimeUpdate = GetTickCount64();
+	m_vec3Max.x = (m_vec3RoomSize.x / 2);
+	m_vec3Max.y = (m_vec3RoomSize.y / 2);
+	m_vec3Max.z = m_vec3RoomSize.z;
 	
-	particleSystem = new IllustrativeParticleSystem(scaler, flowGridCollection);
+	FlowGrid *tempFG = new FlowGrid("test.fg");
+	tempFG->setCoordinateScaler(m_pScaler);
+	m_vpFlowGridCollection.push_back(tempFG);
+	m_fFlowRoomMinTime = m_vpFlowGridCollection.at(0)->minTime;
+	m_fFlowRoomMaxTime = m_vpFlowGridCollection.at(0)->maxTime;
+	m_fFlowRoomTime = m_fFlowRoomMinTime;
+	m_ullLastTimeUpdate = GetTickCount64();
+	
+	m_pParticleSystem = new IllustrativeParticleSystem(m_pScaler, m_vpFlowGridCollection);
 
 
 	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	mainModelVolume = new DataVolume(0.f, 1.f, 0.f, 0, 1.f, 1.f, 1.f);
+	m_pMainModelVolume = new DataVolume(0.f, 1.f, 0.f, 0, 1.f, 1.f, 1.f);
 	//	wallVolume = new DataVolume(0, (roomSizeY / 2) + (roomSizeY*0.09), (roomSizeZ / 2) - 0.42, 1, (roomSizeX*0.9), 0.8, (roomSizeY*0.80));
 
-	mainModelVolume->setInnerCoords(flowGridCollection->at(0)->getScaledXMin(), flowGridCollection->at(0)->getScaledXMax(), flowGridCollection->at(0)->getScaledMinDepth(), flowGridCollection->at(0)->getScaledMaxDepth(), flowGridCollection->at(0)->getScaledYMin(), flowGridCollection->at(0)->getScaledYMax());
+	m_pMainModelVolume->setInnerCoords(
+		m_vpFlowGridCollection.at(0)->getScaledXMin(), 
+		m_vpFlowGridCollection.at(0)->getScaledXMax(), 
+		m_vpFlowGridCollection.at(0)->getScaledMinDepth(), 
+		m_vpFlowGridCollection.at(0)->getScaledMaxDepth(), 
+		m_vpFlowGridCollection.at(0)->getScaledYMin(), 
+		m_vpFlowGridCollection.at(0)->getScaledYMax()
+	);
 	
 	m_fPtHighlightAmt = 1.f;
 	m_LastTime = std::chrono::high_resolution_clock::now();
@@ -54,14 +59,21 @@ FlowRoom::~FlowRoom()
 
 void FlowRoom::recalcVolumeBounds()
 {
-	mainModelVolume->setInnerCoords(flowGridCollection->at(0)->getScaledXMin(), flowGridCollection->at(0)->getScaledXMax(), flowGridCollection->at(0)->getScaledMaxDepth(), flowGridCollection->at(0)->getScaledMinDepth(), flowGridCollection->at(0)->getScaledYMin(), flowGridCollection->at(0)->getScaledYMax());
+	m_pMainModelVolume->setInnerCoords(
+		m_vpFlowGridCollection.at(0)->getScaledXMin(),
+		m_vpFlowGridCollection.at(0)->getScaledXMax(),
+		m_vpFlowGridCollection.at(0)->getScaledMinDepth(),
+		m_vpFlowGridCollection.at(0)->getScaledMaxDepth(),
+		m_vpFlowGridCollection.at(0)->getScaledYMin(),
+		m_vpFlowGridCollection.at(0)->getScaledYMax()
+	);
 }
 
 void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 {
-	roomSizeX = SizeX;
-	roomSizeY = SizeY;
-	roomSizeZ = SizeZ;
+	m_vec3RoomSize.x = SizeX;
+	m_vec3RoomSize.y = SizeY;
+	m_vec3RoomSize.z = SizeZ;
 }
 
 
@@ -70,24 +82,24 @@ bool FlowRoom::gripModel(const Matrix4 *controllerPose)
 {
 	if (!controllerPose)
 	{
-		if (mainModelVolume->isBeingRotated())
+		if (m_pMainModelVolume->isBeingRotated())
 		{
-			mainModelVolume->endRotation();
+			m_pMainModelVolume->endRotation();
 			//printf("|| Rotation Ended\n");
 		}
 
 		return false;
 	}
 
-	if (!mainModelVolume->isBeingRotated())
+	if (!m_pMainModelVolume->isBeingRotated())
 	{
-		mainModelVolume->startRotation(controllerPose->get());
+		m_pMainModelVolume->startRotation(controllerPose->get());
 		//printf("++ Rotation Started\n");
 		return true;
 	}
 	else
 	{
-		mainModelVolume->continueRotation(controllerPose->get());
+		m_pMainModelVolume->continueRotation(controllerPose->get());
 		//printf("==== Rotating\n");
 	}
 	return false;
@@ -97,26 +109,26 @@ bool FlowRoom::gripModel(const Matrix4 *controllerPose)
 void FlowRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");
-	holodeck->drawSolid();
+	m_pHolodeck->drawSolid();
 
 	//draw debug
-	mainModelVolume->drawBBox();
-	mainModelVolume->drawBacking();
-	mainModelVolume->drawAxes();
+	m_pMainModelVolume->drawBBox();
+	m_pMainModelVolume->drawBacking();
+	m_pMainModelVolume->drawAxes();
 	
 	//draw model
 	glPushMatrix();
-	mainModelVolume->activateTransformationMatrix();
-	flowGridCollection->at(0)->drawBBox();
-	particleSystem->drawStreakVBOs();
-	//particleSystem->drawParticleVBOs();
+	m_pMainModelVolume->activateTransformationMatrix();
+	//m_vpFlowGridCollection.at(0)->drawBBox();
+	m_pParticleSystem->drawStreakVBOs();
+	//m_pParticleSystem->drawParticleVBOs();
 	glPopMatrix();
 		
 }
 
 void FlowRoom::reset()
 {
-	mainModelVolume->resetPositionAndOrientation();
+	m_pMainModelVolume->resetPositionAndOrientation();
 }
 
 void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
@@ -127,15 +139,15 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		memcpy(&cursorPose, data, sizeof(cursorPose));
 		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
 		float x, y, z;
-		mainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
+		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
 		//int dyePoleID = particleSystem->addDyePole(x, z, y - 0.1f, y + 0.1f);
 		//particleSystem->dyePoles[dyePoleID]->emitters[0]->setRate(particleSystem->dyePoles[dyePoleID]->emitters[0]->getRate() * 0.1f);
 
-		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(x, z, y - 0.1f, y + 0.1f, scaler);
+		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(x, z, y - 0.1f, y + 0.1f, m_pScaler);
 		tmp->setRate(10.f);
-		tmp->changeColor(particleSystem->dyePots.size() % 9);
-		particleSystem->dyePots.push_back(tmp);
+		tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
+		m_pParticleSystem->m_vpDyePots.push_back(tmp);
 		//particleSystem->addDyeParticle(x, z, y, 1.f, 0.f, 0.f, 10.f);
 	}
 
@@ -145,14 +157,14 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		memcpy(&cursorPose, data, sizeof(cursorPose));
 		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
 		float x, y, z;
-		mainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
+		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 
 		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", x, y, z);
 		
-		IllustrativeParticleEmitter *tmp = particleSystem->getDyePotClosestTo(x, z, y);
+		IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(x, z, y);
 		if (tmp)
 		{
-			particleSystem->dyePots.erase(std::remove(particleSystem->dyePots.begin(), particleSystem->dyePots.end(), tmp), particleSystem->dyePots.end());
+			m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());
 			delete tmp;
 		}		
 	}
@@ -164,13 +176,13 @@ void FlowRoom::preRenderUpdates()
 
 	//update time
 	ULONGLONG tick = GetTickCount64();
-	ULONGLONG timeSinceLast = tick - lastTimeUpdate;
+	ULONGLONG timeSinceLast = tick - m_ullLastTimeUpdate;
 	if (timeSinceLast > 20)
 	{
-		lastTimeUpdate = tick;
-		float currentTime = flowRoomTime;
-		float minTime = flowRoomMinTime;
-		float maxTime = flowRoomMaxTime;
+		m_ullLastTimeUpdate = tick;
+		float currentTime = m_fFlowRoomTime;
+		float minTime = m_fFlowRoomMinTime;
+		float maxTime = m_fFlowRoomMaxTime;
 		float timeRange = maxTime - minTime;
 
 		if (timeRange > 0)
@@ -181,7 +193,7 @@ void FlowRoom::preRenderUpdates()
 				float newTime = currentTime + (factorToAdvance * timeRange);
 				if (newTime > maxTime)
 					newTime = minTime;
-				flowRoomTime = newTime;
+				m_fFlowRoomTime = newTime;
 			}
 		}//end if timerange greater than zero
 		else //no time range
@@ -191,12 +203,12 @@ void FlowRoom::preRenderUpdates()
 	}//end if need update
 
 	//std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
-	particleSystem->update(flowRoomTime);
+	m_pParticleSystem->update(m_fFlowRoomTime);
 	//std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
-	particleSystem->loadStreakVBOs();
+	m_pParticleSystem->loadStreakVBOs();
 	//std::cout << "Particle System Load Streaks Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
-	particleSystem->loadParticleVBOs();
+	m_pParticleSystem->loadParticleVBOs();
 	//std::cout << "Particle System Load Particles Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 }

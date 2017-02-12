@@ -1,10 +1,10 @@
 #ifndef __IllustrativeParticle_h__
 #define __IllustrativeParticle_h__
 
-#include <windows.h>
-#include "FlowGrid.h"
+#include <windows.h>                                                                         
 #include <vector>
-#include "Vec3.h"
+
+#include <shared/glm/glm.hpp>
 
 #define MAX_NUM_POSITIONS 100
 
@@ -14,78 +14,57 @@ public:
 	IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime);
 	virtual ~IllustrativeParticle();
 
-	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ); //true if still in bounds, false if needs to be deleted
+	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ);
 
 	void reset();
 	void reset(float x, float y, float z);
 	void kill();
-	//bool updated;
-	ULONGLONG birthTime;
-	float timeToLive;
-	ULONGLONG timeToStartDying;
-	float trailTime;
 
-	float getLastSpeed();
-	float getOldLastSpeed();
-	float lastSpeed;
-	float oldLastSpeed;
-
-	float latestPosition[3];
-	
+	ULONGLONG m_ullBirthTime;
+	float m_fTimeToLive;
+	ULONGLONG m_ullTimeToStartDying;
+	float m_fTrailTime;
+		
 	float getCurrentX();
 	float getCurrentY();
 	float getCurrentZ();
 	void getCurrentXYZ(float *x, float *y, float *z);
-
-	
-	float getDyingOpacity();
-
+	 
 	float getFadeInFadeOutOpacity();
 
-	bool dead;
-	bool dying;
-	ULONGLONG timeOfDeath;
+	bool m_bDead;
+	bool m_bDying;
+	ULONGLONG m_ullTimeOfDeath;
 
-	bool userCreated;
+	bool m_bUserCreated;
 	//int color;
 
-	float color[3];
+	glm::vec3 m_vec3Color;
 	void getColor(float *r, float *g, float *b);
 
-	float gravity;
+	float m_fGravity;
 
-	float speedFactor; //100 = normal
+	glm::vec3 m_vec3StartingPosition;
+	std::vector<glm::vec3> m_vvec3Positions;
+	std::vector<ULONGLONG> m_vullTimes;
 
-	float startingPosition[3];
-	float positions[3*MAX_NUM_POSITIONS];
-	ULONGLONG times[MAX_NUM_POSITIONS];
-
-	int liveStartIndex;
-	int liveEndIndex;
-	ULONGLONG liveTimeElapsed;
-	ULONGLONG lastUpdateTimestamp;
+	int m_iLiveStartIndex;
+	int m_iLiveEndIndex;
+	ULONGLONG m_ullLiveTimeElapsed;
+	ULONGLONG m_ullLastUpdateTimestamp;
 	
 	int getNumLivePositions();
 	int getLivePosition(int index);
-
-	float temperatureColor[3];
-	//void draw();
-
+	
 	//Index of which flowGrid in the flowGridCollection it is within
-	int flowGridIndex;
+	int m_iFlowGridIndex;
 	void setFlowGridIndex(int index);
 	int getFlowGridIndex();
 
 private:
 
 	//update() vars, put them here so no alloc needed each frame
-	ULONGLONG timeSinceLast;
-	float U, V, W, T, S;
-	float rand1, rand2, rand3;
-	bool inWater;
-	float currentPos[3];
-	float newPos[3];
-	ULONGLONG timeSince;
+	ULONGLONG m_ullTimeSince;
 	bool foundValid;
 };
 
