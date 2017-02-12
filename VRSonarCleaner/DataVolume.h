@@ -36,8 +36,8 @@ public:
 	glm::mat4 getCurrentPose();
 	glm::mat4 getLastPose();
 
-	void startRotation(const float *controllerPose);
-	void continueRotation(const float *controllerPose);
+	void startRotation(const glm::mat4 &controllerPose);
+	void continueRotation(const glm::mat4 &controllerPose);
 	void endRotation();
 	bool isBeingRotated();	
 

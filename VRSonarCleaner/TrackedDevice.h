@@ -9,7 +9,7 @@
 #include "CGLRenderModel.h"
 #include "Icosphere.h"
 
-#include "../shared/Matrices.h"
+#include <shared/glm/glm.hpp>
 
 class TrackedDevice : public BroadcastSystem::Broadcaster
 {
@@ -31,18 +31,18 @@ public:
 	char getClassChar();
 	void setClassChar(char classChar);
 
-	Matrix4 getPose();
+	glm::mat4 getPose();
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 
 	virtual void prepareForRendering();
 
-	virtual void render(Matrix4 & matVP); 
-	virtual void renderModel(Matrix4 & matVP);
+	virtual void render(glm::mat4 & matVP);
+	virtual void renderModel(glm::mat4 & matVP);
 
 protected:
 
-	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
-	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose);
+	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
 	bool createShaders();
 	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
 	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
@@ -59,7 +59,7 @@ protected:
 	
 	vr::TrackedDevicePose_t m_Pose;
 
-	Matrix4 m_mat4Pose;
+	glm::mat4 m_mat4Pose;
 	
 	GLuint m_glVertBuffer;
 	GLuint m_unVAO;

@@ -46,9 +46,6 @@ FlowRoom::FlowRoom()
 		m_vpFlowGridCollection.at(0)->getScaledYMin(), 
 		m_vpFlowGridCollection.at(0)->getScaledYMax()
 	);
-	
-	m_fPtHighlightAmt = 1.f;
-	m_LastTime = std::chrono::high_resolution_clock::now();
 }
 
 FlowRoom::~FlowRoom()
@@ -77,33 +74,30 @@ void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 
 
 
-bool FlowRoom::gripModel(const Matrix4 *controllerPose)
+bool FlowRoom::gripModel(const glm::mat4 &controllerPose)
 {
-	if (!controllerPose)
-	{
-		if (m_pMainModelVolume->isBeingRotated())
-		{
-			m_pMainModelVolume->endRotation();
-			//printf("|| Rotation Ended\n");
-		}
-
-		return false;
-	}
-
 	if (!m_pMainModelVolume->isBeingRotated())
 	{
-		m_pMainModelVolume->startRotation(controllerPose->get());
+		m_pMainModelVolume->startRotation(controllerPose);
 		//printf("++ Rotation Started\n");
 		return true;
 	}
 	else
 	{
-		m_pMainModelVolume->continueRotation(controllerPose->get());
+		m_pMainModelVolume->continueRotation(controllerPose);
 		//printf("==== Rotating\n");
 	}
 	return false;
 }
 
+void FlowRoom::releaseModel()
+{
+	if (m_pMainModelVolume->isBeingRotated())
+	{
+		m_pMainModelVolume->endRotation();
+		//printf("|| Rotation Ended\n");
+	}
+}
 
 void FlowRoom::draw()
 {
@@ -134,9 +128,9 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 {
 	if (event == BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED)
 	{
-		Matrix4 cursorPose;
+		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
-		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
+		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
 		float x, y, z;
 		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
@@ -152,9 +146,9 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 
 	if (event == BroadcastSystem::EVENT::EDIT_GRIP_PRESSED)
 	{
-		Matrix4 cursorPose;
+		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
-		Vector4 cursorPos = cursorPose * Vector4(0.0, 0.0, 0.0, 1.0);
+		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
 		float x, y, z;
 		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
 
@@ -171,8 +165,6 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 
 void FlowRoom::preRenderUpdates()
 {
-	std::clock_t start = std::clock();
-
 	//update time
 	ULONGLONG tick = GetTickCount64();
 	ULONGLONG timeSinceLast = tick - m_ullLastTimeUpdate;

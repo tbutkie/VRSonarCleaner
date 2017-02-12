@@ -29,7 +29,7 @@ void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float
 
 bool InfoBoxManager::removeInfoBox(std::string name)
 {		
-	return m_mapInfoBoxes.erase(name);
+	return m_mapInfoBoxes.erase(name) > 0u;
 }
 
 InfoBoxManager::InfoBoxManager()
@@ -88,9 +88,9 @@ void InfoBoxManager::render(const float *matVP)
 {
 	glm::mat4 VP = glm::make_mat4(matVP);
 
-	glm::mat4 HMDXform = glm::inverse(glm::make_mat4(m_pTDM->getHMDPose().get()));
-	glm::mat4 EditCtrlrXform = glm::make_mat4(m_pTDM->getEditControllerPose().get());
-	glm::mat4 ManipCtrlrXform = glm::make_mat4(m_pTDM->getManipControllerPose().get());
+	glm::mat4 HMDXform = glm::inverse(m_pTDM->getHMDPose());
+	glm::mat4 EditCtrlrXform = m_pTDM->getEditControllerPose();
+	glm::mat4 ManipCtrlrXform = m_pTDM->getManipControllerPose();
 
 	glUseProgram(m_unTransformProgramID);
 	glBindVertexArray(m_unVAO);

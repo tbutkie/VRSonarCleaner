@@ -24,9 +24,6 @@
     <ClCompile Include="..\shared\lodepng.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Matrices.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\pathtools.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
@@ -111,12 +108,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\Matrices.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\Vectors.h">
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\pathtools.h">

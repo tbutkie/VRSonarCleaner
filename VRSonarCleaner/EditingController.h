@@ -25,15 +25,15 @@ public:
 	void touchpadUntouched();
 	bool touchpadActive();
 
-	void getCursorPoses(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose);
+	void getCursorPoses(glm::mat4 *thisCursorPose, glm::mat4 *lastCursorPose);
 	float getCursorRadius();
 
 	bool cursorActive();
 	bool cleaningActive();
 
 private:
-	Matrix4 m_mat4CursorCurrentPose;
-	Matrix4 m_mat4CursorLastPose;
+	glm::mat4 m_mat4CursorCurrentPose;
+	glm::mat4 m_mat4CursorLastPose;
 	bool m_bShowCursor;
 	bool m_bCleaningMode;
 
@@ -46,7 +46,7 @@ private:
 	float m_fCursorOffsetAmount;
 	float m_fCursorOffsetAmountMin;
 	float m_fCursorOffsetAmountMax;
-	Vector4 m_vec4CursorOffsetDirection;
+	glm::vec4 m_vec4CursorOffsetDirection;
 	bool m_bCursorOffsetMode;
 	float m_fCursorOffsetModeInitialOffset;
 

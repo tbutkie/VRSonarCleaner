@@ -10,21 +10,13 @@
 #include "CoordinateScaler.h"
 #include <vector>
 
-//#include <SDL_opengl.h>
-//#include <gl/glu.h>
 #include <stdio.h>
-//#include <string>
-//#include <cstdlib>
-#include <chrono>
 #include <algorithm>
 #include "FlowGrid.h"
-//#include <openvr.h>
-
-//#include "../shared/lodepng.h"
-#include "../shared/Matrices.h"
-//#include "../shared/pathtools.h"
 
 #include "BroadcastSystem.h"
+
+#include <shared/glm/glm.hpp>
 
 class FlowRoom : public BroadcastSystem::Listener
 {
@@ -41,8 +33,9 @@ public:
 	void preRenderUpdates();
 
 	//bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
-	bool probeModel(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints);
-	bool gripModel(const Matrix4 *controllerPose);
+	bool probeModel(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	bool gripModel(const glm::mat4 &controllerPose);
+	void releaseModel();
 
 	void reset();
 
@@ -65,7 +58,4 @@ private:
 	std::vector<FlowGrid*> m_vpFlowGridCollection;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
-
-	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
-	float m_fPtHighlightAmt;
 };

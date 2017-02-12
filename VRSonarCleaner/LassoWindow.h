@@ -17,7 +17,6 @@
 #include "LassoTool.h"
 
 #include "../shared/lodepng.h"
-#include "../shared/Matrices.h"
 #include "../shared/pathtools.h"
 
 
@@ -89,25 +88,25 @@ private: // OpenGL bookkeeping
 	GLuint m_glIDIndexBuffer;
 	unsigned int m_uiIndexSize;
 
-	Matrix4 m_mat4eyePosLeft;
-	Matrix4 m_mat4eyePosRight;
+	glm::mat4 m_mat4eyePosLeft;
+	glm::mat4 m_mat4eyePosRight;
 
-	Matrix4 m_mat4ProjectionCenter;
-	Matrix4 m_mat4ProjectionLeft;
-	Matrix4 m_mat4ProjectionRight;
+	glm::mat4 m_mat4ProjectionCenter;
+	glm::mat4 m_mat4ProjectionLeft;
+	glm::mat4 m_mat4ProjectionRight;
 
 	struct VertexDataScene
 	{
-		Vector3 position;
-		Vector2 texCoord;
+		glm::vec3 position;
+		glm::vec2 texCoord;
 	};
 
 	struct VertexDataLens
 	{
-		Vector2 position;
-		Vector2 texCoordRed;
-		Vector2 texCoordGreen;
-		Vector2 texCoordBlue;
+		glm::vec2 position;
+		glm::vec2 texCoordRed;
+		glm::vec2 texCoordGreen;
+		glm::vec2 texCoordBlue;
 	};
 
 	GLuint m_unLensProgramID;

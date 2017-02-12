@@ -894,12 +894,12 @@ int SonarPointCloud::getColorScope()
 	return colorScope;
 }
 
-std::vector<Vector3> SonarPointCloud::getPointPositions()
+std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 {
-	std::vector<Vector3> ret;
+	std::vector<glm::vec3> ret;
 	for (int i = 0; i < numPoints * 3; i += 3)
 	{
-		Vector3 thisVert = { // SWAP Y AND Z
+		glm::vec3 thisVert = { // SWAP Y AND Z
 			  (float)pointsPositions[i + 0]
 			, (float)pointsPositions[i + 2]
 			, (float)pointsPositions[i + 1]

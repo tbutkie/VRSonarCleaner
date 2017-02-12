@@ -7,7 +7,6 @@ Icosphere::Icosphere(int recursionLevel)
 	this->recalculate(recursionLevel);
 }
 
-
 Icosphere::~Icosphere(void)
 {
 	if (this->vertices.size() > 0)
@@ -28,20 +27,20 @@ void Icosphere::recalculate(int recursionLevel)
 	// create 12 vertices of a icosahedron
 	float t = (1.f + sqrt(5.f)) / 2.f;
 
-	addVertex(Vector3(-1.f, t, 0.f));
-	addVertex(Vector3(1.f, t, 0.f));
-	addVertex(Vector3(-1.f, -t, 0.f));
-	addVertex(Vector3(1.f, -t, 0.f));
+	addVertex(glm::vec3(-1.f, t, 0.f));
+	addVertex(glm::vec3(1.f, t, 0.f));
+	addVertex(glm::vec3(-1.f, -t, 0.f));
+	addVertex(glm::vec3(1.f, -t, 0.f));
 
-	addVertex(Vector3(0.f, -1.f, t));
-	addVertex(Vector3(0.f, 1.f, t));
-	addVertex(Vector3(0.f, -1.f, -t));
-	addVertex(Vector3(0.f, 1.f, -t));
+	addVertex(glm::vec3(0.f, -1.f, t));
+	addVertex(glm::vec3(0.f, 1.f, t));
+	addVertex(glm::vec3(0.f, -1.f, -t));
+	addVertex(glm::vec3(0.f, 1.f, -t));
 
-	addVertex(Vector3(t, 0.f, -1.f));
-	addVertex(Vector3(t, 0.f, 1.f));
-	addVertex(Vector3(-t, 0.f, -1.f));
-	addVertex(Vector3(-t, 0.f, 1.f));
+	addVertex(glm::vec3(t, 0.f, -1.f));
+	addVertex(glm::vec3(t, 0.f, 1.f));
+	addVertex(glm::vec3(-t, 0.f, -1.f));
+	addVertex(glm::vec3(-t, 0.f, 1.f));
 
 
 	// create 20 triangles of the icosahedron
@@ -104,13 +103,13 @@ void Icosphere::recalculate(int recursionLevel)
 	}
 }
 
-std::vector<Vector3> Icosphere::getVertices(void) { return vertices; }
+std::vector<glm::vec3> Icosphere::getVertices(void) { return vertices; }
 
 std::vector<unsigned int> Icosphere::getIndices(void) { return indices; }
 
-std::vector<Vector3> Icosphere::getUnindexedVertices(void)
+std::vector<glm::vec3> Icosphere::getUnindexedVertices(void)
 {
-	std::vector<Vector3> flatVerts;
+	std::vector<glm::vec3> flatVerts;
 
 	for (size_t i = 0; i < indices.size(); ++i)
 	{
@@ -121,9 +120,9 @@ std::vector<Vector3> Icosphere::getUnindexedVertices(void)
 }
 
 // add vertex to mesh, fix position to be on unit sphere, return index
-int Icosphere::addVertex(Vector3 p)
+int Icosphere::addVertex(glm::vec3 p)
 {
-	vertices.push_back(p.normalize());
+	vertices.push_back(glm::normalize(p));
 	return index++;
 }
 
@@ -141,9 +140,9 @@ int Icosphere::getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &
     	return midPointMap[key];
 
     // not in cache, calculate it
-	Vector3 point1 = this->vertices[p1];
-	Vector3 point2 = this->vertices[p2];
-	Vector3 middle = (point1 + point2) / 2.f;
+	glm::vec3 point1 = this->vertices[p1];
+	glm::vec3 point2 = this->vertices[p2];
+	glm::vec3 middle = (point1 + point2) / 2.f;
 
     // add vertex makes sure point is on unit sphere
     int i = addVertex(middle); 

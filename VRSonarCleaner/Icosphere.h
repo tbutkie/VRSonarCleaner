@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../shared/Vectors.h"
 #include <unordered_map>
+
+#include <shared/glm/glm.hpp>
 
 class Icosphere
 {
@@ -11,10 +12,10 @@ public:
 
 	void Icosphere::recalculate(int recursionLevel);
 
-	std::vector<Vector3> getVertices(void);
+	std::vector<glm::vec3> getVertices(void);
 	std::vector<unsigned int> getIndices(void);
 
-	std::vector<Vector3> getUnindexedVertices(void);
+	std::vector<glm::vec3> getUnindexedVertices(void);
 
 private:	
 
@@ -32,10 +33,10 @@ private:
         }
     };
 
-	int addVertex(Vector3 p);
+	int addVertex(glm::vec3 p);
 	int getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap);
 
-	std::vector<Vector3> vertices;
+	std::vector<glm::vec3> vertices;
 	std::vector<unsigned int> indices;
 	
     int index;

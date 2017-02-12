@@ -48,7 +48,7 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
-	void renderModel(Matrix4 & matVP);
+	void renderModel(glm::mat4 & matVP);
 
 protected:
 	struct ControllerComponent {
@@ -81,7 +81,7 @@ protected:
 
 	std::vector<ControllerComponent> m_vComponents;
 
-	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
+	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
 	
 	uint32_t m_unStatePacketNum;
@@ -92,8 +92,8 @@ protected:
 	bool m_bGripButtonClicked;
 	bool m_bTouchpadTouched;
 	bool m_bTouchpadClicked;
-	Vector2 m_vec2TouchpadInitialTouchPoint;
-	Vector2 m_vec2TouchpadCurrentTouchPoint;
+	glm::vec2 m_vec2TouchpadInitialTouchPoint;
+	glm::vec2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;
 	bool m_bTriggerClicked;
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
@@ -103,11 +103,11 @@ protected:
 
 	Icosphere m_TouchPointSphere;
 
-	const Vector4 c_vec4TouchPadCenter;
-	const Vector4 c_vec4TouchPadLeft;
-	const Vector4 c_vec4TouchPadRight;
-	const Vector4 c_vec4TouchPadTop;
-	const Vector4 c_vec4TouchPadBottom;
+	const glm::vec4 c_vec4TouchPadCenter;
+	const glm::vec4 c_vec4TouchPadLeft;
+	const glm::vec4 c_vec4TouchPadRight;
+	const glm::vec4 c_vec4TouchPadTop;
+	const glm::vec4 c_vec4TouchPadBottom;
 
 	vr::VROverlayHandle_t m_pOverlayHandle;
 };

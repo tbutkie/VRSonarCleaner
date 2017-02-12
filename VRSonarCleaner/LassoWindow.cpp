@@ -130,7 +130,7 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 
 	lasso = new LassoTool();
 
-	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0.f, 4.f, 1.5f, 4.f);
+	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0, 4.f, 1.5f, 4.f);
 	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
 }
 
@@ -438,7 +438,7 @@ bool LassoWindow::checkForHits()
 {
 	bool hit = false;
 	
-	std::vector<Vector3> inPts = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> inPts = clouds->getCloud(0)->getPointPositions();
 	std::vector<glm::vec3> outPts;
 	glm::mat4 mat4Projection, mat4ModelView;
 	glm::vec4 vec4Viewport;

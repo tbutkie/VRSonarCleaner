@@ -10,19 +10,11 @@
 #include <vector>
 #include "CloudCollection.h"
 
-//#include <SDL_opengl.h>
-//#include <gl/glu.h>
 #include <stdio.h>
-//#include <string>
-//#include <cstdlib>
 #include <chrono>
 #include <algorithm>
 
-//#include <openvr.h>
-
-//#include "../shared/lodepng.h"
-#include "../shared/Matrices.h"
-//#include "../shared/pathtools.h"
+#include <shared/glm/glm.hpp>
 
 extern CloudCollection *clouds;
 
@@ -32,7 +24,7 @@ public:
 	CleaningRoom();
 	virtual ~CleaningRoom();
 
-	float cylTest(const Vector4 & pt1, const Vector4 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt);
+	float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, float radius_sq, const glm::vec3 & testpt);
 
 	void draw();
 
@@ -41,8 +33,9 @@ public:
 	void recalcVolumeBounds();
 
 	//bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
-	bool editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints);
-	bool gripCleaningTable(const Matrix4 *controllerPose);
+	bool editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	bool gripCleaningTable(const glm::mat4 & controllerPose);
+	void releaseCleaningTable();
 
 	void resetVolumes();
 

@@ -7,6 +7,8 @@
 #include <sstream>
 #include <string>
 
+#include <ctime>
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -444,7 +446,11 @@ void CMainApplication::RunMainLoop()
 		if (mode == 1)
 		{
 			//grip rotate if needed
-			flowRoom->gripModel(m_pTDM->getManipulationData());
+			glm::mat4 ctrlPose;
+			if (m_pTDM->getManipulationData(ctrlPose))
+				flowRoom->gripModel(ctrlPose);
+			else
+				flowRoom->releaseModel();
 
 			flowRoom->preRenderUpdates();
 		}
@@ -477,8 +483,8 @@ void CMainApplication::RunMainLoop()
 
 void CMainApplication::checkForHits()
 {
-	Matrix4 currentCursorPose;
-	Matrix4 lastCursorPose;
+	glm::mat4 currentCursorPose;
+	glm::mat4 lastCursorPose;
 	float cursorRadius;
 	
 	// if editing controller not available or pose isn't valid, abort
@@ -493,7 +499,11 @@ void CMainApplication::checkForHits()
 
 void CMainApplication::checkForManipulations()
 {
-	cleaningRoom->gripCleaningTable(m_pTDM->getManipulationData());
+	glm::mat4 ctrlPose;
+	if (m_pTDM->getManipulationData(ctrlPose))
+		cleaningRoom->gripCleaningTable(ctrlPose);
+	else
+		cleaningRoom->releaseCleaningTable();
 }
 
 //-----------------------------------------------------------------------------
@@ -696,13 +706,13 @@ void CMainApplication::SetupDistortion()
 		for (int x = 0; x<m_iLensGridSegmentCountH; x++)
 		{
 			u = x*w; v = 1 - y*h;
-			vert.position = Vector2(Xoffset + u, -1 + 2 * y*h);
+			vert.position = glm::vec2(Xoffset + u, -1 + 2 * y*h);
 
 			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Left, u, v);
 
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen = Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
+			vert.texCoordRed = glm::vec2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
+			vert.texCoordGreen = glm::vec2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
+			vert.texCoordBlue = glm::vec2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
 
 			vVerts.push_back(vert);
 		}
@@ -715,13 +725,13 @@ void CMainApplication::SetupDistortion()
 		for (int x = 0; x<m_iLensGridSegmentCountH; x++)
 		{
 			u = x*w; v = 1 - y*h;
-			vert.position = Vector2(Xoffset + u, -1 + 2 * y*h);
+			vert.position = glm::vec2(Xoffset + u, -1 + 2 * y*h);
 
 			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Right, u, v);
 
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen = Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
+			vert.texCoordRed = glm::vec2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
+			vert.texCoordGreen = glm::vec2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
+			vert.texCoordBlue = glm::vec2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
 
 			vVerts.push_back(vert);
 		}
@@ -861,11 +871,11 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
+	glm::mat4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye);
 
 	// IMMEDIATE MODE
 	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(thisEyesProjectionMatrix.get());
+	glLoadMatrixf(glm::value_ptr(thisEyesProjectionMatrix));
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -888,7 +898,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
 
-	InfoBoxManager::getInstance().render(thisEyesProjectionMatrix.get());
+	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesProjectionMatrix));
 
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
@@ -899,7 +909,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	}
 
 	// DEBUG DRAWER RENDER CALL
-	DebugDrawer::getInstance().render(glm::make_mat4(thisEyesProjectionMatrix.get()));
+	DebugDrawer::getInstance().render(thisEyesProjectionMatrix);
 }
 
 
@@ -938,14 +948,14 @@ void CMainApplication::RenderDistortion()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
+glm::mat4 CMainApplication::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
 {
 	if (!m_pHMD)
-		return Matrix4();
+		return glm::mat4();
 
 	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_OpenGL);
 
-	return Matrix4(
+	return glm::mat4(
 		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
 		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
 		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
@@ -957,36 +967,36 @@ Matrix4 CMainApplication::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
+glm::mat4 CMainApplication::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 {
 	if (!m_pHMD)
-		return Matrix4();
+		return glm::mat4();
 
 	vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
-	Matrix4 matrixObj(
+	glm::mat4 matrixObj(
 		matEyeRight.m[0][0], matEyeRight.m[1][0], matEyeRight.m[2][0], 0.0,
 		matEyeRight.m[0][1], matEyeRight.m[1][1], matEyeRight.m[2][1], 0.0,
 		matEyeRight.m[0][2], matEyeRight.m[1][2], matEyeRight.m[2][2], 0.0,
 		matEyeRight.m[0][3], matEyeRight.m[1][3], matEyeRight.m[2][3], 1.0f
 	);
 
-	return matrixObj.invert();
+	return glm::inverse(matrixObj);
 }
 
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
+glm::mat4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 {
-	Matrix4 matMVP;
+	glm::mat4 matMVP;
 	if (nEye == vr::Eye_Left)
 	{
 		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_pTDM->getHMDPose();
 	}
 	else if (nEye == vr::Eye_Right)
 	{
-		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_pTDM->getHMDPose();
+		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight * m_pTDM->getHMDPose();
 	}
 
 	return matMVP;
@@ -1032,7 +1042,7 @@ std::string getTimeString()
 
 void CMainApplication::savePoints()
 {	
-	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> points = clouds->getCloud(0)->getPointPositions();
 
 	// construct filename
 	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
@@ -1091,7 +1101,7 @@ bool CMainApplication::loadPoints(std::string fileName)
 		return false;
 	}
 	
-	std::vector<Vector3> points;
+	std::vector<glm::vec3> points;
 	std::vector<int> flags;
 
 	int lineNo = 2; // already checked header at line 1
@@ -1110,7 +1120,7 @@ bool CMainApplication::loadPoints(std::string fileName)
 			return false;
 		}
 
-		points.push_back(Vector3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
+		points.push_back(glm::vec3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
 		flags.push_back(std::stoi(flagStr));
 
 		lineNo++;

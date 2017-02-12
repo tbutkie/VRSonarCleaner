@@ -162,7 +162,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp" />
-    <ClCompile Include="..\shared\Matrices.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
@@ -193,10 +192,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h" />
-    <ClInclude Include="..\shared\Matrices.h" />
     <ClInclude Include="..\shared\pathtools.h" />
     <ClInclude Include="..\shared\Texture.h" />
-    <ClInclude Include="..\shared\Vectors.h" />
     <ClInclude Include="arcball.h" />
     <ClInclude Include="BroadcastSystem.h" />
     <ClInclude Include="CGLRenderModel.h" />

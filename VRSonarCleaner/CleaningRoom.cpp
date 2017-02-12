@@ -5,10 +5,6 @@
 
 CleaningRoom::CleaningRoom()
 {
-	//X-Right-Left
-	//Y-UP-vertical
-	//Z-toward monitor
-
 	roomSizeX = 10;
 	roomSizeY = 4;
 	roomSizeZ = 6;
@@ -160,15 +156,15 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 //	return anyHits;
 //}
 
-bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, bool clearPoints)
+bool CleaningRoom::editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
 {
 	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentTransform();
 	glm::mat4 mat4LastVolumeXform = tableVolume->getLastTransform();
 
 	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumeXform;
 
-	glm::vec3 vec3CurrentCursorPos = glm::vec3(glm::make_mat4(currentCursorPose.get())[3]);
-	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * glm::make_mat4(lastCursorPose.get()))[3]);
+	glm::vec3 vec3CurrentCursorPos = glm::vec3(currentCursorPose[3]);
+	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * lastCursorPose)[3]);
 
 	bool performCylTest = true;
 	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
@@ -190,7 +186,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 	bool anyHits = false;
 	bool pointsRefresh = false;
 
-	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> points = clouds->getCloud(0)->getPointPositions();
 
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
@@ -222,11 +218,11 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
 		
 		if (current_dist_sq <= radius_sq ||
-			(performCylTest && cylTest(Vector4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
-									   Vector4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
+			(performCylTest && cylTest(glm::vec4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
+									   glm::vec4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
 									   cyl_len_sq,
 									   radius_sq,
-									   Vector3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
+									   glm::vec3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
 			)
 		{
 			if (clearPoints)
@@ -254,7 +250,7 @@ bool CleaningRoom::editCleaningTable(const Matrix4 & currentCursorPose, const Ma
 
 // This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
 // with credit to Greg James @ Nvidia
-float CleaningRoom::cylTest(const Vector4 & pt1, const Vector4 & pt2, float lengthsq, float radius_sq, const Vector3 & testpt)
+float CleaningRoom::cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, float radius_sq, const glm::vec3 & testpt)
 {
 	float dx, dy, dz;	// vector d  from line segment point 1 to point 2
 	float pdx, pdy, pdz;	// vector pd from point 1 to test point
@@ -290,33 +286,30 @@ float CleaningRoom::cylTest(const Vector4 & pt1, const Vector4 & pt2, float leng
 	}
 }
 
-bool CleaningRoom::gripCleaningTable(const Matrix4 *controllerPose)
+bool CleaningRoom::gripCleaningTable(const glm::mat4 &controllerPose)
 {
-	if (!controllerPose)
-	{
-		if (tableVolume->isBeingRotated())
-		{
-			tableVolume->endRotation();
-			//printf("|| Rotation Ended\n");
-		}
-
-		return false;
-	}
-
 	if (!tableVolume->isBeingRotated())
 	{
-		tableVolume->startRotation(controllerPose->get());
+		tableVolume->startRotation(controllerPose);
 		//printf("++ Rotation Started\n");
 		return true;
 	}
 	else
 	{
-		tableVolume->continueRotation(controllerPose->get());
+		tableVolume->continueRotation(controllerPose);
 		//printf("==== Rotating\n");
 	}
 	return false;
 }
 
+void CleaningRoom::releaseCleaningTable()
+{
+	if (tableVolume->isBeingRotated())
+	{
+		tableVolume->endRotation();
+		//printf("|| Rotation Ended\n");
+	}
+}
 
 void CleaningRoom::draw()
 {

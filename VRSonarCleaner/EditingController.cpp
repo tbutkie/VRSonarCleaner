@@ -11,7 +11,7 @@ EditingController::EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceInd
 	, m_fCursorRadius(0.05f)
 	, m_fCursorRadiusMin(0.005f)
 	, m_fCursorRadiusMax(0.1f)
-	, m_vec4CursorOffsetDirection(Vector4(0.f, 0.f, -1.f, 0.f))
+	, m_vec4CursorOffsetDirection(glm::vec4(0.f, 0.f, -1.f, 0.f))
 	, m_fCursorOffsetAmount(0.1f)
 	, m_fCursorOffsetAmountMin(0.1f)
 	, m_fCursorOffsetAmountMax(1.5f)
@@ -32,8 +32,11 @@ bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 	m_Pose = pose;
 	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
-	m_mat4CursorCurrentPose = m_mat4Pose * (Matrix4().identity()).translate(
-		Vector3(m_vec4CursorOffsetDirection.x, m_vec4CursorOffsetDirection.y, m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount);
+	m_mat4CursorCurrentPose = m_mat4Pose * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x, 
+		m_vec4CursorOffsetDirection.y, 
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
 
 	
 	// Show overlay
@@ -114,7 +117,7 @@ void EditingController::prepareForRendering()
 	// Draw Axes
 	if (m_bShowAxes)
 	{
-		DebugDrawer::getInstance().setTransform(m_mat4Pose.get());
+		DebugDrawer::getInstance().setTransform(glm::value_ptr(m_mat4Pose));
 		DebugDrawer::getInstance().drawTransform(0.1f);
 	}
 
@@ -137,18 +140,18 @@ void EditingController::prepareForRendering()
 	{
 		GLuint num_segments = 64;
 
-		Vector4 color;
+		glm::vec4 color;
 		if (cleaningActive())
-			color = Vector4(1.f, 0.f, 0.f, 1.f);
+			color = glm::vec4(1.f, 0.f, 0.f, 1.f);
 		else
-			color = Vector4(1.f, 1.f, 1.f - m_fTriggerPull, 0.75f);
+			color = glm::vec4(1.f, 1.f, 1.f - m_fTriggerPull, 0.75f);
 
-		std::vector<Vector4> circlePoints;
+		std::vector<glm::vec4> circlePoints;
 		for (GLuint i = 0; i < num_segments; i++)
 		{
 			GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
 
-			Vector4 circlePt;
+			glm::vec4 circlePt;
 			circlePt.x = cosf(theta);
 			circlePt.y = sinf(theta);
 			circlePt.z = 0.f;
@@ -162,8 +165,8 @@ void EditingController::prepareForRendering()
 
 		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_fTriggerPull);
 
-		Matrix4 scl = Matrix4().scale(m_fCursorRadius, m_fCursorRadius, m_fCursorRadius);
-		Matrix4 rot;
+		glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fCursorRadius));
+		glm::mat4 rot;
 
 		float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
 		m_fCursorHoopAngle += angleNeeded;
@@ -171,16 +174,16 @@ void EditingController::prepareForRendering()
 		for (int n = 0; n < 3; ++n)
 		{
 			if (n == 0)
-				rot = Matrix4().rotateX(m_fCursorHoopAngle);
+				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(1.f, 0.f, 0.f));
 			if (n == 1)
-				rot = Matrix4().rotateY(90.f).rotateY(m_fCursorHoopAngle);
+				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
 			if (n == 2)
-				rot = Matrix4().rotateX(90.f).rotateZ(m_fCursorHoopAngle);
+				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
 
-			Vector4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
+			glm::vec4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
 			for (size_t i = 0; i < circlePoints.size(); ++i)
 			{
-				Vector4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
+				glm::vec4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
 
 				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
@@ -220,11 +223,11 @@ void EditingController::prepareForRendering()
 		// DISPLAY CONNECTING LINE TO CURSOR
 		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
 		{
-			color = Vector4(1.f, 1.f, 1.f, 0.8f);
+			color = glm::vec4(1.f, 1.f, 1.f, 0.8f);
 			if (m_bShowCursor)
 			{
-				Vector4 controllerCtr = m_mat4Pose * Vector4(0.f, 0.f, 0.f, 1.f);
-				Vector4 cursorEdge = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, m_fCursorRadius, 1.f);
+				glm::vec4 controllerCtr = m_mat4Pose * glm::vec4(0.f, 0.f, 0.f, 1.f);
+				glm::vec4 cursorEdge = m_mat4CursorCurrentPose * glm::vec4(0.f, 0.f, m_fCursorRadius, 1.f);
 
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
@@ -264,7 +267,7 @@ void EditingController::prepareForRendering()
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
-		offset += sizeof(Vector3);
+		offset += sizeof(glm::vec3);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
@@ -323,8 +326,8 @@ void EditingController::gripButtonPressed()
 void EditingController::touchpadInitialTouch(float x, float y)
 {
 	m_bTouchpadTouched = true;
-	m_vec2TouchpadInitialTouchPoint = Vector2(x, y);
-	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
+	m_vec2TouchpadInitialTouchPoint = glm::vec2(x, y);
+	m_vec2TouchpadCurrentTouchPoint = glm::vec2(x, y);
 
 	// if cursor mode on, start modfication interactions
 	if (m_bShowCursor)
@@ -345,9 +348,9 @@ void EditingController::touchpadInitialTouch(float x, float y)
 
 void EditingController::touchpadTouch(float x, float y)
 {
-	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
+	m_vec2TouchpadCurrentTouchPoint = glm::vec2(x, y);
 
-	if (m_vec2TouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
+	if (m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
 		m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
 
 	if (m_bShowCursor)
@@ -413,8 +416,8 @@ void EditingController::touchpadTouch(float x, float y)
 void EditingController::touchpadUntouched()
 {
 	m_bTouchpadTouched = false;
-	m_vec2TouchpadInitialTouchPoint = Vector2(0.f, 0.f);
-	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
+	m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
+	m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
 	m_bCursorOffsetMode = false;
 	m_bCursorRadiusResizeMode = false;
 	m_bShowScrollWheel = false;
@@ -425,7 +428,7 @@ bool EditingController::touchpadActive()
 	return m_bTouchpadTouched;
 }
 
-void EditingController::getCursorPoses(Matrix4 * thisCursorPose, Matrix4 * lastCursorPose)
+void EditingController::getCursorPoses(glm::mat4 * thisCursorPose, glm::mat4 * lastCursorPose)
 {
 	*thisCursorPose = m_mat4CursorCurrentPose;
 	*lastCursorPose = m_mat4CursorLastPose;

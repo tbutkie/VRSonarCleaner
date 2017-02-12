@@ -8,6 +8,8 @@
 #include "CGLRenderModel.h"
 #include "BroadcastSystem.h"
 
+#include <shared/glm/glm.hpp>
+
 class TrackedDeviceManager : public BroadcastSystem::Broadcaster
 {
 public:
@@ -26,16 +28,16 @@ public:
 	virtual void detach(BroadcastSystem::Listener *obs);
 
 	bool cleaningModeActive();
-	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
-	Matrix4* getManipulationData();
+	bool getCleaningCursorData(glm::mat4 *thisCursorPose, glm::mat4 *lastCursorPose, float *radius);
+	bool getManipulationData(glm::mat4 &controllerPose);
 	void cleaningHit();
 
-	void renderTrackedDevices(Matrix4 & matVP);
+	void renderTrackedDevices(glm::mat4 & matVP);
 	void postRenderUpdate();
 
-	Matrix4 & getHMDPose();
-	Matrix4 & getEditControllerPose();
-	Matrix4 & getManipControllerPose();
+	glm::mat4& getHMDPose();
+	glm::mat4& getEditControllerPose();
+	glm::mat4& getManipControllerPose();
 
 	void UpdateHMDMatrixPose();
 private:
@@ -57,6 +59,6 @@ private:
 
 	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
 
-	Matrix4 m_mat4HMDPose;
+	glm::mat4 m_mat4HMDPose;
 };
 

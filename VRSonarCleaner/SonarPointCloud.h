@@ -8,9 +8,9 @@
 #include <math.h>
 #include "ColorScaler.h"
 
-#include "../shared/Matrices.h"
-
 #include "../thirdparty/OpenNS_1.6.0/include/bag.h"
+
+#include <shared/glm/glm.hpp>
 
 extern ColorScaler *colorScalerTPU;
 
@@ -66,7 +66,7 @@ class SonarPointCloud
 		void resetAllMarks();
 
 		//cleaning
-		std::vector<Vector3> getPointPositions(); // with Y and Z swapped
+		std::vector<glm::vec3> getPointPositions(); // with Y and Z swapped
 
 		int getPointMark(int index);
 

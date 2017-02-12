@@ -421,10 +421,10 @@ glm::mat4 DataVolume::getLastPose()
 	return m_mat4LastPose;
 }
 
-void DataVolume::startRotation(const float *controllerPose)
+void DataVolume::startRotation(const glm::mat4 &controllerPose)
 {
 	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
-	m_mat4ControllerPoseAtRotationStart = glm::make_mat4(controllerPose);
+	m_mat4ControllerPoseAtRotationStart = controllerPose;
 	m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
 		
 	//save volume pose in controller space
@@ -433,12 +433,12 @@ void DataVolume::startRotation(const float *controllerPose)
 	rotationInProgress = true;
 }
 
-void DataVolume::continueRotation(const float *controllerPose)
+void DataVolume::continueRotation(const glm::mat4 &controllerPose)
 {
 	if (!rotationInProgress)
 		return;
 
-	glm::mat4 mat4ControllerPoseCurrent = glm::make_mat4(controllerPose);
+	glm::mat4 mat4ControllerPoseCurrent = controllerPose;
 
 	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
 		

@@ -1,6 +1,7 @@
 #include "TrackedDevice.h"
 #include "ShaderUtils.h"
 
+#include <shared/glm/gtc/type_ptr.hpp>
 
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: m_unDeviceID(id)
@@ -100,7 +101,7 @@ void TrackedDevice::setClassChar(char classChar)
 	m_ClassChar = classChar;
 }
 
-Matrix4 TrackedDevice::getPose()
+glm::mat4 TrackedDevice::getPose()
 {
 	return m_mat4Pose;
 }
@@ -125,16 +126,16 @@ void TrackedDevice::prepareForRendering()
 	if (!poseValid())
 		return;
 
-	const Matrix4 & mat = getPose();
+	const glm::mat4 & mat = getPose();
 
 	// Draw Axes
 	if (axesActive())
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-			Vector4 color(0, 0, 0, 1);
-			Vector4 center = mat * Vector4(0, 0, 0, 1);
-			Vector4 point(0, 0, 0, 1);
+			glm::vec4 color(0, 0, 0, 1);
+			glm::vec4 center = mat * glm::vec4(0, 0, 0, 1);
+			glm::vec4 point(0, 0, 0, 1);
 			point[i] += 0.1f;  // offset in X, Y, Z
 			color[i] = 1.0;  // R, G, B
 			point = mat * point;
@@ -177,7 +178,7 @@ void TrackedDevice::prepareForRendering()
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
-		offset += sizeof(Vector3);
+		offset += sizeof(glm::vec3);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
@@ -194,18 +195,18 @@ void TrackedDevice::prepareForRendering()
 	}
 }
 
-void TrackedDevice::render(Matrix4 & matVP)
+void TrackedDevice::render(glm::mat4 & matVP)
 {
 	// draw the controller axis lines
 	glUseProgram(m_unTransformProgramID);
-	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, matVP.get());
+	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
 	glBindVertexArray(m_unVAO);
 	glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
 	glDrawArrays(GL_TRIANGLES, m_uiLineVertcount, m_uiTriVertcount);
 	glBindVertexArray(0);
 }
 
-void TrackedDevice::renderModel(Matrix4 & matVP)
+void TrackedDevice::renderModel(glm::mat4 & matVP)
 {
 	if (!hasRenderModel() || !poseValid())
 		return;
@@ -213,9 +214,9 @@ void TrackedDevice::renderModel(Matrix4 & matVP)
 	// ----- Render Model rendering -----
 	glUseProgram(m_unRenderModelProgramID);
 
-	const Matrix4 & matDeviceToTracking = getPose();
-	Matrix4 matMVP = matVP * matDeviceToTracking;
-	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
+	const glm::mat4 & matDeviceToTracking = getPose();
+	glm::mat4 matMVP = matVP * matDeviceToTracking;
+	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(matMVP));
 
 	m_pTrackedDeviceToRenderModel->Draw();	
 
@@ -225,9 +226,9 @@ void TrackedDevice::renderModel(Matrix4 & matVP)
 //-----------------------------------------------------------------------------
 // Purpose: Converts a SteamVR matrix to our local matrix class
 //-----------------------------------------------------------------------------
-Matrix4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose)
+glm::mat4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose)
 {
-	Matrix4 matrixObj(
+	glm::mat4 matrixObj(
 		matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
 		matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
 		matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
@@ -239,15 +240,15 @@ Matrix4 TrackedDevice::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &ma
 //-----------------------------------------------------------------------------
 // Purpose: Converts our local matrix class to a SteamVR matrix
 //-----------------------------------------------------------------------------
-vr::HmdMatrix34_t TrackedDevice::ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose)
+vr::HmdMatrix34_t TrackedDevice::ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose)
 {
 	vr::HmdMatrix34_t matrixObj;
 
 	memset(&matrixObj, 0, sizeof(matrixObj));
-	matrixObj.m[0][0] = matPose.get()[0]; matrixObj.m[1][0] = matPose.get()[1]; matrixObj.m[2][0] = matPose.get()[2];
-	matrixObj.m[0][1] = matPose.get()[4]; matrixObj.m[1][1] = matPose.get()[5]; matrixObj.m[2][1] = matPose.get()[6];
-	matrixObj.m[0][2] = matPose.get()[8]; matrixObj.m[1][2] = matPose.get()[9]; matrixObj.m[2][2] = matPose.get()[10];
-	matrixObj.m[0][3] = matPose.get()[12]; matrixObj.m[1][3] = matPose.get()[13]; matrixObj.m[2][3] = matPose.get()[14];
+	matrixObj.m[0][0] = glm::value_ptr(matPose)[0]; matrixObj.m[1][0] = glm::value_ptr(matPose)[1]; matrixObj.m[2][0] = glm::value_ptr(matPose)[2];
+	matrixObj.m[0][1] = glm::value_ptr(matPose)[4]; matrixObj.m[1][1] = glm::value_ptr(matPose)[5]; matrixObj.m[2][1] = glm::value_ptr(matPose)[6];
+	matrixObj.m[0][2] = glm::value_ptr(matPose)[8]; matrixObj.m[1][2] = glm::value_ptr(matPose)[9]; matrixObj.m[2][2] = glm::value_ptr(matPose)[10];
+	matrixObj.m[0][3] = glm::value_ptr(matPose)[12]; matrixObj.m[1][3] = glm::value_ptr(matPose)[13]; matrixObj.m[2][3] = glm::value_ptr(matPose)[14];
 
 	return matrixObj;
 }
