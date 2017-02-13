@@ -1,10 +1,10 @@
 #include "SonarPointCloud.h"
 
+#include "DebugDrawer.h"
+
 SonarPointCloud::SonarPointCloud()
 {
 	markedForDeletion = false;
-	buffersGenerated = false;
-	previewBuffersGenerated = false;
 
 	firstMinMaxSet = false;
 
@@ -62,17 +62,6 @@ void SonarPointCloud::deleteSelf()
 		delete[] pointsDepthTPU;
 		delete[] pointsPositionTPU;
 		pointsAllocated = false;
-	}
-
-	if (buffersGenerated)
-	{
-		glDeleteBuffers(1, &pointsPositionsVBO);
-		glDeleteBuffers(1, &pointsColorsVBO);
-	}
-	if (previewBuffersGenerated)
-	{
-		glDeleteBuffers(1, &previewPointsPositionsVBO);
-		glDeleteBuffers(1, &previewPointsColorsVBO);
 	}
 	printf("PointCloud done cleaning itself up!\n");
 }
@@ -440,287 +429,54 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 	return true;
 }
 
-
-void SonarPointCloud::buildPointsVBO()
-{
-	
-	printf("Begin rebuilding PointCloud VBOs\n");
-
-	//printGlErrorCode();
-
-	//printf("Time: %f, TMin: %d, TMax: %d, TFact: %0.2f\n", time, tmin, tmax, timeFactor);
-	
-	if (!glewInited)
-	{
-		GLenum err = glewInit();
-		if (err != GLEW_OK)
-		{
-			printf("Glew already initialized?!\n");
-			printf("GlewInit error: %s\n", glewGetErrorString(err));
-			//return;
-		}
-		glewInited = true;
-	}
-
-
-	
-	//build VBO out of mesh
-	//printf("checking before gen buffers\n");
-	if (!buffersGenerated)
-	{
-		printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
-		glGenBuffers(1, &pointsPositionsVBO);
-		glGenBuffers(1, &pointsColorsVBO);
-		
-		buffersGenerated = true;
-	}
-	else
-	{
-		printf("deleting buffers\n");
-		glDeleteBuffers(1, &pointsPositionsVBO);
-		glDeleteBuffers(1, &pointsColorsVBO);
-		
-		glGenBuffers(1, &pointsPositionsVBO);
-		glGenBuffers(1, &pointsColorsVBO);
-
-		buffersGenerated = true;
-	}
-
-	//figure out how many point to draw
-	int count = 0;
-	for (int i = 0; i < numPoints; i++)
-	{
-		if (pointsMarks[i] != 1)
-			count++;
-	}
-	
-	//numPointsInVBO = numPoints;
-	numPointsInVBO = count;
-
-	printf("Building VBO with %d points... ", numPointsInVBO);
-
-	GLsizeiptr positionsSize = numPointsInVBO * 3  * sizeof(GLfloat);
-	GLsizeiptr colorsSize    = numPointsInVBO * 3 * sizeof(GLfloat);
-	
-	
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	double x,y,z;
-	float r,g,b;
-	
-	int index = 0;
-	
-	//if (colorScope == 1)
-		//projSettings->resetMinMaxForColorScale(minDepth, maxDepth);
-
-	//projSettings->setColorScale(colorScale);
-
-	for (int i=0;i<numPoints;i++)
-	{
-		if (pointsMarks[i] != 1)
-		{
-			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
-
-			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-
-			if (pointsMarks[i] == 2)
-			{
-				r = 1.0;
-				g = 0.0;
-				b = 0.0;
-			}
-			if (pointsMarks[i] == 3)
-			{
-				r = 0.0;
-				g = 1.0;
-				b = 0.0;
-			}
-			if (pointsMarks[i] == 4)
-			{
-				r = 0.0;
-				g = 0.0;
-				b = 1.0;
-			}
-
-			if (pointsMarks[i] >= 100)
-			{
-				r = (1.f / r) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-				g = (1.f / g) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-				b = (1.f / b) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-			}
-
-			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-			//g = 1;// pointsColors[(i * 3) + 1];
-			//b = 1;// pointsColors[(i * 3) + 2];
-
-			positions[(index * 3)] = (float)x;
-			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-			positions[(index * 3) + 2] = (float)y;
-
-			colors[(index * 3)] = r;
-			colors[(index * 3) + 1] = g;
-			colors[(index * 3) + 2] = b;
-
-			index++;
-		}//end if not marked
-	}//end for each pt
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(3, GL_FLOAT, 0, NULL);
-//printf("at END: ");
-	//printGlErrorCode();
-
-	printf("done\n");
-
-	refreshNeeded = false;
-
-}
-
-void SonarPointCloud::buildPreviewVBO()
-{
-
-	printf("Begin rebuilding PointCloud Preview VBOs\n");
-
-	//printGlErrorCode();
-
-	//printf("Time: %f, TMin: %d, TMax: %d, TFact: %0.2f\n", time, tmin, tmax, timeFactor);
-
-	if (!glewInited)
-	{
-		GLenum err = glewInit();
-		if (err != GLEW_OK)
-		{
-			printf("Glew already initialized?!\n");
-			printf("GlewInit error: %s\n", glewGetErrorString(err));
-			//return;
-		}
-		glewInited = true;
-	}
-
-
-
-	//build VBO out of mesh
-	//printf("checking before gen buffers\n");
-	if (!previewBuffersGenerated)
-	{
-		//printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
-		glGenBuffers(1, &previewPointsPositionsVBO);
-		glGenBuffers(1, &previewPointsColorsVBO);
-
-		previewBuffersGenerated = true;
-	}
-	else
-	{
-		//printf("deleting buffers\n");
-		glDeleteBuffers(1, &previewPointsPositionsVBO);
-		glDeleteBuffers(1, &previewPointsColorsVBO);
-
-		glGenBuffers(1, &previewPointsPositionsVBO);
-		glGenBuffers(1, &previewPointsColorsVBO);
-
-		previewBuffersGenerated = true;
-	}
-
-	int reductionFactor = 20;
-
-	//figure out how many point to draw
-	int count = 0;
-	for (int i = 0; i < numPoints; i+=20)
-	{
-		if (pointsMarks[i] != 1)
-			count++;
-	}
-
-	//previewNumPointsInVBO = (int)floor((double)numPoints/ (double)reductionFactor);
-	previewNumPointsInVBO = count;
-
-	printf("Building preview VBO with %d points... ", previewNumPointsInVBO);
-
-	GLsizeiptr positionsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
-	GLsizeiptr colorsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	double x, y, z;
-	float r, g, b;
-
-	int index = 0;
-
-	//if (colorScope == 1)
-	//projSettings->resetMinMaxForColorScale(minDepth, maxDepth);
-
-	//projSettings->setColorScale(colorScale);
-
-	for (int i = 0; i<numPoints; i+= reductionFactor)
-	{
-		if (pointsMarks[i] != 1)
-		{
-			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
-
-			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-			//g = 1;// pointsColors[(i * 3) + 1];
-			//b = 1;// pointsColors[(i * 3) + 2];
-
-			positions[(index * 3)] = (float)x;
-			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-			positions[(index * 3) + 2] = (float)y;
-
-			colors[(index * 3)] = r;
-			colors[(index * 3) + 1] = g;
-			colors[(index * 3) + 2] = b;
-
-			index++;
-		}//end if point not marked
-	}//end for each pt
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(3, GL_FLOAT, 0, NULL);
-	//printf("at END: ");
-	//printGlErrorCode();
-
-	printf("done\n");
-
-	previewRefreshNeeded = false;
-
-}
-
 void SonarPointCloud::draw()
 {
 	if (numPoints > 0) //if we even have points
 	{
-		if (!buffersGenerated || numPointsInVBO < 1 || refreshNeeded)
+		double x, y, z;
+		float r, g, b;
+
+		for (int i = 0; i<numPoints; i++)
 		{
-			buildPointsVBO();
-		}
-		drawPointsVBO();
+			if (pointsMarks[i] != 1)
+			{
+				x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
+				y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
+				z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
+
+				colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+
+				if (pointsMarks[i] == 2)
+				{
+					r = 1.0;
+					g = 0.0;
+					b = 0.0;
+				}
+				if (pointsMarks[i] == 3)
+				{
+					r = 0.0;
+					g = 1.0;
+					b = 0.0;
+				}
+				if (pointsMarks[i] == 4)
+				{
+					r = 0.0;
+					g = 0.0;
+					b = 1.0;
+				}
+
+				if (pointsMarks[i] >= 100)
+				{
+					r = (1.f / r) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+					g = (1.f / g) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+					b = (1.f / b) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
+				}
+
+				glm::vec3 pt(static_cast<float>(x), static_cast<float>(z), static_cast<float>(y));
+
+				DebugDrawer::getInstance().drawPoint(pt, glm::vec4(r, g, b, 1.f));
+			}//end if not marked
+		}//end for each pt
 	}
 }
 
@@ -728,127 +484,27 @@ void SonarPointCloud::drawPreview()
 {
 	if (numPoints > 0) //if we even have points
 	{
-		if (!previewBuffersGenerated || previewNumPointsInVBO < 1 || previewRefreshNeeded)
+		int reductionFactor = 20;
+
+		double x, y, z;
+		float r, g, b;
+
+		for (int i = 0; i<numPoints; i += reductionFactor)
 		{
-			buildPreviewVBO();
-		}
-		drawPreviewVBO();
+			if (pointsMarks[i] != 1)
+			{
+				x = pointsPositions[i * 3];
+				y = pointsPositions[(i * 3) + 1];
+				z = pointsPositions[(i * 3) + 2];
+
+				colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+
+				glm::vec3 pt(static_cast<float>(x), static_cast<float>(z), static_cast<float>(y));
+
+				DebugDrawer::getInstance().drawPoint(pt, glm::vec4(r, g, b, 1.f));
+			}//end if point not marked
+		}//end for each pt
 	}
-}
-
-void SonarPointCloud::drawPointsVBO()
-{
-	//printf("PointCloud-drawPointsVBO()\n");
-
-	//printf("MINMAX X %f, %f Y %f, %f Z %f %f\n", xMin, xMax, yMin, yMax, minDepth, maxDepth);
-
-	if (!buffersGenerated)
-		return;
-	if (numPointsInVBO < 1)
-		return;
-
-	/*
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.00000001;//0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.0001;//0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.00001;//0.0001;//c = 4 (this is the minimum size, when dist = 0)
-		
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-    //glEnable( GL_POINT_SPRITE_ARB );
-    glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-    glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-    //glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-	*/
-
-	glPointSize(1.0);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1,1,1,1);
-	//glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glColorPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, numPointsInVBO);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-
-	glDisable(GL_POINT_SPRITE_ARB);
-	
-	//printf("DrawDone\n");
-
-}//end drawWaterMeshVBO()
-
-void SonarPointCloud::drawPreviewVBO()
-{
-	if (!previewBuffersGenerated)
-		return;
-	if (previewNumPointsInVBO < 1)
-		return;
-
-	/*
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.00000001;//0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.0001;//0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.00001;//0.0001;//c = 4 (this is the minimum size, when dist = 0)
-
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-	//glEnable( GL_POINT_SPRITE_ARB );
-	glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-	glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-	//glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-	*/
-
-	glPointSize(1.0);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1, 1, 1, 1);
-	//glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glColorPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, previewNumPointsInVBO);
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-
-	glDisable(GL_POINT_SPRITE_ARB);
-
-	//printf("DrawDone\n");
-
-}//end drawWaterMeshVBO()
-
-void SonarPointCloud::refreshPointsVBO()
-{
-	//printf("Refreshing Dynamic Bathy VBOs\n");
-	buildPointsVBO();
-	refreshNeeded = false;
 }
 
 bool SonarPointCloud::getRefreshNeeded()
@@ -980,30 +636,7 @@ double SonarPointCloud::getActualRemovedYMin()
 
 void SonarPointCloud::drawAxes()
 {
-	//printf("In Holodeck Draw()\n");
-	glColor3f(0.75, 0.0, 0.0);
-	glLineWidth(1.0);
-
-	float smallSize = xRange / 40;
-	float bigSize = xRange / 20;
-	float centerX = (xMin + xMax) / 2;
-	float centerY = (minDepth + maxDepth) / 2;  //swap z & y
-	float centerZ = (yMin + yMax) / 2;
-
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(centerX - smallSize, centerY, centerZ);
-	glVertex3f(centerX + bigSize, centerY, centerZ);
-
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(centerX, centerY - smallSize, centerZ);
-	glVertex3f(centerX, centerY + bigSize, centerZ);
-
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(centerX, centerY, centerZ - smallSize);
-	glVertex3f(centerX, centerY, centerZ + bigSize);
-	glEnd();
+	DebugDrawer::getInstance().drawTransform(0.1f);
 }
 
 void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin)

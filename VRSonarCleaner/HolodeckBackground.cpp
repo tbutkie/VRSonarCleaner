@@ -1,5 +1,9 @@
 #include "HolodeckBackground.h"
 
+#include <shared/glm/glm.hpp>
+
+#include "DebugDrawer.h"
+
 HolodeckBackground::HolodeckBackground(float SizeX, float SizeY, float SizeZ, float Spacing)
 {
 	sizeX = SizeX;
@@ -33,314 +37,74 @@ HolodeckBackground::~HolodeckBackground()
 
 void HolodeckBackground::draw()
 {
-	//printf("In Holodeck Draw()\n");
-	glColor3f(0.0, 1.0, 1.0);
-	glPointSize(2.0);
-	glBegin(GL_POINTS);
-	glVertex3f(0, 0, 0);
-	glEnd();
-
-	
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-		glColor3f(1.0, 0.0, 0.0);
-		glVertex3f(-0.25, 0, 0);
-		glVertex3f(0.5, 0, 0);
-
-		glColor3f(0.0, 1.0, 0.0);
-		glVertex3f(0, -0.25, 0);
-		glVertex3f(0, 0.5, 0);
-
-		glColor3f(0.0, 0.0, 1.0);
-		glVertex3f(0, 0, -0.25);
-		glVertex3f(0, 0, 0.5);
-	glEnd();
-
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(1.0, 1.0, 0.0, 0.45);
-	glLineWidth(2.0);
-	glEnable(GL_LINE_SMOOTH);
-	glBegin(GL_LINES);
-
-	float r = 1.0;
-	float g = 1.0;
-	float b = 0.0;
-	float floorOpacity = 0.30;
-	float ceilingOpacity = 0.03;
-	float inBetweenOpacity; 
+	glm::vec4 floorOpacity(1.f, 1.f, 0.f, 0.3f);
+	glm::vec4 ceilingOpacity(1.f, 1.f, 0.f, 0.03f);
+	glm::vec4 inBetweenOpacity(1.f, 1.f, 0.f, 0.f);
 	
 	for (float x = minX; x <= maxX ; x += spacingX)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, maxZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, maxZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glVertex3f(x, minY, maxZ);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-		glVertex3f(x, maxY, maxZ);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, minZ), glm::vec3(x, maxY, minZ), floorOpacity, ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, maxZ), glm::vec3(x, maxY, maxZ), floorOpacity, ceilingOpacity);		
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, minZ), glm::vec3(x, minY, maxZ), floorOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, maxY, minZ), glm::vec3(x, maxY, maxZ), ceilingOpacity);
 	}
 
 	for (float y = minY; y <= maxY; y += spacingY)
 	{
-		inBetweenOpacity = ((1-(y / maxY))*(floorOpacity - ceilingOpacity)) + ceilingOpacity;
-		glColor4f(r, g, b, inBetweenOpacity);
-		glVertex3f(minX, y, minZ);
-		glVertex3f(maxX, y, minZ);
-
-		glVertex3f(minX, y, maxZ);
-		glVertex3f(maxX, y, maxZ);
-		
-		glVertex3f(minX, y, minZ);
-		glVertex3f(minX, y, maxZ);
-
-		glVertex3f(maxX, y, minZ);
-		glVertex3f(maxX, y, maxZ);
+		inBetweenOpacity.a = ((1-(y / maxY))*(floorOpacity.a - ceilingOpacity.a)) + ceilingOpacity.a;
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, minZ), glm::vec3(maxX, y, minZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, maxZ), glm::vec3(maxX, y, maxZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, minZ), glm::vec3(minX, y, maxZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(maxX, y, minZ), glm::vec3(maxX, y, maxZ), inBetweenOpacity);		
 	}
 
 	for (float z = minZ; z <= maxZ; z += spacingZ)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glVertex3f(maxX, minY, z);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-		glVertex3f(maxX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(maxX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(maxX, maxY, z);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, minY, z), glm::vec3(maxX, minY, z), floorOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, maxY, z), glm::vec3(maxX, maxY, z), ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, minY, z), glm::vec3(minX, maxY, z), floorOpacity, ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(maxX, minY, z), glm::vec3(maxX, maxY, z), floorOpacity, ceilingOpacity);
 	}
-
-	glEnd();
-
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-
-	//std::vector<float> vertdataarray;
-
-	//
-	//vertdataarray.push_back(-0.5);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0.5);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(-0.5);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0.5);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(-0.5);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0.5);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-
-	//int vertcount = 6;
-
-	//// Setup the VAO the first time through.
-	//if (m_unControllerVAO == 0)
-	//{
-	//	glGenVertexArrays(1, &m_unControllerVAO);
-	//	glBindVertexArray(m_unControllerVAO);
-
-	//	glGenBuffers(1, &m_glControllerVertBuffer);
-	//	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-	//	GLuint stride = 2 * 3 * sizeof(float);
-	//	GLuint offset = 0;
-
-	//	glEnableVertexAttribArray(0);
-	//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	//	offset += (sizeof(float)*3);
-	//	glEnableVertexAttribArray(1);
-	//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	//	glBindVertexArray(0);
-	//}
-
-	//glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-	//// set vertex data if we have some
-	//if (vertdataarray.size() > 0)
-	//{
-	//	//$ TODO: Use glBufferSubData for this...
-	//	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
-	//}
-
-	//// draw the controller axis lines
-	////glUseProgram(m_unControllerTransformProgramID);
-	////glUniformMatrix4fv(m_nControllerMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-	//glBindVertexArray(m_unControllerVAO);
-	//glDrawArrays(GL_LINES, 0, vertcount);
-	//glBindVertexArray(0);
-
-
 }
 
 
 void HolodeckBackground::drawSolid()
 {
-	//draw box
-	glColor4f(0.33, 0.39, 0.49, 1.0);
-
-	//printf("In Holodeck Draw()\n");
-
-	/*
-	glColor3f(0.0, 1.0, 1.0);
-	glPointSize(2.0);
-	glBegin(GL_POINTS);
-	glVertex3f(0, 0, 0);
-	glEnd();
-
-
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(-0.25, 0, 0);
-	glVertex3f(0.5, 0, 0);
-
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(0, -0.25, 0);
-	glVertex3f(0, 0.5, 0);
-
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(0, 0, -0.25);
-	glVertex3f(0, 0, 0.5);
-	glEnd();
-
-	*/
+	DebugDrawer::getInstance().setTransformDefault();
 
 	drawGrids(0.15, 0.21, 0.31, 1);
-	drawGrids(0.23, 0.29, 0.39, 0.25);
-	
+	drawGrids(0.23, 0.29, 0.39, 0.25);	
 }
 
 void HolodeckBackground::drawGrids(float r, float g, float b, float spacingFactor)
 {
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-	//glColor4f(0.22, 0.25, 0.32, 1.0);
-	glLineWidth(2.0);
-	glEnable(GL_LINE_SMOOTH);
-	glBegin(GL_LINES);
-
-	float floorOpacity = 0.30;
-	float ceilingOpacity = 0.03;
-	float inBetweenOpacity;
+	glm::vec4 floorOpacity(r, g, b, 0.3f);
+	glm::vec4 ceilingOpacity(r, g, b, 0.03f);
+	glm::vec4 inBetweenOpacity(r, g, b, 0.f);
 
 	for (float x = minX; x <= maxX; x += spacingX*spacingFactor)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, maxZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, maxZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glVertex3f(x, minY, maxZ);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-		glVertex3f(x, maxY, maxZ);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, minZ), glm::vec3(x, maxY, minZ), floorOpacity, ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, maxZ), glm::vec3(x, maxY, maxZ), floorOpacity, ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, minY, minZ), glm::vec3(x, minY, maxZ), floorOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(x, maxY, minZ), glm::vec3(x, maxY, maxZ), ceilingOpacity);
 	}
 
 	for (float y = minY; y <= maxY; y += spacingY*spacingFactor)
 	{
-		inBetweenOpacity = ((1 - (y / maxY))*(floorOpacity - ceilingOpacity)) + ceilingOpacity;
-		glColor4f(r, g, b, inBetweenOpacity);
-		glVertex3f(minX, y, minZ);
-		glVertex3f(maxX, y, minZ);
+		inBetweenOpacity.a = ((1 - (y / maxY))*(floorOpacity.a - ceilingOpacity.a)) + ceilingOpacity.a;
 
-		glVertex3f(minX, y, maxZ);
-		glVertex3f(maxX, y, maxZ);
-
-		glVertex3f(minX, y, minZ);
-		glVertex3f(minX, y, maxZ);
-
-		glVertex3f(maxX, y, minZ);
-		glVertex3f(maxX, y, maxZ);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, minZ), glm::vec3(maxX, y, minZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, maxZ), glm::vec3(maxX, y, maxZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, y, minZ), glm::vec3(minX, y, maxZ), inBetweenOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(maxX, y, minZ), glm::vec3(maxX, y, maxZ), inBetweenOpacity);
 	}
 
 	for (float z = minZ; z <= maxZ; z += spacingZ*spacingFactor)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glVertex3f(maxX, minY, z);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-		glVertex3f(maxX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(maxX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(maxX, maxY, z);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, minY, z), glm::vec3(maxX, minY, z), floorOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, maxY, z), glm::vec3(maxX, maxY, z), ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(minX, minY, z), glm::vec3(minX, maxY, z), floorOpacity, ceilingOpacity);
+		DebugDrawer::getInstance().drawLine(glm::vec3(maxX, minY, z), glm::vec3(maxX, maxY, z), floorOpacity, ceilingOpacity);
 	}
-
-	glEnd();
-
-	glColor4f(1.0, 1.0, 1.0, 1.0);
 }

@@ -13,29 +13,27 @@
 class DataVolume
 {
 public:
-	DataVolume(float PosX, float PosY, float PosZ, int startingOrientation, float SizeX, float SizeY, float SizeZ);
+	DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 size, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax);
 	virtual ~DataVolume();
 
 	void drawBBox();
 	void drawBacking();
 	void drawAxes();
 
-	void setSize(float SizeX, float SizeY, float SizeZ);
-	void setPosition(float PosX, float PosY, float PosZ);
-	void setInnerCoords(double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ);
+	void setSize(glm::vec3 size);
+	void setPosition(glm::vec3 pos);
+	void setInnerCoords(glm::vec3 minCoords, glm::vec3 maxCoords);
 	
 	void recalcScaling();
 
-	void convertToInnerCoords(float xWorld, float yWorld, float zWorld, float *xInner, float *yInner, float *zInner);
-	void convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld);
-
-	void activateTransformationMatrix();
-
-	glm::mat4 getCurrentTransform();
-	glm::mat4 getLastTransform();
-	glm::mat4 getCurrentPose();
-	glm::mat4 getLastPose();
-
+	glm::vec3 convertToInnerCoords(glm::vec3 worldPos);
+	glm::vec3 convertToWorldCoords(glm::vec3 innerPos);
+	
+	glm::mat4 getCurrentDataTransform();
+	glm::mat4 getLastDataTransform();
+	glm::mat4 getCurrentVolumeTransform();
+	glm::mat4 getLastVolumeTransform();
+	
 	void startRotation(const glm::mat4 &controllerPose);
 	void continueRotation(const glm::mat4 &controllerPose);
 	void endRotation();
@@ -44,23 +42,34 @@ public:
 	void resetPositionAndOrientation();
 
 private:
-	glm::vec3 pos, size;
+	void updateTransforms();
 
-	glm::quat orientation;
-	glm::quat originalOrientation;
-	glm::vec3 originalPosition;
+	glm::vec3 m_vec3Pos; // Data Volume Position
+	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position
 	
-	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
-	double innerSizeX, innerSizeY, innerSizeZ;
+	glm::quat m_qOrientation; // Data Volume Orientation
+	glm::quat m_qOriginalOrientation; // Original Data Volume Orientation
 
-	glm::mat4 m_mat4StoredMatrix;
-	float XZscale, depthScale;
+	glm::vec3 m_vec3Size; // Data Volume Dimensions
+	glm::vec3 m_vec3InnerMin; // Minimum Data Dimensions
+	glm::vec3 m_vec3InnerMax; // Maximum Data Dimensions
+	glm::vec3 m_vec3InnerRange; // Range of Data Dimensions
 
-	glm::mat4 m_mat4LastPose;
+	glm::vec3 m_vec3Scale; // Data -> Volume Scaling Factors 
+
+	glm::vec3 m_vec3DataCenteringOffset; // Data Origin -> Volume Origin Offset
+
+	glm::mat4 m_mat4VolumeTransform; // Volume Position and Orientation Transform
+	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
+	glm::mat4 m_mat4DataTransform; // Data to World Transform
+	glm::mat4 m_mat4DataTransformPrevious; // Previous Data to World Transform
+	
+	bool m_bFirstRun; // Flag for First Runthrough
+	bool m_bNeedsUpdate; // Transforms Update Flag
 
 	//rotate action
-	bool rotationInProgress;
-	glm::mat4 m_mat4PoseAtRotationStart;
-	glm::mat4 m_mat4ControllerPoseAtRotationStart;
-	glm::mat4 m_mat4ControllerToVolumePose;
+	bool m_bRotationInProgress; // Data Volume Rotating
+	glm::mat4 m_mat4PoseAtRotationStart; // Data Volume Initial Position and Orientation when Rotating
+	glm::mat4 m_mat4ControllerPoseAtRotationStart; // Controller's Initial Position and Orientation when Rotating
+	glm::mat4 m_mat4ControllerToVolumePose; // Transformation from Controller Space to Data Volume Space
 };

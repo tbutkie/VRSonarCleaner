@@ -9,6 +9,9 @@
 #include <shared/glm/gtc/matrix_transform.hpp>
 #include <shared/glm/gtc/type_ptr.hpp>
 
+#include <algorithm>
+#include <iterator>
+
 #include "ShaderUtils.h"
 
 class DebugDrawer
@@ -49,31 +52,60 @@ public:
 	}
 
 	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
-	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec3 &col = glm::vec3(1.f))
+	void drawPoint(const glm::vec3 &pos, const glm::vec4 &col = glm::vec4(1.f))
+	{
+		glm::vec3 pos_xformed = glm::vec3(m_mat4Transform * glm::vec4(pos, 1.f));
+
+		m_vPointsVertices.push_back(DebugVertex(pos_xformed, col));
+	}
+
+	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
+	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec4 &col = glm::vec4(1.f))
 	{
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vVertices.push_back(DebugVertex(from_xformed, col));
-		m_vVertices.push_back(DebugVertex(to_xformed, col));
+		m_vLinesVertices.push_back(DebugVertex(from_xformed, col));
+		m_vLinesVertices.push_back(DebugVertex(to_xformed, col));
 	}
 
-	void drawTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec3 &color)
+	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
+	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec4 &colFrom, const glm::vec4 &colTo)
+	{
+		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
+		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
+
+		m_vLinesVertices.push_back(DebugVertex(from_xformed, colFrom));
+		m_vLinesVertices.push_back(DebugVertex(to_xformed, colTo));
+	}
+
+	void drawTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec4 &color)
 	{
 		drawLine(v0, v1, color);
 		drawLine(v1, v2, color);
 		drawLine(v2, v0, color);
 	}
 
+	void drawSolidTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec4 &color)
+	{
+		glm::vec3 v0_xformed = glm::vec3(m_mat4Transform * glm::vec4(v0, 1.f));
+		glm::vec3 v1_xformed = glm::vec3(m_mat4Transform * glm::vec4(v1, 1.f));
+		glm::vec3 v2_xformed = glm::vec3(m_mat4Transform * glm::vec4(v2, 1.f));
+
+		m_vTrianglesVertices.push_back(DebugVertex(v0_xformed, color));
+		m_vTrianglesVertices.push_back(DebugVertex(v1_xformed, color));
+		m_vTrianglesVertices.push_back(DebugVertex(v2_xformed, color));
+	}
+
 	void drawTransform(float orthoLen)
 	{
 		glm::vec3 start(0.f);
-		drawLine(start, start + glm::vec3(glm::vec4(orthoLen, 0.f, 0.f, 0.f)), glm::vec3(0.7f, 0.f, 0.f));
-		drawLine(start, start + glm::vec3(glm::vec4(0.f, orthoLen, 0.f, 0.f)), glm::vec3(0.f, 0.7f, 0.f));
-		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec3(0.f, 0.f, 0.7f));
+		drawLine(start, start + glm::vec3(glm::vec4(orthoLen, 0.f, 0.f, 0.f)), glm::vec4(0.7f, 0.f, 0.f, 0.25f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, orthoLen, 0.f, 0.f)), glm::vec4(0.f, 0.7f, 0.f, 0.25f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec4(0.f, 0.f, 0.7f, 0.25f));
 	}
 
-	void drawArc(float radiusX, float radiusY, float minAngle, float maxAngle, const glm::vec3 &color, bool drawSect, float stepDegrees = float(10.f))
+	void drawArc(float radiusX, float radiusY, float minAngle, float maxAngle, const glm::vec4 &color, bool drawSect, float stepDegrees = float(10.f))
 	{
 		glm::vec3 center(0.f);
 
@@ -100,7 +132,7 @@ public:
 		}
 	}
 
-	void drawSphere(float radius, float stepDegrees, glm::vec3 &color)
+	void drawSphere(float radius, float stepDegrees, glm::vec4 &color)
 	{
 		float minTh = -glm::half_pi<float>();
 		float maxTh = glm::half_pi<float>();
@@ -113,7 +145,7 @@ public:
 		drawSpherePatch(center, up, -axis, radius, minTh, maxTh, minPs, maxPs, color, stepDegrees, false);
 	}
 
-	virtual void drawBox(const glm::vec3 &bbMin, const glm::vec3 &bbMax, const glm::vec3 &color)
+	virtual void drawBox(const glm::vec3 &bbMin, const glm::vec3 &bbMax, const glm::vec4 &color)
 	{
 		drawLine(glm::vec3(bbMin[0], bbMin[1], bbMin[2]), glm::vec3(bbMax[0], bbMin[1], bbMin[2]), color);
 		drawLine(glm::vec3(bbMax[0], bbMin[1], bbMin[2]), glm::vec3(bbMax[0], bbMax[1], bbMin[2]), color);
@@ -132,16 +164,28 @@ public:
 	// Render the mesh
 	void render(glm::mat4 matVP)
 	{
+		size_t nPointsVerts = m_vPointsVertices.size();
+		size_t nLinesVerts = m_vLinesVertices.size();
+		size_t nTrisVerts = m_vTrianglesVertices.size();
+
+		std::vector<DebugVertex> buffer;
+
+		std::copy(m_vPointsVertices.begin(), m_vPointsVertices.end(), std::back_inserter(buffer));
+		std::copy(m_vLinesVertices.begin(), m_vLinesVertices.end(),	std::back_inserter(buffer));
+		std::copy(m_vTrianglesVertices.begin(), m_vTrianglesVertices.end(), std::back_inserter(buffer));
+
 		glUseProgram(m_glTransformProgramID);
 
 		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBufferData(GL_ARRAY_BUFFER, m_vVertices.size() * sizeof(DebugVertex), m_vVertices.data(), GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), buffer.data(), GL_STREAM_DRAW);
 
 		glUniformMatrix4fv(m_glViewProjectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
 		
 		// Draw mesh
 		glBindVertexArray(this->m_glVAO);
-		glDrawArrays(GL_LINES, 0, m_vVertices.size());
+		glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(nPointsVerts));
+		glDrawArrays(GL_LINES, static_cast<GLint>(nPointsVerts), static_cast<GLsizei>(nLinesVerts));
+		glDrawArrays(GL_TRIANGLES, static_cast<GLint>(nPointsVerts + nLinesVerts), static_cast<GLsizei>(nTrisVerts));
 		glBindVertexArray(0);
 
 		glUseProgram(0);
@@ -149,15 +193,17 @@ public:
 
 	void flushLines()
 	{
-		m_vVertices.clear();
+		m_vPointsVertices.clear();
+		m_vLinesVertices.clear();
+		m_vTrianglesVertices.clear();
 	}
 
 private:
 	struct DebugVertex {
 		glm::vec3 pos;
-		glm::vec3 col;
+		glm::vec4 col;
 
-		DebugVertex(glm::vec3 p, glm::vec3 c)
+		DebugVertex(glm::vec3 p, glm::vec4 c)
 			: pos(p)
 			, col(c)
 		{}
@@ -166,7 +212,7 @@ private:
 	GLuint m_glVAO, m_glVBO;
 	GLuint m_glTransformProgramID;
 	GLint m_glViewProjectionMatrixLocation;
-	std::vector<DebugVertex> m_vVertices;
+	std::vector<DebugVertex> m_vPointsVertices, m_vLinesVertices, m_vTrianglesVertices;
 	glm::mat4 m_mat4Transform;
 
 	static DebugDrawer *s_instance;
@@ -179,7 +225,7 @@ private:
 	}
 
 	void drawSpherePatch(const glm::vec3 &center, const glm::vec3 &up, const glm::vec3 &axis, float radius,
-		float minTh, float maxTh, float minPs, float maxPs, const glm::vec3 &color, float stepDegrees = float(10.f), bool drawCenter = true)
+		float minTh, float maxTh, float minPs, float maxPs, const glm::vec4 &color, float stepDegrees = float(10.f), bool drawCenter = true)
 	{
 		glm::vec3 vA[74];
 		glm::vec3 vB[74];
@@ -300,7 +346,7 @@ private:
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)0);
 		// Vertex Colors
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
 
 		glBindVertexArray(0);
 	}
@@ -313,12 +359,12 @@ private:
 			// vertex shader
 			"#version 410\n"
 			"layout(location = 0) in vec3 v3Position;\n"
-			"layout(location = 1) in vec3 v3ColorIn;\n"
+			"layout(location = 1) in vec4 v4ColorIn;\n"
 			"uniform mat4 matVP;\n"
 			"out vec4 v4Color;\n"
 			"void main()\n"
 			"{\n"
-			"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
+			"	v4Color = v4ColorIn;\n"
 			"	gl_Position = matVP * vec4(v3Position, 1.0);\n"
 			"}\n",
 

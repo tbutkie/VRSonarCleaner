@@ -130,8 +130,11 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 
 	lasso = new LassoTool();
 
-	dataVolume = new DataVolume(0.f, 0.f, 0.f, 0, 4.f, 1.5f, 4.f);
-	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
+	glm::vec3 pos(0.f, 0.f, 0.f);
+	glm::vec3 size(4.f, 1.5f, 4.f);
+	glm::vec3 minCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+	glm::vec3 maxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+	dataVolume = new DataVolume(pos, 0, size, minCoords, maxCoords);
 }
 
 
@@ -148,7 +151,10 @@ LassoWindow::~LassoWindow()
 
 void LassoWindow::recalcVolumeBounds()
 {
-	dataVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
+	glm::vec3 minCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+	glm::vec3 maxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+
+	dataVolume->setInnerCoords(minCoords, maxCoords);
 }
 
 //-----------------------------------------------------------------------------
@@ -449,8 +455,7 @@ bool LassoWindow::checkForHits()
 
 	for (int i = 0; i < inPts.size(); ++i)
 	{
-		glm::vec3 in;
-		dataVolume->convertToWorldCoords(inPts[i].x, inPts[i].y, inPts[i].z, &in.x, &in.y, &in.z);
+		glm::vec3 in = dataVolume->convertToWorldCoords(inPts[i]);
 		glm::vec3 out = glm::project(in, mat4ModelView, mat4Projection, vec4Viewport);
 		outPts.push_back(out);
 		if (lasso->checkPoint(glm::vec2(out)))
@@ -595,12 +600,8 @@ void LassoWindow::display()
 		dataVolume->drawBBox();
 
 		//draw table
-		glPushMatrix();
-		{
-			dataVolume->activateTransformationMatrix();
-			clouds->drawCloud(0);
-		}
-		glPopMatrix();
+		DebugDrawer::getInstance().setTransform(dataVolume->getCurrentDataTransform());
+		clouds->drawCloud(0);
 	}
 	// Flush and wait for swap.
 	if (m_bVblank)

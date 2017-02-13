@@ -33,19 +33,20 @@ FlowRoom::FlowRoom()
 	
 	m_pParticleSystem = new IllustrativeParticleSystem(m_pScaler, m_vpFlowGridCollection);
 
-
-	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	m_pMainModelVolume = new DataVolume(0.f, 1.f, 0.f, 0, 1.f, 1.f, 1.f);
-	//	wallVolume = new DataVolume(0, (roomSizeY / 2) + (roomSizeY*0.09), (roomSizeZ / 2) - 0.42, 1, (roomSizeX*0.9), 0.8, (roomSizeY*0.80));
-
-	m_pMainModelVolume->setInnerCoords(
-		m_vpFlowGridCollection.at(0)->getScaledXMin(), 
+	glm::vec3 pos(0.f, 1.f, 0.f);
+	glm::vec3 size(1.f);
+	glm::vec3 minCoords(
+		m_vpFlowGridCollection.at(0)->getScaledXMin(),
+		m_vpFlowGridCollection.at(0)->getScaledMinDepth(),
+		m_vpFlowGridCollection.at(0)->getScaledYMin()
+	);
+	glm::vec3 maxCoords(
 		m_vpFlowGridCollection.at(0)->getScaledXMax(), 
-		m_vpFlowGridCollection.at(0)->getScaledMinDepth(), 
 		m_vpFlowGridCollection.at(0)->getScaledMaxDepth(), 
-		m_vpFlowGridCollection.at(0)->getScaledYMin(), 
 		m_vpFlowGridCollection.at(0)->getScaledYMax()
 	);
+
+	m_pMainModelVolume = new DataVolume(pos, 0, size, minCoords, maxCoords);
 }
 
 FlowRoom::~FlowRoom()
@@ -55,14 +56,18 @@ FlowRoom::~FlowRoom()
 
 void FlowRoom::recalcVolumeBounds()
 {
-	m_pMainModelVolume->setInnerCoords(
+	glm::vec3 minCoords(
 		m_vpFlowGridCollection.at(0)->getScaledXMin(),
-		m_vpFlowGridCollection.at(0)->getScaledXMax(),
 		m_vpFlowGridCollection.at(0)->getScaledMinDepth(),
+		m_vpFlowGridCollection.at(0)->getScaledYMin()
+	);
+	glm::vec3 maxCoords(
+		m_vpFlowGridCollection.at(0)->getScaledXMax(),
 		m_vpFlowGridCollection.at(0)->getScaledMaxDepth(),
-		m_vpFlowGridCollection.at(0)->getScaledYMin(),
 		m_vpFlowGridCollection.at(0)->getScaledYMax()
 	);
+
+	m_pMainModelVolume->setInnerCoords(minCoords, maxCoords);
 }
 
 void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
@@ -71,8 +76,6 @@ void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	m_vec3RoomSize.y = SizeY;
 	m_vec3RoomSize.z = SizeZ;
 }
-
-
 
 bool FlowRoom::gripModel(const glm::mat4 &controllerPose)
 {
@@ -110,12 +113,9 @@ void FlowRoom::draw()
 	m_pMainModelVolume->drawAxes();
 	
 	//draw model
-	glPushMatrix();
-	m_pMainModelVolume->activateTransformationMatrix();
-	//m_vpFlowGridCollection.at(0)->drawBBox();
+	DebugDrawer::getInstance().setTransform(m_pMainModelVolume->getCurrentDataTransform());
 	m_pParticleSystem->drawStreakVBOs();
 	//m_pParticleSystem->drawParticleVBOs();
-	glPopMatrix();
 		
 }
 
@@ -131,13 +131,11 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
 		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
-		float x, y, z;
-		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
-		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-		//int dyePoleID = particleSystem->addDyePole(x, z, y - 0.1f, y + 0.1f);
-		//particleSystem->dyePoles[dyePoleID]->emitters[0]->setRate(particleSystem->dyePoles[dyePoleID]->emitters[0]->getRate() * 0.1f);
+		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPos));
 
-		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(x, z, y - 0.1f, y + 0.1f, m_pScaler);
+		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
+
+		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y - 0.1f, innerPos.y + 0.1f, m_pScaler);
 		tmp->setRate(10.f);
 		tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
 		m_pParticleSystem->m_vpDyePots.push_back(tmp);
@@ -149,12 +147,11 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
 		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
-		float x, y, z;
-		m_pMainModelVolume->convertToInnerCoords(cursorPos.x, cursorPos.y, cursorPos.z, &x, &y, &z);
+		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPos));
 
-		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", x, y, z);
+		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 		
-		IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(x, z, y);
+		IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.z, innerPos.y);
 		if (tmp)
 		{
 			m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());
@@ -197,9 +194,9 @@ void FlowRoom::preRenderUpdates()
 	m_pParticleSystem->update(m_fFlowRoomTime);
 	//std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
-	m_pParticleSystem->loadStreakVBOs();
+	//m_pParticleSystem->loadStreakVBOs();
 	//std::cout << "Particle System Load Streaks Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
-	m_pParticleSystem->loadParticleVBOs();
+	//m_pParticleSystem->loadParticleVBOs();
 	//std::cout << "Particle System Load Particles Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 }

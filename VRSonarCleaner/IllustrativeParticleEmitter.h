@@ -8,6 +8,8 @@
 #include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
 
+#include <shared/glm/glm.hpp>
+
 class IllustrativeParticleEmitter
 {
 public:
@@ -19,7 +21,6 @@ public:
 	void changeColor(int Color);
 	void incrementColor();
 	void decrementColor();
-	int getColor();
 	void changeSpread(float Radius);
 	void setRate(float ParticlesPerSecond);
 	float getRate();
@@ -40,8 +41,8 @@ public:
 
 	void drawGlyph(float X, float Y, float Width, float Height);
 	void drawRoundedGlyph(float X, float Y, float Width, float Height, float roundingHeight, bool selected);
-	void setColor();
-	void setMutedColor();
+	glm::vec3 getColor();
+	glm::vec3 getMutedColor();
 	float lastGlyphX, lastGlyphY, lastGlyphWidth, lastGlyphHeight;
 
 	void setBottom(float DepthBottom);

@@ -10,22 +10,30 @@ CleaningRoom::CleaningRoom()
 	roomSizeZ = 6;
 
 	holodeck = new HolodeckBackground(roomSizeX, roomSizeY, roomSizeZ, 0.25);
-
-	minX = 0 - (roomSizeX / 2);
-	minY = 0 - (roomSizeY / 2);
-	minZ = 0;
-
-	maxX = (roomSizeX / 2);
-	maxY = (roomSizeY / 2);
-	maxZ = roomSizeZ;
-		
-	//tableVolume = new DataVolume(0, 0.25, 0, 0, 1.25, 0.4, 1.25);
-	tableVolume = new DataVolume(0, 1.10, 0, 0, 2.25, 0.75, 2.25);
-	wallVolume = new DataVolume(0, (roomSizeY / 2)+(roomSizeY*0.09), (roomSizeZ / 2)-0.42, 1, (roomSizeX*0.9), 0.8, (roomSizeY*0.80));
 	
-	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
-	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
+	minX = 0.f - (roomSizeX * 0.5f);
+	minY = 0.f - (roomSizeY * 0.5f);
+	minZ = 0.f;
 
+	maxX = roomSizeX * 0.5f;
+	maxY = roomSizeY * 0.5f;
+	maxZ = roomSizeZ;
+
+	glm::vec3 wallSize((roomSizeX*0.9), 0.8, (roomSizeY*0.80));
+	glm::vec3 wallPosition(0.f, (roomSizeY * 0.5f) + (roomSizeY * 0.09f), (roomSizeZ * 0.5f) - 0.42f);
+
+	glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
+	glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+
+	glm::vec3 tablePosition(0.f, 1.1f, 0.f);
+	glm::vec3 tableSize(2.25f, 0.75f, 2.25f);
+
+	glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+	glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+	
+	tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
+	wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
+	
 	m_fPtHighlightAmt = 1.f;
 	m_LastTime = std::chrono::high_resolution_clock::now();
 }
@@ -37,8 +45,14 @@ CleaningRoom::~CleaningRoom()
 
 void CleaningRoom::recalcVolumeBounds()
 {
-	tableVolume->setInnerCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMin(), clouds->getCloud(0)->getYMax());
-	wallVolume->setInnerCoords(clouds->getXMin(), clouds->getXMax(), clouds->getMinDepth(), clouds->getMaxDepth(), clouds->getYMin(), clouds->getYMax());
+	glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+	glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+
+	glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
+	glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+			
+	tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
+	wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
 }
 
 void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
@@ -158,10 +172,11 @@ void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 
 bool CleaningRoom::editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
 {
-	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentTransform();
-	glm::mat4 mat4LastVolumeXform = tableVolume->getLastTransform();
+	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentDataTransform();
+	glm::mat4 mat4LastVolumeXform = tableVolume->getLastDataTransform();
 
-	if (mat4LastVolumeXform == glm::mat4()) mat4LastVolumeXform = mat4CurrentVolumeXform;
+	if (mat4LastVolumeXform == glm::mat4()) 
+		mat4LastVolumeXform = mat4CurrentVolumeXform;
 
 	glm::vec3 vec3CurrentCursorPos = glm::vec3(currentCursorPose[3]);
 	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * lastCursorPose)[3]);
@@ -326,22 +341,12 @@ void CleaningRoom::draw()
 
 	
 	//draw table
-	glPushMatrix();
-	tableVolume->activateTransformationMatrix();
+	DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
 	clouds->getCloud(0)->draw();
-	//clouds->getCloud(0)->drawAxes();
-	//tableVolume->deactivateTransformationMatrix();
-	glPopMatrix();
 
 	//draw wall
-	glPushMatrix();
-	wallVolume->activateTransformationMatrix();
+	DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
 	clouds->drawAllClouds();
-	//cloud->drawAxes();
-	glPopMatrix();
-	//wallVolume->deactivateTransformationMatrix();
-
-
 }
 
 void CleaningRoom::resetVolumes()

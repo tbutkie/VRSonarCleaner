@@ -4,6 +4,8 @@
 
 #include <shared/glm/glm.hpp>
 
+#include "DebugDrawer.h"
+
 IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection)
 {
 	m_pScaler = Scaler;
@@ -11,10 +13,7 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 	m_vpFlowGridCollection = FlowGridCollection;
 
 	m_ullLastParticleUpdate = GetTickCount64();
-
-	m_bStreakletBuffersGenerated = false;
-	m_bParticleBuffersGenerated = false;
-
+	
 	m_nMaxParticles = MAX_PARTICLES;
 	ULONGLONG tick = GetTickCount64();
 	printf("Initializing particle system...");
@@ -243,54 +242,7 @@ void IllustrativeParticleSystem::update(float time)
 				tmpPart->m_fGravity = m_vpDyePots.at(i)->getGravity();
 				tmpPart->m_bUserCreated = true;
 
-				switch(m_vpDyePots.at(i)->getColor())
-				{
-				case 0:
-					tmpPart->m_vec3Color.r = COLOR_0_R;
-					tmpPart->m_vec3Color.g = COLOR_0_G;
-					tmpPart->m_vec3Color.b = COLOR_0_B;
-					break;
-				case 1:
-					tmpPart->m_vec3Color.r = COLOR_1_R;
-					tmpPart->m_vec3Color.g = COLOR_1_G;
-					tmpPart->m_vec3Color.b = COLOR_1_B;
-					break;
-				case 2:
-					tmpPart->m_vec3Color.r = COLOR_2_R;
-					tmpPart->m_vec3Color.g = COLOR_2_G;
-					tmpPart->m_vec3Color.b = COLOR_2_B;
-					break;
-				case 3:
-					tmpPart->m_vec3Color.r = COLOR_3_R;
-					tmpPart->m_vec3Color.g = COLOR_3_G;
-					tmpPart->m_vec3Color.b = COLOR_3_B;
-					break;
-				case 4:
-					tmpPart->m_vec3Color.r = COLOR_4_R;
-					tmpPart->m_vec3Color.g = COLOR_4_G;
-					tmpPart->m_vec3Color.b = COLOR_4_B;
-					break;
-				case 5:
-					tmpPart->m_vec3Color.r = COLOR_5_R;
-					tmpPart->m_vec3Color.g = COLOR_5_G;
-					tmpPart->m_vec3Color.b = COLOR_5_B;
-					break;
-				case 6:
-					tmpPart->m_vec3Color.r = COLOR_6_R;
-					tmpPart->m_vec3Color.g = COLOR_6_G;
-					tmpPart->m_vec3Color.b = COLOR_6_B;
-					break;
-				case 7:
-					tmpPart->m_vec3Color.r = COLOR_7_R;
-					tmpPart->m_vec3Color.g = COLOR_7_G;
-					tmpPart->m_vec3Color.b = COLOR_7_B;
-					break;
-				case 8:
-					tmpPart->m_vec3Color.r = COLOR_8_R;
-					tmpPart->m_vec3Color.g = COLOR_8_G;
-					tmpPart->m_vec3Color.b = COLOR_8_B;
-					break;
-				}
+				tmpPart->m_vec3Color = m_vpDyePots.at(i)->getColor();
 
 				//= dyePoles.at(i)->emitters.at(j)->getColor();
 				if (!resortedToKilling) //if we havent already resorted to killing particles because no dead ones left
@@ -530,290 +482,50 @@ void IllustrativeParticleSystem::update(float time)
 	//printf("Live: %d, Dead: %d\n", numSeedsActive, numParticlesDead);
 }
 
-void IllustrativeParticleSystem::loadStreakVBOs()
-{
-	m_nStreakSegments = 0;
+void IllustrativeParticleSystem::drawStreakVBOs()
+{	
 	for (int i=0;i<m_nMaxParticles;i++)
 	{
-		m_nStreakSegments += m_vpParticles[i]->getNumLivePositions();
-	}
-	//printf("num Segs: %d\n", numSegments);
-	if (m_nStreakSegments < 1)
-	 return;
-	
-	
-	//printf("Loading Particle System VBOs...\n");
-	//if (GLEW_OK != glewInit())
-	//{
-	//	printf("ERROR with glew init!\n");
-	//	return;
-	//}
-	//glDeleteBuffers(1, &streakletPositionsVBO);
-	//glDeleteBuffers(1, &streakletColorsVBO);
-
-	if (!m_bStreakletBuffersGenerated)
-	{
-		glGenBuffers(1, &m_glStreakletPositionsVBO);
-		glGenBuffers(1, &m_glStreakletColorsVBO);
-		m_bStreakletBuffersGenerated = true;
-	}	
-	
-	GLsizeiptr positionsSize = m_nStreakSegments * 6 * sizeof(GLfloat); //XYZ
-	GLsizeiptr colorsSize = m_nStreakSegments * 8 * sizeof(GLfloat);  //RGBA
-	
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	
-	ULONGLONG currentTime = GetTickCount64();
-
-	int index = 0;
-	float timeElapsed;
-	float timeSinceNewest;
-	float opacity1, opacity2;
-	float depthColorFactor;
-	int numPositions;
-	
-	int posIndex1, posIndex2, posIndex1x3, posIndex2x3;
-	for (int i=0;i<m_nMaxParticles;i++)
-	{
-		numPositions = m_vpParticles[i]->getNumLivePositions();
+		int numPositions = m_vpParticles[i]->getNumLivePositions();
 		if (numPositions > 1)
 		{
-			timeElapsed = m_vpParticles[i]->m_ullLiveTimeElapsed;
+			float timeElapsed = m_vpParticles[i]->m_ullLiveTimeElapsed;
 			for (int j=1;j<numPositions;j++)
 			{
-				posIndex1 = m_vpParticles[i]->getLivePosition(j-1);
-				posIndex2 = m_vpParticles[i]->getLivePosition(j);
+				int posIndex1 = m_vpParticles[i]->getLivePosition(j-1);
+				int posIndex2 = m_vpParticles[i]->getLivePosition(j);
 
-				positions[(index*6)] = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
-				positions[(index*6)+1] = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);  //SWAPPED
-				positions[(index*6)+2] = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y); //SWAPPED
+				glm::vec3 pos1, pos2;
+				glm::vec4 col1, col2;
 
-				positions[(index*6)+3] = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
-				positions[(index*6)+4] = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z); //SWAPPED
-				positions[(index*6)+5] = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);  //SWAPPED
+				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
+				pos1.y = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);  //SWAPPED
+				pos1.z = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y); //SWAPPED
+
+				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
+				pos2.y = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z); //SWAPPED
+				pos2.z = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);  //SWAPPED
 
 				//printf("line at: %f, %f, %f - %f, %f, %f\n", positions[(index*6)], positions[(index*6)+1], positions[(index*6)+2], positions[(index*6)+3], positions[(index*6)+4], positions[(index*6)+5]);
 
-				opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1])/timeElapsed;
-				opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2])/timeElapsed;
+				float opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1])/timeElapsed;
+				float opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2])/timeElapsed;
 
 				//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
 					
-				colors[(index * 8) + 0] = m_vpParticles[i]->m_vec3Color.r;
-				colors[(index * 8) + 1] = m_vpParticles[i]->m_vec3Color.g;
-				colors[(index * 8) + 2] = m_vpParticles[i]->m_vec3Color.b;
-				colors[(index * 8) + 3] = opacity1;
+				col1.r = m_vpParticles[i]->m_vec3Color.r;
+				col1.g = m_vpParticles[i]->m_vec3Color.g;
+				col1.b = m_vpParticles[i]->m_vec3Color.b;
+				col1.a = opacity1;
 
-				colors[(index * 8) + 4] = m_vpParticles[i]->m_vec3Color.r;
-				colors[(index * 8) + 5] = m_vpParticles[i]->m_vec3Color.g;
-				colors[(index * 8) + 6] = m_vpParticles[i]->m_vec3Color.b;
-				colors[(index * 8) + 7] = opacity2;
-				
-				index++;
+				col2 = col1;
+				col2.a = opacity2;
+
+				DebugDrawer::getInstance().drawLine(pos1, pos2, col1, col2);
 			}//end for each position
 		}//end if two live positions (enough to draw 1 line segment)
-	}//end for each particle
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(4, GL_FLOAT, 0, NULL);
-	
-}//end loadVBOs()
-
-void IllustrativeParticleSystem::drawStreakVBOs()
-{
-	if (!m_bStreakletBuffersGenerated || m_nStreakSegments < 1)
-		return;
-	//printf("Drawing Particle System VBOs...\n");
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glColor4f(1,1,1,1);
-	glLineWidth(1.5);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glStreakletColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_LINES, 0, m_nStreakSegments * 2);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-	
-}
-
-void IllustrativeParticleSystem::loadParticleVBOs()
-{
-	m_nParticlePoints = 0;
-	for (int i=0;i<m_nMaxParticles;i++)
-	{
-		if (m_vpParticles[i]->getNumLivePositions() > 0)
-			m_nParticlePoints++;
-	}
-	if (m_nParticlePoints < 1)
-	 return;
-
-	////printf("Loading Particle System VBOs...\n");
-	//if (GLEW_OK != glewInit())
-	//{
-	//	printf("ERROR with glew init!\n");
-	//	return;
-	//}
-	//glDeleteBuffers(1, &streakletPositionsVBO);
-	//glDeleteBuffers(1, &streakletColorsVBO);
-
-	if (!m_bParticleBuffersGenerated)
-	{
-		glGenBuffers(1, &m_glParticlePositionsVBO);
-		glGenBuffers(1, &m_glParticleColorsVBO);
-		m_bParticleBuffersGenerated = true;
-	}	
-	
-	//printf("num Segs: %d\n", numSegments);
-
-	GLsizeiptr positionsSize = m_nParticlePoints * 3 * sizeof(GLfloat); //XYZ
-	GLsizeiptr colorsSize = m_nParticlePoints * 4 * sizeof(GLfloat);  //RGBA
-	
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticlePositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticleColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	
-	ULONGLONG currentTime = GetTickCount64();
-
-	int index = 0;
-	float timeElapsed;
-	float timeSinceNewest;
-	float opacity;
-	float depthColorFactor;
-	int numPositions;
-	float currentX, currentY, currentZ;
-	for (int i=0;i<m_nMaxParticles;i++)
-	{
-		if (m_vpParticles[i]->getNumLivePositions() > 0)
-		{
-			m_vpParticles[i]->getCurrentXYZ(&currentX, &currentY, &currentZ);
-
-			positions[(index*3)] = m_pScaler->getScaledLonX(currentX);
-			positions[(index*3)+1] = -m_pScaler->getMaxScaledDepth() - m_pScaler->getScaledDepth(currentZ); //SWAPPED and negated
-			positions[(index*3)+2] = m_pScaler->getScaledLatY(currentY); //SWAPPED
-
-			opacity = m_vpParticles[i]->getFadeInFadeOutOpacity();
-
-			//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
-					
-			colors[(index * 4) + 0] = m_vpParticles[i]->m_vec3Color.r;
-			colors[(index * 4) + 1] = m_vpParticles[i]->m_vec3Color.g;
-			colors[(index * 4) + 2] = m_vpParticles[i]->m_vec3Color.b;
-			colors[(index * 4) + 3] = opacity;
-			//printf("P %d's opacity is %f\n", i, opacity);
-							
-			index++;
-
-		}//end if has a live position	
-	}//end for each particle
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticlePositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticleColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(4, GL_FLOAT, 0, NULL);
-	
-}//end loadVBOs()
-
-void IllustrativeParticleSystem::drawParticleVBOs()
-{
-	if (!m_bParticleBuffersGenerated || m_nParticlePoints < 1)
-		return;
-	//printf("Drawing Particle System VBOs...\n");
-
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.0001;//c = 4 (this is the minimum size, when dist = 0)
-
-
-
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-    //glEnable( GL_POINT_SPRITE_ARB );
-    glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-    glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-    //glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1,1,1,1);
-	glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticlePositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glParticleColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, m_nParticlePoints);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-
-	glDisable(GL_POINT_SPRITE_ARB);
-	
-	/*
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	glColor4f(1,1,1,1);
-	glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, particlePositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, particleColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, numParticlePoints);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-	*/
-	
-
-}
-
+	}//end for each particle	
+}//end drawStreakVBOs()
 
 int IllustrativeParticleSystem::getNumLiveParticles()
 {

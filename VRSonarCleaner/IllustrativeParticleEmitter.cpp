@@ -1,5 +1,7 @@
 #include "IllustrativeParticleEmitter.h"
 
+#include "DebugDrawer.h"
+
 IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler)
 {
 	x = xLoc;
@@ -48,11 +50,6 @@ void IllustrativeParticleEmitter::changeSpread(float Radius)
 void IllustrativeParticleEmitter::setLifetime(float time)
 {
 	lifetime = time;
-}
-
-int IllustrativeParticleEmitter::getColor()
-{
-	return color;
 }
 
 float IllustrativeParticleEmitter::getLifetime()
@@ -146,137 +143,54 @@ float* IllustrativeParticleEmitter::getParticlesToEmit(int number)
 
 void IllustrativeParticleEmitter::drawGlyph(float X, float Y, float Width, float Height)
 {
-/*
-	//printf("dG %f, %f, %f, %f\n", X, Y, Width, Height);
-	glColor3f(PANEL_EDGE_COLOR);
-		
-	glBegin(GL_QUADS);
-		glVertex2f(X,Y);
-		glVertex2f(X,Y+Height);
-		glVertex2f(X+Width,Y+Height);
-		glVertex2f(X+Width,Y);
-	glEnd();
-
-	if (color == 0)
-		glColor3f(COLOR_0_R, COLOR_0_G, COLOR_0_B);
-	else if (color == 1)
-		glColor3f(COLOR_1_R, COLOR_1_G, COLOR_1_B);
-	else if (color == 2)
-		glColor3f(COLOR_2_R, COLOR_2_G, COLOR_2_B);
-	else if (color == 3)
-		glColor3f(COLOR_3_R, COLOR_3_G, COLOR_3_B);
-	else if (color == 4)
-		glColor3f(COLOR_4_R, COLOR_4_G, COLOR_4_B);
-	else if (color == 5)
-		glColor3f(COLOR_5_R, COLOR_5_G, COLOR_5_B);
-	else if (color == 6)
-		glColor3f(COLOR_6_R, COLOR_6_G, COLOR_6_B);
-	else if (color == 7)
-		glColor3f(COLOR_7_R, COLOR_7_G, COLOR_7_B);
-	else if (color == 8)
-		glColor3f(COLOR_8_R, COLOR_8_G, COLOR_8_B);
-
-	glBegin(GL_QUADS);
-		glVertex2f(X+1,Y+1);
-		glVertex2f(X+1,Y+Height-1);
-		glVertex2f(X+Width-1,Y+Height-1);
-		glVertex2f(X+Width-1,Y+1);
-	glEnd();
-
-	lastGlyphX = X;
-	lastGlyphY = Y;
-	lastGlyphWidth = Width;
-	lastGlyphHeight = Height;
-*/
 }
 
 void IllustrativeParticleEmitter::drawRoundedGlyph(float X, float Y, float Width, float Height, float roundingHeight, bool selected)
 {
-	/*
-	glColor3f(0,0,0);
-
-	drawHalfEllipse(X,Y,Width, roundingHeight, false, 24);
-	glBegin(GL_QUADS);
-		glVertex2f(X,Y);
-		glVertex2f(X,Y+Height);
-		glVertex2f(X+Width,Y+Height);
-		glVertex2f(X+Width,Y);
-	glEnd();
-
-	if (!selected)
-		setMutedColor();
-	else
-		setColor();
-
-	drawHalfEllipse(X+1,Y,Width-2, roundingHeight-1, false, 24);
-	glBegin(GL_QUADS);
-		glVertex2f(X+1,Y);
-		glVertex2f(X+1,Y+Height);
-		glVertex2f(X+Width-1,Y+Height);
-		glVertex2f(X+Width-1,Y);
-	glEnd();
-
-	glColor3f(0,0,0);
-	drawHalfEllipse(X,Y+Height,Width, roundingHeight, true, 24);
-	drawHalfEllipse(X,Y+Height,Width, roundingHeight, false, 24);
-
-	if (!selected)
-		setMutedColor();
-	else
-		setColor();
-
-	drawHalfEllipse(X+1,Y+Height,Width-2, roundingHeight-1, true, 24);
-	drawHalfEllipse(X+1,Y+Height,Width-2, roundingHeight-1, false, 24);
-
-	lastGlyphX = X;
-	lastGlyphY = Y;
-	lastGlyphWidth = Width;
-	lastGlyphHeight = Height;
-	*/
 }
 
-void IllustrativeParticleEmitter::setColor()
+glm::vec3 IllustrativeParticleEmitter::getColor()
 {
 	if (color == 0)
-		glColor3f(COLOR_0_R, COLOR_0_G, COLOR_0_B);
+		return glm::vec3(COLOR_0_R, COLOR_0_G, COLOR_0_B);
 	else if (color == 1)
-		glColor3f(COLOR_1_R, COLOR_1_G, COLOR_1_B);
+		return glm::vec3(COLOR_1_R, COLOR_1_G, COLOR_1_B);
 	else if (color == 2)
-		glColor3f(COLOR_2_R, COLOR_2_G, COLOR_2_B);
+		return glm::vec3(COLOR_2_R, COLOR_2_G, COLOR_2_B);
 	else if (color == 3)
-		glColor3f(COLOR_3_R, COLOR_3_G, COLOR_3_B);
+		return glm::vec3(COLOR_3_R, COLOR_3_G, COLOR_3_B);
 	else if (color == 4)
-		glColor3f(COLOR_4_R, COLOR_4_G, COLOR_4_B);
+		return glm::vec3(COLOR_4_R, COLOR_4_G, COLOR_4_B);
 	else if (color == 5)
-		glColor3f(COLOR_5_R, COLOR_5_G, COLOR_5_B);
+		return glm::vec3(COLOR_5_R, COLOR_5_G, COLOR_5_B);
 	else if (color == 6)
-		glColor3f(COLOR_6_R, COLOR_6_G, COLOR_6_B);
+		return glm::vec3(COLOR_6_R, COLOR_6_G, COLOR_6_B);
 	else if (color == 7)
-		glColor3f(COLOR_7_R, COLOR_7_G, COLOR_7_B);
+		return glm::vec3(COLOR_7_R, COLOR_7_G, COLOR_7_B);
 	else if (color == 8)
-		glColor3f(COLOR_8_R, COLOR_8_G, COLOR_8_B);
+		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B);
 }
 
-void IllustrativeParticleEmitter::setMutedColor()
+glm::vec3 IllustrativeParticleEmitter::getMutedColor()
 {
 	if (color == 0)
-		glColor3f(COLOR_0_R-0.35, COLOR_0_G-0.35, COLOR_0_B-0.35);
+		return glm::vec3(COLOR_0_R, COLOR_0_G, COLOR_0_B) - 0.35f;
 	else if (color == 1)
-		glColor3f(COLOR_1_R-0.35, COLOR_1_G-0.35, COLOR_1_B-0.35);
+		return glm::vec3(COLOR_1_R, COLOR_1_G, COLOR_1_B) - 0.35f;
 	else if (color == 2)
-		glColor3f(COLOR_2_R-0.35, COLOR_2_G-0.35, COLOR_2_B-0.35);
+		return glm::vec3(COLOR_2_R, COLOR_2_G, COLOR_2_B) - 0.35f;
 	else if (color == 3)
-		glColor3f(COLOR_3_R-0.35, COLOR_3_G-0.35, COLOR_3_B-0.35);
+		return glm::vec3(COLOR_3_R, COLOR_3_G, COLOR_3_B) - 0.35f;
 	else if (color == 4)
-		glColor3f(COLOR_4_R-0.35, COLOR_4_G-0.35, COLOR_4_B-0.35);
+		return glm::vec3(COLOR_4_R, COLOR_4_G, COLOR_4_B) - 0.35f;
 	else if (color == 5)
-		glColor3f(COLOR_5_R-0.35, COLOR_5_G-0.35, COLOR_5_B-0.35);
+		return glm::vec3(COLOR_5_R, COLOR_5_G, COLOR_5_B) - 0.35f;
 	else if (color == 6)
-		glColor3f(COLOR_6_R-0.35, COLOR_6_G-0.35, COLOR_6_B-0.35);
+		return glm::vec3(COLOR_6_R, COLOR_6_G, COLOR_6_B) - 0.35f;
 	else if (color == 7)
-		glColor3f(COLOR_7_R-0.35, COLOR_7_G-0.35, COLOR_7_B-0.35);
+		return glm::vec3(COLOR_7_R, COLOR_7_G, COLOR_7_B) - 0.35f;
 	else if (color == 8)
-		glColor3f(COLOR_8_R-0.35, COLOR_8_G-0.35, COLOR_8_B-0.35);
+		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B) - 0.35f;
 }
 
 bool IllustrativeParticleEmitter::isPointInGlyph(float X, float Y)
@@ -290,27 +204,38 @@ bool IllustrativeParticleEmitter::isPointInGlyph(float X, float Y)
 
 void IllustrativeParticleEmitter::drawSmall3D() ///need to swap zy before using in vr
 {
-	glLineWidth(3);
-	//glColor3f(DYE_POLE_COLOR);
-	setColor();
-	glBegin(GL_LINES);
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop));
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom));
+	DebugDrawer::getInstance().drawLine(
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop)),
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom)),
+		glm::vec4(getColor(), 1.f)
+	);
 	glEnd();
 
-	glBegin(GL_LINE_LOOP);
-		for (float i=0;i<6.28318;i+=0.1)
-		{
-			glVertex3f(scaler->getScaledLonX(x)+cos(i)*scaler->getScaledLength(radius), scaler->getScaledLatY(y)+sin(i)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthBottom));
-		}
-	glEnd();
+	int nSegments = 16;
 
-	glBegin(GL_LINE_LOOP);
-		for (float i=0;i<6.28318;i+=0.1)
-		{
-			glVertex3f(scaler->getScaledLonX(x)+cos(i)*scaler->getScaledLength(radius), scaler->getScaledLatY(y)+sin(i)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthTop));
-		}
-	glEnd();
+	for (int i = 0; i < nSegments; ++i)
+	{
+		float theta0 = glm::two_pi<float>() * static_cast<float>(i) / (static_cast<float>(nSegments - 1));
+		float theta1 = glm::two_pi<float>() * static_cast<float>((i + 1) % nSegments) / (static_cast<float>(nSegments - 1));
+
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthBottom)),
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthBottom)),
+			glm::vec4(getColor(), 1.f)
+		);
+	}
+
+	for (int i = 0; i < nSegments; ++i)
+	{
+		float theta0 = glm::two_pi<float>() * static_cast<float>(i) / (static_cast<float>(nSegments - 1));
+		float theta1 = glm::two_pi<float>() * static_cast<float>((i + 1) % nSegments) / (static_cast<float>(nSegments - 1));
+		
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthTop)),
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthTop)),
+			glm::vec4(getColor(), 1.f)
+		);
+	}
 
 }
 

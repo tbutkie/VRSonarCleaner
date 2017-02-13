@@ -60,20 +60,8 @@ public:
 	int m_nLastCountLiveParticles;
 	int m_nLastCountLiveSeeds;
 
-
-	GLuint m_glStreakletPositionsVBO;
-	GLuint m_glStreakletColorsVBO;
-	bool m_bStreakletBuffersGenerated;
 	int m_nStreakSegments;
-	void loadStreakVBOs();
 	void drawStreakVBOs();
-
-	GLuint m_glParticlePositionsVBO;
-	GLuint m_glParticleColorsVBO;
-	bool m_bParticleBuffersGenerated;
-	int m_nParticlePoints;
-	void loadParticleVBOs();
-	void drawParticleVBOs();
 };
 
 #endif

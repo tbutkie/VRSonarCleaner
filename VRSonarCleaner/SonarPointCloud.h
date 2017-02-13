@@ -41,14 +41,7 @@ class SonarPointCloud
 		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
 				
 		//VBOs
-		void buildPointsVBO();
-		void drawPointsVBO();
-		void refreshPointsVBO();
-
-		void buildPreviewVBO();
-		void drawPreviewVBO();
 		void drawPreview();
-
 		void draw();
 
 		void drawAxes();
@@ -112,16 +105,10 @@ class SonarPointCloud
 		
 		//VBOs
 		bool glewInited;
-		bool buffersGenerated;
 		
-		GLuint pointsPositionsVBO;
-		GLuint pointsColorsVBO;
 		int numPointsInVBO;
 
 		//preview
-		bool previewBuffersGenerated;
-		GLuint previewPointsPositionsVBO;
-		GLuint previewPointsColorsVBO;
 		int previewNumPointsInVBO;
 		bool previewRefreshNeeded;
 };

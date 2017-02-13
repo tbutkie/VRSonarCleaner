@@ -49,18 +49,6 @@ void PointEmitterTool::changeTrailtime(float trailTime)
 
 void PointEmitterTool::drawSmall3D()
 {
-	glLineWidth(1);
-	glColor3f(DYE_POLE_COLOR);
-	glBegin(GL_LINES);
-		glVertex3f(m_pCoordScaler->getScaledLonX(m_vec3Position.x), 
-			m_pCoordScaler->getScaledLatY(m_vec3Position.y), 
-			m_pCoordScaler->getScaledDepth(m_vec3Position.z + m_fVerticalHalfLength));
-		glVertex3f(m_pCoordScaler->getScaledLonX(m_vec3Position.x), 
-			m_pCoordScaler->getScaledLatY(m_vec3Position.y), 
-			m_pCoordScaler->getScaledDepth(m_vec3Position.z - m_fVerticalHalfLength));
-	glEnd();
-
-	m_pParticleEmitter->drawSmall3D();
 }
 
 float PointEmitterTool::getBottomActualDepth()

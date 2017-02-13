@@ -1,5 +1,7 @@
 #include "FlowGrid.h"
 
+#include "DebugDrawer.h"
+
 FlowGrid::FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps)
 {
 	printf("new grid: %f-%f,%f-%f (%d, %d)x%d\n", minX, maxX, minY, maxY, cellsX, cellsY, cellsZ);
@@ -623,62 +625,11 @@ void FlowGrid::drawBBox()
 	float visualOffset = 0.1;
 
 	//HAD TO SWAP ZY again for VR coord system
-	
-	BBox[0] = scaler->getScaledLonX(xMin) - visualOffset;
-	BBox[1] = scaler->getScaledLonX(xMax) + visualOffset;
-	BBox[2] = scaler->getScaledDepth(depthValues[0]) + visualOffset;
-	BBox[3] = scaler->getScaledDepth(depthValues[zCells-1]) - visualOffset;
-	BBox[4] = scaler->getScaledLatY(yMin) - visualOffset;
-	BBox[5] = scaler->getScaledLatY(yMax) + visualOffset;
+	glm::vec3 bbMin(scaler->getScaledLonX(xMin) - visualOffset, scaler->getScaledDepth(depthValues[0]) + visualOffset, scaler->getScaledLatY(yMin) - visualOffset);
+	glm::vec3 bbMax(scaler->getScaledLonX(xMax) + visualOffset, scaler->getScaledDepth(depthValues[zCells-1]) - visualOffset, scaler->getScaledLatY(yMax) + visualOffset);
 
-	//printf("Raw depths %f, %f\n", depthValues[0], depthValues[zCells - 1]);
-	//printf("Scaled %f, %f\n", scaler->getScaledDepth(depthValues[0]), scaler->getScaledDepth(depthValues[zCells - 1]));
-
-	glBegin(GL_LINES);
-	glColor3f(1, 0, 0);
-
-	glVertex3f(BBox[0],BBox[2],BBox[4]);
-	glVertex3f(BBox[1],BBox[2],BBox[4]);
-		
-	glVertex3f(BBox[1],BBox[2],BBox[4]);
-	glVertex3f(BBox[1],BBox[2],BBox[5]);
-	
-	glVertex3f(BBox[1],BBox[2],BBox[5]);
-	glVertex3f(BBox[0],BBox[2],BBox[5]);
-
-	glVertex3f(BBox[0],BBox[2],BBox[5]);
-	glVertex3f(BBox[0],BBox[2],BBox[4]);
-	
-
-
-	glVertex3f(BBox[0],BBox[2],BBox[4]);
-	glVertex3f(BBox[0],BBox[3],BBox[4]);
-	
-	glVertex3f(BBox[1],BBox[2],BBox[4]);
-	glVertex3f(BBox[1],BBox[3],BBox[4]);
-
-	glVertex3f(BBox[1],BBox[2],BBox[5]);
-	glVertex3f(BBox[1],BBox[3],BBox[5]);
-
-	glVertex3f(BBox[0],BBox[2],BBox[5]);
-	glVertex3f(BBox[0],BBox[3],BBox[5]);
-
-
-	glVertex3f(BBox[0],BBox[3],BBox[4]);
-	glVertex3f(BBox[1],BBox[3],BBox[4]);
-
-
-	glVertex3f(BBox[1],BBox[3],BBox[4]);
-	glVertex3f(BBox[1],BBox[3],BBox[5]);
-
-	glVertex3f(BBox[1],BBox[3],BBox[5]);
-	glVertex3f(BBox[0],BBox[3],BBox[5]);
-
-	glVertex3f(BBox[0],BBox[3],BBox[5]);
-	glVertex3f(BBox[0],BBox[3],BBox[4]);
-
-	glEnd();
-
+	//DebugDrawer::getInstance().setTransformDefault();
+	DebugDrawer::getInstance().drawBox(bbMin, bbMax, glm::vec4(1.f, 0.f, 0.f, 1.f));
 }//end drawBBox()
 
 void FlowGrid::setCoordinateScaler(CoordinateScaler *Scaler)

@@ -1,5 +1,7 @@
 #include "IllustrativeDyePole.h"
 
+#include "DebugDrawer.h"
+
 IllustrativeDyePole::IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler)
 {
 	x = xLoc;
@@ -20,7 +22,7 @@ void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 {
 	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, DepthBottom, DepthTop, scaler);
 	if (emitters.size() > 0)
-		tempPE->changeColor(emitters.at(emitters.size()-1)->getColor()+1);
+		tempPE->changeColor(emitters.at(emitters.size()-1)->color+1);
 	else
 		tempPE->changeColor(0);
 	emitters.push_back(tempPE);
@@ -77,12 +79,11 @@ int IllustrativeDyePole::getNumEmitters()
 
 void IllustrativeDyePole::drawSmall3D()
 {
-	glLineWidth(1);
-	glColor3f(DYE_POLE_COLOR);
-	glBegin(GL_LINES);
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop));
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom));
-	glEnd();
+	DebugDrawer::getInstance().drawLine(
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop)),
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom)),
+		glm::vec4(DYE_POLE_COLOR, 0.75f)  
+	);
 
 	for (int i=0;i<emitters.size();i++)
 	{
@@ -93,40 +94,16 @@ void IllustrativeDyePole::drawSmall3D()
 float IllustrativeDyePole::getBottomActualDepth()
 {
 	return depthBottom;
-	/*float interpolatedLayer = (-zBottom/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-	int aboveLayer = floor((double)interpolatedLayer);
-	int belowLayer = ceil((double)interpolatedLayer);
-	float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-	float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-	float factor = interpolatedLayer - aboveLayer;
-	float depth = factor*belowDepth + (1-factor)*aboveDepth;
-	return depth;*/
 }
 
 float IllustrativeDyePole::getTopActualDepth()
 {
 	return depthTop;
-	/*float interpolatedLayer = (-zTop/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-	int aboveLayer = floor((double)interpolatedLayer);
-	int belowLayer = ceil((double)interpolatedLayer);
-	float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-	float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-	float factor = interpolatedLayer - aboveLayer;
-	float depth = factor*belowDepth + (1-factor)*aboveDepth;
-	return depth;*/
 }
 
 float IllustrativeDyePole::getActualDepthOf(float Z)
 {
 	return Z;
-		//float interpolatedLayer = (-Z/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-		//int aboveLayer = floor((double)interpolatedLayer);
-		//int belowLayer = ceil((double)interpolatedLayer);
-		//float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-		//float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-		//float factor = interpolatedLayer - aboveLayer;
-		//float depth = factor*belowDepth + (1-factor)*aboveDepth;
-		//return depth;
 }
 
 void IllustrativeDyePole::kill()

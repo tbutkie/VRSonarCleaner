@@ -26,8 +26,6 @@ class FlowGrid
 
 		void setDepthValue(int depthIndex, float depth);
 
-		void setBathyDepthValue(int x, int y, float depth);
-
 		void setTimeValue(int timeIndex, float timeValue);		
 		
 		void setCellValue(int x, int y, int z, int timestep, float u, float v);
@@ -74,8 +72,6 @@ class FlowGrid
 		int xCells;
 		float yMin, yMax, yRange, yCellsFloat, yCellSize;
 		int yCells;
-		
-		void exportSurfaceLayerToImage(char* filename);
 		
 		float zCellsFloat;
 		int zCells;
@@ -131,7 +127,6 @@ class FlowGrid
 		bool getCellBounds(float xmin, float xmax, float ymin, float ymax, int *xcellmin, int *xcellmax, int *ycellmin, int *ycellmax);
 		float getXCellSize();
 		float getYCellSize();
-		float getDepthAtCell(int xcell, int ycell, float time);
 		float getTimeAtTimestep(int timestep);
 		int getNumTimeCells();
 		
@@ -141,25 +136,7 @@ class FlowGrid
 
 		float currentTime;
 		float minTime;
-		float maxTime;
-
-
-	private:
-
-		////terrain draw mod:
-		int terrainVBOID;
-		GLuint terrainQuadsPositionsVBO;
-		GLuint terrainQuadsColorsVBO;
-		GLuint terrainQuadsTextCoordsVBO;
-
-		bool* terrainTileNorth;
-		bool* terrainTileSouth;
-		bool* terrainTileEast;
-		bool* terrainTileWest;
-		int numTerrainQuads;
-		bool terrainHeightsExtracted;
-
-		
+		float maxTime;		
 };
 
 #endif

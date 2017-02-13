@@ -5,10 +5,12 @@
 
 #include <GL/glew.h>
 
-const glm::vec3 g_vec3ActiveLineColor(0.25f, 0.65f, 0.25f);
-const glm::vec3 g_vec3LineColor(0.65f, 0.25f, 0.25f);
-const glm::vec3 g_vec3ConnectorColor(0.75f, 0.75f, 0.75f);
-const glm::vec3 g_vec3BBoxColor(1.f, 1.f, 1.f);
+#include "DebugDrawer.h"
+
+const glm::vec4 g_vec3ActiveLineColor(0.25f, 0.65f, 0.25f, 1.f);
+const glm::vec4 g_vec3LineColor(0.65f, 0.25f, 0.25f, 1.f);
+const glm::vec4 g_vec3ConnectorColor(0.75f, 0.75f, 0.75f, 1.f);
+const glm::vec4 g_vec3BBoxColor(1.f, 1.f, 1.f, 1.f);
 
 const float g_fBBoxPadding(2.f);
 
@@ -84,53 +86,71 @@ void LassoTool::draw()
 	if (n == 0)
 		return;
 
+	glm::vec4 color;
+
 	if(m_bLassoActive)
-		glColor3f(g_vec3ActiveLineColor.r, g_vec3ActiveLineColor.g, g_vec3ActiveLineColor.b);
+		color = g_vec3ActiveLineColor;
 	else
-		glColor3f(g_vec3LineColor.r, g_vec3LineColor.g, g_vec3LineColor.b);
+		color = g_vec3LineColor;
 
-	glLineWidth(1);
-	glBegin(GL_LINES);
-		for (int i = 0; i < n - 1; ++i)
+	for (int i = 0; i < n - 1; ++i)
+	{
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vvec3LassoPoints[i].x, m_vvec3LassoPoints[i].y, 0.f),
+			glm::vec3(m_vvec3LassoPoints[i + 1].x, m_vvec3LassoPoints[i + 1].y, 0.f),
+			color
+		);
+	}
+
+	// connecting line from last to first points
+	if (m_bLassoActive)
+	{
+		glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
+
+		if (m_bShowConnector)
 		{
-			glVertex2f(m_vvec3LassoPoints[i].x, m_vvec3LassoPoints[i].y);
-			glVertex2f(m_vvec3LassoPoints[i + 1].x, m_vvec3LassoPoints[i + 1].y);
+			DebugDrawer::getInstance().drawLine(
+				glm::vec3(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y, 0.f),
+				glm::vec3(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y, 0.f),
+				g_vec3ConnectorColor
+			);
 		}
+	}
+	else
+	{
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y, 0.f),
+			glm::vec3(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y, 0.f),
+			color
+		);
+	}
 
-		// connecting line from last to first points
-		if (m_bLassoActive)
-		{
-			glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
+	if (m_bShowBBox)
+	{
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
+			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
+			g_vec3BBoxColor
+		);
 
-			if (m_bShowConnector)
-			{
-				glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
-				glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
-			}
-		}
-		else
-		{
-			glVertex2f(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y);
-			glVertex2f(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y);
-		}
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
+			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
+			g_vec3BBoxColor
+		);
 
-		if (m_bShowBBox)
-		{
-			glColor3f(g_vec3BBoxColor.r, g_vec3BBoxColor.g, g_vec3BBoxColor.b);
-			
-			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
-			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
+			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
+			g_vec3BBoxColor
+		);
 
-			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
-			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
-
-			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding);
-			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
-
-			glVertex2f(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
-			glVertex2f(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding);
-		}
-	glEnd();	
+		DebugDrawer::getInstance().drawLine(
+			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
+			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
+			g_vec3BBoxColor
+		);
+	}
 }
 
 void LassoTool::reset()

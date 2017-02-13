@@ -136,8 +136,8 @@ bool CMainApplication::BInit()
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
@@ -904,12 +904,15 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	if (0)
 	{
 		DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
-		DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
+		DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec4(0.7f, 0.f, 0.f, 1.f));
 		DebugDrawer::getInstance().drawTransform(0.1f);
 	}
 
 	// DEBUG DRAWER RENDER CALL
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	DebugDrawer::getInstance().render(thisEyesProjectionMatrix);
+	glDisable(GL_BLEND);
 }
 
 

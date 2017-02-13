@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
 		pMainApplication->Shutdown();
 	}
-	else if (selectedMode == 2) //Study VR
+	else if (selectedMode == '2') //Study VR
 	{
 		colorScalerTPU = new ColorScaler();
 		colorScalerTPU->setColorScale(2);
@@ -107,8 +107,22 @@ int main(int argc, char *argv[])
 
 		pMainApplication->Shutdown();
 	}
-	else if (selectedMode == 3)
+	else if (selectedMode == '3')
 	{
+		colorScalerTPU = new ColorScaler();
+		colorScalerTPU->setColorScale(2);
+		colorScalerTPU->setBiValueScale(1);
+
+		clouds = new CloudCollection();
+		clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt");
+		///	clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_XL_901_1458.txt");  //TO BIG AND LONG at 90 degree angle to others
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt");	
+		clouds->calculateCloudBoundsAndAlign();
+
 		LassoWindow *lassoWindow = new LassoWindow(argc, argv);
 
 		if (!lassoWindow->BInit())
