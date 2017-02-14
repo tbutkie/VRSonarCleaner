@@ -22,6 +22,7 @@ public:
 
 	void setSize(glm::vec3 size);
 	void setPosition(glm::vec3 pos);
+	void setOrientation(glm::mat4 orientation);
 	void setInnerCoords(glm::vec3 minCoords, glm::vec3 maxCoords);
 	
 	void recalcScaling();

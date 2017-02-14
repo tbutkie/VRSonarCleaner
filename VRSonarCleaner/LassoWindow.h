@@ -30,7 +30,6 @@ public:
 
 	bool BInit();
 	bool BInitGL();
-	bool BInitCompositor();
 
 	void Shutdown();
 
@@ -38,15 +37,10 @@ public:
 
 	void RunMainLoop();
 	bool HandleInput();
-	void RenderFrame();
-
-	void perRenderUpdates();
 
 	void display();
 		
 	CleaningRoom* cleaningRoom;
-
-	//FocalCamera *cam;
 
 private:
 	bool checkForHits();
@@ -82,48 +76,4 @@ private: // SDL bookkeeping
 private: // OpenGL bookkeeping
 	float m_fNearClip;
 	float m_fFarClip;
-
-	GLuint m_unLensVAO;
-	GLuint m_glIDVertBuffer;
-	GLuint m_glIDIndexBuffer;
-	unsigned int m_uiIndexSize;
-
-	glm::mat4 m_mat4eyePosLeft;
-	glm::mat4 m_mat4eyePosRight;
-
-	glm::mat4 m_mat4ProjectionCenter;
-	glm::mat4 m_mat4ProjectionLeft;
-	glm::mat4 m_mat4ProjectionRight;
-
-	struct VertexDataScene
-	{
-		glm::vec3 position;
-		glm::vec2 texCoord;
-	};
-
-	struct VertexDataLens
-	{
-		glm::vec2 position;
-		glm::vec2 texCoordRed;
-		glm::vec2 texCoordGreen;
-		glm::vec2 texCoordBlue;
-	};
-
-	GLuint m_unLensProgramID;
-
-	struct FramebufferDesc
-	{
-		GLuint m_nDepthBufferId;
-		GLuint m_nRenderTextureId;
-		GLuint m_nRenderFramebufferId;
-		GLuint m_nResolveTextureId;
-		GLuint m_nResolveFramebufferId;
-	};
-	FramebufferDesc leftEyeDesc;
-	FramebufferDesc rightEyeDesc;
-
-	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
-
-	uint32_t m_nRenderWidth;
-	uint32_t m_nRenderHeight;
 };

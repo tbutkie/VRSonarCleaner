@@ -54,6 +54,11 @@ void DataVolume::setPosition(glm::vec3 pos)
 	m_bNeedsUpdate = true;
 }
 
+void DataVolume::setOrientation(glm::mat4 orientation)
+{
+	m_qOrientation = glm::quat_cast(orientation);
+}
+
 void DataVolume::setInnerCoords(glm::vec3 minCoords, glm::vec3  maxCoords)
 {
 	m_vec3InnerMin = minCoords;

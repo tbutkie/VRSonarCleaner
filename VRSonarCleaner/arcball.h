@@ -51,11 +51,11 @@ public:
 	~Arcball();
 
 	void setZoom(float radius, glm::vec3 eye, glm::vec3 up);
-	void rotate();
 	void start(int mx, int my);
 	void move(int mx, int my);
-	void getViewport();
-	void getProjectionMatrix();
+	glm::mat4 getRotation();
+	void setViewport(glm::vec4 vp);
+	void setProjectionMatrix(glm::mat4 projMat);
 
 private:
 	glm::quat m_quatOrientation, m_quatLast, m_quatNext;

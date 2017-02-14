@@ -106,13 +106,11 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	, m_pContext(NULL)
 	, m_nWindowWidth(1280)
 	, m_nWindowHeight(720)
-	, m_unLensProgramID(0)
 	, m_bDebugOpenGL(false)
 	, m_bVerbose(false)
 	, m_bPerf(false)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
-	, m_unLensVAO(0)
 	, leftMouseDown(false)
 	, rightMouseDown(false)
 {
@@ -131,7 +129,7 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	lasso = new LassoTool();
 
 	glm::vec3 pos(0.f, 0.f, 0.f);
-	glm::vec3 size(4.f, 1.5f, 4.f);
+	glm::vec3 size(2.f, 0.75f, 2.f);
 	glm::vec3 minCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
 	glm::vec3 maxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
 	dataVolume = new DataVolume(pos, 0, size, minCoords, maxCoords);
@@ -177,8 +175,8 @@ bool LassoWindow::BInit()
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
-																							//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
@@ -267,38 +265,6 @@ bool LassoWindow::BInitGL()
 //-----------------------------------------------------------------------------
 void LassoWindow::Shutdown()
 {
-
-	if (m_pContext)
-	{
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
-		glDebugMessageCallback(nullptr, nullptr);
-		glDeleteBuffers(1, &m_glIDVertBuffer);
-		glDeleteBuffers(1, &m_glIDIndexBuffer);
-
-		if (m_unLensProgramID)
-		{
-			glDeleteProgram(m_unLensProgramID);
-		}
-
-		glDeleteRenderbuffers(1, &leftEyeDesc.m_nDepthBufferId);
-		glDeleteTextures(1, &leftEyeDesc.m_nRenderTextureId);
-		glDeleteFramebuffers(1, &leftEyeDesc.m_nRenderFramebufferId);
-		glDeleteTextures(1, &leftEyeDesc.m_nResolveTextureId);
-		glDeleteFramebuffers(1, &leftEyeDesc.m_nResolveFramebufferId);
-
-		glDeleteRenderbuffers(1, &rightEyeDesc.m_nDepthBufferId);
-		glDeleteTextures(1, &rightEyeDesc.m_nRenderTextureId);
-		glDeleteFramebuffers(1, &rightEyeDesc.m_nRenderFramebufferId);
-		glDeleteTextures(1, &rightEyeDesc.m_nResolveTextureId);
-		glDeleteFramebuffers(1, &rightEyeDesc.m_nResolveFramebufferId);
-
-		if (m_unLensVAO != 0)
-		{
-			glDeleteVertexArrays(1, &m_unLensVAO);
-		}
-	}
-
-
 	fclose(stdout);
 	FreeConsole();
 
@@ -445,19 +411,18 @@ bool LassoWindow::checkForHits()
 	bool hit = false;
 	
 	std::vector<glm::vec3> inPts = clouds->getCloud(0)->getPointPositions();
-	std::vector<glm::vec3> outPts;
-	glm::mat4 mat4Projection, mat4ModelView;
-	glm::vec4 vec4Viewport;
 
-	glGetFloatv(GL_VIEWPORT, glm::value_ptr(vec4Viewport));
-	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(mat4Projection));
-	//glGetFloatv(GL_MODELVIEW_MATRIX, glm::value_ptr(mat4ModelView));
+	float aspect_ratio = static_cast<float>(m_nWindowWidth) / static_cast<float>(m_nWindowHeight);
 
+	glm::mat4 projMat = glm::perspective(50.f, aspect_ratio, 1.f, 50.f);
+	glm::mat4 viewMat = glm::lookAt(ballEye, ballCenter, ballUp) * arcball->getRotation();
+	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_nWindowWidth), static_cast<float>(m_nWindowHeight));
+	
 	for (int i = 0; i < inPts.size(); ++i)
 	{
 		glm::vec3 in = dataVolume->convertToWorldCoords(inPts[i]);
-		glm::vec3 out = glm::project(in, mat4ModelView, mat4Projection, vec4Viewport);
-		outPts.push_back(out);
+		glm::vec3 out = glm::project(in, viewMat, projMat, vp);
+
 		if (lasso->checkPoint(glm::vec2(out)))
 		{
 			clouds->getCloud(0)->markPoint(i, 1);
@@ -469,72 +434,9 @@ bool LassoWindow::checkForHits()
 	return hit;
 }
 
-/*
-void LassoWindow::checkForManipulations()
-{
-	Matrix4 pose;
-
-	if (m_pTDM->getManipulationData(pose))
-		cleaningRoom->gripCleaningTable(&pose);
-	else
-		cleaningRoom->gripCleaningTable(NULL);
-}
-*/
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool LassoWindow::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc)
-{
-	glGenFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nRenderFramebufferId);
-
-	glGenRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
-	glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, nWidth, nHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-
-	glGenTextures(1, &framebufferDesc.m_nRenderTextureId);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, nWidth, nHeight, true);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId, 0);
-
-	glGenFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nResolveFramebufferId);
-
-	glGenTextures(1, &framebufferDesc.m_nResolveTextureId);
-	glBindTexture(GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId, 0);
-
-	// check FBO status
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		return false;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	return true;
-}
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-void LassoWindow::perRenderUpdates()
-{
-
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void LassoWindow::display()
 {
-
 	// SwapWindow
 	{
 		SDL_GL_SwapWindow(m_pWindow);
@@ -550,58 +452,49 @@ void LassoWindow::display()
 
 	glEnable(GL_DEPTH_TEST);
 
-	float aspect_ratio = (float)m_nWindowWidth / (float)m_nWindowHeight;
+	float aspect_ratio = static_cast<float>(m_nWindowWidth) / static_cast<float>(m_nWindowHeight);
 
 	glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
 	
 	//draw 2D interface elements
 	{
-		glMatrixMode(GL_PROJECTION);
-		glPushMatrix(); // save current projection matrix
-		{
-			glLoadIdentity(); // start fresh
-			glOrtho(0.0, m_nWindowWidth, 0.0, m_nWindowHeight, -1.0, 1.0);
+		glm::mat4 projMat = glm::ortho(0.f, static_cast<float>(m_nWindowWidth), 0.f, static_cast<float>(m_nWindowHeight), -1.f, 1.f);
 
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			{
-				glLoadIdentity();
+		DebugDrawer::getInstance().setTransformDefault();
+		lasso->draw();
 
-				lasso->draw();
-			}
-			glPopMatrix();
-			glMatrixMode(GL_PROJECTION);
-		}
-		glPopMatrix();
+		DebugDrawer::getInstance().render(projMat); // no view matrix needed in ortho
+
+		// flush out orthographically-rendered lines
+		DebugDrawer::getInstance().flushLines();
 	}
 
 	//draw 3D elements
 	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(50.0f, aspect_ratio, 1.0f, 50.0f);
-		gluLookAt(
-			ballEye.x, ballEye.y, ballEye.z,
-			ballCenter.x, ballCenter.y, ballCenter.z,
-			ballUp.x, ballUp.y, ballUp.z);
-		//arcball_setzoom(-ballRadius/abs(ballEye.z), ballEye, ballUp);
-		arcball->getProjectionMatrix();
-		arcball->getViewport();
+		glm::mat4 projMat = glm::perspective(50.f, aspect_ratio, 1.f, 50.f);
+		glm::mat4 viewMat = glm::lookAt(ballEye, ballCenter, ballUp);
+		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_nWindowWidth), static_cast<float>(m_nWindowHeight));
 
-		glMatrixMode(GL_MODELVIEW);
-		// set up the arcball using the current projection matrix
-		glLoadIdentity();
+		arcball->setProjectionMatrix(projMat * viewMat);
+		arcball->setViewport(vp);
 
 		arcball->setZoom(ballRadius, ballEye, ballUp);
 		// now render the regular scene under the arcball rotation about 0,0,0
 		// (generally you would want to render everything here)
-		arcball->rotate();
+		glm::mat4 rot = arcball->getRotation();
 
+		DebugDrawer::getInstance().setTransformDefault();
+		dataVolume->setOrientation(rot);
 		dataVolume->drawBBox();
 
 		//draw table
-		DebugDrawer::getInstance().setTransform(dataVolume->getCurrentDataTransform());
+		DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
 		clouds->drawCloud(0);
+
+		DebugDrawer::getInstance().render(projMat * viewMat);
+
+		// flush out perspective-rendered lines
+		DebugDrawer::getInstance().flushLines();
 	}
 	// Flush and wait for swap.
 	if (m_bVblank)
@@ -609,8 +502,6 @@ void LassoWindow::display()
 		glFlush();
 		glFinish();
 	}
-
-	DebugDrawer::getInstance().flushLines();
 }
 
 

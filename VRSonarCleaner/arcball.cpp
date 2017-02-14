@@ -54,9 +54,9 @@ void Arcball::setZoom(float radius, glm::vec3 eye, glm::vec3 up)
 }
 
 // affect the arcball's orientation on openGL
-void Arcball::rotate()
+glm::mat4 Arcball::getRotation()
 { 
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(m_quatOrientation))); 
+	return glm::mat4_cast(m_quatOrientation); 
 }
 
 // find the intersection with the plane through the visible edge
@@ -165,12 +165,12 @@ void Arcball::move(int mx, int my)
 	}
 }
 
-void Arcball::getViewport()
+void Arcball::setViewport(glm::vec4 vp)
 {
-	glGetFloatv(GL_VIEWPORT, glm::value_ptr(m_vec4Viewport));
+	m_vec4Viewport = vp;
 }
 
-void Arcball::getProjectionMatrix()
+void Arcball::setProjectionMatrix(glm::mat4 projMat)
 {
-	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(m_mat4Projection));
+	m_mat4Projection = projMat;
 }
