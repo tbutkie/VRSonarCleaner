@@ -579,6 +579,12 @@ void IllustrativeParticleSystem::drawDyePoles()
 		m_vpDyePoles.at(i)->drawSmall3D();  //TEMP FOR CHRIS
 }
 
+void IllustrativeParticleSystem::drawDyePots()
+{
+	for (auto const &dp : m_vpDyePots)
+		dp->drawSmall3D();
+}
+
 void IllustrativeParticleSystem::deleteAllDyePoles()
 {
 	for (int i=0;i<m_vpDyePoles.size();i++)

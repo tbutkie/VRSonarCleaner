@@ -24,6 +24,7 @@ public:
 	std::vector<IllustrativeDyePole*> m_vpDyePoles;
 	std::vector<IllustrativeParticleEmitter*> m_vpDyePots;
 	void drawDyePoles();
+	void drawDyePots();
 	void deleteAllDyePoles();
 	void deleteDyePole(int index);
 

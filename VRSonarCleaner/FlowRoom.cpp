@@ -114,6 +114,7 @@ void FlowRoom::draw()
 	
 	//draw model
 	DebugDrawer::getInstance().setTransform(m_pMainModelVolume->getCurrentDataTransform());
+	//m_pParticleSystem->drawDyePots();                
 	m_pParticleSystem->drawStreakVBOs();
 	//m_pParticleSystem->drawParticleVBOs();
 		

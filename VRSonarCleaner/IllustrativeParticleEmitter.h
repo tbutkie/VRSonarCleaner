@@ -33,17 +33,12 @@ public:
 	int getNumParticlesToEmit(float tickCount);
 	float* getParticlesToEmit(int number);
 
-	bool isPointInGlyph(float X, float Y);
-
 	float getLifetime();
 
 	float trailTime;
 
-	void drawGlyph(float X, float Y, float Width, float Height);
-	void drawRoundedGlyph(float X, float Y, float Width, float Height, float roundingHeight, bool selected);
 	glm::vec3 getColor();
 	glm::vec3 getMutedColor();
-	float lastGlyphX, lastGlyphY, lastGlyphWidth, lastGlyphHeight;
 
 	void setBottom(float DepthBottom);
 	void setTop(float DepthTop);

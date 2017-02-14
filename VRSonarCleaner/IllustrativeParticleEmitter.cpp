@@ -140,15 +140,6 @@ float* IllustrativeParticleEmitter::getParticlesToEmit(int number)
 	return verts;
 }
 
-
-void IllustrativeParticleEmitter::drawGlyph(float X, float Y, float Width, float Height)
-{
-}
-
-void IllustrativeParticleEmitter::drawRoundedGlyph(float X, float Y, float Width, float Height, float roundingHeight, bool selected)
-{
-}
-
 glm::vec3 IllustrativeParticleEmitter::getColor()
 {
 	if (color == 0)
@@ -193,20 +184,11 @@ glm::vec3 IllustrativeParticleEmitter::getMutedColor()
 		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B) - 0.35f;
 }
 
-bool IllustrativeParticleEmitter::isPointInGlyph(float X, float Y)
-{
-	if (X >= lastGlyphX && Y >= lastGlyphY && X <= lastGlyphX + lastGlyphWidth && Y <= lastGlyphY + lastGlyphHeight)
-		return true;
-	else
-		return false;
-}
-
-
 void IllustrativeParticleEmitter::drawSmall3D() ///need to swap zy before using in vr
 {
 	DebugDrawer::getInstance().drawLine(
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop)),
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom)),
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(depthTop), scaler->getScaledLatY(y)),
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(depthBottom), scaler->getScaledLatY(y)),
 		glm::vec4(getColor(), 1.f)
 	);
 	glEnd();
