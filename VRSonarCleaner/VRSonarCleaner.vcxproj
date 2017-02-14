@@ -183,6 +183,7 @@
     <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="PointEmitterTool.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
@@ -216,6 +217,7 @@
     <ClInclude Include="LassoTool.h" />
     <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="PointEmitterTool.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SonarPointCloud.h" />
