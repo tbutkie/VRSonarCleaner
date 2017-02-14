@@ -114,15 +114,9 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	, leftMouseDown(false)
 	, rightMouseDown(false)
 {
-	ballEye.x = 0.0f;
-	ballEye.y = 0.0f;
-	ballEye.z = 6.0f;
-	ballCenter.x = 0.0f;
-	ballCenter.y = 0.0f;
-	ballCenter.z = 0.0f;
-	ballUp.x = 0.0f;
-	ballUp.y = 1.0f;
-	ballUp.z = 0.0f;
+	ballEye = glm::vec3(0.f, 0.f, 10.f);
+	ballCenter = glm::vec3(0.f);
+	ballUp = glm::vec3(0.f, -1.f, 0.f);
 	ballRadius = 2;
 	arcball = new Arcball(false);
 
