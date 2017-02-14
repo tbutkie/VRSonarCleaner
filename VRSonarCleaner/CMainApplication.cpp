@@ -872,12 +872,13 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glEnable(GL_DEPTH_TEST);
 
 	glm::mat4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+		
+	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
-	// IMMEDIATE MODE
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(glm::value_ptr(thisEyesProjectionMatrix));
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	if (!bIsInputCapturedByAnotherProcess)
+	{
+		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
+	}
 
 	if (mode == 0)
 	{
@@ -886,16 +887,6 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	else if (mode == 1)
 	{
 		flowRoom->draw();
-	}
-
-
-	// END IMMEDIATE MODE
-
-	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
-
-	if (!bIsInputCapturedByAnotherProcess)
-	{
-		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
 	}
 
 	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesProjectionMatrix));
