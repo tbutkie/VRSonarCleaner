@@ -12,7 +12,7 @@
 
 #define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20
 
-#define MAX_PARTICLES 100000
+#define MAX_PARTICLES 1000
 
 class IllustrativeParticleSystem
 {
@@ -63,6 +63,13 @@ public:
 
 	int m_nStreakSegments;
 	void drawStreakVBOs();
+
+private:
+	// Holds all particles and their trails as moving coordinate frames
+	// with the forward vector (mat4()[2]) of the frame scaled to match the
+	// magnitude of the velocity at that particle position
+	glm::mat4 m_rmat4ParticleBuffer[MAX_PARTICLES * MAX_NUM_POSITIONS];
+	glm::vec3 m_rvec34ColorBuffer[MAX_PARTICLES * MAX_NUM_POSITIONS];
 };
 
 #endif

@@ -6,6 +6,7 @@
 
 #include <shared/glm/glm.hpp>
 
+// number of particle positions to store for things like trails, etc.
 #define MAX_NUM_POSITIONS 100
 
 class IllustrativeParticle
@@ -48,8 +49,8 @@ public:
 	std::vector<glm::vec3> m_vvec3Positions;
 	std::vector<ULONGLONG> m_vullTimes;
 
-	int m_iLiveStartIndex;
-	int m_iLiveEndIndex;
+	int m_iBufferTail;
+	int m_iBufferHead;
 	ULONGLONG m_ullLiveTimeElapsed;
 	ULONGLONG m_ullLastUpdateTimestamp;
 	

@@ -24,8 +24,8 @@ IllustrativeParticle::IllustrativeParticle(float x, float y, float z, float Time
 	m_vvec3Positions[0] = m_vec3StartingPosition;
 	m_vvec3Positions[1] = m_vec3StartingPosition;
 
-	m_iLiveStartIndex = 0;
-	m_iLiveEndIndex = 1;
+	m_iBufferTail = 0;
+	m_iBufferHead = 1;
 	m_ullLiveTimeElapsed = 0ull;
 }
 
@@ -40,8 +40,8 @@ void IllustrativeParticle::reset()
 	m_bDying = false;
 	//updated = false;
 	m_ullLiveTimeElapsed = 0ull;
-	m_iLiveStartIndex = 0;
-	m_iLiveEndIndex = 0;
+	m_iBufferTail = 0;
+	m_iBufferHead = 0;
 }
 
 void IllustrativeParticle::reset(float x, float y, float z)
@@ -56,8 +56,8 @@ void IllustrativeParticle::kill()
 	m_bDead = true;
 	m_bDying = true;
 	//updated = false;
-	m_iLiveStartIndex = 0;
-	m_iLiveEndIndex = 0;
+	m_iBufferTail = 0;
+	m_iBufferHead = 0;
 	m_ullLiveTimeElapsed = 0ull;
 }
 
@@ -79,33 +79,33 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 
 	if (!m_bDying)//translate particle, filling next spot in array with new position/timestamp
 	{
-		if (m_iLiveEndIndex < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
+		if (m_iBufferHead < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
 		{
-			m_vvec3Positions[m_iLiveEndIndex] = m_vec3NewPos;
-			m_vullTimes[m_iLiveEndIndex] = currentTime;
-			m_iLiveEndIndex++;
+			m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
+			m_vullTimes[m_iBufferHead] = currentTime;
+			m_iBufferHead++;
 		}
-		else if (m_iLiveEndIndex == 0 || m_iLiveEndIndex == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
+		else if (m_iBufferHead == 0 || m_iBufferHead == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
 		{
 			m_vvec3Positions[0] = m_vec3NewPos;
 			m_vullTimes[0] = currentTime;
-			m_iLiveEndIndex = 1;
+			m_iBufferHead = 1;
 		}
 	}//end if not dying
 
 	//move liveStartIndex up past too-old positions
-	if (m_iLiveStartIndex < m_iLiveEndIndex) //no wrap around
+	if (m_iBufferTail < m_iBufferHead) //no wrap around
 	{
-		for (int i = m_iLiveStartIndex; i < m_iLiveEndIndex; i++)
+		for (int i = m_iBufferTail; i < m_iBufferHead; i++)
 		{
 			m_ullTimeSince = currentTime - m_vullTimes[i];
 			if (m_ullTimeSince > m_fTrailTime)
 			{
-				m_iLiveStartIndex = i + 1;
-				if (m_iLiveStartIndex == MAX_NUM_POSITIONS)
+				m_iBufferTail = i + 1;
+				if (m_iBufferTail == MAX_NUM_POSITIONS)
 				{
-					m_iLiveStartIndex = 0;
-					m_iLiveEndIndex = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
+					m_iBufferTail = 0;
+					m_iBufferHead = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
 					break;
 				}
 			}
@@ -113,19 +113,19 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 		}
 	}
 	
-	if (m_iLiveStartIndex > m_iLiveEndIndex) //wrap around
+	if (m_iBufferTail > m_iBufferHead) //wrap around
 	{
 		//check start to end of array
 		foundValid = false;
-		for (int i = m_iLiveStartIndex; i < MAX_NUM_POSITIONS; i++)
+		for (int i = m_iBufferTail; i < MAX_NUM_POSITIONS; i++)
 		{
 			m_ullTimeSince = currentTime - m_vullTimes[i];
 			if (m_ullTimeSince > m_fTrailTime)
 			{
-				m_iLiveStartIndex = i + 1;
-				if (m_iLiveStartIndex == MAX_NUM_POSITIONS)
+				m_iBufferTail = i + 1;
+				if (m_iBufferTail == MAX_NUM_POSITIONS)
 				{
-					m_iLiveStartIndex = 0;
+					m_iBufferTail = 0;
 					break;
 				}
 			}
@@ -138,25 +138,25 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 
 		if (!foundValid)//check start to end of array
 		{
-			for (int i = 0; i < m_iLiveEndIndex; i++)
+			for (int i = 0; i < m_iBufferHead; i++)
 			{
 				m_ullTimeSince = currentTime - m_vullTimes[i];
 				if (m_ullTimeSince > m_fTrailTime)
 				{
-					m_iLiveStartIndex = i+1;
+					m_iBufferTail = i+1;
 				}
 				else break;
 			}
 		}
 	}
 	
-	if (m_bDying && m_iLiveStartIndex == m_iLiveEndIndex)
+	if (m_bDying && m_iBufferTail == m_iBufferHead)
 	{
 		//printf("F");
 		m_bDead = true;
 	}
 	
-	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iLiveStartIndex];
+	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
 
 	return;
 }
@@ -166,15 +166,15 @@ int IllustrativeParticle::getNumLivePositions()
 {
 	if (m_bDead)//	if (!updated || dead)
 		return 0;
-	if (m_iLiveStartIndex < m_iLiveEndIndex) //no wrap around
+	if (m_iBufferTail < m_iBufferHead) //no wrap around
 	{
-		return m_iLiveEndIndex - m_iLiveStartIndex;
+		return m_iBufferHead - m_iBufferTail;
 	}
-	else if (m_iLiveStartIndex > m_iLiveEndIndex) //wrap around
+	else if (m_iBufferTail > m_iBufferHead) //wrap around
 	{
-		return (MAX_NUM_POSITIONS - m_iLiveStartIndex) + m_iLiveEndIndex;
+		return (MAX_NUM_POSITIONS - m_iBufferTail) + m_iBufferHead;
 	}
-	else if (m_iLiveStartIndex = m_iLiveEndIndex) //this should not happen
+	else if (m_iBufferTail = m_iBufferHead) //this should not happen
 	{
 		printf("ERROR in get num: liveStartIndex equals liveEndIndex!!!\n");
 		return 0;
@@ -183,50 +183,50 @@ int IllustrativeParticle::getNumLivePositions()
 
 int IllustrativeParticle::getLivePosition(int index)
 {
-	if (m_iLiveStartIndex + index < MAX_NUM_POSITIONS) //no wrap around needed
+	if (m_iBufferTail + index < MAX_NUM_POSITIONS) //no wrap around needed
 	{
-		return m_iLiveStartIndex + index;
+		return m_iBufferTail + index;
 	}
 	else //wrap around needed
 	{
-		return index - (MAX_NUM_POSITIONS - m_iLiveStartIndex);
+		return index - (MAX_NUM_POSITIONS - m_iBufferTail);
 	}
 }
 
 float IllustrativeParticle::getCurrentX()
 {
-	if (m_iLiveEndIndex == 0)
+	if (m_iBufferHead == 0)
 		return m_vvec3Positions[MAX_NUM_POSITIONS-1].x;
 	else
-		return m_vvec3Positions[m_iLiveEndIndex -1].x;
+		return m_vvec3Positions[m_iBufferHead -1].x;
 }
 
 float IllustrativeParticle::getCurrentY()
 {
-	if (m_iLiveEndIndex == 0)
+	if (m_iBufferHead == 0)
 		return m_vvec3Positions[MAX_NUM_POSITIONS-1].y;
 	else
-		return m_vvec3Positions[m_iLiveEndIndex -1].y;
+		return m_vvec3Positions[m_iBufferHead -1].y;
 }
 
 float IllustrativeParticle::getCurrentZ()
 {
-	if (m_iLiveEndIndex == 0)
+	if (m_iBufferHead == 0)
 		return m_vvec3Positions[MAX_NUM_POSITIONS - 1].z;
 	else
-		return m_vvec3Positions[m_iLiveEndIndex - 1].z;
+		return m_vvec3Positions[m_iBufferHead - 1].z;
 }
 
 void IllustrativeParticle::getCurrentXYZ(float *x, float *y, float *z)
 {
 	int index;
-	if (m_iLiveEndIndex == 0)
+	if (m_iBufferHead == 0)
 	{
 		index = MAX_NUM_POSITIONS-1;
 	}
 	else
 	{
-		index = m_iLiveEndIndex -1;
+		index = m_iBufferHead -1;
 	}
 
 	*x = m_vvec3Positions[index].x;
