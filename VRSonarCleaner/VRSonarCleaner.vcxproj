@@ -188,6 +188,7 @@
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="StreakletSystem.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
     <ClCompile Include="ViveController.cpp" />
@@ -224,6 +225,7 @@
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
+    <ClInclude Include="StreakletSystem.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="ViveController.h" />

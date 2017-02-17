@@ -21,5 +21,10 @@ public:
 private:
 	CoordinateScaler *m_pScaler;
 	std::vector<FlowGrid*> m_vpFlowGridCollection;
+
+	float m_fParticleVelocityScale;
+
+private:
+	void updatePosition(Particle *p, unsigned long long currentTime);
 };
 

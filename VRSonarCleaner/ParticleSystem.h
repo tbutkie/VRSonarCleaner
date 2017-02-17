@@ -3,6 +3,8 @@
 #include <vector>
 #include <shared/glm/glm.hpp>
 
+#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20
+
 struct Particle
 {
 	int m_iID;                      // Particle ID
@@ -10,7 +12,8 @@ struct Particle
 	glm::vec3 m_vec3Vel;            // Velocity
 	glm::vec4 m_vec4Col;            // Color
 	float m_fSize;                  // Size
-	unsigned long long m_ullEnergy; // Energy / Time till death
+	unsigned long long m_ullDeathTime; // Energy / Time till death
+	bool m_bDead;                  // Is this particle currently dead?
 	bool m_bDying;                  // Is this particle currently dieing?
 };
 
