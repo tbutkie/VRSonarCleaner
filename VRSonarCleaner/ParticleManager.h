@@ -23,8 +23,6 @@ public:
 	void remove(ParticleSystem *ps);
 	bool exists(ParticleSystem *ps) const;
 
-	void getParticles(int num, std::vector<Particle*> &particles);
-
 	void update(float time);
 
 	void render();
@@ -42,7 +40,8 @@ private:
 	
 	Particle m_rParticles[MAX_NUM_PARTICLES];
 
-	std::vector<int> m_viFreeParticles;
+	// Array index of the next free particle
+	int m_iLiveParticleCount;
 
 	// The dynamic buffer holds particle information in a mat4,
 	// where the upper-left 3x3 mat holds the uvw coordinate frame 
