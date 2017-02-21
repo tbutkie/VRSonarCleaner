@@ -1,6 +1,8 @@
 #include "FlowRoom.h"
 #include "DebugDrawer.h"
 
+#include "ParticleManager.h"
+
 FlowRoom::FlowRoom()
 {
 	//X-Right-Left
@@ -30,8 +32,6 @@ FlowRoom::FlowRoom()
 	m_fFlowRoomMaxTime = m_vpFlowGridCollection.at(0)->maxTime;
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_ullLastTimeUpdate = GetTickCount64();
-	
-	m_pParticleSystem = new IllustrativeParticleSystem(m_pScaler, m_vpFlowGridCollection);
 
 	glm::vec3 pos(0.f, 1.f, 0.f);
 	glm::vec3 size(1.f);
@@ -47,6 +47,17 @@ FlowRoom::FlowRoom()
 	);
 
 	m_pMainModelVolume = new DataVolume(pos, 0, size, minCoords, maxCoords);
+	
+	m_pParticleSystem = new IllustrativeParticleSystem(m_pScaler, m_vpFlowGridCollection);
+
+	StreakletSystem::ConstructionInfo ci;
+	ci.dataVolume = m_pMainModelVolume;
+	ci.flowGrid = m_vpFlowGridCollection.at(0);
+	ci.scaler = m_pScaler;
+
+	m_pStreakletSystem = new StreakletSystem(100, glm::vec3(0.f), &ci);
+
+	ParticleManager::getInstance().add(m_pStreakletSystem);
 }
 
 FlowRoom::~FlowRoom()
@@ -131,8 +142,7 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 	{
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
-		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
-		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPos));
+		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
 
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
@@ -147,8 +157,7 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 	{
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
-		glm::vec4 cursorPos = cursorPose * glm::vec4(0.f, 0.f, 0.f, 1.f);
-		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPos));
+		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
 
 		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 		
@@ -193,6 +202,7 @@ void FlowRoom::preRenderUpdates()
 
 	//std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
 	m_pParticleSystem->update(m_fFlowRoomTime);
+	m_pStreakletSystem->update(timeSinceLast);
 	//std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
 	//m_pParticleSystem->loadStreakVBOs();

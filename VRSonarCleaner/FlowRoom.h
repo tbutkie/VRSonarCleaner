@@ -7,6 +7,7 @@
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "IllustrativeParticleSystem.h"
+#include "StreakletSystem.h"
 #include "CoordinateScaler.h"
 #include <vector>
 
@@ -58,4 +59,5 @@ private:
 	std::vector<FlowGrid*> m_vpFlowGridCollection;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
+	StreakletSystem *m_pStreakletSystem;
 };

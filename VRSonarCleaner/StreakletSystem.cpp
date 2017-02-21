@@ -1,11 +1,20 @@
 #include "StreakletSystem.h"
 
-#include <Windows.h> // for GetTickCount64() and ULONGLONG
+#include <Windows.h> // for GetTickCount64()
 
 StreakletSystem::StreakletSystem(int numParticles, glm::vec3 pos, ConstructionInfo *ci)
 	: ParticleSystem(numParticles, pos, STREAKLET)
 	, m_fParticleVelocityScale(0.1f)
 {
+	m_pDataVolume = ci->dataVolume;
+	m_pFlowGrid = ci->flowGrid;
+	m_pScaler = ci->scaler;
+
+	std::random_device rand_dev;
+	m_RandGenerator = std::mt19937(rand_dev());
+	m_xDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledXMin(), m_pFlowGrid->getScaledXMax());
+	m_yDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledMaxDepth(), m_pFlowGrid->getScaledMinDepth());
+	m_zDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledYMin(), m_pFlowGrid->getScaledYMax());
 }
 
 
@@ -15,13 +24,15 @@ StreakletSystem::~StreakletSystem()
 
 void StreakletSystem::setParticleDefaults(Particle & p)
 {
-	p.m_vec3Pos = glm::vec3();
-	p.m_vec3LastPos = glm::vec3();
+	glm::vec3 randPos = glm::vec3(m_xDistrib(m_RandGenerator), m_yDistrib(m_RandGenerator), m_zDistrib(m_RandGenerator));
+
+	p.m_vec3Pos = randPos;
+	p.m_vec3LastPos = randPos;
 	p.m_vec3Vel = glm::vec3();
 	p.m_vec4Col = glm::vec4(1.f, 1.f, 1.f, 0.f);
 	p.m_fSize = 0.f;
 	p.m_ullEnergy = 10000ull; // ms
-	p.m_bDead = true;
+	p.m_bDead = false;
 	p.m_bDying = false;
 
 	m_vpParticles.push_back(&p);
@@ -29,7 +40,7 @@ void StreakletSystem::setParticleDefaults(Particle & p)
 
 bool StreakletSystem::update(float time)
 {
-	bool allParticlesDead = false;
+	bool allParticlesDead = true;
 
 	unsigned long long tick = GetTickCount64();
 	unsigned long long timeSinceLastUpdate = tick - m_ullLastUpdateTime;
@@ -40,18 +51,19 @@ bool StreakletSystem::update(float time)
 
 	//dont update too often
 	if (timeSinceLastUpdate <= PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL)
-		return;
+		return false;
 	else
 		m_ullLastUpdateTime = tick;
-
-
+	
 	for (auto &p : m_vpParticles)
 	{
 		if (!p->m_bDead)
 		{
+			allParticlesDead = false;
+
 			if (p->m_bDying)
 			{
-				updateParticle(p, tick, NULL);
+				updateParticle(p, timeSinceLastUpdate, NULL);
 			}
 			else
 			{
@@ -70,7 +82,7 @@ bool StreakletSystem::update(float time)
 					p->m_bDying = true;
 
 				//printf("P %d, Pos: %f, %f, %f\n", i, newPos[0], newPos[1], newPos[2]);
-				updateParticle(p, tick, &newPos);
+				updateParticle(p, timeSinceLastUpdate, &newPos);
 
 			}//end if attached to flow grid
 		}//end if not dead
@@ -78,97 +90,34 @@ bool StreakletSystem::update(float time)
 	return allParticlesDead;
 }
 
-void StreakletSystem::updateParticle(Particle *p, unsigned long long currentTime, glm::vec3 *newPos)
+void StreakletSystem::updateParticle(Particle *p, unsigned long long elapsedTime, glm::vec3 *newPos)
 {
 	if (p->m_bDead)
 		return;
 
-	if (currentTime >= p->m_ullTimeToStartDying && !p->m_bDying)
+	if (elapsedTime >= p->m_ullEnergy)
 	{
-		m_ullTimeOfDeath = currentTime;
-		p->m_bDying = true;
+		if (!p->m_bDying && !p->m_bDead)
+		{
+			p->m_ullEnergy = 1000ull;
+			p->m_bDying = true;
+		}
+
+		p->m_ullEnergy = 0ull;
+		p->m_bDead = true;
 	}
 
-	if (!p->m_bDying)//translate particle, filling next spot in array with new position/timestamp
+	if (!p->m_bDying)
 	{
-		if (m_iBufferHead < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
-		{
-			m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
-			m_vullTimes[m_iBufferHead] = currentTime;
-			m_iBufferHead++;
-		}
-		else if (m_iBufferHead == 0 || m_iBufferHead == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
-		{
-			m_vvec3Positions[0] = m_vec3NewPos;
-			m_vullTimes[0] = currentTime;
-			m_iBufferHead = 1;
-		}
-	}//end if not dying
+		p->m_ullEnergy -= elapsedTime;
 
-	 //move liveStartIndex up past too-old positions
-	if (m_iBufferTail < m_iBufferHead) //no wrap around
-	{
-		for (int i = m_iBufferTail; i < m_iBufferHead; i++)
-		{
-			m_ullTimeSince = currentTime - m_vullTimes[i];
-			if (m_ullTimeSince > m_fTrailTime)
-			{
-				m_iBufferTail = i + 1;
-				if (m_iBufferTail == MAX_NUM_POSITIONS)
-				{
-					m_iBufferTail = 0;
-					m_iBufferHead = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
-					break;
-				}
-			}
-			else break;
-		}
+		p->m_vec3LastPos = p->m_vec3Pos;
+		p->m_vec3Pos = *newPos;
 	}
-
-	if (m_iBufferTail > m_iBufferHead) //wrap around
+	else
 	{
-		//check start to end of array
-		foundValid = false;
-		for (int i = m_iBufferTail; i < MAX_NUM_POSITIONS; i++)
-		{
-			m_ullTimeSince = currentTime - m_vullTimes[i];
-			if (m_ullTimeSince > m_fTrailTime)
-			{
-				m_iBufferTail = i + 1;
-				if (m_iBufferTail == MAX_NUM_POSITIONS)
-				{
-					m_iBufferTail = 0;
-					break;
-				}
-			}
-			else
-			{
-				foundValid = true;
-				break;
-			}
-		}
-
-		if (!foundValid)//check start to end of array
-		{
-			for (int i = 0; i < m_iBufferHead; i++)
-			{
-				m_ullTimeSince = currentTime - m_vullTimes[i];
-				if (m_ullTimeSince > m_fTrailTime)
-				{
-					m_iBufferTail = i + 1;
-				}
-				else break;
-			}
-		}
+		p->m_ullEnergy -= elapsedTime;
 	}
-
-	if (m_bDying && m_iBufferTail == m_iBufferHead)
-	{
-		//printf("F");
-		m_bDead = true;
-	}
-
-	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
 
 	return;
 }
