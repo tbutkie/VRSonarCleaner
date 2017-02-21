@@ -2,8 +2,8 @@
 
 #include <Windows.h> // for GetTickCount64() and ULONGLONG
 
-StreakletSystem::StreakletSystem(int numParticles, int streakLength, glm::vec3 pos, ConstructionInfo *ci)
-	: ParticleSystem(numParticles * (streakLength + 1), pos, STREAKLET)
+StreakletSystem::StreakletSystem(int numParticles, glm::vec3 pos, ConstructionInfo *ci)
+	: ParticleSystem(numParticles, pos, STREAKLET)
 	, m_fParticleVelocityScale(0.1f)
 {
 }
@@ -11,6 +11,20 @@ StreakletSystem::StreakletSystem(int numParticles, int streakLength, glm::vec3 p
 
 StreakletSystem::~StreakletSystem()
 {
+}
+
+void StreakletSystem::setParticleDefaults(Particle & p)
+{
+	p.m_vec3Pos = glm::vec3();
+	p.m_vec3LastPos = glm::vec3();
+	p.m_vec3Vel = glm::vec3();
+	p.m_vec4Col = glm::vec4(1.f, 1.f, 1.f, 0.f);
+	p.m_fSize = 0.f;
+	p.m_ullEnergy = 10000ull; // ms
+	p.m_bDead = true;
+	p.m_bDying = false;
+
+	m_vpParticles.push_back(&p);
 }
 
 bool StreakletSystem::update(float time)
@@ -37,89 +51,124 @@ bool StreakletSystem::update(float time)
 		{
 			if (p->m_bDying)
 			{
-				updatePosition(p, tick);
+				updateParticle(p, tick, NULL);
 			}
-			else if (m_vpParticles[i]->m_iFlowGridIndex > -1) //if attached to a flow grid
+			else
 			{
-				//get current position
-				p->m_vec3Pos;
 				glm::vec3 flow;
 				//get UVW at current position
-				m_vpFlowGridCollection.at(0)->getUVWat(p->m_vec3Pos.x, p->m_vec3Pos.y, p->m_vec3Pos.z, time, &flow.x, &flow.y, &flow.z);
+				m_pFlowGrid->getUVWat(p->m_vec3Pos.x, p->m_vec3Pos.y, p->m_vec3Pos.z, time, &flow.x, &flow.y, &flow.z);
 				//printf("Result: %d, U: %f, V: %f\n", result, u ,v);
 				//calc new position
 				float prodTimeVelocity = static_cast<float>(timeSinceLastUpdate) * m_fParticleVelocityScale;
 				//printf("Current Pos: %f, %f, %f\n", x, y, z);
 				glm::vec3 newPos = p->m_vec3Pos + flow * prodTimeVelocity;
-				newPos.z += m_vpParticles[i]->m_fGravity / (1000ull * timeSinceLastUpdate);
+				//newPos.z += p->m_fGravity / (1000ull * timeSinceLastUpdate); // Apply gravity
 
 				//check in bounds or not
-				if (!m_vpFlowGridCollection.at(m_vpParticles[i]->m_iFlowGridIndex)->contains(newPos[0], newPos[1], newPos[2]))
-				{
-					//no begin killing off particle
-					//printf("OOB: ", newPos[0], newPos[1], newPos[2]);
-					m_vpParticles[i]->m_bDying = true;
-				}
+				if (!m_pFlowGrid->contains(newPos[0], newPos[1], newPos[2]))
+					p->m_bDying = true;
+
 				//printf("P %d, Pos: %f, %f, %f\n", i, newPos[0], newPos[1], newPos[2]);
-				m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
+				updateParticle(p, tick, &newPos);
 
 			}//end if attached to flow grid
-			else //not attached to flow grid
-			{
-				//if there are flow grids, check if in one of them
-				bool foundGrid = false;
-				if (m_vpFlowGridCollection.size() > 0)
-				{
-					//get current position
-					m_vpParticles[i]->getCurrentXYZ(&x, &y, &z);
-					//check in bounds or not
-					for (int gridID = 0; gridID < m_vpFlowGridCollection.size(); ++gridID)
-					{
-						if (m_vpFlowGridCollection.at(gridID)->contains(x, y, z))
-						{
-							//found one
-							m_vpParticles[i]->m_iFlowGridIndex = gridID;
-							//printf("particle %d moved to grid %d\n", i, grid);
-							//update
-							//get UVW at current position
-							result = m_vpFlowGridCollection.at(gridID)->getUVWat(x, y, z, time, &u, &v, &w);
-							//calc new position
-							prodTimeVelocity = timeSinceLastUpdate*m_vpFlowGridCollection.at(gridID)->illustrativeParticleVelocityScale;
-							newPos[0] = x + u*prodTimeVelocity;
-							newPos[1] = y + v*prodTimeVelocity;
-							newPos[2] = z + w*prodTimeVelocity + (m_vpParticles[i]->m_fGravity / prodTimeSeconds);
-							m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
-							foundGrid = true;
-							break;
-						}
-					}//end for each grid					
-				}//end if flow grids to check
-
-				if (!foundGrid)
-				{
-					//if there are flow grids, lets kill it, so it doesn't clutter the scene
-					if (m_vpFlowGridCollection.size() > 0)
-					{
-						m_vpParticles[i]->kill();
-					}
-					else
-					{
-						//if no flow grids, just let it sit there and die out naturally
-						m_vpParticles[i]->getCurrentXYZ(&x, &y, &z);
-						newPos[0] = x;
-						newPos[1] = y;
-						newPos[2] = z + (m_vpParticles[i]->m_fGravity / prodTimeSeconds); //only gravity for this one
-						m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
-					}
-				}
-
-			}//end else not attached to flow grid
 		}//end if not dead
 	}
 	return allParticlesDead;
 }
 
-void StreakletSystem::updatePosition(Particle *p, unsigned long long currentTime)
+void StreakletSystem::updateParticle(Particle *p, unsigned long long currentTime, glm::vec3 *newPos)
 {
+	if (p->m_bDead)
+		return;
 
+	if (currentTime >= p->m_ullTimeToStartDying && !p->m_bDying)
+	{
+		m_ullTimeOfDeath = currentTime;
+		p->m_bDying = true;
+	}
+
+	if (!p->m_bDying)//translate particle, filling next spot in array with new position/timestamp
+	{
+		if (m_iBufferHead < MAX_NUM_POSITIONS)//no wrap needed, just fill next spot
+		{
+			m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
+			m_vullTimes[m_iBufferHead] = currentTime;
+			m_iBufferHead++;
+		}
+		else if (m_iBufferHead == 0 || m_iBufferHead == MAX_NUM_POSITIONS)//wrap around in progress or wrap around needed
+		{
+			m_vvec3Positions[0] = m_vec3NewPos;
+			m_vullTimes[0] = currentTime;
+			m_iBufferHead = 1;
+		}
+	}//end if not dying
+
+	 //move liveStartIndex up past too-old positions
+	if (m_iBufferTail < m_iBufferHead) //no wrap around
+	{
+		for (int i = m_iBufferTail; i < m_iBufferHead; i++)
+		{
+			m_ullTimeSince = currentTime - m_vullTimes[i];
+			if (m_ullTimeSince > m_fTrailTime)
+			{
+				m_iBufferTail = i + 1;
+				if (m_iBufferTail == MAX_NUM_POSITIONS)
+				{
+					m_iBufferTail = 0;
+					m_iBufferHead = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
+					break;
+				}
+			}
+			else break;
+		}
+	}
+
+	if (m_iBufferTail > m_iBufferHead) //wrap around
+	{
+		//check start to end of array
+		foundValid = false;
+		for (int i = m_iBufferTail; i < MAX_NUM_POSITIONS; i++)
+		{
+			m_ullTimeSince = currentTime - m_vullTimes[i];
+			if (m_ullTimeSince > m_fTrailTime)
+			{
+				m_iBufferTail = i + 1;
+				if (m_iBufferTail == MAX_NUM_POSITIONS)
+				{
+					m_iBufferTail = 0;
+					break;
+				}
+			}
+			else
+			{
+				foundValid = true;
+				break;
+			}
+		}
+
+		if (!foundValid)//check start to end of array
+		{
+			for (int i = 0; i < m_iBufferHead; i++)
+			{
+				m_ullTimeSince = currentTime - m_vullTimes[i];
+				if (m_ullTimeSince > m_fTrailTime)
+				{
+					m_iBufferTail = i + 1;
+				}
+				else break;
+			}
+		}
+	}
+
+	if (m_bDying && m_iBufferTail == m_iBufferHead)
+	{
+		//printf("F");
+		m_bDead = true;
+	}
+
+	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
+
+	return;
 }

@@ -13,18 +13,20 @@ public:
 	};
 
 public:
-	StreakletSystem(int numParticles, int streakLength, glm::vec3 pos, ConstructionInfo *ci = NULL);
+	StreakletSystem(int numParticles, glm::vec3 pos, ConstructionInfo *ci = NULL);
 	~StreakletSystem();
+
+	virtual void setParticleDefaults(Particle &p);
 
 	virtual bool update(float time);
 
 private:
 	CoordinateScaler *m_pScaler;
-	std::vector<FlowGrid*> m_vpFlowGridCollection;
+	FlowGrid* m_pFlowGrid;
 
 	float m_fParticleVelocityScale;
 
 private:
-	void updatePosition(Particle *p, unsigned long long currentTime);
+	void updateParticle(Particle *p, unsigned long long currentTime, glm::vec3 *newPos);
 };
 
