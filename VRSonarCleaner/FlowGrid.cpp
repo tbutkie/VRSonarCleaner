@@ -105,7 +105,7 @@ void FlowGrid::init()
 	zCellsFloat = (float)zCells;
 	xRange = xMax - xMin;
 	yRange = yMax - yMin;
-	depthValues = new float[zCells];
+	m_vDepthValues.resize(zCells);
 	depthsSet = false;
 
 	xCellSize = xRange / xCellsFloat;
@@ -143,7 +143,6 @@ void FlowGrid::init()
 
 void FlowGrid::deleteSelf()
 {
-	delete[] depthValues;
 	delete[] times;
 	delete[] isWater;
 	//delete[] bathyDepth2d;
@@ -158,17 +157,17 @@ void FlowGrid::deleteSelf()
 
 void FlowGrid::setDepthValue(int depthIndex, float depth)
 {
-	depthValues[depthIndex] = depth;
+	m_vDepthValues[depthIndex] = depth;
 }
 
 float FlowGrid::getMinDepth()
 {
-	return depthValues[0];
+	return m_vDepthValues.front();
 }
 
 float FlowGrid::getMaxDepth()
 {
-	return depthValues[zCells-1];
+	return m_vDepthValues.back();
 }
 
 
@@ -216,7 +215,7 @@ bool FlowGrid::getIsWaterAt(float lonX, float latY, float depth, float time)
 	int z = 0;
 	for (int i=0;i<zCells;i++)
 	{
-		if (depth >= depthValues[i])
+		if (depth >= m_vDepthValues[i])
 			z = i;
 	}
 
@@ -309,13 +308,13 @@ bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u
 
 	//find closest depth level? HACK: just use deepest one not below requested depth for now, maybe fix later if more accuracy needed
 	int deepestLevelAbove = 0;
-	if (depth < 0 || depth > depthValues[zCells-1]+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
+	if (depth < 0 || depth > m_vDepthValues.back()+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
 	{
 		return false;
 	}
 	for (int i=0;i<zCells;i++)
 	{
-		if (depth >= depthValues[i])
+		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
@@ -439,13 +438,13 @@ bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *
 
 	//find closest depth level? HACK: just use deepest one not below requested depth for now, maybe fix later if more accuracy needed
 	int deepestLevelAbove = 0;
-	if (depth < 0 || depth > depthValues[zCells-1]+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
+	if (depth < 0 || depth > m_vDepthValues.back()+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
 	{
 		return false;
 	}
 	for (int i=0;i<zCells;i++)
 	{
-		if (depth >= depthValues[i])
+		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
@@ -572,13 +571,13 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 
 	//find closest depth level? HACK: just use deepest one not below requested depth for now, maybe fix later if more accuracy needed
 	int deepestLevelAbove = 0;
-	if (depth < 0 || depth > depthValues[zCells-1]+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
+	if (depth < 0 || depth > m_vDepthValues.back()+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
 	{
 		return false;
 	}
 	for (int i=0;i<zCells;i++)
 	{
-		if (depth >= depthValues[i])
+		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
@@ -625,8 +624,8 @@ void FlowGrid::drawBBox()
 	float visualOffset = 0.1;
 
 	//HAD TO SWAP ZY again for VR coord system
-	glm::vec3 bbMin(scaler->getScaledLonX(xMin) - visualOffset, scaler->getScaledDepth(depthValues[0]) + visualOffset, scaler->getScaledLatY(yMin) - visualOffset);
-	glm::vec3 bbMax(scaler->getScaledLonX(xMax) + visualOffset, scaler->getScaledDepth(depthValues[zCells-1]) - visualOffset, scaler->getScaledLatY(yMax) + visualOffset);
+	glm::vec3 bbMin(scaler->getScaledLonX(xMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset, scaler->getScaledLatY(yMin) - visualOffset);
+	glm::vec3 bbMax(scaler->getScaledLonX(xMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset, scaler->getScaledLatY(yMax) + visualOffset);
 
 	//DebugDrawer::getInstance().setTransformDefault();
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, glm::vec4(1.f, 0.f, 0.f, 1.f));
@@ -695,7 +694,7 @@ bool FlowGrid::contains(float x, float y, float z)
 		return false;
 	else if (z < 0)
 		return false;
-	else if (z > depthValues[zCells-1])
+	else if (z > m_vDepthValues.back())
 		return false;
 	else
 		return true;
@@ -720,7 +719,7 @@ void FlowGrid::getXYZofCell(int cellIndex, float *lonX, float *latY, float *dept
 	int z = 0;
 	for (int i=0;i<zCells;i++)
 	{
-		if (*depth >= depthValues[i])
+		if (*depth >= m_vDepthValues[i])
 			z = i;
 	}
 	*depth = z;

@@ -4,7 +4,7 @@
 
 StreakletSystem::StreakletSystem(int numParticles, glm::vec3 pos, ConstructionInfo *ci)
 	: ParticleSystem(numParticles, pos, STREAKLET)
-	, m_fParticleVelocityScale(0.1f)
+	, m_fParticleVelocityScale(0.001f)
 {
 	m_pDataVolume = ci->dataVolume;
 	m_pFlowGrid = ci->flowGrid;
@@ -13,7 +13,7 @@ StreakletSystem::StreakletSystem(int numParticles, glm::vec3 pos, ConstructionIn
 	std::random_device rand_dev;
 	m_RandGenerator = std::mt19937(rand_dev());
 	m_xDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledXMin(), m_pFlowGrid->getScaledXMax());
-	m_yDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledMaxDepth(), m_pFlowGrid->getScaledMinDepth());
+	m_yDistrib = std::uniform_int_distribution<int>(-m_pFlowGrid->getScaledMinDepth(), -m_pFlowGrid->getScaledMaxDepth());
 	m_zDistrib = std::uniform_int_distribution<int>(m_pFlowGrid->getScaledYMin(), m_pFlowGrid->getScaledYMax());
 }
 
@@ -69,7 +69,7 @@ bool StreakletSystem::update(float time)
 			{
 				glm::vec3 flow;
 				//get UVW at current position
-				m_pFlowGrid->getUVWat(p->m_vec3Pos.x, p->m_vec3Pos.y, p->m_vec3Pos.z, time, &flow.x, &flow.y, &flow.z);
+				m_pFlowGrid->getUVWat(p->m_vec3Pos.x, p->m_vec3Pos.z, p->m_vec3Pos.y, time, &flow.x, &flow.y, &flow.z);
 				//printf("Result: %d, U: %f, V: %f\n", result, u ,v);
 				//calc new position
 				float prodTimeVelocity = static_cast<float>(timeSinceLastUpdate) * m_fParticleVelocityScale;

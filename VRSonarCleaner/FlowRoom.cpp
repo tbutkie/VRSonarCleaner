@@ -202,7 +202,7 @@ void FlowRoom::preRenderUpdates()
 
 	//std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
 	m_pParticleSystem->update(m_fFlowRoomTime);
-	m_pStreakletSystem->update(timeSinceLast);
+	ParticleManager::getInstance().update(timeSinceLast);
 	//std::cout << "Particle System Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 	//start = std::clock();
 	//m_pParticleSystem->loadStreakVBOs();

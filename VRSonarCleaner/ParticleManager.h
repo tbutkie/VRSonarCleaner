@@ -32,8 +32,11 @@ public:
 private:
 	ParticleManager(); // Private ctor for singleton
 	void _init();
+	void _initGL();
 
 private:
+	GLuint m_glVAO, m_glVBO, m_glEBO, m_glUBO;
+
 	static ParticleManager *s_instance;
 
 	std::vector<ParticleSystem*> m_vpParticleSystems;
@@ -48,7 +51,7 @@ private:
 	// that encodes the particle orientation, magnitude, and scale;
 	// the position is the first three rows of the last column, and
 	// rgba color is the entire fourth row of the mat4
-	glm::mat4 m_rmat4DynamicBuffer[MAX_NUM_PARTICLES];
+	glm::vec3 m_rvec3DynamicBuffer[MAX_NUM_PARTICLES];
 
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:

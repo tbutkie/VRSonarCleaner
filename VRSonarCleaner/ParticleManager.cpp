@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iterator>
 
+#include "Icosphere.h"
+
 // CTOR
 ParticleManager::ParticleManager()
 {
@@ -18,9 +20,77 @@ void ParticleManager::_init()
 	}
 	
 	// initialize dynamic buffer
-	glm::mat4 initBufferVals;
-	initBufferVals[3].w = 0.f;
-	std::fill_n(m_rmat4DynamicBuffer, MAX_NUM_PARTICLES, initBufferVals);
+	glm::vec3 initBufferVals;
+	std::fill_n(m_rvec3DynamicBuffer, MAX_NUM_PARTICLES, initBufferVals);
+}
+
+void ParticleManager::_initGL()
+{
+	glGenVertexArrays(1, &m_glVAO);
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
+	glGenBuffers(1, &m_glUBO);
+
+	// set up VAO
+	glBindVertexArray(m_glVAO);
+
+	Icosphere sphere(3);
+	std::vector<glm::vec3> verts = sphere.getVertices();
+	std::vector<unsigned int> indices = sphere.getIndices();
+
+	m_glPrimIndCount = indices.size();
+
+	struct Vertex {
+		glm::vec3 position;
+		glm::vec3 normal;
+		glm::vec2 texture;
+	};
+
+	std::vector<Vertex> vertices;
+	for (auto const &v : verts)
+	{
+		Vertex tempVert;
+		tempVert.position = v;
+		tempVert.normal = v;
+		tempVert.texture = glm::vec2(0.f);
+	}
+
+	// Bind buffer for vertex info and fill it
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_glPrimIndCount * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
+
+	// Position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(0);
+	glVertexAttribDivisor(0, 0);
+	// Normal attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(offsetof(Vertex, normal)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribDivisor(1, 0);
+	// Texture coordinate attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(offsetof(Vertex, texture)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribDivisor(2, 0);
+
+
+	// Bind buffer for instance info and fill it
+	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
+	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0], GL_STREAM_DRAW);
+
+	// Instance base location attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (GLvoid*)(sizeof(glm::vec3) * 0));
+	glEnableVertexAttribArray(3);
+	glVertexAttribDivisor(3, 1);
+
+	// Instance w vector attribute
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (GLvoid*)(sizeof(glm::vec3) * 1));
+	glEnableVertexAttribArray(4);
+	glVertexAttribDivisor(4, 1);
+
+	glBindVertexArray(0);
 }
 
 void ParticleManager::add(ParticleSystem * ps)
@@ -70,4 +140,23 @@ void ParticleManager::update(float time)
 	for (auto &ps : m_vpParticleSystems)
 		if (!ps->update(time))
 			remove(ps);
+
+	// update data for UBO
+	for (int i = 0; i < m_iLiveParticleCount; ++i)
+		m_rvec3DynamicBuffer[i] = m_rParticles[i].m_vec3Pos;
+}
+
+void ParticleManager::render()
+{
+	glBindVertexArray(m_glVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_iLiveParticleCount * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0]);
+
+	glDrawElementsInstanced(GL_TRIANGLES, // rendering triangle primitives
+		m_glPrimIndCount,				  // number of indices to be used in rendering
+		GL_UNSIGNED_INT,				  // indices array type is unsigned int
+		(GLvoid*)0,                       // byte offset into indices array bound to GL_ELEMENT_ARRAY_BUFFER
+		m_iLiveParticleCount);			  // number of instances to render
+	glBindVertexArray(0);
 }

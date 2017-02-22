@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <algorithm> 
+#include <vector>
 #include <GL/glew.h>
 #include "CoordinateScaler.h"
 
@@ -75,7 +76,7 @@ class FlowGrid
 		
 		float zCellsFloat;
 		int zCells;
-		float *depthValues;
+		std::vector<float> m_vDepthValues;
 
 		int gridSize2d, gridSize3d, gridSize4d;
 		int xyzCells, xyCells;
