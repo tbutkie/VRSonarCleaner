@@ -37,6 +37,8 @@ private:
 private:
 	GLuint m_glVAO, m_glVBO, m_glEBO, m_glUBO;
 
+	GLsizei m_glPrimIndCount;
+
 	static ParticleManager *s_instance;
 
 	std::vector<ParticleSystem*> m_vpParticleSystems;
