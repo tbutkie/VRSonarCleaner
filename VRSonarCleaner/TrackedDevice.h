@@ -31,8 +31,8 @@ public:
 	char getClassChar();
 	void setClassChar(char classChar);
 
-	glm::mat4 getPose();
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+	glm::mat4 getDeviceToWorldTransform();
+	virtual bool updateDeviceToWorldTransform(vr::TrackedDevicePose_t pose);
 
 	virtual void prepareForRendering();
 
@@ -59,7 +59,7 @@ protected:
 	
 	vr::TrackedDevicePose_t m_Pose;
 
-	glm::mat4 m_mat4Pose;
+	glm::mat4 m_mat4DeviceToWorldTransform;
 	
 	GLuint m_glVertBuffer;
 	GLuint m_unVAO;

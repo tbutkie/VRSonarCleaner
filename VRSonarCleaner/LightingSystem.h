@@ -46,8 +46,8 @@ public:
 	LightingSystem();
 	~LightingSystem();
 
-    // Uses the current shader
-	void update(glm::mat4 view);
+	void updateLightingUniforms();
+	void updateView(glm::mat4 view);
 
 	bool addDirectLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.2f)
@@ -82,8 +82,11 @@ public:
 	void showPointLights(bool yesno);
 	bool toggleShowPointLights();
 
+	void activateShader();
+	void deactivateShader();
+
 private:
-	GLuint m_glProgramID;
+	GLuint m_glProgramID, m_glInstancedProgramID;
 	bool m_bRefreshShader, m_bDrawLightBulbs;
 };
 

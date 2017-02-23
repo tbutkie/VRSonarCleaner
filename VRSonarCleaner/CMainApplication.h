@@ -12,6 +12,7 @@
 #include "CleaningRoom.h"
 #include "FlowRoom.h"
 #include "TrackedDeviceManager.h"
+#include "LightingSystem.h"
 
 #include <openvr.h>
 
@@ -61,9 +62,6 @@ public:
 	void checkForHits();
 	void checkForManipulations();
 
-	CleaningRoom* cleaningRoom;
-	FlowRoom* flowRoom;
-
 private:
 
 	int mode; //0=Cleaner, 1=Flow
@@ -79,6 +77,10 @@ private:
 	vr::IVRSystem *m_pHMD;
 
 	TrackedDeviceManager *m_pTDM;
+
+	CleaningRoom* cleaningRoom;
+	FlowRoom* flowRoom;
+	LightingSystem* m_pLighting;
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;
@@ -96,8 +98,8 @@ private: // OpenGL bookkeeping
 	GLuint m_glIDIndexBuffer;
 	unsigned int m_uiIndexSize;
 
-	glm::mat4 m_mat4eyePosLeft;
-	glm::mat4 m_mat4eyePosRight;
+	glm::mat4 m_mat4eyePoseLeft;
+	glm::mat4 m_mat4eyePoseRight;
 
 	glm::mat4 m_mat4ProjectionCenter;
 	glm::mat4 m_mat4ProjectionLeft;

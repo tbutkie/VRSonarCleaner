@@ -135,7 +135,7 @@ bool CMainApplication::BInit()
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -242,6 +242,9 @@ bool CMainApplication::BInitGL()
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
 	m_pTDM->attach(&InfoBoxManager::getInstance());
+	
+	m_pLighting = new LightingSystem();
+	m_pLighting->addDirectLight();
 
 	if (mode == 0)
 	{
@@ -441,6 +444,8 @@ void CMainApplication::RunMainLoop()
 			checkForHits();
 
 			checkForManipulations();
+
+			cleaningRoom->draw(); // currently draws to debug buffer
 		}
 
 		if (mode == 1)
@@ -453,7 +458,11 @@ void CMainApplication::RunMainLoop()
 				flowRoom->releaseModel();
 
 			flowRoom->preRenderUpdates();
+
+			flowRoom->draw(); // currently draws to debug buffer
 		}
+
+		m_pLighting->updateLightingUniforms();
 		
 		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 		//start = std::clock();
@@ -617,8 +626,8 @@ void CMainApplication::SetupCameras()
 {
 	m_mat4ProjectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
 	m_mat4ProjectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
-	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
-	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
+	m_mat4eyePoseLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
+	m_mat4eyePoseRight = GetHMDMatrixPoseEye(vr::Eye_Right);
 }
 
 
@@ -871,25 +880,19 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	glm::mat4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+	glm::mat4 thisEyesViewProjectionMatrix = GetCurrentViewProjectionMatrix(nEye);
+	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_pTDM->getHMDPose();
+
+	m_pLighting->updateView(thisEyesViewMatrix);
 		
 	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
 
 	if (!bIsInputCapturedByAnotherProcess)
 	{
-		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
+		m_pTDM->renderTrackedDevices(thisEyesViewProjectionMatrix);
 	}
 
-	if (mode == 0)
-	{
-		cleaningRoom->draw();
-	}
-	else if (mode == 1)
-	{
-		flowRoom->draw();
-	}
-
-	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesProjectionMatrix));
+	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
 
 	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
 	if (0)
@@ -902,7 +905,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	// DEBUG DRAWER RENDER CALL
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	DebugDrawer::getInstance().render(thisEyesProjectionMatrix);
+	DebugDrawer::getInstance().render(thisEyesViewProjectionMatrix);
 	glDisable(GL_BLEND);
 }
 
@@ -966,14 +969,14 @@ glm::mat4 CMainApplication::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 	if (!m_pHMD)
 		return glm::mat4();
 
-	vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
+	vr::HmdMatrix34_t matEyeToHead = m_pHMD->GetEyeToHeadTransform(nEye);
 	glm::mat4 matrixObj(
-		matEyeRight.m[0][0], matEyeRight.m[1][0], matEyeRight.m[2][0], 0.0,
-		matEyeRight.m[0][1], matEyeRight.m[1][1], matEyeRight.m[2][1], 0.0,
-		matEyeRight.m[0][2], matEyeRight.m[1][2], matEyeRight.m[2][2], 0.0,
-		matEyeRight.m[0][3], matEyeRight.m[1][3], matEyeRight.m[2][3], 1.0f
+		matEyeToHead.m[0][0], matEyeToHead.m[1][0], matEyeToHead.m[2][0], 0.f,
+		matEyeToHead.m[0][1], matEyeToHead.m[1][1], matEyeToHead.m[2][1], 0.f,
+		matEyeToHead.m[0][2], matEyeToHead.m[1][2], matEyeToHead.m[2][2], 0.f,
+		matEyeToHead.m[0][3], matEyeToHead.m[1][3], matEyeToHead.m[2][3], 1.f
 	);
-
+		
 	return glm::inverse(matrixObj);
 }
 
@@ -986,11 +989,11 @@ glm::mat4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
 	glm::mat4 matMVP;
 	if (nEye == vr::Eye_Left)
 	{
-		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_pTDM->getHMDPose();
+		matMVP = m_mat4ProjectionLeft * m_mat4eyePoseLeft * m_pTDM->getHMDPose();
 	}
 	else if (nEye == vr::Eye_Right)
 	{
-		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight * m_pTDM->getHMDPose();
+		matMVP = m_mat4ProjectionRight * m_mat4eyePoseRight * m_pTDM->getHMDPose();
 	}
 
 	return matMVP;

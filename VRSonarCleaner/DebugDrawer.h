@@ -177,6 +177,7 @@ public:
 		glUseProgram(m_glTransformProgramID);
 
 		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
 		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), buffer.data(), GL_STREAM_DRAW);
 
 		glUniformMatrix4fv(m_glViewProjectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));

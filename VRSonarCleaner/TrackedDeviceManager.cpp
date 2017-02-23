@@ -140,7 +140,7 @@ bool TrackedDeviceManager::getManipulationData(glm::mat4 &controllerPose)
 {	
 	if (m_pManipController && m_pManipController->poseValid() && m_pManipController->isTriggerClicked())
 	{
-		controllerPose = m_pManipController->getPose();
+		controllerPose = m_pManipController->getDeviceToWorldTransform();
 		return true;
 	}
 
@@ -291,7 +291,7 @@ glm::mat4 & TrackedDeviceManager::getHMDPose()
 glm::mat4 & TrackedDeviceManager::getEditControllerPose()
 {
 	if(m_pEditController)
-		return m_pEditController->getPose();
+		return m_pEditController->getDeviceToWorldTransform();
 
 	return glm::mat4();
 }
@@ -299,7 +299,7 @@ glm::mat4 & TrackedDeviceManager::getEditControllerPose()
 glm::mat4 & TrackedDeviceManager::getManipControllerPose()
 {
 	if (m_pManipController)
-		return m_pManipController->getPose();
+		return m_pManipController->getDeviceToWorldTransform();
 
 	return glm::mat4();
 }
@@ -320,7 +320,7 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rpTrackedDevices[nDevice]->updatePose(poses[nDevice]))
+		if (m_rpTrackedDevices[nDevice]->updateDeviceToWorldTransform(poses[nDevice]))
 		{
 			m_iValidPoseCount++;
 
@@ -348,9 +348,9 @@ void TrackedDeviceManager::UpdateHMDMatrixPose()
 
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
-		m_mat4HMDPose = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose());
+		m_mat4HMDPose = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
 
-		glm::mat4 tempMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getPose();
+		glm::mat4 tempMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		glm::vec3 HMDpos = glm::vec3(tempMat[3]);
 		float widthX, widthZ;
 		vr::IVRChaperone* chap = vr::VRChaperone();

@@ -26,14 +26,7 @@ void ParticleManager::_init()
 
 void ParticleManager::_initGL()
 {
-	glGenVertexArrays(1, &m_glVAO);
-	glGenBuffers(1, &m_glVBO);
-	glGenBuffers(1, &m_glEBO);
-	glGenBuffers(1, &m_glUBO);
-
-	// set up VAO
-	glBindVertexArray(m_glVAO);
-
+	// ------------------------------ DATA GENERATION ------------------------------
 	Icosphere sphere(3);
 	std::vector<glm::vec3> verts = sphere.getVertices();
 	std::vector<unsigned int> indices = sphere.getIndices();
@@ -55,6 +48,11 @@ void ParticleManager::_initGL()
 		tempVert.texture = glm::vec2(0.f);
 	}
 
+	// ------------------------------ VBO CREATION AND DATA TRANSFER ------------------------------
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
+	glGenBuffers(1, &m_glUBO);
+
 	// Bind buffer for vertex info and fill it
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
@@ -62,6 +60,20 @@ void ParticleManager::_initGL()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_glPrimIndCount * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
 
+	// Bind buffer for instance info and fill it
+	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
+	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0], GL_STREAM_DRAW);
+
+
+
+	// ------------------------------ VAO SETUP ------------------------------
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
+
+	// ------------------------------ VAO PER-VERTEX ATTRIBUTES ------------------------------
 	// Position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, position));
 	glEnableVertexAttribArray(0);
@@ -75,11 +87,7 @@ void ParticleManager::_initGL()
 	glEnableVertexAttribArray(2);
 	glVertexAttribDivisor(2, 0);
 
-
-	// Bind buffer for instance info and fill it
-	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
-	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0], GL_STREAM_DRAW);
-
+	// ------------------------------ VAO PER-INSTANCE ATTRIBUTES ------------------------------
 	// Instance base location attribute
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (GLvoid*)(sizeof(glm::vec3) * 0));
 	glEnableVertexAttribArray(3);
@@ -112,6 +120,7 @@ void ParticleManager::add(ParticleSystem * ps)
 	}
 }
 
+// does not call delete on particle system pointer
 void ParticleManager::remove(ParticleSystem * ps)
 {
 	// get the indices of the freed particles
@@ -127,7 +136,7 @@ void ParticleManager::remove(ParticleSystem * ps)
 	}
 
 	// remove particle system
-	m_vpParticleSystems.erase(std::remove(m_vpParticleSystems.begin(), m_vpParticleSystems.end(), ps), m_vpParticleSystems.end());
+	std::remove(m_vpParticleSystems.begin(), m_vpParticleSystems.end(), ps);
 }
 
 bool ParticleManager::exists(ParticleSystem * ps) const
@@ -144,15 +153,16 @@ void ParticleManager::update(float time)
 	// update data for UBO
 	for (int i = 0; i < m_iLiveParticleCount; ++i)
 		m_rvec3DynamicBuffer[i] = m_rParticles[i].m_vec3Pos;
+	
+	// update UBO
+	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO); 
+	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_iLiveParticleCount * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0]);
 }
 
 void ParticleManager::render()
 {
 	glBindVertexArray(m_glVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_iLiveParticleCount * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0]);
-
 	glDrawElementsInstanced(GL_TRIANGLES, // rendering triangle primitives
 		m_glPrimIndCount,				  // number of indices to be used in rendering
 		GL_UNSIGNED_INT,				  // indices array type is unsigned int

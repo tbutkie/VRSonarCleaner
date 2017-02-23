@@ -101,15 +101,15 @@ void TrackedDevice::setClassChar(char classChar)
 	m_ClassChar = classChar;
 }
 
-glm::mat4 TrackedDevice::getPose()
+glm::mat4 TrackedDevice::getDeviceToWorldTransform()
 {
-	return m_mat4Pose;
+	return m_mat4DeviceToWorldTransform;
 }
 
-bool TrackedDevice::updatePose(vr::TrackedDevicePose_t pose)
+bool TrackedDevice::updateDeviceToWorldTransform(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
-	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 
 	return m_Pose.bPoseIsValid;
 }
@@ -126,7 +126,7 @@ void TrackedDevice::prepareForRendering()
 	if (!poseValid())
 		return;
 
-	const glm::mat4 & mat = getPose();
+	const glm::mat4 &mat = getDeviceToWorldTransform();
 
 	// Draw Axes
 	if (axesActive())
@@ -199,6 +199,8 @@ void TrackedDevice::render(glm::mat4 & matVP)
 {
 	// draw the controller axis lines
 	glUseProgram(m_unTransformProgramID);
+	// for now this controller-centric geometry is written in tracking space coords,
+	// so no model matrix is required
 	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
 	glBindVertexArray(m_unVAO);
 	glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
@@ -214,7 +216,7 @@ void TrackedDevice::renderModel(glm::mat4 & matVP)
 	// ----- Render Model rendering -----
 	glUseProgram(m_unRenderModelProgramID);
 
-	const glm::mat4 & matDeviceToTracking = getPose();
+	const glm::mat4 &matDeviceToTracking = getDeviceToWorldTransform();
 	glm::mat4 matMVP = matVP * matDeviceToTracking;
 	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(matMVP));
 

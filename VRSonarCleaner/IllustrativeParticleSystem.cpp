@@ -23,7 +23,7 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 		m_vpParticles[i] = new IllustrativeParticle(0, 0, 0, 1, 100, tick);
 		m_vpParticles[i]->kill();
 	}
-	printf("Done!");
+	printf("Done!\n");
 
 }
 

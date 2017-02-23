@@ -363,7 +363,7 @@ void ViveController::update()
 bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
-	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 
 	return m_Pose.bPoseIsValid;
 }
@@ -381,7 +381,7 @@ void ViveController::prepareForRendering()
 	if (!poseValid())
 		return;
 
-	const glm::mat4 & mat = getPose();
+	const glm::mat4 & mat = getDeviceToWorldTransform();
 
 	// Draw Axes
 	if (axesActive())
@@ -662,7 +662,7 @@ void ViveController::renderModel(glm::mat4 & matVP)
 			}
 			else
 			{
-				matMVP = matVP * m_mat4Pose;
+				matMVP = matVP * m_mat4DeviceToWorldTransform;
 			}
 
 			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(matMVP));
@@ -688,7 +688,7 @@ void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned
 	//Vector3 color(.2f, .2f, .71f);
 	glm::vec4 color(r, g, b, a);
 
-	glm::mat4 & sphereMat = m_mat4Pose * glm::translate(glm::mat4(), glm::vec3(ctr.x, ctr.y, ctr.z)) * glm::scale(glm::mat4(), glm::vec3(0.0025f));
+	glm::mat4 & sphereMat = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(ctr.x, ctr.y, ctr.z)) * glm::scale(glm::mat4(), glm::vec3(0.0025f));
 
 	for (size_t i = 0; i < sphereVerts.size(); ++i)
 	{

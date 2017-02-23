@@ -30,9 +30,9 @@ EditingController::~EditingController()
 bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
-	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
-	m_mat4CursorCurrentPose = m_mat4Pose * glm::translate(glm::mat4(), glm::vec3(
+	m_mat4CursorCurrentPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
 		m_vec4CursorOffsetDirection.x, 
 		m_vec4CursorOffsetDirection.y, 
 		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
@@ -117,7 +117,7 @@ void EditingController::prepareForRendering()
 	// Draw Axes
 	if (m_bShowAxes)
 	{
-		DebugDrawer::getInstance().setTransform(glm::value_ptr(m_mat4Pose));
+		DebugDrawer::getInstance().setTransform(glm::value_ptr(m_mat4DeviceToWorldTransform));
 		DebugDrawer::getInstance().drawTransform(0.1f);
 	}
 
@@ -226,7 +226,7 @@ void EditingController::prepareForRendering()
 			color = glm::vec4(1.f, 1.f, 1.f, 0.8f);
 			if (m_bShowCursor)
 			{
-				glm::vec4 controllerCtr = m_mat4Pose * glm::vec4(0.f, 0.f, 0.f, 1.f);
+				glm::vec4 controllerCtr = m_mat4DeviceToWorldTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
 				glm::vec4 cursorEdge = m_mat4CursorCurrentPose * glm::vec4(0.f, 0.f, m_fCursorRadius, 1.f);
 
 				vertdataarray.push_back(cursorEdge.x);

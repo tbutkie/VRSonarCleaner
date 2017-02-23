@@ -26,21 +26,14 @@ LightingSystem::~LightingSystem()
 	sLights.clear();
 }
 
-// Uses the current shader
-void LightingSystem::update(glm::mat4 view)
+void LightingSystem::updateLightingUniforms()
 {
 	if (m_bRefreshShader)
 		generateLightingShader();
-		
+
 	glUseProgram(m_glProgramID);
 
 	glm::vec3 black(0.f);
-
-	glm::mat4 invView = glm::inverse(view);
-	glm::vec3 camPos(invView[3].x, invView[3].y, invView[3].z);
-	glm::vec3 camFwd(invView[2].x, invView[2].y, invView[2].z);
-
-	glUniform3fv(glGetUniformLocation(m_glProgramID, "viewPos"), 1, glm::value_ptr(camPos));
 
 	// Directional light
 	for (int i = 0; i < dLights.size(); ++i)
@@ -93,16 +86,8 @@ void LightingSystem::update(glm::mat4 view)
 		std::string name = "spotLights[" + std::to_string(i);
 		name += "]";
 
-		if (sLights[i].attachedToCamera)
-		{
-			sLights[i].position = camPos;
-			sLights[i].direction = camFwd;
-		}
-
 		if (sLights[i].on)
 		{
-			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(sLights[i].position));
-			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(sLights[i].direction));
 			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".ambient").c_str()), 1, glm::value_ptr(sLights[i].ambient));
 			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".diffuse").c_str()), 1, glm::value_ptr(sLights[i].diffuse));
 			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".specular").c_str()), 1, glm::value_ptr(sLights[i].specular));
@@ -119,6 +104,40 @@ void LightingSystem::update(glm::mat4 view)
 			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".specular").c_str()), 1, glm::value_ptr(black));
 		}
 	}
+}
+
+// Uses the current shader
+void LightingSystem::updateView(glm::mat4 view)
+{
+	if (m_bRefreshShader)
+		generateLightingShader();
+
+	glUseProgram(m_glProgramID);
+
+	glm::mat4 invView = glm::inverse(view);
+	glm::vec3 camPos(invView[3].x, invView[3].y, invView[3].z);
+	glm::vec3 camFwd(invView[2].x, invView[2].y, invView[2].z);
+
+	glUniform3fv(glGetUniformLocation(m_glProgramID, "viewPos"), 1, glm::value_ptr(camPos));
+
+	// SpotLight
+	for (int i = 0; i < sLights.size(); ++i)
+	{
+		std::string name = "spotLights[" + std::to_string(i);
+		name += "]";
+
+		if (sLights[i].attachedToCamera)
+		{
+			sLights[i].position = camPos;
+			sLights[i].direction = camFwd;
+		}
+
+		if (sLights[i].on)
+		{
+			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(sLights[i].position));
+			glUniform3fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(sLights[i].direction));
+		}
+	}	
 }
 
 bool LightingSystem::addDirectLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
@@ -194,32 +213,61 @@ bool LightingSystem::toggleShowPointLights()
 	return m_bDrawLightBulbs;
 }
 
+void LightingSystem::activateShader()
+{
+	glUseProgram(m_glProgramID);
+}
+
+void LightingSystem::deactivateShader()
+{
+	glUseProgram(0);
+}
+
 void LightingSystem::generateLightingShader()
 {
-	std::string vBuffer, fBuffer;
+	std::string vBuffer, vInstancedBuffer, fBuffer;
 
 	// VERTEX SHADER
 	{
-		vBuffer.append("#version 330 core\n");
+		vBuffer.append("#version 450 core\n");
 		vBuffer.append("layout(location = 0) in vec3 position;\n");
 		vBuffer.append("layout(location = 1) in vec3 normal;\n");
 		vBuffer.append("out vec3 Normal;\n");
 		vBuffer.append("out vec3 FragPos;\n");
 		vBuffer.append("uniform mat4 model;\n");
-		vBuffer.append("uniform mat4 worldRotation;\n");
 		vBuffer.append("uniform mat4 view;\n");
 		vBuffer.append("uniform mat4 projection;\n");
 		vBuffer.append("void main()\n");
 		vBuffer.append("{\n");
-		vBuffer.append("	gl_Position = projection * view * worldRotation * model * vec4(position, 1.0f);\n");
-		vBuffer.append("	FragPos = vec3(worldRotation * model * vec4(position, 1.0f));\n");
-		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(worldRotation * model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
+		vBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
+		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vBuffer.append("}\n");
 	} // VERTEX SHADER
 
+	// INSTANCED VERTEX SHADER
+	{
+		vInstancedBuffer.append("#version 450 core\n");
+		vInstancedBuffer.append("layout(location = 0) in vec3 position;\n");
+		vInstancedBuffer.append("layout(location = 1) in vec3 normal;\n");
+		vInstancedBuffer.append("layout(location = 3) in vec3 instanceLocation;\n");
+		vInstancedBuffer.append("layout(location = 4) in vec3 w;\n");		
+		vInstancedBuffer.append("out vec3 Normal;\n");
+		vInstancedBuffer.append("out vec3 FragPos;\n");
+		vInstancedBuffer.append("uniform mat4 model;\n");
+		vInstancedBuffer.append("uniform mat4 view;\n");
+		vInstancedBuffer.append("uniform mat4 projection;\n");
+		vInstancedBuffer.append("void main()\n");
+		vInstancedBuffer.append("{\n");
+		vInstancedBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
+		vInstancedBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
+		vInstancedBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vInstancedBuffer.append("}\n");
+	}
+
 	// FRAGMENT SHADER
 	{
-		fBuffer.append("#version 330 core\n");
+		fBuffer.append("#version 450 core\n");
 		
 		fBuffer.append("struct Material {\n");
 		fBuffer.append("    vec3 diffuse;\n");
@@ -358,6 +406,7 @@ void LightingSystem::generateLightingShader()
 	m_bRefreshShader = false;
 
 	m_glProgramID = CompileGLShader("Lighting Shader", vBuffer.c_str(), fBuffer.c_str());
+	m_glInstancedProgramID = CompileGLShader("Instanced Lighting Shader", vInstancedBuffer.c_str(), fBuffer.c_str());
 }
 
 #endif

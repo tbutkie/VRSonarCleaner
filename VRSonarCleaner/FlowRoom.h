@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include "FlowGrid.h"
+#include "LightingSystem.h"
 
 #include "BroadcastSystem.h"
 
