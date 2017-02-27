@@ -216,8 +216,6 @@ private:
 	std::vector<DebugVertex> m_vPointsVertices, m_vLinesVertices, m_vTrianglesVertices;
 	glm::mat4 m_mat4Transform;
 
-	static DebugDrawer *s_instance;
-
 	// CTOR
 	DebugDrawer()
 	{

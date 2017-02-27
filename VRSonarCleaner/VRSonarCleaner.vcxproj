@@ -186,6 +186,7 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="PointEmitterTool.cpp" />
     <ClCompile Include="ParticleManager.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="SonarCleanerMain.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
@@ -223,6 +224,7 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="PointEmitterTool.h" />
     <ClInclude Include="ParticleManager.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SonarPointCloud.h" />
