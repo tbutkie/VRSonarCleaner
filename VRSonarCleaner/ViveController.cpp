@@ -160,7 +160,7 @@ void ViveController::update()
 		return;
 
 	vr::VRControllerState_t controllerState;
-	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState))
+	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState, sizeof(controllerState)))
 		return;
 
 

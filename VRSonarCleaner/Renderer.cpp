@@ -187,7 +187,8 @@ void Renderer::SetupDistortion()
 			u = x*w; v = 1 - y*h;
 			vert.position = glm::vec2(Xoffset + u, -1 + 2 * y*h);
 
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Left, u, v);
+			vr::DistortionCoordinates_t dc0;
+			m_pHMD->ComputeDistortion(vr::Eye_Left, u, v, &dc0);
 
 			vert.texCoordRed = glm::vec2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
 			vert.texCoordGreen = glm::vec2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
@@ -206,7 +207,8 @@ void Renderer::SetupDistortion()
 			u = x*w; v = 1 - y*h;
 			vert.position = glm::vec2(Xoffset + u, -1 + 2 * y*h);
 
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Right, u, v);
+			vr::DistortionCoordinates_t dc0;
+			m_pHMD->ComputeDistortion(vr::Eye_Right, u, v, &dc0);
 
 			vert.texCoordRed = glm::vec2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
 			vert.texCoordGreen = glm::vec2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
@@ -318,9 +320,9 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDPose)
 		RenderStereoTargets();
 		RenderDistortion();
 
-		vr::Texture_t leftEyeTexture = { (void*)leftEyeDesc.m_nResolveTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
+		vr::Texture_t leftEyeTexture = { (void*)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-		vr::Texture_t rightEyeTexture = { (void*)rightEyeDesc.m_nResolveTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
+		vr::Texture_t rightEyeTexture = { (void*)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 	}
 
@@ -471,7 +473,7 @@ glm::mat4 Renderer::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
 	if (!m_pHMD)
 		return glm::mat4();
 
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_OpenGL);
+	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip);
 
 	return glm::mat4(
 		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
