@@ -75,8 +75,8 @@ private:
 
 	GLuint m_unLensProgramID;
 
-	uint32_t m_nWindowWidth;
-	uint32_t m_nWindowHeight;
+	int m_nWindowWidth;
+	int m_nWindowHeight;
 	FramebufferDesc leftEyeDesc;
 	FramebufferDesc rightEyeDesc;
 	

@@ -23,6 +23,7 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
+	Shutdown();
 }
 
 bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSystem *pLS)
@@ -309,6 +310,7 @@ void Renderer::SetupCameras()
 void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDPose)
 {
 	m_mat4CurrentHMDPose = HMDPose;
+	SDL_GetWindowSize(win, &m_nWindowWidth, &m_nWindowHeight);
 
 	// for now as fast as possible
 	if (m_pHMD)

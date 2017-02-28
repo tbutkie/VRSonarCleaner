@@ -93,11 +93,6 @@ void ParticleManager::_initGL()
 	glEnableVertexAttribArray(3);
 	glVertexAttribDivisor(3, 1);
 
-	// Instance w vector attribute
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (GLvoid*)(sizeof(glm::vec3) * 1));
-	glEnableVertexAttribArray(4);
-	glVertexAttribDivisor(4, 1);
-
 	glBindVertexArray(0);
 }
 
@@ -155,9 +150,9 @@ void ParticleManager::update(float time)
 		m_rvec3DynamicBuffer[i] = m_rParticles[i].m_vec3Pos;
 	
 	// update UBO
-	glBindBuffer(GL_ARRAY_BUFFER, m_glUBO); 
-	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_iLiveParticleCount * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0]);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_glUBO); 
+	//glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * sizeof(glm::vec3), NULL, GL_STREAM_DRAW);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, m_iLiveParticleCount * sizeof(glm::vec3), &m_rvec3DynamicBuffer[0]);
 }
 
 void ParticleManager::render()
