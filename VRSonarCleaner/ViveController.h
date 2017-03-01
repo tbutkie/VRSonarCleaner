@@ -48,39 +48,7 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
-	void renderModel(glm::mat4 & matVP);
-
 protected:
-	struct ControllerComponent {
-		uint32_t m_unComponentIndex;
-		std::string m_strComponentName;
-		CGLRenderModel *m_pComponentRenderModel;
-		vr::HmdMatrix34_t m_mat3PoseTransform;
-		bool m_bInitialized;
-		bool m_bHasRenderModel;
-		bool m_bStatic;
-		bool m_bVisible;
-		bool m_bTouched;
-		bool m_bPressed;
-		bool m_bScrolled;
-
-		ControllerComponent()
-			: m_unComponentIndex(0)
-			, m_strComponentName("No name")
-			, m_pComponentRenderModel(NULL)
-			, m_mat3PoseTransform(vr::HmdMatrix34_t())
-			, m_bInitialized(false)
-			, m_bHasRenderModel(false)
-			, m_bStatic(false)
-			, m_bVisible(false)
-			, m_bTouched(false)
-			, m_bPressed(false)
-			, m_bScrolled(false)
-		{}
-	};
-
-	std::vector<ControllerComponent> m_vComponents;
-
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
 	

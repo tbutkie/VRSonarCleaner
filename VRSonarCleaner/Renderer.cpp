@@ -320,7 +320,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	{
 		m_pTDM->renderTrackedDevices(thisEyesViewProjectionMatrix);
 	}
-
+	
 	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
 
 	// DEBUG DRAWER RENDER CALL

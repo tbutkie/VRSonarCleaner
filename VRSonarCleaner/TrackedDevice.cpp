@@ -3,7 +3,7 @@
 
 #include <shared/glm/gtc/type_ptr.hpp>
 
-TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
+TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels * pRenderModels)
 	: m_unDeviceID(id)
 	, m_pHMD(pHMD)
 	, m_pRenderModels(pRenderModels)
@@ -16,8 +16,6 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	, m_uiTriVertcount(0)
 	, m_unVAO(0)
 	, m_nMatrixLocation(-1)
-	, m_unRenderModelProgramID(0)
-	, m_nRenderModelMatrixLocation(-1)
 	, m_bShow(true)
 	, m_bShowAxes(false)
 {	
@@ -34,32 +32,10 @@ TrackedDevice::~TrackedDevice()
 	{
 		glDeleteProgram(m_unTransformProgramID);
 	}
-	if (m_unRenderModelProgramID)
-	{
-		glDeleteProgram(m_unRenderModelProgramID);
-	}
 }
 
 bool TrackedDevice::BInit()
 {
-	std::string strRenderModelName = getPropertyString(vr::Prop_RenderModelName_String);
-
-	CGLRenderModel *pRenderModel = loadRenderModel(strRenderModelName.c_str());
-
-	if (!pRenderModel)
-	{
-		std::string sTrackingSystemName = getPropertyString(vr::Prop_TrackingSystemName_String);
-		printf("Unable to load render model for tracked device %d (%s.%s)", m_unDeviceID, sTrackingSystemName.c_str(), strRenderModelName.c_str());
-		return false;
-	}
-	else
-	{
-		m_strRenderModelName = pRenderModel->GetName();
-
-		std::cout << "Device " << m_unDeviceID << "'s RenderModel name is " << m_strRenderModelName << std::endl;
-		setRenderModel(pRenderModel);
-	}
-
 	createShaders();
 
 	return true;
@@ -74,6 +50,11 @@ void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
 {
 	m_pTrackedDeviceToRenderModel = renderModel;
 	m_strRenderModelName = renderModel->GetName();
+}
+
+CGLRenderModel * TrackedDevice::getRenderModel()
+{
+	return m_pTrackedDeviceToRenderModel;
 }
 
 bool TrackedDevice::toggleAxes()
@@ -208,23 +189,6 @@ void TrackedDevice::render(glm::mat4 & matVP)
 	glBindVertexArray(0);
 }
 
-void TrackedDevice::renderModel(glm::mat4 & matVP)
-{
-	if (!hasRenderModel() || !poseValid())
-		return;
-
-	// ----- Render Model rendering -----
-	glUseProgram(m_unRenderModelProgramID);
-
-	const glm::mat4 &matDeviceToTracking = getDeviceToWorldTransform();
-	glm::mat4 matMVP = matVP * matDeviceToTracking;
-	glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(matMVP));
-
-	m_pTrackedDeviceToRenderModel->Draw();	
-
-	glUseProgram(0);
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: Converts a SteamVR matrix to our local matrix class
 //-----------------------------------------------------------------------------
@@ -287,120 +251,8 @@ bool TrackedDevice::createShaders()
 		printf("Unable to find matrix uniform in controller shader\n");
 		return false;
 	}
-
-
-	m_unRenderModelProgramID = CompileGLShader(
-		"render model",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3NormalIn;\n"
-		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
-		"out vec2 v2TexCoord;\n"
-		"void main()\n"
-		"{\n"
-		"	v2TexCoord = v2TexCoordsIn;\n"
-		"	gl_Position = matrix * vec4(position.xyz, 1);\n"
-		"}\n",
-
-		//fragment shader
-		"#version 410 core\n"
-		"uniform sampler2D diffuse;\n"
-		"in vec2 v2TexCoord;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = texture( diffuse, v2TexCoord);\n"
-		"}\n"
-
-	);
-	m_nRenderModelMatrixLocation = glGetUniformLocation(m_unRenderModelProgramID, "matrix");
-	if (m_nRenderModelMatrixLocation == -1)
-	{
-		printf("Unable to find matrix uniform in render model shader\n");
-		return false;
-	}
-
-	return m_unRenderModelProgramID != 0
-		&& m_unTransformProgramID != 0;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Finds a render model we've already loaded or loads a new one
-//-----------------------------------------------------------------------------
-CGLRenderModel* TrackedDevice::loadRenderModel(const char *pchRenderModelName)
-{
-	CGLRenderModel *pRenderModel = NULL;
 	
-	vr::RenderModel_t *pModel;
-	vr::EVRRenderModelError error;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		::Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
-		return NULL; // move on to the next tracked device
-	}
-
-	vr::RenderModel_TextureMap_t *pTexture;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		::Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
-		vr::VRRenderModels()->FreeRenderModel(pModel);
-		return NULL; // move on to the next tracked device
-	}
-
-	pRenderModel = new CGLRenderModel(pchRenderModelName);
-	if (!pRenderModel->BInit(*pModel, *pTexture))
-	{
-		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
-		delete pRenderModel;
-		pRenderModel = NULL;
-	}
-
-	vr::VRRenderModels()->FreeRenderModel(pModel);
-	vr::VRRenderModels()->FreeTexture(pTexture);	
-
-	return pRenderModel;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Helper to get a string from a tracked device property and turn it
-//			into a std::string
-//-----------------------------------------------------------------------------
-std::string TrackedDevice::getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError)
-{
-	vr::EVRInitError eError = vr::VRInitError_None;
-
-	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
-
-	uint32_t unRequiredBufferLen = pHMD->GetStringTrackedDeviceProperty(m_unDeviceID, prop, NULL, 0, peError);
-	if (unRequiredBufferLen == 0)
-		return "";
-
-	char *pchBuffer = new char[unRequiredBufferLen];
-	unRequiredBufferLen = pHMD->GetStringTrackedDeviceProperty(m_unDeviceID, prop, pchBuffer, unRequiredBufferLen, peError);
-	std::string sResult = pchBuffer;
-	delete[] pchBuffer;
-	return sResult;
+	return m_unTransformProgramID != 0;
 }
 
 uint32_t TrackedDevice::getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError * peError)
