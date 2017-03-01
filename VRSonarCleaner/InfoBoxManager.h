@@ -66,6 +66,8 @@ private:
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
 	GLuint m_glVertBuffer;
+	GLuint m_glIndexBuffer;
+	GLuint m_uiIndexSize;
 	GLuint m_unVAO;
 
 	TrackedDeviceManager* m_pTDM;
