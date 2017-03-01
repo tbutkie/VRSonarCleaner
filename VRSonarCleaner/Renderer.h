@@ -24,12 +24,12 @@ public:
 		glm::vec2 texCoord;
 	};
 
-	struct VertexDataLens
+	struct VertexDataWindow
 	{
 		glm::vec2 position;
-		glm::vec2 texCoordRed;
-		glm::vec2 texCoordGreen;
-		glm::vec2 texCoordBlue;
+		glm::vec2 texCoord;
+
+		VertexDataWindow(const glm::vec2 & pos, const glm::vec2 tex) : position(pos), texCoord(tex) {	}
 	};
 
 public:	
@@ -56,14 +56,14 @@ private:
 
 	void SetupCameras();
 	bool SetupStereoRenderTargets();
-	void SetupDistortion();
+	void SetupCompanionWindow();
 
 	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
 	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
 
 	void RenderStereoTargets();
 	void RenderScene(vr::Hmd_Eye nEye);
-	void RenderDistortion();
+	void RenderCompanionWindow();
 
 private:
 	vr::IVRSystem *m_pHMD;
@@ -73,17 +73,17 @@ private:
 	bool m_bVblank;
 	bool m_bGlFinishHack;
 
-	GLuint m_unLensProgramID;
+	GLuint m_unCompanionWindowProgramID;
 
-	int m_nWindowWidth;
-	int m_nWindowHeight;
+	int m_nCompanionWindowWidth;
+	int m_nCompanionWindowHeight;
 	FramebufferDesc leftEyeDesc;
 	FramebufferDesc rightEyeDesc;
 	
-	GLuint m_unLensVAO;
-	GLuint m_glIDVertBuffer;
-	GLuint m_glIDIndexBuffer;
-	unsigned int m_uiIndexSize;
+	GLuint m_unCompanionWindowVAO;
+	GLuint m_glCompanionWindowIDVertBuffer;
+	GLuint m_glCompanionWindowIDIndexBuffer;
+	unsigned int m_uiCompanionWindowIndexSize;
 
 	uint32_t m_nRenderWidth;
 	uint32_t m_nRenderHeight;
