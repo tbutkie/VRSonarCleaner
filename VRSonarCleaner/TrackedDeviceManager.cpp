@@ -239,7 +239,28 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	else
 	{
 		m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModel(pRenderModel);
-		std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << strRenderModelName << std::endl;
+		std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << strRenderModelName << std::endl;		
+	}
+
+
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
+	{
+		ViveController *thisController = NULL;
+
+		if (!m_pEditController)
+		{
+			m_pEditController = new EditingController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+			m_pEditController->setRenderModel(pRenderModel);
+			m_pEditController->BInit();
+			thisController = m_pEditController;
+		}
+		else if (!m_pManipController)
+		{
+			m_pManipController = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+			m_pManipController->setRenderModel(pRenderModel);
+			m_pManipController->BInit();
+			thisController = m_pManipController;
+		}
 
 		// Check if there are model components
 		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(strRenderModelName.c_str());
@@ -280,32 +301,11 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 
 				c.m_bInitialized = true;
 
-				m_rpTrackedDevices[unTrackedDeviceIndex]->m_vComponents.push_back(c);
+				thisController->m_vComponents.push_back(c);
 
 				std::cout << "\t" << (c.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << c.m_strComponentName << std::endl;
 			}
 		}
-	}
-
-
-	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-	{
-		ViveController *thisController = NULL;
-
-		if (!m_pEditController)
-		{
-			m_pEditController = new EditingController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-			m_pEditController->BInit();
-			thisController = m_pEditController;
-		}
-		else if (!m_pManipController)
-		{
-			m_pManipController = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-			m_pManipController->BInit();
-			thisController = m_pManipController;
-		}
-
-		//thisController->attach(&InfoBoxManager::getInstance());
 
 		for (auto &l : m_vpListeners)
 			thisController->attach(l);
@@ -425,47 +425,48 @@ void TrackedDeviceManager::renderTrackedDevices(glm::mat4 & matVP)
 
 		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
 		//	continue;
-
+		ViveController* thisController = NULL;
 		if (m_pEditController && m_pEditController->getIndex() == unTrackedDevice)
 		{
 			m_pEditController->render(matVP);
+			thisController = m_pEditController;
 		}
 
 		if (m_pManipController && m_pManipController->getIndex() == unTrackedDevice)
 		{
 			m_pManipController->render(matVP);
+			thisController = m_pManipController;
 		}
 
 		// ----- Render Model rendering -----
 		glUseProgram(m_unRenderModelProgramID);
 
-		size_t nComponents = m_rpTrackedDevices[unTrackedDevice]->m_vComponents.size();
-
-		if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents.size() > 0u)
+		if (thisController && thisController->m_vComponents.size() > 0u)
 		{
+			size_t nComponents = thisController->m_vComponents.size();
 
 			for (size_t i = 0; i < nComponents; ++i)
-				if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_pComponentRenderModel && 
-					m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_bVisible)
+				if (thisController->m_vComponents[i].m_pComponentRenderModel &&
+					thisController->m_vComponents[i].m_bVisible)
 				{
 					glm::mat4 matMVP;
 
-					if (!m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_bStatic)
+					if (!thisController->m_vComponents[i].m_bStatic)
 					{
 						vr::TrackedDevicePose_t p;
-						m_pHMD->ApplyTransform(&p, &m_rpTrackedDevices[unTrackedDevice]->m_Pose, &(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_mat3PoseTransform));
-						matMVP = matVP * m_rpTrackedDevices[unTrackedDevice]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+						m_pHMD->ApplyTransform(&p, &thisController->m_Pose, &(thisController->m_vComponents[i].m_mat3PoseTransform));
+						matMVP = matVP * thisController->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 					}
 					else
 					{
-						matMVP = matVP * m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
+						matMVP = matVP * thisController->getDeviceToWorldTransform();
 					}
 
 					glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(matMVP));
-					m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_pComponentRenderModel->Draw();
+					thisController->m_vComponents[i].m_pComponentRenderModel->Draw();
 				}
 		}
-		else
+		else // render model without components
 		{
 			const glm::mat4 &matDeviceToTracking = m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
 			glm::mat4 matMVP = matVP * matDeviceToTracking;
