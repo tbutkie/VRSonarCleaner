@@ -22,10 +22,6 @@ public:
 
 	void handleEvents();
 
-	void processVREvent(const vr::VREvent_t & event);
-
-	void updateControllerStates();
-
 	virtual void attach(BroadcastSystem::Listener *obs);
 	virtual void detach(BroadcastSystem::Listener *obs);
 
@@ -41,7 +37,7 @@ public:
 	glm::mat4& getEditControllerPose();
 	glm::mat4& getManipControllerPose();
 
-	void UpdateHMDMatrixPose();
+	void updateTrackedDevices();
 
 private:
 	void TrackedDeviceManager::initDevices();
@@ -60,8 +56,8 @@ private:
 	GLint m_nRenderModelMatrixLocation;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-	EditingController* m_pEditController;
-	ViveController* m_pManipController;
+	EditingController* m_pPrimaryController;
+	ViveController* m_pSecondaryController;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
