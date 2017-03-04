@@ -438,11 +438,28 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
+		m_pTDM->updateTrackedDevices();
+
 		if (mode == 0)
 		{
-			checkForHits();
+			glm::mat4 currentCursorPose;
+			glm::mat4 lastCursorPose;
+			float cursorRadius;
 
-			checkForManipulations();
+			// if editing controller not available or pose isn't valid, abort
+			if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
+				return;
+
+			// check point cloud for hits
+			//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
+			if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
+				m_pTDM->cleaningHit();
+
+			glm::mat4 ctrlPose;
+			if (m_pTDM->getManipulationData(ctrlPose))
+				cleaningRoom->gripCleaningTable(ctrlPose);
+			else
+				cleaningRoom->releaseCleaningTable();
 
 			cleaningRoom->draw(); // currently draws to debug buffer
 		}
@@ -466,11 +483,7 @@ void CMainApplication::RunMainLoop()
 		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 		//start = std::clock();
 
-		//RenderFrame();
-
 		Renderer::getInstance().RenderFrame(m_pWindow, m_pTDM->getHMDPose());
-		
-		m_pTDM->postRenderUpdate();
 
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 
@@ -491,31 +504,6 @@ void CMainApplication::RunMainLoop()
 	FreeConsole();
 	
 	SDL_StopTextInput();
-}
-
-void CMainApplication::checkForHits()
-{
-	glm::mat4 currentCursorPose;
-	glm::mat4 lastCursorPose;
-	float cursorRadius;
-	
-	// if editing controller not available or pose isn't valid, abort
-	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
-		return;	
-
-	// check point cloud for hits
-	//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-	if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
-		m_pTDM->cleaningHit();
-}
-
-void CMainApplication::checkForManipulations()
-{
-	glm::mat4 ctrlPose;
-	if (m_pTDM->getManipulationData(ctrlPose))
-		cleaningRoom->gripCleaningTable(ctrlPose);
-	else
-		cleaningRoom->releaseCleaningTable();
 }
 
 bool fileExists(const std::string &fname)

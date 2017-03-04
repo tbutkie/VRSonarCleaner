@@ -44,10 +44,7 @@ public:
 	
 	void savePoints();
 	bool loadPoints(std::string fileName);
-
-	void checkForHits();
-	void checkForManipulations();
-
+	
 private:
 
 	int mode; //0=Cleaner, 1=Flow

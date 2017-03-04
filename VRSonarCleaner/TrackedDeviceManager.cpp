@@ -449,21 +449,6 @@ void TrackedDeviceManager::renderTrackedDevices(glm::mat4 & matVP)
 	}
 }
 
-void TrackedDeviceManager::postRenderUpdate()
-{
-	updateTrackedDevices();
-
-	// Spew out the controller and pose count whenever they change.
-	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
-	{
-		m_iValidPoseCount_Last = m_iValidPoseCount;
-		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
-
-		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
-	}
-
-}
-
 glm::mat4 & TrackedDeviceManager::getHMDPose()
 {
 	return m_mat4HMDPose;
@@ -519,6 +504,15 @@ void TrackedDeviceManager::updateTrackedDevices()
 			}
 			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
+	}
+
+	// Spew out the controller and pose count whenever they change.
+	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
+	{
+		m_iValidPoseCount_Last = m_iValidPoseCount;
+		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
+
+		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
 	}
 	
 	if (m_pPrimaryController)

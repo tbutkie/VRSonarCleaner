@@ -31,7 +31,6 @@ public:
 	void cleaningHit();
 
 	void renderTrackedDevices(glm::mat4 & matVP);
-	void postRenderUpdate();
 
 	glm::mat4& getHMDPose();
 	glm::mat4& getEditControllerPose();
