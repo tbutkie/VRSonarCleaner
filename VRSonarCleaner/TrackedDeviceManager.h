@@ -30,29 +30,24 @@ public:
 	bool getManipulationData(glm::mat4 &controllerPose);
 	void cleaningHit();
 
-	void renderTrackedDevices(glm::mat4 & matVP);
-
 	glm::mat4& getHMDPose();
 	glm::mat4& getEditControllerPose();
 	glm::mat4& getManipControllerPose();
 
+	void updateTrackedDeviceRenderModels();
 	void updateTrackedDevices();
+
+	void renderControllerCustomizations(glm::mat4 *matVP);
 
 private:
 	void TrackedDeviceManager::initDevices();
 	bool setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	void removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 
-	std::map<std::string, CGLRenderModel*> m_mapModelCache;
-	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
-
 	std::string getPropertyString(vr::TrackedDeviceIndex_t deviceID, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
-
-	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelMatrixLocation;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	EditingController* m_pPrimaryController;

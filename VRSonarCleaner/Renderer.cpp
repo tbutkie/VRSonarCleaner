@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <shared/glm/glm.hpp>
+#include <shared/glm/gtc/type_ptr.hpp>
 
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
@@ -11,6 +12,8 @@ Renderer::Renderer()
 	: m_pHMD(NULL)
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
+	, m_unRenderModelProgramID(0)
+	, m_nRenderModelMatrixLocation(-1)
 	, m_unCompanionWindowProgramID(0)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
@@ -38,7 +41,8 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSys
 		return false;
 	}
 
-	if (!CreateLensShader())
+	if (!CreateCompanionWindowShader() ||
+		!CreateRenderModelShader())
 		return false;
 
 	SetupCameras();
@@ -48,11 +52,22 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSys
 	return true;
 }
 
+void Renderer::addRenderModelInstance(const char * name, glm::mat4 instancePose)
+{
+	m_mapModelInstances[std::string(name)].push_back(instancePose);
+}
+
+void Renderer::resetRenderModelInstances()
+{
+	for (auto &rm : m_mapModelInstances)
+		rm.second.clear();
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
 //-----------------------------------------------------------------------------
-bool Renderer::CreateLensShader()
+bool Renderer::CreateCompanionWindowShader()
 {
 	m_unCompanionWindowProgramID = CompileGLShader(
 		"CompanionWindow",
@@ -81,6 +96,47 @@ bool Renderer::CreateLensShader()
 
 	return m_unCompanionWindowProgramID != 0;
 }
+
+bool Renderer::CreateRenderModelShader()
+{
+	m_unRenderModelProgramID = CompileGLShader(
+		"render model",
+
+		// vertex shader
+		"#version 410\n"
+		"uniform mat4 matrix;\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec3 v3NormalIn;\n"
+		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
+		"out vec2 v2TexCoord;\n"
+		"void main()\n"
+		"{\n"
+		"	v2TexCoord = v2TexCoordsIn;\n"
+		"	gl_Position = matrix * vec4(position.xyz, 1);\n"
+		"}\n",
+
+		//fragment shader
+		"#version 410 core\n"
+		"uniform sampler2D diffuse;\n"
+		"in vec2 v2TexCoord;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"   outputColor = texture( diffuse, v2TexCoord);\n"
+		"}\n"
+
+	);
+	m_nRenderModelMatrixLocation = glGetUniformLocation(m_unRenderModelProgramID, "matrix");
+	if (m_nRenderModelMatrixLocation == -1)
+	{
+		printf("Unable to find matrix uniform in render model shader\n");
+		return false;
+	}
+
+	return m_unRenderModelProgramID != 0;
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -314,11 +370,34 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDPose;
 	glm::mat4 thisEyesViewProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight) * thisEyesViewMatrix;
 	
+	m_pTDM->renderControllerCustomizations(&thisEyesViewProjectionMatrix);
+
 	m_pLighting->updateView(thisEyesViewMatrix);
 
 	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 	{
-		m_pTDM->renderTrackedDevices(thisEyesViewProjectionMatrix);
+		// ----- Render Model rendering -----
+		glUseProgram(m_unRenderModelProgramID);
+
+		for (auto &rm : m_mapModelInstances)
+		{
+			CGLRenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
+
+			if (pglRenderModel)
+			{
+				for (auto const &instancePose : rm.second)
+				{
+					glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
+					pglRenderModel->Draw();
+				}
+			}
+			else
+			{
+				printf("Unable to load render model %s\n", rm.first.c_str());
+			}
+		}
+
+		glUseProgram(0);
 	}
 	
 	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
@@ -361,6 +440,72 @@ void Renderer::RenderCompanionWindow()
 	glUseProgram(0);
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Finds a render model we've already loaded or loads a new one
+//-----------------------------------------------------------------------------
+CGLRenderModel* Renderer::findOrLoadRenderModel(const char *pchRenderModelName)
+{
+	// check model cache for existing model
+	CGLRenderModel *pRenderModel = m_mapModelCache[std::string(pchRenderModelName)];
+
+	// found model in the cache, so return it
+	if (pRenderModel)
+	{
+		//printf("Found existing render model for %s\n", pchRenderModelName);
+		return pRenderModel;
+	}
+
+	vr::RenderModel_t *pModel;
+	vr::EVRRenderModelError error;
+	while (1)
+	{
+		error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
+		if (error != vr::VRRenderModelError_Loading)
+			break;
+
+		::Sleep(1);
+	}
+
+	if (error != vr::VRRenderModelError_None)
+	{
+		printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
+		return NULL; // move on to the next tracked device
+	}
+
+	vr::RenderModel_TextureMap_t *pTexture;
+	while (1)
+	{
+		error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
+		if (error != vr::VRRenderModelError_Loading)
+			break;
+
+		::Sleep(1);
+	}
+
+	if (error != vr::VRRenderModelError_None)
+	{
+		printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
+		vr::VRRenderModels()->FreeRenderModel(pModel);
+		return NULL; // move on to the next tracked device
+	}
+
+	pRenderModel = new CGLRenderModel(pchRenderModelName);
+	if (!pRenderModel->BInit(*pModel, *pTexture))
+	{
+		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
+		delete pRenderModel;
+		pRenderModel = NULL;
+	}
+
+	vr::VRRenderModels()->FreeRenderModel(pModel);
+	vr::VRRenderModels()->FreeTexture(pTexture);
+
+	m_mapModelCache[std::string(pchRenderModelName)] = pRenderModel;
+
+	return pRenderModel;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -400,6 +545,11 @@ glm::mat4 Renderer::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 
 void Renderer::Shutdown()
 {
+	if (m_unRenderModelProgramID)
+	{
+		glDeleteProgram(m_unRenderModelProgramID);
+	}
+
 	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);
 	glDeleteBuffers(1, &m_glCompanionWindowIDIndexBuffer);
 

@@ -478,12 +478,14 @@ void CMainApplication::RunMainLoop()
 			flowRoom->draw(); // currently draws to debug buffer
 		}
 
-		m_pLighting->updateLightingUniforms();
+		m_pLighting->updateLightingUniforms();		
 		
 		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 		//start = std::clock();
 
 		Renderer::getInstance().RenderFrame(m_pWindow, m_pTDM->getHMDPose());
+
+		Renderer::getInstance().resetRenderModelInstances();
 
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 

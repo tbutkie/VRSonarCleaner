@@ -111,13 +111,13 @@ void ViveController::update()
 	vr::RenderModel_ComponentState_t controllerComponentState;
 	
 	// Update the controller components
-	for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
+	for (auto &component : m_vComponents)
 	{
-		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
 
-		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
+		component.m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
 
-		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), it->m_strComponentName.c_str());
+		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component.m_strComponentName.c_str());
 		bool bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
 		bool bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
 
@@ -126,13 +126,13 @@ void ViveController::update()
 		if (vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu) & buttonMask)
 		{
 			// Button pressed
-			if(!it->m_bPressed && bPressed)
+			if(!component.m_bPressed && bPressed)
 			{
 				menuButtonPressed();
 			}
 
 			// Button unpressed
-			if (it->m_bPressed && !bPressed)
+			if (component.m_bPressed && !bPressed)
 			{
 				menuButtonUnpressed();
 			}
@@ -141,13 +141,13 @@ void ViveController::update()
 		if (vr::ButtonMaskFromId(vr::k_EButton_System) & buttonMask)
 		{
 			// Button pressed
-			if (!it->m_bPressed && bPressed)
+			if (!component.m_bPressed && bPressed)
 			{
 				systemButtonPressed();
 			}
 
 			// Button unpressed
-			if (it->m_bPressed && !bPressed)
+			if (component.m_bPressed && !bPressed)
 			{
 				systemButtonUnpressed();
 			}
@@ -234,25 +234,25 @@ void ViveController::update()
 			vr::VRControllerAxis_t touchpadAxis = controllerState.rAxis[m_unTouchpadAxis];
 
 			// Touchpad pressed
-			if (!it->m_bPressed && bPressed)
+			if (!component.m_bPressed && bPressed)
 			{
 				touchPadClicked(touchpadAxis.x, touchpadAxis.y);
 			}
 
 			// Touchpad unpressed
-			if (it->m_bPressed && !bPressed)
+			if (component.m_bPressed && !bPressed)
 			{
 				touchPadUnclicked(touchpadAxis.x, touchpadAxis.y);
 			}
 
 			// Touchpad touched
-			if (!it->m_bTouched && bTouched)
+			if (!component.m_bTouched && bTouched)
 			{
 				touchpadInitialTouch(touchpadAxis.x, touchpadAxis.y);
 			}
 
 			// Touchpad untouched
-			if (it->m_bTouched && !bTouched)
+			if (component.m_bTouched && !bTouched)
 			{
 				this->touchpadUntouched();
 			}
@@ -265,32 +265,32 @@ void ViveController::update()
 		}
 
 		// Update the component's properties
-		it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
-		it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
-		it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-		it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
+		component.m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
+		component.m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
+		component.m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
+		component.m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
+		component.m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
 	}
 
 	// see if scrollwheel model visibility changed, and update if necessary
-	if (bScrollWheelBefore != m_bShowScrollWheel)
-	{
-		controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
+	//if (bScrollWheelBefore != m_bShowScrollWheel)
+	//{
+	//	controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
 
-		for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
-		{
-			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
+	//	for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
+	//	{
+	//		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
 
-			it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
+	//		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
 
-			// Update the component's properties
-			it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
-			it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
-			it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-			it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-			it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
-		}
-	}
+	//		// Update the component's properties
+	//		it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
+	//		it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
+	//		it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
+	//		it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
+	//		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
+	//	}
+	//}
 }
 
 bool ViveController::updatePose(vr::TrackedDevicePose_t pose)

@@ -7,8 +7,8 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	: m_unDeviceID(id)
 	, m_pHMD(pHMD)
 	, m_pRenderModels(pRenderModels)
-	, m_pTrackedDeviceToRenderModel(NULL)
 	, m_strRenderModelName("No model name")
+	, m_bHasRenderModel(false)
 	, m_ClassChar(0)
 	, m_unTransformProgramID(0)
 	, m_glVertBuffer(0)
@@ -46,15 +46,15 @@ vr::TrackedDeviceIndex_t TrackedDevice::getIndex()
 	return m_unDeviceID;
 }
 
-void TrackedDevice::setRenderModel(CGLRenderModel * renderModel)
+void TrackedDevice::setRenderModelName(std::string renderModelName)
 {
-	m_pTrackedDeviceToRenderModel = renderModel;
-	m_strRenderModelName = renderModel->GetName();
+	m_strRenderModelName = renderModelName;
+	m_bHasRenderModel = true;
 }
 
-CGLRenderModel * TrackedDevice::getRenderModel()
+bool TrackedDevice::hasRenderModel()
 {
-	return m_pTrackedDeviceToRenderModel;
+	return m_bHasRenderModel;
 }
 
 bool TrackedDevice::toggleAxes()

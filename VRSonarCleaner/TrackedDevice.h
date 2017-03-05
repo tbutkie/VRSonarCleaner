@@ -5,8 +5,9 @@
 
 #include <openvr.h>
 
+#include <GL/glew.h>
+
 #include "BroadcastSystem.h"
-#include "CGLRenderModel.h"
 #include "Icosphere.h"
 
 #include <shared/glm/glm.hpp>
@@ -22,9 +23,8 @@ public:
 	virtual bool BInit();
 
 	vr::TrackedDeviceIndex_t getIndex();
-	void setRenderModel(CGLRenderModel *renderModel);
-	CGLRenderModel* getRenderModel();
-	inline bool hasRenderModel() { return !(m_pTrackedDeviceToRenderModel == NULL); }
+	void setRenderModelName(std::string renderModelName);
+	bool hasRenderModel();
 
 	bool toggleAxes();
 	bool axesActive();
@@ -45,7 +45,7 @@ protected:
 	struct TrackedDeviceComponent {
 		uint32_t m_unComponentIndex;
 		std::string m_strComponentName;
-		CGLRenderModel *m_pComponentRenderModel;
+		std::string m_strComponentRenderModelName;
 		vr::HmdMatrix34_t m_mat3PoseTransform;
 		bool m_bInitialized;
 		bool m_bHasRenderModel;
@@ -58,7 +58,7 @@ protected:
 		TrackedDeviceComponent()
 			: m_unComponentIndex(0)
 			, m_strComponentName("No name")
-			, m_pComponentRenderModel(NULL)
+			, m_strComponentRenderModelName("No render model name")
 			, m_mat3PoseTransform(vr::HmdMatrix34_t())
 			, m_bInitialized(false)
 			, m_bHasRenderModel(false)
@@ -82,7 +82,6 @@ protected:
 	vr::IVRRenderModels *m_pRenderModels;
 
 	vr::TrackedDeviceIndex_t m_unDeviceID;
-	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	std::string m_strRenderModelName;
 	
 	char m_ClassChar;   // for each device, a character representing its class
@@ -100,5 +99,6 @@ protected:
 	
 	bool m_bShow;
 	bool m_bShowAxes;
+	bool m_bHasRenderModel;
 };
 

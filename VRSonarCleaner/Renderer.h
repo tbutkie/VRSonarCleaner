@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <openvr.h>
 #include <SDL.h>
+#include "CGLRenderModel.h"
 #include "LightingSystem.h"
 #include "TrackedDeviceManager.h"
 
@@ -42,6 +43,9 @@ public:
 	
 	bool init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSystem *pLS);
 
+	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
+	void resetRenderModelInstances();
+
 	void RenderFrame(SDL_Window *win, glm::mat4 &HMDPose);
 
 	void Shutdown();
@@ -50,13 +54,16 @@ private:
 	Renderer();
 	~Renderer();
 
-	bool CreateLensShader();
+	bool CreateCompanionWindowShader();
+	bool CreateRenderModelShader();
 
 	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
 	void SetupCameras();
 	bool SetupStereoRenderTargets();
 	void SetupCompanionWindow();
+	
+	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 
 	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
 	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
@@ -70,8 +77,14 @@ private:
 	TrackedDeviceManager *m_pTDM;
 	LightingSystem* m_pLighting;
 
+	std::map<std::string, CGLRenderModel*> m_mapModelCache;
+	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
+
 	bool m_bVblank;
 	bool m_bGlFinishHack;
+	
+	GLuint m_unRenderModelProgramID;
+	GLint m_nRenderModelMatrixLocation;
 
 	GLuint m_unCompanionWindowProgramID;
 
