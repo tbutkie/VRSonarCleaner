@@ -21,7 +21,6 @@ public:
 	void touchpadInitialTouch(float x, float y);
 	void touchpadTouch(float x, float y);
 	void touchpadUntouched();
-	bool touchpadActive();
 
 	void getCursorPoses(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose);
 	float getCursorRadius();

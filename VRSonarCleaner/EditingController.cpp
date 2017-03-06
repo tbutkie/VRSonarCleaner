@@ -367,11 +367,6 @@ void EditingController::touchpadUntouched()
 	m_bShowScrollWheel = false;
 }
 
-bool EditingController::touchpadActive()
-{
-	return m_bTouchpadTouched;
-}
-
 void EditingController::getCursorPoses(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose)
 {
 	glm::mat4 cursorPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(

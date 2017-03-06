@@ -278,24 +278,24 @@ bool ViveController::updateControllerState()
 	}
 
 	// see if scrollwheel model visibility changed, and update if necessary
-	//if (bScrollWheelBefore != m_bShowScrollWheel)
-	//{
-	//	controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
+	if (bScrollWheelBefore != m_bShowScrollWheel)
+	{
+		controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
 
-	//	for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
-	//	{
-	//		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
+		for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
+		{
+			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
 
-	//		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
+			it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
 
-	//		// Update the component's properties
-	//		it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
-	//		it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
-	//		it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-	//		it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-	//		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
-	//	}
-	//}
+			// Update the component's properties
+			it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
+			it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
+			it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
+			it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
+			it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
+		}
+	}
 
 	return true;
 }
