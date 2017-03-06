@@ -35,11 +35,10 @@ public:
 	void setClassChar(char classChar);
 
 	glm::mat4 getDeviceToWorldTransform();
-	virtual bool updateDeviceToWorldTransform(vr::TrackedDevicePose_t pose);
 
 	virtual void prepareForRendering();
 
-	virtual void render(glm::mat4 & matVP);
+	void render(glm::mat4 & matVP);
 
 protected:
 	struct TrackedDeviceComponent {
@@ -73,9 +72,10 @@ protected:
 	std::vector<TrackedDeviceComponent> m_vComponents;
 
 protected:
+	bool createShaders();
+	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
-	bool createShaders();
 	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 
 	vr::IVRSystem *m_pHMD;
