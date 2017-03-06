@@ -11,12 +11,12 @@ public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~ViveController();
 
+	// Overridden from TrackedDevice
 	bool BInit();
-
-	void update();
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
-
 	virtual void prepareForRendering();
+
+	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+	bool updateControllerState();
 
 	virtual void systemButtonPressed();
 	virtual void systemButtonUnpressed();
@@ -51,7 +51,9 @@ public:
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
-	
+
+	vr::TrackedDevicePose_t m_LastPose;
+
 	uint32_t m_unStatePacketNum;
 
 	bool m_bShowScrollWheel;

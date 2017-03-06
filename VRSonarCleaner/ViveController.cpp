@@ -87,19 +87,24 @@ bool ViveController::BInit()
 	return true;
 }
 
-void ViveController::update()
+bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
 {
-	if (!m_Pose.bDeviceIsConnected || !m_Pose.bPoseIsValid)
-		return;
+	m_LastPose = m_Pose;
+	m_Pose = pose;
+	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	
+	return m_Pose.bPoseIsValid;
+}
 
+bool ViveController::updateControllerState()
+{
 	vr::VRControllerState_t controllerState;
 	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState, sizeof(controllerState)))
-		return;
-
+		return false;
 
 	// check if anything has changed
 	if (controllerState.unPacketNum > 0 && m_unStatePacketNum == controllerState.unPacketNum)
-		return;
+		return false;
 
 	m_unStatePacketNum = controllerState.unPacketNum;
 
@@ -109,7 +114,7 @@ void ViveController::update()
 	bool bScrollWheelBefore = m_bShowScrollWheel;
 
 	vr::RenderModel_ComponentState_t controllerComponentState;
-	
+
 	// Update the controller components
 	for (auto &component : m_vComponents)
 	{
@@ -122,11 +127,11 @@ void ViveController::update()
 		bool bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
 
 		// Find buttons associated with component and handle state changes/events
-		
+
 		if (vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu) & buttonMask)
 		{
 			// Button pressed
-			if(!component.m_bPressed && bPressed)
+			if (!component.m_bPressed && bPressed)
 			{
 				menuButtonPressed();
 			}
@@ -172,7 +177,7 @@ void ViveController::update()
 		{
 			float triggerPull = controllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
 
-			// Trigger pressed
+																		  // Trigger pressed
 			if (!isTriggerClicked() && bPressed)
 			{
 				//printf("(VR Event) Controller (device %u) trigger pressed.\n", m_unDeviceID);
@@ -291,14 +296,8 @@ void ViveController::update()
 	//		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
 	//	}
 	//}
-}
 
-bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
-{
-	m_Pose = pose;
-	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
-
-	return m_Pose.bPoseIsValid;
+	return true;
 }
 
 //-----------------------------------------------------------------------------

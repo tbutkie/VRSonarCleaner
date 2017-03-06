@@ -447,7 +447,7 @@ void CMainApplication::RunMainLoop()
 			float cursorRadius;
 
 			// if editing controller not available or pose isn't valid, abort
-			if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
+			if (!m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
 				return;
 
 			// check point cloud for hits

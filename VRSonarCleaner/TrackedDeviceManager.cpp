@@ -99,12 +99,12 @@ bool TrackedDeviceManager::cleaningModeActive()
 	return m_pPrimaryController && m_pPrimaryController->cleaningActive();
 }
 
-bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 *thisCursorPose, glm::mat4 *lastCursorPose, float *radius)
+bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius)
 {
 	if (!m_pPrimaryController || !m_pPrimaryController->poseValid()) return false;
 	
 	m_pPrimaryController->getCursorPoses(thisCursorPose, lastCursorPose);
-	*radius = m_pPrimaryController->getCursorRadius();
+	radius = m_pPrimaryController->getCursorRadius();
 
 	return true;
 }
@@ -355,7 +355,7 @@ void TrackedDeviceManager::updateTrackedDevices()
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rpTrackedDevices[nDevice]->updateDeviceToWorldTransform(poses[nDevice]))
+		if (m_rpTrackedDevices[nDevice]->updatePose(poses[nDevice]))
 		{
 			m_iValidPoseCount++;
 
@@ -387,7 +387,7 @@ void TrackedDeviceManager::updateTrackedDevices()
 	if (m_pPrimaryController)
 	{
 		m_pPrimaryController->updatePose(poses[m_pPrimaryController->getIndex()]);
-		m_pPrimaryController->update();
+		m_pPrimaryController->updateControllerState();
 
 		// don't draw controllers if somebody else has input focus
 		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
@@ -399,7 +399,7 @@ void TrackedDeviceManager::updateTrackedDevices()
 	if (m_pSecondaryController)
 	{
 		m_pSecondaryController->updatePose(poses[m_pSecondaryController->getIndex()]);
-		m_pSecondaryController->update();
+		m_pSecondaryController->updateControllerState();
 
 		// don't draw controllers if somebody else has input focus
 		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())

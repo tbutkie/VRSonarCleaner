@@ -9,8 +9,6 @@ public:
 	EditingController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~EditingController();
 
-	bool updatePose(vr::TrackedDevicePose_t pose);
-
 	void prepareForRendering();
 
 	void triggerEngaged(float amount);
@@ -25,15 +23,13 @@ public:
 	void touchpadUntouched();
 	bool touchpadActive();
 
-	void getCursorPoses(glm::mat4 *thisCursorPose, glm::mat4 *lastCursorPose);
+	void getCursorPoses(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose);
 	float getCursorRadius();
 
 	bool cursorActive();
 	bool cleaningActive();
 
 private:
-	glm::mat4 m_mat4CursorCurrentPose;
-	glm::mat4 m_mat4CursorLastPose;
 	bool m_bShowCursor;
 	bool m_bCleaningMode;
 

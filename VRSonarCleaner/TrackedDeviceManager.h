@@ -26,7 +26,7 @@ public:
 	virtual void detach(BroadcastSystem::Listener *obs);
 
 	bool cleaningModeActive();
-	bool getCleaningCursorData(glm::mat4 *thisCursorPose, glm::mat4 *lastCursorPose, float *radius);
+	bool getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius);
 	bool getManipulationData(glm::mat4 &controllerPose);
 	void cleaningHit();
 

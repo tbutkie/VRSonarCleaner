@@ -87,7 +87,7 @@ glm::mat4 TrackedDevice::getDeviceToWorldTransform()
 	return m_mat4DeviceToWorldTransform;
 }
 
-bool TrackedDevice::updateDeviceToWorldTransform(vr::TrackedDevicePose_t pose)
+bool TrackedDevice::updatePose(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
 	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);

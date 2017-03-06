@@ -27,20 +27,6 @@ EditingController::~EditingController()
 {
 }
 
-bool EditingController::updatePose(vr::TrackedDevicePose_t pose)
-{
-	m_Pose = pose;
-	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
-	m_mat4CursorLastPose = m_mat4CursorCurrentPose;
-	m_mat4CursorCurrentPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
-		m_vec4CursorOffsetDirection.x, 
-		m_vec4CursorOffsetDirection.y, 
-		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
-	);
-
-	return m_Pose.bPoseIsValid;
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: Draw all of the controllers as X/Y/Z lines
 //-----------------------------------------------------------------------------
@@ -52,6 +38,12 @@ void EditingController::prepareForRendering()
 
 	if (!poseValid())
 		return;
+
+	glm::mat4 cursorPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x,
+		m_vec4CursorOffsetDirection.y,
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
 
 	// Draw Axes
 	if (m_bShowAxes)
@@ -119,10 +111,10 @@ void EditingController::prepareForRendering()
 			if (n == 2)
 				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
 
-			glm::vec4 prevVert = m_mat4CursorCurrentPose * rot * scl * circlePoints.back();
+			glm::vec4 prevVert = cursorPose * rot * scl * circlePoints.back();
 			for (size_t i = 0; i < circlePoints.size(); ++i)
 			{
-				glm::vec4 thisVert = m_mat4CursorCurrentPose * rot * scl * circlePoints[i];
+				glm::vec4 thisVert = cursorPose * rot * scl * circlePoints[i];
 
 				vertdataarray.push_back(prevVert.x); vertdataarray.push_back(prevVert.y); vertdataarray.push_back(prevVert.z);
 				vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
@@ -166,7 +158,7 @@ void EditingController::prepareForRendering()
 			if (m_bShowCursor)
 			{
 				glm::vec4 controllerCtr = m_mat4DeviceToWorldTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
-				glm::vec4 cursorEdge = m_mat4CursorCurrentPose * glm::vec4(0.f, 0.f, m_fCursorRadius, 1.f);
+				glm::vec4 cursorEdge = cursorPose * glm::vec4(0.f, 0.f, m_fCursorRadius, 1.f);
 
 				vertdataarray.push_back(cursorEdge.x);
 				vertdataarray.push_back(cursorEdge.y);
@@ -245,7 +237,14 @@ void EditingController::triggerClicked()
 	m_bTriggerClicked = true;
 	m_fTriggerPull = 1.f;
 	m_bCleaningMode = true;
-	notify(this, BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED, &m_mat4CursorCurrentPose);
+
+
+	glm::mat4 cursorPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x,
+		m_vec4CursorOffsetDirection.y,
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
+	notify(this, BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED, &cursorPose);
 }
 
 void EditingController::triggerUnclicked(float amount)
@@ -259,7 +258,13 @@ void EditingController::triggerUnclicked(float amount)
 void EditingController::gripButtonPressed()
 {
 	m_bGripButtonClicked = true;
-	notify(this, BroadcastSystem::EVENT::EDIT_GRIP_PRESSED, &m_mat4CursorCurrentPose);
+
+	glm::mat4 cursorPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x,
+		m_vec4CursorOffsetDirection.y,
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
+	notify(this, BroadcastSystem::EVENT::EDIT_GRIP_PRESSED, &cursorPose);
 }
 
 void EditingController::touchpadInitialTouch(float x, float y)
@@ -367,10 +372,23 @@ bool EditingController::touchpadActive()
 	return m_bTouchpadTouched;
 }
 
-void EditingController::getCursorPoses(glm::mat4 * thisCursorPose, glm::mat4 * lastCursorPose)
+void EditingController::getCursorPoses(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose)
 {
-	*thisCursorPose = m_mat4CursorCurrentPose;
-	*lastCursorPose = m_mat4CursorLastPose;
+	glm::mat4 cursorPose = m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x,
+		m_vec4CursorOffsetDirection.y,
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
+
+
+	glm::mat4 cursorPoseLast = ConvertSteamVRMatrixToMatrix4(m_LastPose.mDeviceToAbsoluteTracking) * glm::translate(glm::mat4(), glm::vec3(
+		m_vec4CursorOffsetDirection.x,
+		m_vec4CursorOffsetDirection.y,
+		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
+	);
+
+	thisCursorPose = cursorPose;
+	lastCursorPose = cursorPoseLast;
 }
 
 float EditingController::getCursorRadius()
