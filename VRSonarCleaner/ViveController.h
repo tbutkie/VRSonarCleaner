@@ -1,12 +1,34 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <map>
+#include <functional>
 
 #include "TrackedDevice.h"
 
 class ViveController :
 	public TrackedDevice
 {
+public:
+	enum VIVE_ACTION {
+		SYSTEM_BUTTON_DOWN,	 // System button pressed
+		SYSTEM_BUTTON_UP,	 // System button unpressed
+		MENU_BUTTON_DOWN,	 // Menu button pressed
+		MENU_BUTTON_UP,		 // Menu button unpressed
+		GRIP_DOWN,			 // Grip button pressed
+		GRIP_UP,			 // Grip button unpressed
+		TRIGGER_ENGAGE,		 // Trigger analog initial engagement
+		TRIGGER_PULL,		 // Trigger analog continued engagement
+		TRIGGER_DISENGAGE,	 // Trigger analog disengagement
+		TRIGGER_DOWN,		 // Trigger button pressed (clicked)
+		TRIGGER_UP,			 // Trigger button unpressed (unclicked)
+		TOUCHPAD_ENGAGE,	 // Touchpad initial touch
+		TOUCHPAD_TOUCH,		 // Touchpad continued touch
+		TOUCHPAD_DISENGAGE, // Touchpad untouch
+		TOUCHPAD_DOWN,		 // Touchpad pressed (clicked)
+		TOUCHPAD_UP			 // Touchpad unpressed (unclicked)
+	};
+
 public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~ViveController();
@@ -18,12 +40,7 @@ public:
 	virtual bool updatePose(vr::TrackedDevicePose_t pose);
 	bool updateControllerState();
 
-	virtual void systemButtonPressed();
-	virtual void systemButtonUnpressed();
 	bool isSystemButtonPressed();
-
-	virtual void menuButtonPressed();
-	virtual void menuButtonUnpressed();
 	bool isMenuButtonPressed();
 
 	virtual void gripButtonPressed();
@@ -52,9 +69,18 @@ protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
 
+	void initProfiles();
+	void initDefaultProfile();
+	void initEditingProfile();
+	static bool s_bProfilesInitialized;
+	std::map<VIVE_ACTION, std::function<void()>> *m_pmapCurrentProfile;
+	static std::map<VIVE_ACTION, std::function<void()>> m_mapDefaultProfile;
+	static std::map<VIVE_ACTION, std::function<void()>> m_mapEditingProfile;
+
 	vr::TrackedDevicePose_t m_LastPose;
 
-	uint32_t m_unStatePacketNum;
+	vr::VRControllerState_t m_ControllerState;
+	vr::VRControllerState_t m_LastControllerState;
 
 	bool m_bShowScrollWheel;
 	bool m_bSystemButtonClicked;
@@ -78,6 +104,4 @@ protected:
 	const glm::vec4 c_vec4TouchPadRight;
 	const glm::vec4 c_vec4TouchPadTop;
 	const glm::vec4 c_vec4TouchPadBottom;
-
-	vr::VROverlayHandle_t m_pOverlayHandle;
 };
