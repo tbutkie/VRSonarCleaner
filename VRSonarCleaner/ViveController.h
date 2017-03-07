@@ -42,28 +42,14 @@ public:
 
 	bool isSystemButtonPressed();
 	bool isMenuButtonPressed();
-
-	virtual void gripButtonPressed();
-	virtual void gripButtonUnpressed();
 	bool isGripButtonPressed();
-
-	virtual void triggerEngaged(float amount);
-	virtual void triggerBeingPulled(float amount);
-	virtual void triggerDisengaged();
-	virtual void triggerClicked();
-	virtual void triggerUnclicked(float amount);
 	bool isTriggerEngaged();
 	bool isTriggerClicked();
-	float getTriggerPullAmount();
-	float getHairTriggerThreshold();
-	
-	virtual void touchpadInitialTouch(float x, float y);
-	virtual void touchpadTouch(float x, float y);
-	virtual void touchpadUntouched();
-	virtual void touchPadClicked(float x, float y);
-	virtual void touchPadUnclicked(float x, float y);
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
+
+	float getTriggerPullAmount();
+	float getHairTriggerThreshold();
 
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
