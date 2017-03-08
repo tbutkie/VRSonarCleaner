@@ -55,12 +55,12 @@ void TrackedDeviceManager::handleEvents()
 		switch (event.eventType)
 		{
 		case vr::VREvent_TrackedDeviceActivated:
-			setupTrackedDevice(event.trackedDeviceIndex);
 			printf("Device %u attached. Setting up.\n", event.trackedDeviceIndex);
+			setupTrackedDevice(event.trackedDeviceIndex);
 			break;
 		case vr::VREvent_TrackedDeviceDeactivated:
-			removeTrackedDevice(event.trackedDeviceIndex);
 			printf("Device %u detached.\n", event.trackedDeviceIndex);
+			removeTrackedDevice(event.trackedDeviceIndex);
 			break;
 		case vr::VREvent_TrackedDeviceUpdated:
 			printf("Device %u updated.\n", event.trackedDeviceIndex);
@@ -72,31 +72,9 @@ void TrackedDeviceManager::handleEvents()
 	}
 }
 
-void TrackedDeviceManager::attach(BroadcastSystem::Listener * obs)
-{
-	m_vpListeners.push_back(obs);
-
-	if (m_pPrimaryController)
-		m_pPrimaryController->attach(obs);
-
-	if (m_pSecondaryController)
-		m_pSecondaryController->attach(obs);
-}
-
-void TrackedDeviceManager::detach(BroadcastSystem::Listener * obs)
-{
-	m_vpListeners.erase(std::remove(m_vpListeners.begin(), m_vpListeners.end(), obs), m_vpListeners.end());
-
-	if (m_pPrimaryController)
-		m_pPrimaryController->detach(obs);
-
-	if (m_pSecondaryController)
-		m_pSecondaryController->detach(obs);
-}
-
 bool TrackedDeviceManager::cleaningModeActive()
 {
-	return m_pPrimaryController && m_pPrimaryController->cleaningActive();
+	return m_pPrimaryController && m_pPrimaryController->isTriggerClicked();
 }
 
 bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius)
@@ -135,8 +113,6 @@ void TrackedDeviceManager::initDevices()
 	
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		m_rpTrackedDevices[nDevice] = new TrackedDevice(nDevice, m_pHMD, m_pRenderModels);
-
 		if (!m_pHMD->IsTrackedDeviceConnected(nDevice))
 			continue;
 
@@ -155,6 +131,13 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	if (unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
 		return false;
 
+	TrackedDevice* thisDevice;
+	
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
+		m_rpTrackedDevices[unTrackedDeviceIndex] = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+	else
+		m_rpTrackedDevices[unTrackedDeviceIndex] = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+
 	m_rpTrackedDevices[unTrackedDeviceIndex]->BInit();
 		
 	std::string strRenderModelName = getPropertyString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
@@ -169,17 +152,15 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 
 		if (!m_pPrimaryController)
 		{
-			m_pPrimaryController = new EditingController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-			m_pPrimaryController->BInit();
-			m_pPrimaryController->setRenderModelName(strRenderModelName);
-			thisController = m_pPrimaryController;
+			thisController = m_pPrimaryController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
 		}
 		else if (!m_pSecondaryController)
 		{
-			m_pSecondaryController = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-			m_pSecondaryController->BInit();
-			m_pSecondaryController->setRenderModelName(strRenderModelName);
-			thisController = m_pSecondaryController;
+			thisController = m_pSecondaryController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
+		}
+		else
+		{
+			thisController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
 		}
 
 		// Check if there are model components

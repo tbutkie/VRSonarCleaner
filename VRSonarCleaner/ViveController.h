@@ -80,8 +80,8 @@ protected:
 	bool m_bTriggerClicked;
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
 	float m_fTriggerPull;
-	uint32_t m_unTriggerAxis;
-	uint32_t m_unTouchpadAxis;
+	int32_t m_nTriggerAxis;
+	int32_t m_nTouchpadAxis;
 
 	Icosphere m_TouchPointSphere;
 

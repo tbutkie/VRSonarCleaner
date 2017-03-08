@@ -22,9 +22,6 @@ public:
 
 	void handleEvents();
 
-	virtual void attach(BroadcastSystem::Listener *obs);
-	virtual void detach(BroadcastSystem::Listener *obs);
-
 	bool cleaningModeActive();
 	bool getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius);
 	bool getManipulationData(glm::mat4 &controllerPose);
@@ -50,7 +47,7 @@ private:
 	vr::IVRRenderModels *m_pRenderModels;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-	EditingController* m_pPrimaryController;
+	ViveController* m_pPrimaryController;
 	ViveController* m_pSecondaryController;
 
 	int m_iValidPoseCount;

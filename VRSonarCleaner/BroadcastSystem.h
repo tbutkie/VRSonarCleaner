@@ -31,12 +31,12 @@ namespace BroadcastSystem
 	class Broadcaster
 	{
 	public:
-		virtual void attach(Listener *obs)
+		void attach(Listener *obs)
 		{
 			m_vpListeners.push_back(obs);
 		}
 
-		virtual void detach(Listener *obs)
+		void detach(Listener *obs)
 		{
 			m_vpListeners.erase(std::remove(m_vpListeners.begin(), m_vpListeners.end(), obs), m_vpListeners.end());
 		}

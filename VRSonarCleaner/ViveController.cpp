@@ -25,8 +25,8 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_bTriggerClicked(false)
 	, m_fTriggerPull(0.f)
 	, m_fHairTriggerThreshold(0.05f)
-	, m_unTriggerAxis(vr::k_unControllerStateAxisCount)
-	, m_unTouchpadAxis(vr::k_unControllerStateAxisCount)
+	, m_nTriggerAxis(-1)
+	, m_nTouchpadAxis(-1)
 	, m_TouchPointSphere(Icosphere(2))
 	, c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f))
 	, c_vec4TouchPadLeft(glm::vec4(-0.02023f, 0.00495f, 0.04934f, 1.f))
@@ -47,21 +47,21 @@ bool ViveController::BInit()
 	// Figure out controller axis indices
 	for (uint32_t i = 0u; i < vr::k_unControllerStateAxisCount; ++i)
 	{
-		vr::ETrackedDeviceProperty p = static_cast<vr::TrackedDeviceProperty>(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32 + i);
-		vr::EVRControllerAxisType axisType = static_cast<vr::EVRControllerAxisType>(getPropertyInt32(p));
-		if (axisType == vr::k_eControllerAxis_Trigger) m_unTriggerAxis = i;
-		if (axisType == vr::k_eControllerAxis_TrackPad) m_unTouchpadAxis = i;
+		vr::ETrackedDeviceProperty prop = static_cast<vr::TrackedDeviceProperty>(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32 + i);
+		vr::EVRControllerAxisType axisType = static_cast<vr::EVRControllerAxisType>(getPropertyInt32(prop));
+		if (axisType == vr::k_eControllerAxis_Trigger) m_nTriggerAxis = i;
+		if (axisType == vr::k_eControllerAxis_TrackPad) m_nTouchpadAxis = i;
 	}
 
 	// Check if we were able to figure 'em out
-	if (m_unTriggerAxis == vr::k_unControllerStateAxisCount)
+	if (m_nTriggerAxis < 0)
 		printf("Unable to find proper axis for controller trigger.\n");
 	
-	if (m_unTouchpadAxis == vr::k_unControllerStateAxisCount)
+	if (m_nTouchpadAxis < 0)
 		printf("Unable to find proper axes for controller touchpad.\n");
 
 
-	// Create shaders used for rendering controller model as well as our own custom geometry
+	// Create shaders used for our own custom geometry
 	createShaders();
 
 	if (!s_bProfilesInitialized)
@@ -175,7 +175,7 @@ bool ViveController::updateControllerState()
 
 		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger) & buttonMask)
 		{
-			float triggerPull = m_ControllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
+			float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
 
 			// Trigger pressed
 			if (!isTriggerClicked() && bPressed)
@@ -546,7 +546,7 @@ void ViveController::initDefaultProfile()
 
 	m_mapDefaultProfile[TRIGGER_ENGAGE] = [this]()
 	{
-		float triggerPull = m_ControllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
+		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
 		//printf("Controller (device %u) trigger engaged).\n", m_unDeviceID);
 		m_bTriggerEngaged = true;
 		m_fTriggerPull = triggerPull;
@@ -554,7 +554,7 @@ void ViveController::initDefaultProfile()
 
 	m_mapDefaultProfile[TRIGGER_PULL] = [this]()
 	{
-		float triggerPull = m_ControllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
+		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
 		//printf("Controller (device %u) trigger at %f%%).\n", m_unDeviceID, amount * 100.f);
 		m_fTriggerPull = triggerPull;
 	};
@@ -576,7 +576,7 @@ void ViveController::initDefaultProfile()
 	m_mapDefaultProfile[TRIGGER_UP] = [this]()
 	{
 		printf("Controller (device %u) trigger unclicked.\n", m_unDeviceID);
-		float triggerPull = m_ControllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
+		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
 		m_bTriggerClicked = false;
 		m_fTriggerPull = triggerPull;
 	};
@@ -584,7 +584,7 @@ void ViveController::initDefaultProfile()
 	m_mapDefaultProfile[TOUCHPAD_ENGAGE] = [this]()
 	{
 		//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_unTouchpadAxis];
+		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 		m_bTouchpadTouched = true;
 		m_vec2TouchpadInitialTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
 		m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
@@ -593,7 +593,7 @@ void ViveController::initDefaultProfile()
 	m_mapDefaultProfile[TOUCHPAD_TOUCH] = [this]()
 	{
 		//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_unTouchpadAxis];
+		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 		m_vec2TouchpadCurrentTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
 
 		if (m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
@@ -603,7 +603,7 @@ void ViveController::initDefaultProfile()
 	m_mapDefaultProfile[TOUCHPAD_DISENGAGE] = [this]()
 	{
 		//printf("Controller (device %u) touchpad untouched.\n", m_unDeviceID);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_unTouchpadAxis];
+		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 		m_bTouchpadTouched = false;
 		m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
 		m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
@@ -612,14 +612,14 @@ void ViveController::initDefaultProfile()
 	m_mapDefaultProfile[TOUCHPAD_DOWN] = [this]()
 	{
 		//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_unTouchpadAxis];
+		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 		m_bTouchpadClicked = true;
 	};
 
 	m_mapDefaultProfile[TOUCHPAD_UP] = [this]()
 	{
 		//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_unTouchpadAxis];
+		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 		m_bTouchpadClicked = false;
 	};
 }
