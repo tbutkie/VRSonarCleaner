@@ -72,6 +72,11 @@ bool TrackedDevice::poseValid()
 	return m_Pose.bPoseIsValid;
 }
 
+glm::mat4 TrackedDevice::getPose()
+{
+	return ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+}
+
 char TrackedDevice::getClassChar()
 {
 	return m_ClassChar;
@@ -87,7 +92,7 @@ glm::mat4 TrackedDevice::getDeviceToWorldTransform()
 	return m_mat4DeviceToWorldTransform;
 }
 
-bool TrackedDevice::updatePose(vr::TrackedDevicePose_t pose)
+bool TrackedDevice::update(vr::TrackedDevicePose_t pose)
 {
 	m_Pose = pose;
 	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);

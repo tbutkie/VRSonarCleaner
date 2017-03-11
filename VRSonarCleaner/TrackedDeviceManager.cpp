@@ -3,6 +3,7 @@
 #include "InfoBoxManager.h"
 #include "Renderer.h"
 #include <shared/glm/gtc/type_ptr.hpp>
+#include <shared/glm/gtc/matrix_transform.hpp>
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)
@@ -14,6 +15,15 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 , m_iValidPoseCount(0)
 , m_iValidPoseCount_Last(-1)
 , m_strPoseClasses("")
+, m_bCursorRadiusResizeMode(false)
+, m_bCursorOffsetMode(false)
+, m_fCursorRadius(0.05f)
+, m_fCursorRadiusMin(0.005f)
+, m_fCursorRadiusMax(0.1f)
+, m_vec3CursorOffsetDirection(glm::vec3(0.f, 0.f, -1.f))
+, m_fCursorOffsetAmount(0.1f)
+, m_fCursorOffsetAmountMin(0.1f)
+, m_fCursorOffsetAmountMax(1.5f)
 {
 }
 
@@ -81,8 +91,11 @@ bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 &thisCursorPose, glm:
 {
 	if (!m_pPrimaryController || !m_pPrimaryController->poseValid()) return false;
 	
-	m_pPrimaryController->getCursorPoses(thisCursorPose, lastCursorPose);
-	radius = m_pPrimaryController->getCursorRadius();
+	thisCursorPose = m_pPrimaryController->getPose() * glm::translate(glm::mat4(), m_vec3CursorOffsetDirection * m_fCursorOffsetAmount);
+	
+	lastCursorPose = m_pPrimaryController->getLastPose() * glm::translate(glm::mat4(), m_vec3CursorOffsetDirection * m_fCursorOffsetAmount);
+
+	radius = m_fCursorRadius;
 
 	return true;
 }
@@ -114,7 +127,10 @@ void TrackedDeviceManager::initDevices()
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
 		if (!m_pHMD->IsTrackedDeviceConnected(nDevice))
+		{
+			m_rpTrackedDevices[nDevice] = NULL;
 			continue;
+		}
 
 		if (!setupTrackedDevice(nDevice))
 			printf("Unable to setup tracked device %d\n", nDevice);
@@ -134,34 +150,32 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	TrackedDevice* thisDevice;
 	
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-		m_rpTrackedDevices[unTrackedDeviceIndex] = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+		thisDevice = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
 	else
-		m_rpTrackedDevices[unTrackedDeviceIndex] = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+		thisDevice = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
 
-	m_rpTrackedDevices[unTrackedDeviceIndex]->BInit();
+	thisDevice->BInit();
 		
 	std::string strRenderModelName = getPropertyString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
 
-	m_rpTrackedDevices[unTrackedDeviceIndex]->setRenderModelName(strRenderModelName);
+	thisDevice->setRenderModelName(strRenderModelName);
 
 	std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << strRenderModelName << std::endl;
 
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
-		ViveController *thisController = NULL;
-
 		if (!m_pPrimaryController)
-		{
-			thisController = m_pPrimaryController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
-		}
+			m_pPrimaryController = static_cast<ViveController*>(thisDevice);
 		else if (!m_pSecondaryController)
-		{
-			thisController = m_pSecondaryController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
-		}
-		else
-		{
-			thisController = static_cast<ViveController*>(m_rpTrackedDevices[unTrackedDeviceIndex]);
-		}
+			m_pSecondaryController = static_cast<ViveController*>(thisDevice);
+
+		m_pHMD->GetControllerState(
+			unTrackedDeviceIndex,
+			&(static_cast<ViveController*>(thisDevice)->m_ControllerState),
+			sizeof(static_cast<ViveController*>(thisDevice)->m_ControllerState)
+		);
+
+		static_cast<ViveController*>(thisDevice)->m_LastControllerState = static_cast<ViveController*>(thisDevice)->m_ControllerState;
 
 		// Check if there are model components
 		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(strRenderModelName.c_str());
@@ -196,19 +210,34 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 					delete[] pchBuffer2;
 
 					c.m_bHasRenderModel = true;
+
+					vr::RenderModel_ControllerMode_State_t controllerModeState;
+					m_pRenderModels->GetComponentState(
+						strRenderModelName.c_str(),
+						c.m_strComponentRenderModelName.c_str(),
+						&static_cast<ViveController*>(thisDevice)->m_ControllerState,
+						&controllerModeState,
+						&(c.m_State)
+					);
+
+					c.m_LastState = c.m_State;
 				}
+
 
 				c.m_bInitialized = true;
 
-				thisController->m_vComponents.push_back(c);
+				thisDevice->m_vComponents.push_back(c);
 
 				std::cout << "\t" << (c.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << c.m_strComponentName << std::endl;
 			}
 		}
 
+		// attach listeners to controllers
 		for (auto &l : m_vpListeners)
-			thisController->attach(l);
+			thisDevice->attach(l);
 	}
+
+	m_rpTrackedDevices[unTrackedDeviceIndex] = thisDevice;
 
 	return true;
 }
@@ -248,46 +277,36 @@ void TrackedDeviceManager::updateTrackedDeviceRenderModels()
 {
 	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
 	{
-		if (!m_rpTrackedDevices[unTrackedDevice]->hasRenderModel())
+		if (!m_rpTrackedDevices[unTrackedDevice] ||
+			!m_rpTrackedDevices[unTrackedDevice]->hasRenderModel() ||
+			!m_rpTrackedDevices[unTrackedDevice]->poseValid())
 			continue;
 
-		if (!m_rpTrackedDevices[unTrackedDevice]->poseValid())
-			continue;
+		size_t nComponents = m_rpTrackedDevices[unTrackedDevice]->m_vComponents.size();
 
-		//if (bIsInputCapturedByAnotherProcess && m_pHMD->GetTrackedDeviceClass(unTrackedDevice) == vr::TrackedDeviceClass_Controller)
-		//	continue;
-		ViveController* thisController = NULL;
-		if (m_pPrimaryController && m_pPrimaryController->getIndex() == unTrackedDevice)
+		if (nComponents > 0u)
 		{
-			thisController = m_pPrimaryController;
-		}
-
-		if (m_pSecondaryController && m_pSecondaryController->getIndex() == unTrackedDevice)
-		{
-			thisController = m_pSecondaryController;
-		}
-
-		if (thisController && thisController->m_vComponents.size() > 0u)
-		{
-			size_t nComponents = thisController->m_vComponents.size();
-
 			for (size_t i = 0; i < nComponents; ++i)
-				if (thisController->m_vComponents[i].m_bHasRenderModel &&
-					thisController->m_vComponents[i].m_bVisible)
+				if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_bHasRenderModel &&
+					m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].isVisible())
 				{
 					glm::mat4 matModel;
 
-					if (thisController->m_vComponents[i].m_bStatic)
+					if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].isStatic())
 					{
-						matModel = thisController->getDeviceToWorldTransform();
+						matModel = m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
 					}
 					else
 					{
 						vr::TrackedDevicePose_t p;
-						m_pHMD->ApplyTransform(&p, &thisController->m_Pose, &(thisController->m_vComponents[i].m_mat3PoseTransform));
-						matModel = thisController->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+						m_pHMD->ApplyTransform(
+							&p, 
+							&(m_rpTrackedDevices[unTrackedDevice]->m_Pose), 
+							&(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_State.mTrackingToComponentRenderModel)
+						);
+						matModel = m_rpTrackedDevices[unTrackedDevice]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 					}
-					Renderer::getInstance().addRenderModelInstance(thisController->m_vComponents[i].m_strComponentRenderModelName.c_str(), matModel);
+					Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str(), matModel);
 				}
 		}
 		else // render model without components
@@ -301,7 +320,7 @@ void TrackedDeviceManager::updateTrackedDeviceRenderModels()
 
 glm::mat4 & TrackedDeviceManager::getHMDPose()
 {
-	return m_mat4HMDPose;
+	return m_mat4HMDView;
 }
 
 glm::mat4 & TrackedDeviceManager::getEditControllerPose()
@@ -336,7 +355,10 @@ void TrackedDeviceManager::updateTrackedDevices()
 	m_strPoseClasses = "";
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 	{
-		if (m_rpTrackedDevices[nDevice]->updatePose(poses[nDevice]))
+		if (!m_rpTrackedDevices[nDevice])
+			continue;
+
+		if (m_rpTrackedDevices[nDevice]->update(poses[nDevice]))
 		{
 			m_iValidPoseCount++;
 
@@ -344,7 +366,15 @@ void TrackedDeviceManager::updateTrackedDevices()
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:        m_rpTrackedDevices[nDevice]->setClassChar('C'); m_iTrackedControllerCount++; break;
+				case vr::TrackedDeviceClass_Controller:       
+					m_rpTrackedDevices[nDevice]->setClassChar('C');
+					static_cast<ViveController*>(m_rpTrackedDevices[nDevice])->updateControllerState();
+
+					// don't draw controllers if somebody else has input focus
+					if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
+						static_cast<ViveController*>(m_rpTrackedDevices[nDevice])->prepareForRendering();
+					m_iTrackedControllerCount++; 
+					break;
 				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
 				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
 				case vr::TrackedDeviceClass_GenericTracker:    m_rpTrackedDevices[nDevice]->setClassChar('G'); break;
@@ -365,36 +395,12 @@ void TrackedDeviceManager::updateTrackedDevices()
 		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
 	}
 	
-	if (m_pPrimaryController)
-	{
-		m_pPrimaryController->updatePose(poses[m_pPrimaryController->getIndex()]);
-		m_pPrimaryController->updateControllerState();
-
-		// don't draw controllers if somebody else has input focus
-		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
-		{
-			m_pPrimaryController->prepareForRendering();
-		}
-	}
-
-	if (m_pSecondaryController)
-	{
-		m_pSecondaryController->updatePose(poses[m_pSecondaryController->getIndex()]);
-		m_pSecondaryController->updateControllerState();
-
-		// don't draw controllers if somebody else has input focus
-		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
-		{
-			m_pSecondaryController->prepareForRendering();
-		}
-	}
-
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
-		m_mat4HMDPose = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
+		m_mat4HMDView = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
 
-		glm::mat4 tempMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
-		glm::vec3 HMDpos = glm::vec3(tempMat[3]);
+		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
+		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
 		float widthX, widthZ;
 		vr::IVRChaperone* chap = vr::VRChaperone();
 		chap->GetPlayAreaSize(&widthX, &widthZ);

@@ -57,6 +57,20 @@ private:
 
 	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
 
-	glm::mat4 m_mat4HMDPose;
+	glm::mat4 m_mat4HMDView;
+	
+	float m_fCursorRadius;
+	float m_fCursorRadiusMin;
+	float m_fCursorRadiusMax;
+	bool m_bCursorRadiusResizeMode;
+	float m_fCursorRadiusResizeModeInitialRadius;
+
+	float m_fCursorOffsetAmount;
+	float m_fCursorOffsetAmountMin;
+	float m_fCursorOffsetAmountMax;
+	glm::vec3 m_vec3CursorOffsetDirection;
+	bool m_bCursorOffsetMode;
+	float m_fCursorOffsetModeInitialOffset;
+	float m_fCursorHoopAngle;
 };
 

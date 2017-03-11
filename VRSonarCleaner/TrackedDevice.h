@@ -30,6 +30,7 @@ public:
 	bool axesActive();
 
 	bool poseValid();
+	glm::mat4 getPose();
 
 	char getClassChar();
 	void setClassChar(char classChar);
@@ -42,38 +43,44 @@ public:
 
 protected:
 	struct TrackedDeviceComponent {
-		uint32_t m_unComponentIndex;
-		std::string m_strComponentName;
-		std::string m_strComponentRenderModelName;
-		vr::HmdMatrix34_t m_mat3PoseTransform;
-		bool m_bInitialized;
-		bool m_bHasRenderModel;
-		bool m_bStatic;
-		bool m_bVisible;
-		bool m_bTouched;
-		bool m_bPressed;
-		bool m_bScrolled;
+		uint32_t							m_unComponentIndex;
+		std::string							m_strComponentName;
+		std::string							m_strComponentRenderModelName;
+		vr::RenderModel_ComponentState_t	m_State;
+		vr::RenderModel_ComponentState_t	m_LastState;
+		bool								m_bInitialized;
+		bool								m_bHasRenderModel;
 
 		TrackedDeviceComponent()
-			: m_unComponentIndex(0)
-			, m_strComponentName("No name")
-			, m_strComponentRenderModelName("No render model name")
-			, m_mat3PoseTransform(vr::HmdMatrix34_t())
-			, m_bInitialized(false)
-			, m_bHasRenderModel(false)
-			, m_bStatic(false)
-			, m_bVisible(false)
-			, m_bTouched(false)
-			, m_bPressed(false)
-			, m_bScrolled(false)
+			: m_unComponentIndex			(0)
+			, m_strComponentName			("No name")
+			, m_strComponentRenderModelName	("No render model name")
+			, m_bInitialized				(false)
+			, m_bHasRenderModel				(false)
 		{}
+
+		bool isPressed()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed; }
+		bool wasPressed()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed; }
+		bool justPressed()		{ return !wasPressed() && isPressed(); }
+		bool justUnpressed()	{ return wasPressed() && !isPressed(); }
+		bool continuePress()	{ return wasPressed() && isPressed(); }
+		bool isTouched()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched; }
+		bool wasTouched()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched; }
+		bool justTouched()		{ return !wasTouched() && isTouched(); }
+		bool justUntouched()	{ return wasTouched() && !isTouched(); }
+		bool continueTouch()	{ return wasTouched() && isTouched(); }
+		bool isScrolled()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled; }
+		bool wasScrolled()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled; }
+		bool isVisible()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible; }
+		bool wasVisible()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible; }
+		bool isStatic()			{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic; }
 	};
 
 	std::vector<TrackedDeviceComponent> m_vComponents;
 
 protected:
 	bool createShaders();
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+	virtual bool update(vr::TrackedDevicePose_t pose);
 	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
 	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);

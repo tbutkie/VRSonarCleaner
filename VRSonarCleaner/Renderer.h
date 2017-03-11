@@ -46,7 +46,7 @@ public:
 	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
 	void resetRenderModelInstances();
 
-	void RenderFrame(SDL_Window *win, glm::mat4 &HMDPose);
+	void RenderFrame(SDL_Window *win, glm::mat4 &HMDView);
 
 	void Shutdown();
 
@@ -109,7 +109,7 @@ private:
 	glm::mat4 m_mat4ProjectionLeft;
 	glm::mat4 m_mat4ProjectionRight;
 
-	glm::mat4 m_mat4CurrentHMDPose;
+	glm::mat4 m_mat4CurrentHMDView;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

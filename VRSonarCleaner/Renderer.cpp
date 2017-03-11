@@ -261,9 +261,9 @@ void Renderer::SetupCameras()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDPose)
+void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 {
-	m_mat4CurrentHMDPose = HMDPose;
+	m_mat4CurrentHMDView = HMDView;
 	SDL_GetWindowSize(win, &m_nCompanionWindowWidth, &m_nCompanionWindowHeight);
 
 	// for now as fast as possible
@@ -367,7 +367,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	
-	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDPose;
+	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDView;
 	glm::mat4 thisEyesViewProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight) * thisEyesViewMatrix;
 	
 	m_pTDM->renderControllerCustomizations(&thisEyesViewProjectionMatrix);

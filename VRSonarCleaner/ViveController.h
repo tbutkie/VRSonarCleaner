@@ -9,6 +9,7 @@
 class ViveController :
 	public TrackedDevice
 {
+	friend class TrackedDeviceManager;
 public:
 	enum VIVE_ACTION {
 		SYSTEM_BUTTON_DOWN,	 // System button pressed
@@ -37,7 +38,8 @@ public:
 	bool BInit();
 	virtual void prepareForRendering();
 
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+	glm::mat4 getLastPose();
+	bool update(vr::TrackedDevicePose_t pose);
 	bool updateControllerState();
 
 	bool isSystemButtonPressed();
