@@ -6,11 +6,6 @@
 #include <shared/glm/gtc/matrix_transform.hpp>
 
 
-std::map<ViveController::VIVE_ACTION, std::function<void()>> ViveController::m_mapDefaultProfile;
-std::map<ViveController::VIVE_ACTION, std::function<void()>> ViveController::m_mapEditingProfile;
-bool ViveController::s_bProfilesInitialized = false;
-
-
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bShowScrollWheel(false)
@@ -63,11 +58,6 @@ bool ViveController::BInit()
 
 	// Create shaders used for our own custom geometry
 	createShaders();
-
-	if (!s_bProfilesInitialized)
-		initProfiles();
-
-	m_pmapCurrentProfile = &m_mapDefaultProfile;
 	
 	// Initialize controller state
 	m_pHMD->GetControllerState(m_unDeviceID, &m_ControllerState, sizeof(m_ControllerState));
@@ -87,6 +77,10 @@ bool ViveController::update(vr::TrackedDevicePose_t pose)
 	m_Pose = pose;
 	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 	
+	updateControllerState();
+
+	prepareForRendering();
+
 	return m_Pose.bPoseIsValid;
 }
 
@@ -124,14 +118,12 @@ bool ViveController::updateControllerState()
 			if (component.justPressed())
 			{
 				m_bMenuButtonClicked = true;
-				(*m_pmapCurrentProfile)[MENU_BUTTON_DOWN]();
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
 				m_bMenuButtonClicked = false;
-				(*m_pmapCurrentProfile)[MENU_BUTTON_UP]();
 			}
 		}
 
@@ -140,17 +132,13 @@ bool ViveController::updateControllerState()
 			// Button pressed
 			if (component.justPressed())
 			{
-				//systemButtonPressed();
 				m_bSystemButtonClicked = true;
-				(*m_pmapCurrentProfile)[SYSTEM_BUTTON_DOWN]();
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
-				//systemButtonUnpressed();
 				m_bSystemButtonClicked = false;
-				(*m_pmapCurrentProfile)[SYSTEM_BUTTON_UP]();
 			}
 		}
 
@@ -159,17 +147,13 @@ bool ViveController::updateControllerState()
 			// Button pressed
 			if (component.justPressed())
 			{
-				//gripButtonPressed();
 				m_bGripButtonClicked = true;
-				(*m_pmapCurrentProfile)[GRIP_DOWN]();
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
-				//gripButtonUnpressed();
 				m_bGripButtonClicked = false;
-				(*m_pmapCurrentProfile)[GRIP_UP]();
 			}
 		}
 
@@ -207,68 +191,79 @@ bool ViveController::updateControllerState()
 				// TRIGGER ENGAGED
 				if (!isTriggerEngaged())
 				{
-					//triggerEngaged(triggerPull);
-					(*m_pmapCurrentProfile)[TRIGGER_ENGAGE]();
+					m_bTriggerEngaged = true;
+					m_fTriggerPull = triggerPull;
+
+					//notify(this, , NULL);
 				}
 
 				// TRIGGER BEING PULLED
 				if (!isTriggerClicked())
 				{
-					//triggerBeingPulled(triggerPull);
-					(*m_pmapCurrentProfile)[TRIGGER_PULL]();
+					m_fTriggerPull = triggerPull;
 				}
 
 				// TRIGGER CLICKED
 				if (triggerPull >= 1.f && !isTriggerClicked())
 				{
-					//triggerClicked();
-					(*m_pmapCurrentProfile)[TRIGGER_DOWN]();
+					m_bTriggerClicked = true;
+					m_fTriggerPull = 1.f;
 				}
 				// TRIGGER UNCLICKED
 				if (triggerPull < 1.f && isTriggerClicked())
 				{
-					//triggerUnclicked(triggerPull);
-					(*m_pmapCurrentProfile)[TRIGGER_UP]();
+					m_bTriggerClicked = false;
+					m_fTriggerPull = triggerPull;
 				}
 			}
 			// TRIGGER DISENGAGED
 			else if (isTriggerEngaged())
 			{
-				//triggerDisengaged();
-				(*m_pmapCurrentProfile)[TRIGGER_DISENGAGE]();
+				m_bTriggerEngaged = false;
+				m_fTriggerPull = 0.f;
 			}
 		}
 
 		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad) & buttonMask)
 		{
+			vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
+
 			// Touchpad pressed
 			if (component.justPressed())
 			{
-				(*m_pmapCurrentProfile)[TOUCHPAD_DOWN]();
+				vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
+				m_bTouchpadClicked = true;
 			}
 
 			// Touchpad unpressed
 			if (component.justUnpressed())
 			{
-				(*m_pmapCurrentProfile)[TOUCHPAD_UP]();
+				m_bTouchpadClicked = false;
 			}
 
 			// Touchpad touched
 			if (component.justTouched())
 			{
-				(*m_pmapCurrentProfile)[TOUCHPAD_ENGAGE]();
+				m_bTouchpadTouched = true;
+				m_vec2TouchpadInitialTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
+				m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
 			}
 
 			// Touchpad untouched
 			if (component.justUntouched())
 			{
-				(*m_pmapCurrentProfile)[TOUCHPAD_DISENGAGE]();
+				m_bTouchpadTouched = false;
+				m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
+				m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
 			}
 
 			// Touchpad being touched
 			if (component.continueTouch())
 			{
-				(*m_pmapCurrentProfile)[TOUCHPAD_TOUCH]();
+				m_vec2TouchpadCurrentTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
+
+				if (m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
+					m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
 			}
 		}
 	}
@@ -486,195 +481,4 @@ void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned
 	}
 
 	vertices.insert(vertices.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
-}
-
-void ViveController::initProfiles()
-{
-	initDefaultProfile();
-	initEditingProfile();
-
-	s_bProfilesInitialized = true;
-}
-
-void ViveController::initDefaultProfile()
-{
-	m_mapDefaultProfile[SYSTEM_BUTTON_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) system button pressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[SYSTEM_BUTTON_UP] = [this]()
-	{
-		//printf("Controller (device %u) system button unpressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[MENU_BUTTON_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) menu button pressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[MENU_BUTTON_UP] = [this]()
-	{
-		//printf("Controller (device %u) menu button unpressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[GRIP_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) grip pressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[GRIP_UP] = [this]()
-	{
-		//printf("Controller (device %u) grip unpressed.\n", m_unDeviceID);
-	};
-
-	m_mapDefaultProfile[TRIGGER_ENGAGE] = [this]()
-	{
-		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
-		//printf("Controller (device %u) trigger engaged).\n", m_unDeviceID);
-		m_bTriggerEngaged = true;
-		m_fTriggerPull = triggerPull;
-	};
-
-	m_mapDefaultProfile[TRIGGER_PULL] = [this]()
-	{
-		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
-		//printf("Controller (device %u) trigger at %f%%).\n", m_unDeviceID, amount * 100.f);
-		m_fTriggerPull = triggerPull;
-	};
-
-	m_mapDefaultProfile[TRIGGER_DISENGAGE] = [this]()
-	{
-		//printf("Controller (device %u) trigger disengaged).\n", m_unDeviceID);
-		m_bTriggerEngaged = false;
-		m_fTriggerPull = 0.f;
-	};
-
-	m_mapDefaultProfile[TRIGGER_DOWN] = [this]()
-	{
-		printf("Controller (device %u) trigger clicked.\n", m_unDeviceID);
-		m_bTriggerClicked = true;
-		m_fTriggerPull = 1.f;
-	};
-
-	m_mapDefaultProfile[TRIGGER_UP] = [this]()
-	{
-		printf("Controller (device %u) trigger unclicked.\n", m_unDeviceID);
-		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
-		m_bTriggerClicked = false;
-		m_fTriggerPull = triggerPull;
-	};
-
-	m_mapDefaultProfile[TOUCHPAD_ENGAGE] = [this]()
-	{
-		//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
-		m_bTouchpadTouched = true;
-		m_vec2TouchpadInitialTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
-		m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
-	};
-
-	m_mapDefaultProfile[TOUCHPAD_TOUCH] = [this]()
-	{
-		//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
-		m_vec2TouchpadCurrentTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
-
-		if (m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
-			m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
-	};
-
-	m_mapDefaultProfile[TOUCHPAD_DISENGAGE] = [this]()
-	{
-		//printf("Controller (device %u) touchpad untouched.\n", m_unDeviceID);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
-		m_bTouchpadTouched = false;
-		m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
-		m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
-	};
-
-	m_mapDefaultProfile[TOUCHPAD_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
-		m_bTouchpadClicked = true;
-	};
-
-	m_mapDefaultProfile[TOUCHPAD_UP] = [this]()
-	{
-		//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-		vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
-		m_bTouchpadClicked = false;
-	};
-}
-
-void ViveController::initEditingProfile()
-{
-	m_mapEditingProfile[SYSTEM_BUTTON_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) system button pressed.\n", m_unDeviceID);
-	};
-
-	m_mapEditingProfile[SYSTEM_BUTTON_UP] = [this]()
-	{
-		//printf("Controller (device %u) system button unpressed.\n", m_unDeviceID);
-	};
-
-	m_mapEditingProfile[MENU_BUTTON_DOWN] = [this]()
-	{
-		//printf("Controller (device %u) menu button pressed.\n", m_unDeviceID);
-	};
-
-	m_mapEditingProfile[MENU_BUTTON_UP] = [this]()
-	{
-		//printf("Controller (device %u) menu button unpressed.\n", m_unDeviceID);
-	};
-
-	m_mapEditingProfile[GRIP_DOWN] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[GRIP_UP] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TRIGGER_ENGAGE] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TRIGGER_PULL] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TRIGGER_DISENGAGE] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TRIGGER_DOWN] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TRIGGER_UP] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TOUCHPAD_ENGAGE] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TOUCHPAD_TOUCH] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TOUCHPAD_DISENGAGE] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TOUCHPAD_DOWN] = [this]()
-	{
-	};
-
-	m_mapEditingProfile[TOUCHPAD_UP] = [this]()
-	{
-	};
 }

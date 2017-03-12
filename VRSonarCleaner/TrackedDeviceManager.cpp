@@ -366,15 +366,7 @@ void TrackedDeviceManager::updateTrackedDevices()
 			{
 				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
 				{
-				case vr::TrackedDeviceClass_Controller:       
-					m_rpTrackedDevices[nDevice]->setClassChar('C');
-					static_cast<ViveController*>(m_rpTrackedDevices[nDevice])->updateControllerState();
-
-					// don't draw controllers if somebody else has input focus
-					if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
-						static_cast<ViveController*>(m_rpTrackedDevices[nDevice])->prepareForRendering();
-					m_iTrackedControllerCount++; 
-					break;
+				case vr::TrackedDeviceClass_Controller:		   m_rpTrackedDevices[nDevice]->setClassChar('C'); m_iTrackedControllerCount++; break;
 				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
 				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
 				case vr::TrackedDeviceClass_GenericTracker:    m_rpTrackedDevices[nDevice]->setClassChar('G'); break;

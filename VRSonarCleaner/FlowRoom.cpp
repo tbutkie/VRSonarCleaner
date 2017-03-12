@@ -138,7 +138,7 @@ void FlowRoom::reset()
 
 void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 {
-	if (event == BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED)
+	if (event == BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN)
 	{
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));
@@ -153,7 +153,7 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 		//particleSystem->addDyeParticle(x, z, y, 1.f, 0.f, 0.f, 10.f);
 	}
 
-	if (event == BroadcastSystem::EVENT::EDIT_GRIP_PRESSED)
+	if (event == BroadcastSystem::EVENT::VIVE_GRIP_DOWN)
 	{
 		glm::mat4 cursorPose;
 		memcpy(&cursorPose, data, sizeof(cursorPose));

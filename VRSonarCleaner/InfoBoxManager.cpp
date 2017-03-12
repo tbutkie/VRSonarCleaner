@@ -68,10 +68,10 @@ void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event, void* 
 {
 	switch (event)
 	{
-	case BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED:
-		updateInfoBoxSize("Test 1", 0.1f);
-		removeInfoBox("Test 2");
-		break;
+	//case BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED:
+	//	updateInfoBoxSize("Test 1", 0.1f);
+	//	removeInfoBox("Test 2");
+	//	break;
 	case BroadcastSystem::EVENT::EXIT_PLAY_AREA:
 		updateInfoBoxSize("Test 3", 1.0f);
 		break;
