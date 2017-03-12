@@ -59,9 +59,9 @@ protected:
 
 	Icosphere m_TouchPointSphere;
 
-	const glm::vec4 c_vec4TouchPadCenter;
-	const glm::vec4 c_vec4TouchPadLeft;
-	const glm::vec4 c_vec4TouchPadRight;
-	const glm::vec4 c_vec4TouchPadTop;
-	const glm::vec4 c_vec4TouchPadBottom;
+	static const glm::vec4 c_vec4TouchPadCenter;
+	static const glm::vec4 c_vec4TouchPadLeft;
+	static const glm::vec4 c_vec4TouchPadRight;
+	static const glm::vec4 c_vec4TouchPadTop;
+	static const glm::vec4 c_vec4TouchPadBottom;
 };

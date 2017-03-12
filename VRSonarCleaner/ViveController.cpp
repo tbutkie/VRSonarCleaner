@@ -6,6 +6,12 @@
 #include <shared/glm/gtc/matrix_transform.hpp>
 
 
+const glm::vec4 ViveController::c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadLeft(glm::vec4(-0.02023f, 0.00495f, 0.04934f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadRight(glm::vec4(0.02023f, 0.00495f, 0.04934f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadTop(glm::vec4(0.f, 0.00725f, 0.02924f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.06943f, 1.f));
+
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bShowScrollWheel(false)
@@ -23,11 +29,6 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_nTriggerAxis(-1)
 	, m_nTouchpadAxis(-1)
 	, m_TouchPointSphere(Icosphere(2))
-	, c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f))
-	, c_vec4TouchPadLeft(glm::vec4(-0.02023f, 0.00495f, 0.04934f, 1.f))
-	, c_vec4TouchPadRight(glm::vec4(0.02023f, 0.00495f, 0.04934f, 1.f))
-	, c_vec4TouchPadTop(glm::vec4(0.f, 0.00725f, 0.02924f, 1.f))
-	, c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.06943f, 1.f))
 {
 
 }

@@ -3,6 +3,8 @@
 #include <vector>
 #include <algorithm>
 
+#include <shared/glm/glm.hpp>
+
 class TrackedDevice;
 
 namespace BroadcastSystem
@@ -36,9 +38,16 @@ namespace BroadcastSystem
 		VIVE_TOUCHPAD_UP		 // Touchpad unpressed (unclicked) (vec2[2] = { initialTouchPoint, lastTouchPoint })
 	};
 
+	class Payload {
+	public:
+		struct Trigger {
+			float m_fPullAmount;
+		};
 
-
-	enum VIVE_ACTION {
+		struct Touchpad {
+			glm::vec2 m_vec2InitialTouch;
+			glm::vec2 m_vec2CurrentTouch;
+		};
 	};
 
 	class Listener
