@@ -90,6 +90,35 @@ void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	m_vec3RoomSize.z = SizeZ;
 }
 
+bool FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
+{
+	glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(pos);
+
+	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
+
+	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y - 0.1f, innerPos.y + 0.1f, m_pScaler);
+	tmp->setRate(10.f);
+	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
+	m_pParticleSystem->m_vpDyePots.push_back(tmp);
+
+	return true;
+}
+
+bool FlowRoom::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
+{
+	glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(pos);
+
+	printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
+
+	IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.z, innerPos.y);
+	if (tmp)
+	{
+		m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());
+		delete tmp;
+	}
+	return false;
+}
+
 bool FlowRoom::gripModel(const glm::mat4 &controllerPose)
 {
 	if (!m_pMainModelVolume->isBeingRotated())
@@ -136,43 +165,6 @@ void FlowRoom::draw()
 void FlowRoom::reset()
 {
 	m_pMainModelVolume->resetPositionAndOrientation();
-}
-
-void FlowRoom::receiveEvent(const int event, void* data)
-{
-	if (event == BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN)
-	{
-		BroadcastSystem::Payload::Trigger payload;
-
-		memcpy(&payload, data, sizeof(BroadcastSystem::Payload::Trigger));
-
-		glm::mat4 cursorPose = payload.m_pSelf->getDeviceToWorldTransform();
-		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
-
-		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
-
-		IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y - 0.1f, innerPos.y + 0.1f, m_pScaler);
-		tmp->setRate(10.f);
-		tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
-		m_pParticleSystem->m_vpDyePots.push_back(tmp);
-		//particleSystem->addDyeParticle(x, z, y, 1.f, 0.f, 0.f, 10.f);
-	}
-
-	if (event == BroadcastSystem::EVENT::VIVE_GRIP_DOWN)
-	{
-		glm::mat4 cursorPose;
-		//memcpy(&cursorPose, data, sizeof(cursorPose));
-		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
-
-		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
-		
-		IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.z, innerPos.y);
-		if (tmp)
-		{
-			m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());
-			delete tmp;
-		}		
-	}
 }
 
 void FlowRoom::preRenderUpdates()

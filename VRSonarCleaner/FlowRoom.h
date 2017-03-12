@@ -20,7 +20,7 @@
 
 #include <shared/glm/glm.hpp>
 
-class FlowRoom : public BroadcastSystem::Listener
+class FlowRoom
 {
 public:
 	FlowRoom();
@@ -34,14 +34,12 @@ public:
 
 	void preRenderUpdates();
 
-	//bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
-	bool probeModel(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	bool placeDyeEmitterWorldCoords(glm::vec3 pos);
+	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
 	bool gripModel(const glm::mat4 &controllerPose);
 	void releaseModel();
 
 	void reset();
-
-	virtual void receiveEvent(const int event, void* data);
 
 private:
 	glm::vec3 m_vec3RoomSize;

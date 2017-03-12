@@ -276,7 +276,6 @@ bool CMainApplication::BInitGL()
 	else if (mode == 1)
 	{
 		flowRoom = new FlowRoom();
-		m_pTDM->attach(flowRoom);
 	}
 
 
@@ -466,10 +465,25 @@ void CMainApplication::RunMainLoop()
 
 		if (mode == 1)
 		{
+			ViveController* ctrllr1 = m_pTDM->getPrimaryController();
+			if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isTriggerClicked()) // CHANGE TO EVENT
+			{
+				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
+				flowRoom->placeDyeEmitterWorldCoords(glm::vec3(ctrlPose[3]));
+			}
+			else if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isGripButtonPressed())
+			{
+				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
+				flowRoom->removeDyeEmitterClosestToWorldCoords(glm::vec3(ctrlPose[3]));
+			}
+
 			//grip rotate if needed
-			glm::mat4 ctrlPose;
-			if (m_pTDM->getManipulationData(ctrlPose))
+			ViveController* ctrllr2 = m_pTDM->getSecondaryController();
+			if (ctrllr2 && ctrllr2->poseValid() && ctrllr2->isTriggerClicked())
+			{
+				glm::mat4 ctrlPose = ctrllr2->getDeviceToWorldTransform();
 				flowRoom->gripModel(ctrlPose);
+			}
 			else
 				flowRoom->releaseModel();
 
