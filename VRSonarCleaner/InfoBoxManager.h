@@ -41,7 +41,7 @@ public:
 	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what, bool billboarded);
 	bool removeInfoBox(std::string name);
 
-	virtual void receiveEvent(TrackedDevice* device, const int event, void* data = NULL);
+	virtual void receiveEvent(const int event, void* data = NULL);
 
 	void render(const float *matVP);
 

@@ -6,6 +6,7 @@
 #include <shared/glm/glm.hpp>
 
 class TrackedDevice;
+class ViveController;
 
 namespace BroadcastSystem
 {
@@ -40,11 +41,18 @@ namespace BroadcastSystem
 
 	class Payload {
 	public:
+		struct HMD {
+			TrackedDevice* m_pSelf;
+			glm::mat4 m_mat4Pose;
+		};
+
 		struct Trigger {
+			ViveController* m_pSelf;
 			float m_fPullAmount;
 		};
 
 		struct Touchpad {
+			ViveController* m_pSelf;
 			glm::vec2 m_vec2InitialTouch;
 			glm::vec2 m_vec2CurrentTouch;
 		};
@@ -54,7 +62,7 @@ namespace BroadcastSystem
 	{
 	public:
 		virtual ~Listener() {}
-		virtual void receiveEvent(TrackedDevice* device, const int event, void* data) = 0;
+		virtual void receiveEvent(const int event, void* payloadData) = 0;
 	};
 
 	class Broadcaster
@@ -71,9 +79,9 @@ namespace BroadcastSystem
 		}
 
 	protected:
-		virtual void notify(TrackedDevice* device, const int event, void* data = NULL)
+		virtual void notify(const int event, void* payloadData = NULL)
 		{
-			for (auto obs : m_vpListeners) obs->receiveEvent(device, event, data);
+			for (auto obs : m_vpListeners) obs->receiveEvent(event, payloadData);
 		}
 
 	protected:

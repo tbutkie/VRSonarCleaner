@@ -64,7 +64,7 @@ InfoBoxManager::~InfoBoxManager()
 {
 }
 
-void InfoBoxManager::receiveEvent(TrackedDevice* device, const int event, void* data)
+void InfoBoxManager::receiveEvent(const int event, void* data)
 {
 	switch (event)
 	{

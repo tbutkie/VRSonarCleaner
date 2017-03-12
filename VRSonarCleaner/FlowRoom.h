@@ -41,7 +41,7 @@ public:
 
 	void reset();
 
-	virtual void receiveEvent(TrackedDevice* device, const int event, void* data);
+	virtual void receiveEvent(const int event, void* data);
 
 private:
 	glm::vec3 m_vec3RoomSize;

@@ -406,10 +406,20 @@ void TrackedDeviceManager::updateTrackedDevices()
 		float widthX, widthZ;
 		vr::IVRChaperone* chap = vr::VRChaperone();
 		chap->GetPlayAreaSize(&widthX, &widthZ);
+
+		BroadcastSystem::Payload::HMD payload = {
+			m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
+			HMDtoWorldMat 
+		};
+
 		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
-			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], BroadcastSystem::EVENT::EXIT_PLAY_AREA);
+		{
+			notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
+		}
 		else
-			notify(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd], BroadcastSystem::EVENT::ENTER_PLAY_AREA);
+		{
+			notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
+		}
 	}
 
 	updateTrackedDeviceRenderModels();

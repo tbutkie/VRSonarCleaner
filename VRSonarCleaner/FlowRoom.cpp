@@ -3,6 +3,8 @@
 
 #include "ParticleManager.h"
 
+#include "ViveController.h"
+
 FlowRoom::FlowRoom()
 {
 	//X-Right-Left
@@ -136,12 +138,15 @@ void FlowRoom::reset()
 	m_pMainModelVolume->resetPositionAndOrientation();
 }
 
-void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
+void FlowRoom::receiveEvent(const int event, void* data)
 {
 	if (event == BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN)
 	{
-		glm::mat4 cursorPose;
-		//memcpy(&cursorPose, data, sizeof(cursorPose));
+		BroadcastSystem::Payload::Trigger payload;
+
+		memcpy(&payload, data, sizeof(BroadcastSystem::Payload::Trigger));
+
+		glm::mat4 cursorPose = payload.m_pSelf->getDeviceToWorldTransform();
 		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
 
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);

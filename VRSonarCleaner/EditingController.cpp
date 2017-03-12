@@ -244,7 +244,7 @@ void EditingController::triggerClicked()
 		m_vec4CursorOffsetDirection.y,
 		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
 	);
-	notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN, &cursorPose);
+	notify(BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN, &cursorPose);
 }
 
 void EditingController::triggerUnclicked(float amount)
@@ -264,7 +264,7 @@ void EditingController::gripButtonPressed()
 		m_vec4CursorOffsetDirection.y,
 		m_vec4CursorOffsetDirection.z) * m_fCursorOffsetAmount
 	);
-	notify(this, BroadcastSystem::EVENT::VIVE_GRIP_DOWN, &cursorPose);
+	notify(BroadcastSystem::EVENT::VIVE_GRIP_DOWN, &cursorPose);
 }
 
 void EditingController::touchpadInitialTouch(float x, float y)
