@@ -141,7 +141,7 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 	if (event == BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN)
 	{
 		glm::mat4 cursorPose;
-		memcpy(&cursorPose, data, sizeof(cursorPose));
+		//memcpy(&cursorPose, data, sizeof(cursorPose));
 		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
 
 		printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
@@ -156,7 +156,7 @@ void FlowRoom::receiveEvent(TrackedDevice * device, const int event, void* data)
 	if (event == BroadcastSystem::EVENT::VIVE_GRIP_DOWN)
 	{
 		glm::mat4 cursorPose;
-		memcpy(&cursorPose, data, sizeof(cursorPose));
+		//memcpy(&cursorPose, data, sizeof(cursorPose));
 		glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(glm::vec3(cursorPose[3]));
 
 		printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);

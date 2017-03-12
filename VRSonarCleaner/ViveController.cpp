@@ -118,12 +118,14 @@ bool ViveController::updateControllerState()
 			if (component.justPressed())
 			{
 				m_bMenuButtonClicked = true;
+				notify(this, BroadcastSystem::EVENT::VIVE_MENU_BUTTON_DOWN, NULL);
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
 				m_bMenuButtonClicked = false;
+				notify(this, BroadcastSystem::EVENT::VIVE_MENU_BUTTON_UP, NULL);
 			}
 		}
 
@@ -133,12 +135,14 @@ bool ViveController::updateControllerState()
 			if (component.justPressed())
 			{
 				m_bSystemButtonClicked = true;
+				notify(this, BroadcastSystem::EVENT::VIVE_SYSTEM_BUTTON_DOWN, NULL);
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
 				m_bSystemButtonClicked = false;
+				notify(this, BroadcastSystem::EVENT::VIVE_SYSTEM_BUTTON_UP, NULL);
 			}
 		}
 
@@ -148,12 +152,14 @@ bool ViveController::updateControllerState()
 			if (component.justPressed())
 			{
 				m_bGripButtonClicked = true;
+				notify(this, BroadcastSystem::EVENT::VIVE_GRIP_DOWN, NULL);
 			}
 
 			// Button unpressed
 			if (component.justUnpressed())
 			{
 				m_bGripButtonClicked = false;
+				notify(this, BroadcastSystem::EVENT::VIVE_GRIP_UP, NULL);
 			}
 		}
 
@@ -194,13 +200,14 @@ bool ViveController::updateControllerState()
 					m_bTriggerEngaged = true;
 					m_fTriggerPull = triggerPull;
 
-					//notify(this, , NULL);
+					notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_ENGAGE , &m_fTriggerPull);
 				}
 
 				// TRIGGER BEING PULLED
 				if (!isTriggerClicked())
 				{
 					m_fTriggerPull = triggerPull;
+					notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_PULL, &m_fTriggerPull);
 				}
 
 				// TRIGGER CLICKED
@@ -208,12 +215,14 @@ bool ViveController::updateControllerState()
 				{
 					m_bTriggerClicked = true;
 					m_fTriggerPull = 1.f;
+					notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN, NULL);
 				}
 				// TRIGGER UNCLICKED
 				if (triggerPull < 1.f && isTriggerClicked())
 				{
 					m_bTriggerClicked = false;
 					m_fTriggerPull = triggerPull;
+					notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_UP, &m_fTriggerPull);
 				}
 			}
 			// TRIGGER DISENGAGED
@@ -221,38 +230,48 @@ bool ViveController::updateControllerState()
 			{
 				m_bTriggerEngaged = false;
 				m_fTriggerPull = 0.f;
+				notify(this, BroadcastSystem::EVENT::VIVE_TRIGGER_DISENGAGE, NULL);
 			}
 		}
 
 		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad) & buttonMask)
 		{
-			vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
+			glm::vec2 touchPoint = glm::vec2(m_ControllerState.rAxis[m_nTouchpadAxis].x, m_ControllerState.rAxis[m_nTouchpadAxis].y);
 
 			// Touchpad pressed
 			if (component.justPressed())
 			{
-				vr::VRControllerAxis_t touchpadAxis = m_ControllerState.rAxis[m_nTouchpadAxis];
 				m_bTouchpadClicked = true;
+				glm::vec2 payload[2] = { m_vec2TouchpadInitialTouchPoint, touchPoint };
+				notify(this, BroadcastSystem::EVENT::VIVE_TOUCHPAD_DOWN, &payload);
 			}
 
 			// Touchpad unpressed
 			if (component.justUnpressed())
 			{
 				m_bTouchpadClicked = false;
+
+				glm::vec2 payload[2] = { m_vec2TouchpadInitialTouchPoint, touchPoint };
+				notify(this, BroadcastSystem::EVENT::VIVE_TOUCHPAD_UP, &payload);
 			}
 
 			// Touchpad touched
 			if (component.justTouched())
 			{
 				m_bTouchpadTouched = true;
-				m_vec2TouchpadInitialTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
+				m_vec2TouchpadInitialTouchPoint = touchPoint;
 				m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
+				notify(this, BroadcastSystem::EVENT::VIVE_TOUCHPAD_ENGAGE, &touchPoint);
 			}
 
 			// Touchpad untouched
 			if (component.justUntouched())
 			{
 				m_bTouchpadTouched = false;
+
+				glm::vec2 payload[2] = { m_vec2TouchpadInitialTouchPoint, touchPoint };
+				notify(this, BroadcastSystem::EVENT::VIVE_TOUCHPAD_DISENGAGE, &payload);
+
 				m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
 				m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
 			}
@@ -260,10 +279,13 @@ bool ViveController::updateControllerState()
 			// Touchpad being touched
 			if (component.continueTouch())
 			{
-				m_vec2TouchpadCurrentTouchPoint = glm::vec2(touchpadAxis.x, touchpadAxis.y);
+				m_vec2TouchpadCurrentTouchPoint = touchPoint;
 
 				if (m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
 					m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
+
+				glm::vec2 payload[2] = { m_vec2TouchpadInitialTouchPoint, m_vec2TouchpadCurrentTouchPoint };
+				notify(this, BroadcastSystem::EVENT::VIVE_TOUCHPAD_TOUCH, &payload);
 			}
 		}
 	}

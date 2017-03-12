@@ -24,16 +24,16 @@ namespace BroadcastSystem
 		VIVE_MENU_BUTTON_UP,	 // Menu button unpressed
 		VIVE_GRIP_DOWN,			 // Grip button pressed
 		VIVE_GRIP_UP,			 // Grip button unpressed
-		VIVE_TRIGGER_ENGAGE,	 // Trigger analog initial engagement
-		VIVE_TRIGGER_PULL,		 // Trigger analog continued engagement
+		VIVE_TRIGGER_ENGAGE,	 // Trigger analog initial engagement (float = pullAmount)
+		VIVE_TRIGGER_PULL,		 // Trigger analog continued engagement (float = pullAmount)
 		VIVE_TRIGGER_DISENGAGE,	 // Trigger analog disengagement
 		VIVE_TRIGGER_DOWN,		 // Trigger button pressed (clicked)
-		VIVE_TRIGGER_UP,		 // Trigger button unpressed (unclicked)
-		VIVE_TOUCHPAD_ENGAGE,	 // Touchpad initial touch
-		VIVE_TOUCHPAD_TOUCH,	 // Touchpad continued touch
-		VIVE_TOUCHPAD_DISENGAGE, // Touchpad untouch
-		VIVE_TOUCHPAD_DOWN,		 // Touchpad pressed (clicked)
-		VIVE_TOUCHPAD_UP		 // Touchpad unpressed (unclicked)
+		VIVE_TRIGGER_UP,		 // Trigger button unpressed (unclicked) (float = pullAmount)
+		VIVE_TOUCHPAD_ENGAGE,	 // Touchpad initial touch (vec2 = initialTouchPoint)
+		VIVE_TOUCHPAD_TOUCH,	 // Touchpad continued touch (vec2[2] = { initialTouchPoint, lastTouchPoint })
+		VIVE_TOUCHPAD_DISENGAGE, // Touchpad untouch (vec2[2] = { initialTouchPoint, lastTouchPoint })
+		VIVE_TOUCHPAD_DOWN,		 // Touchpad pressed (clicked) (vec2[2] = { initialTouchPoint, lastTouchPoint })
+		VIVE_TOUCHPAD_UP		 // Touchpad unpressed (unclicked) (vec2[2] = { initialTouchPoint, lastTouchPoint })
 	};
 
 
