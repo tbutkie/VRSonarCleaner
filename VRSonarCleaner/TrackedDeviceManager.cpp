@@ -323,7 +323,17 @@ glm::mat4 & TrackedDeviceManager::getHMDPose()
 	return m_mat4HMDView;
 }
 
-glm::mat4 & TrackedDeviceManager::getEditControllerPose()
+ViveController * TrackedDeviceManager::getPrimaryController()
+{
+	return m_pPrimaryController;
+}
+
+ViveController * TrackedDeviceManager::getSecondaryController()
+{
+	return m_pSecondaryController;
+}
+
+glm::mat4 & TrackedDeviceManager::getPrimaryControllerPose()
 {
 	if(m_pPrimaryController)
 		return m_pPrimaryController->getDeviceToWorldTransform();
@@ -331,7 +341,7 @@ glm::mat4 & TrackedDeviceManager::getEditControllerPose()
 	return glm::mat4();
 }
 
-glm::mat4 & TrackedDeviceManager::getManipControllerPose()
+glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
 {
 	if (m_pSecondaryController)
 		return m_pSecondaryController->getDeviceToWorldTransform();

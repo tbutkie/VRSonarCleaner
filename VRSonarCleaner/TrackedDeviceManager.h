@@ -28,8 +28,10 @@ public:
 	void cleaningHit();
 
 	glm::mat4& getHMDPose();
-	glm::mat4& getEditControllerPose();
-	glm::mat4& getManipControllerPose();
+	ViveController* getPrimaryController();
+	ViveController* getSecondaryController();
+	glm::mat4& getPrimaryControllerPose();
+	glm::mat4& getSecondaryControllerPose();
 
 	void updateTrackedDeviceRenderModels();
 	void updateTrackedDevices();

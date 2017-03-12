@@ -49,14 +49,14 @@ InfoBoxManager::InfoBoxManager()
 		"editctrlrlabel.png",
 		0.05f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::EDIT_CONTROLLER,
+		RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);                                                                                                   
 	addInfoBox(
 		"Manipulation Label",
 		"manipctrlrlabel.png",
 		0.1f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::MANIP_CONTROLLER,
+		RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 }
 
@@ -89,8 +89,6 @@ void InfoBoxManager::render(const float *matVP)
 	glm::mat4 VP = glm::make_mat4(matVP);
 
 	glm::mat4 HMDXform = glm::inverse(m_pTDM->getHMDPose());
-	glm::mat4 EditCtrlrXform = m_pTDM->getEditControllerPose();
-	glm::mat4 ManipCtrlrXform = m_pTDM->getManipControllerPose();
 
 	glUseProgram(m_unTransformProgramID);
 	glBindVertexArray(m_unVAO);
@@ -101,11 +99,11 @@ void InfoBoxManager::render(const float *matVP)
 		glm::mat4 relXform;
 		if (relToWhat == WORLD) relXform = glm::mat4();
 		if (relToWhat == HMD) relXform = HMDXform;
-		if (relToWhat == EDIT_CONTROLLER) relXform = EditCtrlrXform;
-		if (relToWhat == MANIP_CONTROLLER) relXform = ManipCtrlrXform;
+		if (relToWhat == PRIMARY_CONTROLLER) relXform = m_pTDM->getPrimaryControllerPose();
+		if (relToWhat == SECONDARY_CONTROLLER) relXform = m_pTDM->getSecondaryControllerPose();
 
 		// short-circuit if controller is not active
-		if (relXform == glm::mat4() && (relToWhat == EDIT_CONTROLLER || relToWhat == MANIP_CONTROLLER))
+		if (relXform == glm::mat4() && (relToWhat == PRIMARY_CONTROLLER || relToWhat == SECONDARY_CONTROLLER))
 			continue;
 
 		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);
