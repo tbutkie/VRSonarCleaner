@@ -173,14 +173,6 @@ void EditingController::prepareForRendering()
 				m_uiLineVertcount += 2;
 			}
 		}
-
-		// Draw touchpad touch point sphere
-		if (m_bTouchpadTouched && !m_bShowScrollWheel)
-		{
-			float range = m_fCursorRadiusMax - m_fCursorRadiusMin;
-			float ratio = (m_fCursorRadius - m_fCursorRadiusMin) / range;
-			insertTouchpadCursor(vertdataarray, m_uiTriVertcount, ratio, 0.f, 1.f - ratio, 0.75f);
-		}
 	}
 
 	// Setup the VAO the first time through.

@@ -8,7 +8,6 @@
 #include <GL/glew.h>
 
 #include "BroadcastSystem.h"
-#include "Icosphere.h"
 
 #include <shared/glm/glm.hpp>
 
@@ -36,8 +35,6 @@ public:
 	void setClassChar(char classChar);
 
 	glm::mat4 getDeviceToWorldTransform();
-
-	virtual void prepareForRendering();
 
 	void render(glm::mat4 & matVP);
 

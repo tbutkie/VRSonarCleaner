@@ -1,6 +1,6 @@
 #include "ManipulateDataVolumeBehavior.h"
 
-
+#include "DebugDrawer.h"
 
 ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume)
 	: DualControllerBehavior(gripController, scaleController)
@@ -30,6 +30,29 @@ void ManipulateDataVolumeBehavior::update()
 	}
 	else if (m_bGripping)
 		m_pDataVolume->continueRotation(m_pGripController->getDeviceToWorldTransform());
+}
+
+void ManipulateDataVolumeBehavior::draw()
+{
+	// Draw Axes
+	if (false)
+	{
+		DebugDrawer::getInstance().setTransform(m_pPrimaryController->getDeviceToWorldTransform());
+		DebugDrawer::getInstance().drawTransform(0.1f);
+	}
+
+	// Draw Touchpad line
+	if (m_pPrimaryController->isTouchpadTouched())
+	{
+
+		glm::vec4 start = glm::vec4(m_pPrimaryController->getInitialTouchpadTouchPoint(), 1.f);
+		glm::vec4 startColor(.9f, .2f, .1f, 0.75f);
+		glm::vec4 end = glm::vec4(m_pPrimaryController->getCurrentTouchpadTouchPoint(), 1.f);
+		glm::vec4 endColor(.1f, .2f, .9f, 0.75f);
+
+		DebugDrawer::getInstance().setTransform(m_pPrimaryController->getDeviceToWorldTransform());
+		DebugDrawer::getInstance().drawLine(glm::vec3(start), glm::vec3(end), startColor, endColor);
+	}
 }
 
 void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadData)

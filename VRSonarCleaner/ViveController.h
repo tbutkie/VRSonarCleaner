@@ -1,8 +1,6 @@
 #pragma once
 
 #include <GL/glew.h>
-#include <map>
-#include <functional>
 
 #include "TrackedDevice.h"
 
@@ -16,7 +14,6 @@ public:
 
 	// Overridden from TrackedDevice
 	bool BInit();
-	virtual void prepareForRendering();
 
 	glm::mat4 getLastPose();
 	bool update(vr::TrackedDevicePose_t pose);
@@ -32,10 +29,11 @@ public:
 
 	float getTriggerPullAmount();
 	float getHairTriggerThreshold();
+	glm::vec3 getCurrentTouchpadTouchPoint();
+	glm::vec3 getInitialTouchpadTouchPoint();
 
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
-	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
 
 	vr::TrackedDevicePose_t m_LastPose;
 
@@ -56,8 +54,6 @@ protected:
 	float m_fTriggerPull;
 	int32_t m_nTriggerAxis;
 	int32_t m_nTouchpadAxis;
-
-	Icosphere m_TouchPointSphere;
 
 	static const glm::vec4 c_vec4TouchPadCenter;
 	static const glm::vec4 c_vec4TouchPadLeft;

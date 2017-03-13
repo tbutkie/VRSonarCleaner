@@ -444,6 +444,7 @@ void CMainApplication::RunMainLoop()
 		bQuit = HandleInput();
 
 
+		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
 			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
@@ -454,6 +455,9 @@ void CMainApplication::RunMainLoop()
 
 		for (auto const &b : g_vpBehaviors)
 			b->update();
+
+		for (auto const &b : g_vpBehaviors)
+			b->draw();
 
 		if (mode == 0)
 		{

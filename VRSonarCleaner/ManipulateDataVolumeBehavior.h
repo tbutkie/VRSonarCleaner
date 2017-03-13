@@ -1,5 +1,5 @@
 #pragma once
-#include "DualCOntrollerBehavior.h"
+#include "DualControllerBehavior.h"
 
 #include "DataVolume.h"
 #include "ViveController.h"
@@ -12,6 +12,8 @@ public:
 	~ManipulateDataVolumeBehavior();
 
 	void update();
+
+	void draw();
 
 private:
 	DataVolume* m_pDataVolume;
