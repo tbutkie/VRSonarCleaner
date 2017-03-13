@@ -445,7 +445,7 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		if (m_pTDM->getPrimaryController())
+		if (m_pTDM->getPrimaryController() && !g_pProbeBehavior)
 		{
 			g_pProbeBehavior = new ProbeBehavior(m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
 			g_vpBehaviors.push_back(g_pProbeBehavior);
@@ -486,18 +486,6 @@ void CMainApplication::RunMainLoop()
 
 		if (mode == 1)
 		{
-			ViveController* ctrllr1 = m_pTDM->getPrimaryController();
-			if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isTriggerClicked()) // CHANGE TO EVENT
-			{
-				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
-				//flowRoom->placeDyeEmitterWorldCoords(glm::vec3(ctrlPose[3]));
-			}
-			else if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isGripButtonPressed())
-			{
-				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
-				//flowRoom->removeDyeEmitterClosestToWorldCoords(glm::vec3(ctrlPose[3]));
-			}
-
 			flowRoom->preRenderUpdates();
 
 			flowRoom->draw(); // currently draws to debug buffer

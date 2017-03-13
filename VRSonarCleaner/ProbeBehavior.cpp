@@ -7,7 +7,7 @@
 ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	: SingleControllerBehavior(controller)
 	, m_pDataVolume(dataVolume)
-	, c_fTouchDeltaThreshold(0.1f)
+	, c_fTouchDeltaThreshold(0.2f)
 	, m_bShowProbe(true)
 	, m_bVerticalSwipeMode(false)
 	, m_bHorizontalSwipeMode(false)
@@ -199,7 +199,7 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 
 		if (m_bHorizontalSwipeMode)
 		{
-			m_fProbeOffsetAmount = measuredOffset.y;
+			// TODO
 		}
 
 		break;
