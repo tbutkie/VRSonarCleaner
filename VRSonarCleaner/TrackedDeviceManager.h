@@ -33,8 +33,13 @@ public:
 	glm::mat4& getPrimaryControllerPose();
 	glm::mat4& getSecondaryControllerPose();
 
+	bool attachToPrimaryController(BroadcastSystem::Listener *l);
+	bool attachToSecondaryController(BroadcastSystem::Listener *l);
+	bool detachFromPrimaryController(BroadcastSystem::Listener *l);
+	bool detachFromSecondaryController(BroadcastSystem::Listener *l);
+
 	void updateTrackedDeviceRenderModels();
-	void updateTrackedDevices();
+	void update();
 
 	void renderControllerCustomizations(glm::mat4 *matVP);
 

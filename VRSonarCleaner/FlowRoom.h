@@ -41,6 +41,8 @@ public:
 
 	void reset();
 
+	DataVolume* getDataVolume();
+
 private:
 	glm::vec3 m_vec3RoomSize;
 	glm::vec3 m_vec3Min, m_vec3Max;

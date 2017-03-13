@@ -354,3 +354,8 @@ void CleaningRoom::resetVolumes()
 	wallVolume->resetPositionAndOrientation();
 	tableVolume->resetPositionAndOrientation();
 }
+
+DataVolume * CleaningRoom::getDataVolume()
+{
+	return tableVolume;
+}

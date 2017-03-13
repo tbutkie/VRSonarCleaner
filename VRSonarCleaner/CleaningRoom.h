@@ -39,6 +39,8 @@ public:
 
 	void resetVolumes();
 
+	DataVolume* getDataVolume();
+
 private:
 	float roomSizeX, roomSizeY, roomSizeZ;
 	float minX, minY, minZ;

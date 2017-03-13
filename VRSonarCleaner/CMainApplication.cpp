@@ -3,11 +3,17 @@
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
 
+#include "GripBehavior.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
 
 #include <ctime>
+
+GripBehavior *g_pGripBehavior = NULL;
+
+std::vector<BehaviorBase*> g_vpBehaviors;
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -437,7 +443,17 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		m_pTDM->updateTrackedDevices();
+
+		if (m_pTDM->getSecondaryController() && !g_pGripBehavior)
+		{
+			g_pGripBehavior = new GripBehavior(m_pTDM->getSecondaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
+			g_vpBehaviors.push_back(g_pGripBehavior);
+		}
+
+		m_pTDM->update();
+
+		for (auto const &b : g_vpBehaviors)
+			b->update();
 
 		if (mode == 0)
 		{
@@ -478,14 +494,14 @@ void CMainApplication::RunMainLoop()
 			}
 
 			//grip rotate if needed
-			ViveController* ctrllr2 = m_pTDM->getSecondaryController();
-			if (ctrllr2 && ctrllr2->poseValid() && ctrllr2->isTriggerClicked())
-			{
-				glm::mat4 ctrlPose = ctrllr2->getDeviceToWorldTransform();
-				flowRoom->gripModel(ctrlPose);
-			}
-			else
-				flowRoom->releaseModel();
+			//ViveController* ctrllr2 = m_pTDM->getSecondaryController();
+			//if (ctrllr2 && ctrllr2->poseValid() && ctrllr2->isTriggerClicked())
+			//{
+			//	glm::mat4 ctrlPose = ctrllr2->getDeviceToWorldTransform();
+			//	flowRoom->gripModel(ctrlPose);
+			//}
+			//else
+			//	flowRoom->releaseModel();
 
 			flowRoom->preRenderUpdates();
 

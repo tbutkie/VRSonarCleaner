@@ -167,6 +167,11 @@ void FlowRoom::reset()
 	m_pMainModelVolume->resetPositionAndOrientation();
 }
 
+DataVolume * FlowRoom::getDataVolume()
+{
+	return m_pMainModelVolume;
+}
+
 void FlowRoom::preRenderUpdates()
 {
 	//update time

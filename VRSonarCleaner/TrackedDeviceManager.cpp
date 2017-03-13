@@ -349,10 +349,50 @@ glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
 	return glm::mat4();
 }
 
+bool TrackedDeviceManager::attachToPrimaryController(BroadcastSystem::Listener * l)
+{
+	if (!m_pPrimaryController)
+		return false;
+
+	m_pPrimaryController->attach(l);
+
+	return true;
+}
+
+bool TrackedDeviceManager::attachToSecondaryController(BroadcastSystem::Listener * l)
+{
+	if (!m_pSecondaryController)
+		return false;
+
+	m_pSecondaryController->attach(l);
+
+	return true;
+}
+
+bool TrackedDeviceManager::detachFromPrimaryController(BroadcastSystem::Listener * l)
+{
+	if (!m_pPrimaryController)
+		return false;
+
+	m_pPrimaryController->detach(l);
+
+	return true;
+}
+
+bool TrackedDeviceManager::detachFromSecondaryController(BroadcastSystem::Listener * l)
+{
+	if (!m_pSecondaryController)
+		return false;
+
+	m_pSecondaryController->detach(l);
+
+	return true;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void TrackedDeviceManager::updateTrackedDevices()
+void TrackedDeviceManager::update()
 {
 	if (!m_pHMD)
 		return;
