@@ -119,31 +119,6 @@ bool FlowRoom::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 	return false;
 }
 
-bool FlowRoom::gripModel(const glm::mat4 &controllerPose)
-{
-	if (!m_pMainModelVolume->isBeingRotated())
-	{
-		m_pMainModelVolume->startRotation(controllerPose);
-		//printf("++ Rotation Started\n");
-		return true;
-	}
-	else
-	{
-		m_pMainModelVolume->continueRotation(controllerPose);
-		//printf("==== Rotating\n");
-	}
-	return false;
-}
-
-void FlowRoom::releaseModel()
-{
-	if (m_pMainModelVolume->isBeingRotated())
-	{
-		m_pMainModelVolume->endRotation();
-		//printf("|| Rotation Ended\n");
-	}
-}
-
 void FlowRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");

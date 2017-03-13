@@ -36,8 +36,6 @@ public:
 
 	bool placeDyeEmitterWorldCoords(glm::vec3 pos);
 	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
-	bool gripModel(const glm::mat4 &controllerPose);
-	void releaseModel();
 
 	void reset();
 

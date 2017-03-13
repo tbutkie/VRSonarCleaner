@@ -35,11 +35,6 @@ public:
 	glm::mat4 getLastDataTransform();
 	glm::mat4 getCurrentVolumeTransform();
 	glm::mat4 getLastVolumeTransform();
-	
-	void startRotation(const glm::mat4 &controllerPose);
-	void continueRotation(const glm::mat4 &controllerPose);
-	void endRotation();
-	bool isBeingRotated();	
 
 	void resetPositionAndOrientation();
 
@@ -68,10 +63,4 @@ private:
 	
 	bool m_bFirstRun; // Flag for First Runthrough
 	bool m_bNeedsUpdate; // Transforms Update Flag
-
-	//rotate action
-	bool m_bRotationInProgress; // Data Volume Rotating
-	glm::mat4 m_mat4PoseAtRotationStart; // Data Volume Initial Position and Orientation when Rotating
-	glm::mat4 m_mat4ControllerPoseAtRotationStart; // Controller's Initial Position and Orientation when Rotating
-	glm::mat4 m_mat4ControllerToVolumePose; // Transformation from Controller Space to Data Volume Space
 };

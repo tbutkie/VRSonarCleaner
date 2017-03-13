@@ -473,13 +473,7 @@ void CMainApplication::RunMainLoop()
 			//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
 			if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
 				m_pTDM->cleaningHit();
-
-			glm::mat4 ctrlPose;
-			if (m_pTDM->getManipulationData(ctrlPose))
-				cleaningRoom->gripCleaningTable(ctrlPose);
-			else
-				cleaningRoom->releaseCleaningTable();
-
+			
 			cleaningRoom->draw(); // currently draws to debug buffer
 		}
 

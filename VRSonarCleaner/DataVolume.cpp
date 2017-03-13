@@ -13,7 +13,6 @@ DataVolume::DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 size, g
 	, m_vec3Scale(glm::vec3(1.f))
 	, m_bFirstRun(true)
 	, m_bNeedsUpdate(true)
-	, m_bRotationInProgress(false)
 {
 	if (startingOrientation == 0)
 		m_qOrientation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
@@ -166,46 +165,6 @@ glm::mat4 DataVolume::getCurrentVolumeTransform()
 glm::mat4 DataVolume::getLastVolumeTransform()
 {
 	return m_mat4VolumeTransformPrevious;
-}
-
-void DataVolume::startRotation(const glm::mat4 &controllerPose)
-{
-	m_mat4ControllerPoseAtRotationStart = controllerPose;
-	//m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4_cast(m_qOrientation);
-	m_mat4PoseAtRotationStart = m_mat4VolumeTransform;
-		
-	//save volume pose in controller space
-	m_mat4ControllerToVolumePose = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4PoseAtRotationStart;
-	
-	m_bRotationInProgress = true;
-}
-
-void DataVolume::continueRotation(const glm::mat4 &controllerPose)
-{
-	if (!m_bRotationInProgress)
-		return;
-
-	glm::mat4 mat4ControllerPoseCurrent = controllerPose;
-			
-	m_vec3Pos = glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose)[3]);
-	m_qOrientation = glm::quat(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose);
-
-	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(glm::vec3(m_mat4ControllerPoseAtRotationStart[3]), glm::vec3(m_mat4PoseAtRotationStart[3]), glm::vec4(0.f, 1.f, 0.f, 1.f));
-	DebugDrawer::getInstance().drawLine(glm::vec3(mat4ControllerPoseCurrent[3]), m_vec3Pos, glm::vec4(1.f, 0.f, 0.f, 1.f));
-
-	m_bNeedsUpdate = true;
-}
-
-void DataVolume::endRotation()
-{
-	m_bRotationInProgress = false;
-	//could revert to old starting position and orientation here to have it always snap back in place
-}
-
-bool DataVolume::isBeingRotated()
-{
-	return m_bRotationInProgress;
 }
 
 void DataVolume::updateTransforms()

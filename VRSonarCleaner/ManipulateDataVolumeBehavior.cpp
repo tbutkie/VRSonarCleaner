@@ -9,6 +9,7 @@ ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripC
 	, m_pDataVolume(dataVolume)
 	, m_bGripping(false)
 	, m_bScaling(false)
+	, m_bRotationInProgress(false)
 {
 	scaleController->attach(this);
 }
@@ -29,7 +30,7 @@ void ManipulateDataVolumeBehavior::update()
 		m_pDataVolume->setSize(glm::vec3(exp(delta * 10.f) * m_vec3InitialScale));
 	}
 	else if (m_bGripping)
-		m_pDataVolume->continueRotation(m_pGripController->getDeviceToWorldTransform());
+		continueRotation();
 }
 
 void ManipulateDataVolumeBehavior::draw()
@@ -65,7 +66,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 		memcpy(&payload, payloadData, sizeof(BroadcastSystem::Payload::Trigger));
 		if (payload.m_pSelf == m_pGripController)
 		{
-			m_pDataVolume->startRotation(m_pGripController->getDeviceToWorldTransform());
+			startRotation();
 			m_bGripping = true;
 		}
 		else
@@ -87,7 +88,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 		memcpy(&payload, payloadData, sizeof(BroadcastSystem::Payload::Trigger));
 		if (payload.m_pSelf == m_pGripController)
 		{
-			m_pDataVolume->endRotation();
+			endRotation();
 			m_bGripping = false;
 			m_bScaling = false;
 		}
@@ -96,7 +97,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 			if (m_bScaling)
 			{
 				m_bScaling = false;
-				m_pDataVolume->startRotation(m_pGripController->getDeviceToWorldTransform());
+				startRotation();
 				m_bGripping = true;
 			}
 		}
@@ -110,4 +111,51 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 float ManipulateDataVolumeBehavior::controllerDistance()
 {
 	return glm::length(m_pGripController->getDeviceToWorldTransform()[3] - m_pScaleController->getDeviceToWorldTransform()[3]);
+}
+
+
+void ManipulateDataVolumeBehavior::startRotation()
+{
+	m_mat4ControllerPoseAtRotationStart = m_pPrimaryController->getDeviceToWorldTransform();
+	//m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4_cast(m_qOrientation);
+	m_mat4DataVolumePoseAtRotationStart = m_pDataVolume->getCurrentVolumeTransform();
+
+	//save volume pose in controller space
+	m_mat4ControllerToVolumePose = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;
+
+	m_bRotationInProgress = true;
+}
+
+void ManipulateDataVolumeBehavior::continueRotation()
+{
+	if (!m_bRotationInProgress)
+		return;
+
+	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
+
+	m_pDataVolume->setPosition(glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose)[3]));
+	m_pDataVolume->setOrientation(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose);
+
+	DebugDrawer::getInstance().setTransformDefault();
+	DebugDrawer::getInstance().drawLine(
+		glm::vec3(m_mat4ControllerPoseAtRotationStart[3]),
+		glm::vec3(m_mat4DataVolumePoseAtRotationStart[3]),
+		glm::vec4(0.f, 1.f, 0.f, 1.f)
+	);
+	DebugDrawer::getInstance().drawLine(
+		glm::vec3(mat4ControllerPoseCurrent[3]), 
+		glm::vec3(m_pDataVolume->getCurrentVolumeTransform()[3]),
+		glm::vec4(1.f, 0.f, 0.f, 1.f)
+	);
+}
+
+void ManipulateDataVolumeBehavior::endRotation()
+{
+	m_bRotationInProgress = false;
+	//could revert to old starting position and orientation here to have it always snap back in place
+}
+
+bool ManipulateDataVolumeBehavior::isBeingRotated()
+{
+	return m_bRotationInProgress;
 }

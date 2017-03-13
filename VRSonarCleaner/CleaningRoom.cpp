@@ -301,31 +301,6 @@ float CleaningRoom::cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float 
 	}
 }
 
-bool CleaningRoom::gripCleaningTable(const glm::mat4 &controllerPose)
-{
-	if (!tableVolume->isBeingRotated())
-	{
-		tableVolume->startRotation(controllerPose);
-		//printf("++ Rotation Started\n");
-		return true;
-	}
-	else
-	{
-		tableVolume->continueRotation(controllerPose);
-		//printf("==== Rotating\n");
-	}
-	return false;
-}
-
-void CleaningRoom::releaseCleaningTable()
-{
-	if (tableVolume->isBeingRotated())
-	{
-		tableVolume->endRotation();
-		//printf("|| Rotation Ended\n");
-	}
-}
-
 void CleaningRoom::draw()
 {
 	//printf("In CleaningRoom Draw()\n");

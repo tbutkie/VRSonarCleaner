@@ -34,8 +34,6 @@ public:
 
 	//bool checkCleaningTable(const Matrix4 & currentCursorPose, const Matrix4 & lastCursorPose, float radius, unsigned int sensitivity);
 	bool editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
-	bool gripCleaningTable(const glm::mat4 & controllerPose);
-	void releaseCleaningTable();
 
 	void resetVolumes();
 
