@@ -100,17 +100,6 @@ bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 &thisCursorPose, glm:
 	return true;
 }
 
-bool TrackedDeviceManager::getManipulationData(glm::mat4 &controllerPose)
-{	
-	if (m_pSecondaryController && m_pSecondaryController->poseValid() && m_pSecondaryController->isTriggerClicked())
-	{
-		controllerPose = m_pSecondaryController->getDeviceToWorldTransform();
-		return true;
-	}
-
-	return false;
-}
-
 void TrackedDeviceManager::cleaningHit()
 {
 	m_pHMD->TriggerHapticPulse(m_pPrimaryController->getIndex(), 0, 2000);

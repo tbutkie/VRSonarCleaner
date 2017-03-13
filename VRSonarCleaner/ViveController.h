@@ -32,6 +32,9 @@ public:
 	glm::vec3 getCurrentTouchpadTouchPoint();
 	glm::vec3 getInitialTouchpadTouchPoint();
 
+	void showScrollWheel();
+	void hideScrollWheel();
+
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 

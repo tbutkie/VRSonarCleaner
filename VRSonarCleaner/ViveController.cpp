@@ -361,6 +361,16 @@ glm::vec3 ViveController::getInitialTouchpadTouchPoint()
 	return glm::vec3(transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint));
 }
 
+void ViveController::showScrollWheel()
+{
+	m_bShowScrollWheel = true;
+}
+
+void ViveController::hideScrollWheel()
+{
+	m_bShowScrollWheel = false;
+}
+
 bool ViveController::isTouchpadTouched()
 {
 	return m_bTouchpadTouched;

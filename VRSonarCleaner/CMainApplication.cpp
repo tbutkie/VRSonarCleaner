@@ -4,6 +4,7 @@
 #include "InfoBoxManager.h"
 
 #include "ManipulateDataVolumeBehavior.h"
+#include "ProbeBehavior.h"
 
 #include <fstream>
 #include <sstream>
@@ -12,6 +13,7 @@
 #include <ctime>
 
 ManipulateDataVolumeBehavior *g_pManipulateDataVolumeBehavior = NULL;
+ProbeBehavior *g_pProbeBehavior = NULL;
 
 std::vector<BehaviorBase*> g_vpBehaviors;
 
@@ -443,6 +445,11 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
+		if (m_pTDM->getPrimaryController())
+		{
+			g_pProbeBehavior = new ProbeBehavior(m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
+			g_vpBehaviors.push_back(g_pProbeBehavior);
+		}
 
 		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
@@ -490,16 +497,6 @@ void CMainApplication::RunMainLoop()
 				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
 				//flowRoom->removeDyeEmitterClosestToWorldCoords(glm::vec3(ctrlPose[3]));
 			}
-
-			//grip rotate if needed
-			//ViveController* ctrllr2 = m_pTDM->getSecondaryController();
-			//if (ctrllr2 && ctrllr2->poseValid() && ctrllr2->isTriggerClicked())
-			//{
-			//	glm::mat4 ctrlPose = ctrllr2->getDeviceToWorldTransform();
-			//	flowRoom->gripModel(ctrlPose);
-			//}
-			//else
-			//	flowRoom->releaseModel();
 
 			flowRoom->preRenderUpdates();
 

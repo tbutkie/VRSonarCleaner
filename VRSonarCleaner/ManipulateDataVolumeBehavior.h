@@ -2,7 +2,6 @@
 #include "DualControllerBehavior.h"
 
 #include "DataVolume.h"
-#include "ViveController.h"
 
 class ManipulateDataVolumeBehavior :
 	public DualControllerBehavior
