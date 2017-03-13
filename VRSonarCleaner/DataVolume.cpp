@@ -47,6 +47,11 @@ void DataVolume::setSize(glm::vec3 size)
 	recalcScaling();
 }
 
+glm::vec3 DataVolume::getSize()
+{
+	return m_vec3Size;
+}
+
 void DataVolume::setPosition(glm::vec3 pos)
 {
 	m_vec3Pos = pos;

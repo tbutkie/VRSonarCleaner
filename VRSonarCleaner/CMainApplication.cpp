@@ -3,7 +3,7 @@
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
 
-#include "GripBehavior.h"
+#include "ManipulateDataVolumeBehavior.h"
 
 #include <fstream>
 #include <sstream>
@@ -11,7 +11,7 @@
 
 #include <ctime>
 
-GripBehavior *g_pGripBehavior = NULL;
+ManipulateDataVolumeBehavior *g_pManipulateDataVolumeBehavior = NULL;
 
 std::vector<BehaviorBase*> g_vpBehaviors;
 
@@ -444,10 +444,10 @@ void CMainApplication::RunMainLoop()
 		bQuit = HandleInput();
 
 
-		if (m_pTDM->getSecondaryController() && !g_pGripBehavior)
+		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
-			g_pGripBehavior = new GripBehavior(m_pTDM->getSecondaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
-			g_vpBehaviors.push_back(g_pGripBehavior);
+			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
+			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
 		m_pTDM->update();
@@ -485,12 +485,12 @@ void CMainApplication::RunMainLoop()
 			if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isTriggerClicked()) // CHANGE TO EVENT
 			{
 				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
-				flowRoom->placeDyeEmitterWorldCoords(glm::vec3(ctrlPose[3]));
+				//flowRoom->placeDyeEmitterWorldCoords(glm::vec3(ctrlPose[3]));
 			}
 			else if (ctrllr1 && ctrllr1->poseValid() && ctrllr1->isGripButtonPressed())
 			{
 				glm::mat4 ctrlPose = ctrllr1->getDeviceToWorldTransform();
-				flowRoom->removeDyeEmitterClosestToWorldCoords(glm::vec3(ctrlPose[3]));
+				//flowRoom->removeDyeEmitterClosestToWorldCoords(glm::vec3(ctrlPose[3]));
 			}
 
 			//grip rotate if needed

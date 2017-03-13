@@ -164,7 +164,6 @@
     <ClCompile Include="..\shared\lodepng.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
     <ClCompile Include="arcball.cpp" />
-    <ClCompile Include="BehaviorBase.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="CleaningRoom.cpp" />
     <ClCompile Include="CloudCollection.cpp" />
@@ -172,10 +171,11 @@
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="CoordinateScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
+    <ClCompile Include="DualControllerBehavior.cpp" />
     <ClCompile Include="EditingController.cpp" />
     <ClCompile Include="FlowGrid.cpp" />
     <ClCompile Include="FlowRoom.cpp" />
-    <ClCompile Include="GripBehavior.cpp" />
+    <ClCompile Include="ManipulateDataVolumeBehavior.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="IllustrativeDyePole.cpp" />
@@ -213,10 +213,11 @@
     <ClInclude Include="CoordinateScaler.h" />
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="DebugDrawer.h" />
+    <ClInclude Include="DualControllerBehavior.h" />
     <ClInclude Include="EditingController.h" />
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowRoom.h" />
-    <ClInclude Include="GripBehavior.h" />
+    <ClInclude Include="ManipulateDataVolumeBehavior.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />
     <ClInclude Include="IllustrativeParticle.h" />

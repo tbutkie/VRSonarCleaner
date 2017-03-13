@@ -120,10 +120,10 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BehaviorBase.cpp">
+    <ClCompile Include="ManipulateDataVolumeBehavior.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GripBehavior.cpp">
+    <ClCompile Include="DualControllerBehavior.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -242,7 +242,10 @@
     <ClInclude Include="BehaviorBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GripBehavior.h">
+    <ClInclude Include="ManipulateDataVolumeBehavior.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DualControllerBehavior.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
