@@ -12,12 +12,14 @@ ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	, m_bVerticalSwipeMode(false)
 	, m_bHorizontalSwipeMode(false)
 	, m_vec3ProbeOffsetDirection(glm::vec3(0.f, 0.f, -1.f))
-	, m_fProbeOffsetAmount(0.1f)
-	, m_fProbeOffsetAmountMin(0.1f)
-	, m_fProbeOffsetAmountMax(2.f)
+	, m_fProbeOffset(0.1f)
+	, m_fProbeOffsetMin(0.1f)
+	, m_fProbeOffsetMax(2.f)
 	, m_fProbeRadius(0.05f)
-	, m_fProbeRadiusMin(0.005f)
-	, m_fProbeRadiusMax(0.1f)
+	, m_fProbeRadiusMin(0.001f)
+	, m_fProbeRadiusMax(0.5f)
+	, m_LastTime(std::chrono::high_resolution_clock::now())
+	, m_fCursorHoopAngle(0.f)
 {
 }
 
@@ -28,7 +30,7 @@ ProbeBehavior::~ProbeBehavior()
 
 glm::mat4 ProbeBehavior::getPose()
 {
-	return m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffsetAmount);
+	return m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
 void ProbeBehavior::update()
@@ -61,16 +63,16 @@ void ProbeBehavior::draw()
 			circlePoints.push_back(circlePt);
 		}
 
-		//auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-		//m_LastTime = std::chrono::high_resolution_clock::now();
+		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+		m_LastTime = std::chrono::high_resolution_clock::now();
 
 		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
 
 		glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
 		glm::mat4 rot;
 
-		//float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
-		float m_fCursorHoopAngle = 0.f;//+= angleNeeded;
+		float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+		m_fCursorHoopAngle += angleNeeded;
 
 		for (int n = 0; n < 3; ++n)
 		{
@@ -159,13 +161,13 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 			if (abs(delta.x) > abs(delta.y))
 			{
 				m_bHorizontalSwipeMode = true;
-				//m_fProbeInitialRadius = m_fProbeRadius;
+				m_fProbeRadiusInitial = m_fProbeRadius;
 			}
 			else
 			{
 				m_bVerticalSwipeMode = true;
 				m_pController->showScrollWheel();
-				m_fProbeInitialOffsetAmount = m_fProbeOffsetAmount;
+				m_fProbeInitialOffset = m_fProbeOffset;
 			}
 		}
 
@@ -175,31 +177,48 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 
 		if (m_bVerticalSwipeMode)
 		{
-			m_fProbeOffsetAmount = measuredOffset.y;
+			m_fProbeOffset = measuredOffset.y;
 
 			float dy = measuredOffset.y;
 
-			float range = m_fProbeOffsetAmountMax - m_fProbeOffsetAmountMin;
+			float range = m_fProbeOffsetMax - m_fProbeOffsetMin;
 
-			m_fProbeOffsetAmount = m_fProbeInitialOffsetAmount + dy * range * 0.5f;
+			m_fProbeOffset = m_fProbeInitialOffset + dy * range * 0.5f;
 			
-			if (m_fProbeOffsetAmount > m_fProbeOffsetAmountMax)
+			if (m_fProbeOffset > m_fProbeOffsetMax)
 			{
-				m_fProbeOffsetAmount = m_fProbeOffsetAmountMax;
-				m_fProbeInitialOffsetAmount = m_fProbeOffsetAmountMax;
+				m_fProbeOffset = m_fProbeOffsetMax;
+				m_fProbeInitialOffset = m_fProbeOffsetMax;
 				m_vec2InitialMeasurementPoint.y = payload->m_vec2CurrentTouch.y;
 			}
-			else if (m_fProbeOffsetAmount < m_fProbeOffsetAmountMin)
+			else if (m_fProbeOffset < m_fProbeOffsetMin)
 			{
-				m_fProbeOffsetAmount = m_fProbeOffsetAmountMin;
-				m_fProbeInitialOffsetAmount = m_fProbeOffsetAmountMin;
+				m_fProbeOffset = m_fProbeOffsetMin;
+				m_fProbeInitialOffset = m_fProbeOffsetMin;
 				m_vec2InitialMeasurementPoint.y = payload->m_vec2CurrentTouch.y;
 			}
 		}
 
 		if (m_bHorizontalSwipeMode)
 		{
-			// TODO
+			float dx = payload->m_vec2CurrentTouch.x - m_vec2InitialMeasurementPoint.x;
+
+			float range = m_fProbeRadiusMax - m_fProbeRadiusMin;
+
+			m_fProbeRadius = m_fProbeRadiusInitial + dx * range;
+
+			if (m_fProbeRadius > m_fProbeRadiusMax)
+			{
+				m_fProbeRadius = m_fProbeRadiusMax;
+				m_fProbeRadiusInitial = m_fProbeRadiusMax;
+				m_vec2InitialMeasurementPoint.x = payload->m_vec2CurrentTouch.x;
+			}
+			else if (m_fProbeRadius < m_fProbeRadiusMin)
+			{ 
+				m_fProbeRadius = m_fProbeRadiusMin;
+				m_fProbeRadiusInitial = m_fProbeRadiusMin;
+				m_vec2InitialMeasurementPoint.x = payload->m_vec2CurrentTouch.x;
+			}
 		}
 
 		break;

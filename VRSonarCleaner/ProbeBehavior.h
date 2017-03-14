@@ -3,6 +3,8 @@
 
 #include "DataVolume.h"
 
+#include <chrono>
+
 class ProbeBehavior :
 	public SingleControllerBehavior
 {
@@ -27,15 +29,19 @@ private:
 	bool m_bVerticalSwipeMode;
 	bool m_bHorizontalSwipeMode;
 
-	float m_fProbeOffsetAmount;
-	float m_fProbeOffsetAmountMin;
-	float m_fProbeOffsetAmountMax;
-	float m_fProbeInitialOffsetAmount;
+	float m_fProbeOffset;
+	float m_fProbeOffsetMin;
+	float m_fProbeOffsetMax;
+	float m_fProbeInitialOffset;
 	glm::vec3 m_vec3ProbeOffsetDirection;
 
 	float m_fProbeRadius; 
 	float m_fProbeRadiusMin;
 	float m_fProbeRadiusMax;
+	float m_fProbeRadiusInitial;
+
+	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
+	float m_fCursorHoopAngle;
 
 private:
 	virtual void receiveEvent(const int event, void* payloadData);
