@@ -14,7 +14,7 @@ const glm::vec4 ViveController::c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.
 
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
-	, m_bShowScrollWheel(false)
+	, m_bStateInitialized(false)
 	, m_bSystemButtonClicked(false)
 	, m_bMenuButtonClicked(false)
 	, m_bGripButtonClicked(false)
@@ -24,12 +24,13 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_vec2TouchpadCurrentTouchPoint(glm::vec2(0.f, 0.f))
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
+	, m_bTriggerFirstClick(false)
 	, m_fTriggerPull(0.f)
 	, m_fHairTriggerThreshold(0.05f)
 	, m_nTriggerAxis(-1)
 	, m_nTouchpadAxis(-1)
 {
-
+	m_ControllerScrollModeState.bScrollWheelVisible = false;
 }
 
 ViveController::~ViveController()
@@ -88,24 +89,19 @@ bool ViveController::updateControllerState()
 	vr::VRControllerState_t tempCtrllrState;
 	if (!m_pHMD->GetControllerState(m_unDeviceID, &tempCtrllrState, sizeof(tempCtrllrState)))
 		return false; // bad controller index
-
+	
 	// check if any state has changed
-	if (tempCtrllrState.unPacketNum > 0 && tempCtrllrState.unPacketNum == m_ControllerState.unPacketNum)
+	if (m_bStateInitialized && tempCtrllrState.unPacketNum == m_ControllerState.unPacketNum)
 		return false; // no new state to process
 
 	m_LastControllerState = m_ControllerState;
 	m_ControllerState = tempCtrllrState;
 
-	// Set scrollwheel mode if necessary
-	vr::RenderModel_ControllerMode_State_t controllerModeState;
-	controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
-	bool bScrollWheelBefore = m_bShowScrollWheel;
-
 	// Update the controller components
 	for (auto &component : m_vComponents)
 	{
 		component.m_LastState = component.m_State;
-		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &controllerModeState, &component.m_State);
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_controllerScrollModeState, &component.m_State);
 
 		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component.m_strComponentName.c_str());
 
@@ -301,16 +297,8 @@ bool ViveController::updateControllerState()
 		}
 	}
 
-	// see if scrollwheel model visibility changed, and update if necessary
-	if (bScrollWheelBefore != m_bShowScrollWheel)
-	{
-		controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
-
-		for (std::vector<TrackedDeviceComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
-		{
-			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &m_ControllerState, &controllerModeState, &it->m_State);
-		}
-	}
+	if (!m_bStateInitialized)
+		m_bStateInitialized = true;
 
 	return true;
 }
@@ -362,14 +350,20 @@ glm::vec3 ViveController::getInitialTouchpadTouchPoint()
 	return glm::vec3(transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint));
 }
 
-void ViveController::showScrollWheel()
+void ViveController::setScrollWheelVisibility(bool visible)
 {
-	m_bShowScrollWheel = true;
-}
+	m_controllerScrollModeState.bScrollWheelVisible = visible;
 
-void ViveController::hideScrollWheel()
-{
-	m_bShowScrollWheel = false;
+	for (auto &component : m_vComponents)
+	{
+		if (component.m_strComponentName.compare("scroll_wheel") == 0 ||
+			component.m_strComponentName.compare("touchpad") == 0 ||
+			component.m_strComponentName.compare("touchpad_scroll_cut") == 0)
+		{
+			component.m_LastState = component.m_State;
+			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_controllerScrollModeState, &component.m_State);
+		}
+	}
 }
 
 bool ViveController::isTouchpadTouched()

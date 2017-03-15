@@ -148,7 +148,7 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 			else
 			{
 				m_bVerticalSwipeMode = true;
-				m_pController->showScrollWheel();
+				m_pController->setScrollWheelVisibility(true);
 				m_fProbeInitialOffset = m_fProbeOffset;
 			}
 		}
@@ -208,7 +208,7 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 	case BroadcastSystem::EVENT::VIVE_TOUCHPAD_DISENGAGE:
 	{
 		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
-		m_pController->hideScrollWheel();
+		m_pController->setScrollWheelVisibility(false);
 		break;
 	}
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:

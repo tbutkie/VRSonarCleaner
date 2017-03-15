@@ -34,19 +34,20 @@ public:
 	glm::vec3 getCurrentTouchpadTouchPoint();
 	glm::vec3 getInitialTouchpadTouchPoint();
 
-	void showScrollWheel();
-	void hideScrollWheel();
+	void setScrollWheelVisibility(bool visible);
 
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
+
+	bool m_bStateInitialized;
 
 	vr::TrackedDevicePose_t m_LastPose;
 	glm::mat4 m_mat4LastDeviceToWorldTransform;
 
 	vr::VRControllerState_t m_ControllerState;
 	vr::VRControllerState_t m_LastControllerState;
+	vr::RenderModel_ControllerMode_State_t m_ControllerScrollModeState;
 
-	bool m_bShowScrollWheel;
 	bool m_bSystemButtonClicked;
 	bool m_bMenuButtonClicked;
 	bool m_bGripButtonClicked;
@@ -55,6 +56,7 @@ protected:
 	glm::vec2 m_vec2TouchpadInitialTouchPoint;
 	glm::vec2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;
+	bool m_bTriggerFirstClick; // to deal with calibration errors from initial trigger pull
 	bool m_bTriggerClicked;
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
 	float m_fTriggerPull;
