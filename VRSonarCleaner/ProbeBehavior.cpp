@@ -210,13 +210,17 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
 		m_pController->hideScrollWheel();
 	}
+	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
+	{
+		activateProbe();
+	}
+	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
+	{
+		deactivateProbe();
+	}
 	default:
 		break;
 	}
-}
-
-void ProbeBehavior::activateProbe()
-{
 }
 
 std::vector<glm::vec3> ProbeBehavior::makeCircle(int numSegments)

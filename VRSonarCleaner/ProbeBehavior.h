@@ -15,11 +15,11 @@ public:
 	glm::mat4 getPose();
 	glm::mat4 getLastPose();
 
-	void update();
+	virtual void update();
 
 	void draw();
 
-private:
+protected:
 	DataVolume* m_pDataVolume;
 
 	bool m_bShowProbe;
@@ -44,9 +44,10 @@ private:
 	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fCursorHoopAngle;
 
-private:
+protected:
 	virtual void receiveEvent(const int event, void* payloadData);
-	virtual void activateProbe();
+	virtual void activateProbe() = 0;
+	virtual void deactivateProbe() = 0;
 
 	std::vector<glm::vec3> makeCircle(int numSegments);
 	std::vector<glm::vec3> m_vvec3Circle;

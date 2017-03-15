@@ -4,7 +4,7 @@
 #include "InfoBoxManager.h"
 
 #include "ManipulateDataVolumeBehavior.h"
-#include "ProbeBehavior.h"
+#include "FlowProbe.h"
 
 #include <fstream>
 #include <sstream>
@@ -13,7 +13,7 @@
 #include <ctime>
 
 ManipulateDataVolumeBehavior *g_pManipulateDataVolumeBehavior = NULL;
-ProbeBehavior *g_pProbeBehavior = NULL;
+FlowProbe *g_pFlowProbeBehavior = NULL;
 
 std::vector<BehaviorBase*> g_vpBehaviors;
 
@@ -445,10 +445,10 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		if (m_pTDM->getPrimaryController() && !g_pProbeBehavior)
+		if (mode == 1 && m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
 		{
-			g_pProbeBehavior = new ProbeBehavior(m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
-			g_vpBehaviors.push_back(g_pProbeBehavior);
+			g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowRoom);
+			g_vpBehaviors.push_back(g_pFlowProbeBehavior);
 		}
 
 		// Attach grip & scale behavior when both controllers available
