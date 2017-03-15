@@ -209,14 +209,17 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 	{
 		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
 		m_pController->hideScrollWheel();
+		break;
 	}
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
 	{
 		activateProbe();
+		break;
 	}
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
 	{
 		deactivateProbe();
+		break;
 	}
 	default:
 		break;
