@@ -130,9 +130,9 @@ void FlowGrid::init()
 	lastTimeRequested = true;
 
 	enableIllustrativeParticles = true;
-	numIllustrativeParticles = 1;
-	illustrativeParticleTrailTime = 1000;
-	illustrativeParticleLifetime = 10000;
+	numIllustrativeParticles = 1000;
+	illustrativeParticleTrailTime = 500;
+	illustrativeParticleLifetime = 2500;
 	illustrativeParticleSize = 1;
 
 	colorIllustrativeParticles[0] = 0.25;

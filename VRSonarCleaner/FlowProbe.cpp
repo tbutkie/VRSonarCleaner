@@ -8,6 +8,8 @@ FlowProbe::FlowProbe(ViveController* controller, FlowRoom* flowRoom)
 	, m_pFlowRoom(flowRoom)
 {
 	m_pEmitter = m_pFlowRoom->placeDyeEmitterWorldCoords(glm::vec3(getPose()[3]));
+	m_pEmitter->setRate(1.f);
+	m_pEmitter->incrementColor();
 }
 
 
@@ -17,6 +19,9 @@ FlowProbe::~FlowProbe()
 
 void FlowProbe::update()
 {
+	m_pEmitter->setRate(1.f + (m_pController->getTriggerPullAmount() / 0.85f) * 9.f);
+	m_pEmitter->setTrailTime(10000.f - 9000.f * (m_pController->getTriggerPullAmount() / 0.85f));
+
 	glm::vec3 innerPos = m_pDataVolume->convertToInnerCoords(glm::vec3(getPose()[3]));
 	m_pEmitter->x = innerPos.x;
 	m_pEmitter->y = innerPos.z;
@@ -27,6 +32,7 @@ void FlowProbe::activateProbe()
 {
 	m_bProbeActive = true;
 	m_pEmitter = m_pFlowRoom->placeDyeEmitterWorldCoords(glm::vec3(getPose()[3]));
+	m_pEmitter->setRate(10.f);
 }
 
 void FlowProbe::deactivateProbe()

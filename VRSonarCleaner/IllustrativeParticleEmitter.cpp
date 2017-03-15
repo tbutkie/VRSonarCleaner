@@ -98,15 +98,27 @@ void IllustrativeParticleEmitter::setRadius(float rad)
 
 int IllustrativeParticleEmitter::getNumParticlesToEmit(float tickCount)
 {
-	float timeSinceLast = tickCount-lastEmission;
+	if (lastEmission == 0.f)
+	{
+		lastEmission = tickCount - particlesPerSecond * 0.01f;
+	}
+
+	float timeSinceLast = tickCount-lastEmission; // in milliseconds
 	if (timeSinceLast > 100) //only spawn 10 times per second
 	{
 		int toEmit = (timeSinceLast/1000)*particlesPerSecond;
-		lastEmission = tickCount;
 		if (toEmit > 1000) //sanity check for times where there is too long between spawnings
+		{
+			lastEmission = tickCount;
 			return 1000;
+		}
 		else
+		{
+			if (toEmit > 0)
+				lastEmission = tickCount;
+
 			return toEmit;
+		}
 	}
 	else
 	{
@@ -116,13 +128,13 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(float tickCount)
 float* IllustrativeParticleEmitter::getParticlesToEmit(int number) 
 {
 	float* verts = new float[3*number];
-	for (int i=0;i<number;i++)
+	for (int i = 0; i < number; ++i)
 	{
 		verts[i * 3 + 0] = x;
 		verts[i * 3 + 1] = y;
 		verts[i * 3 + 2] = -z;
 
-		if (false)
+		if (i > 0)
 		{
 			float randAngle = rand() % 100;
 			randAngle = randAngle * 0.01f * 6.28318f; //2pi
