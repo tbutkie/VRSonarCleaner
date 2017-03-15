@@ -27,6 +27,8 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
+	glm::mat4 getLastDeviceToWorldTransform();
+
 	float getTriggerPullAmount();
 	float getHairTriggerThreshold();
 	glm::vec3 getCurrentTouchpadTouchPoint();
@@ -39,6 +41,7 @@ protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 
 	vr::TrackedDevicePose_t m_LastPose;
+	glm::mat4 m_mat4LastDeviceToWorldTransform;
 
 	vr::VRControllerState_t m_ControllerState;
 	vr::VRControllerState_t m_LastControllerState;

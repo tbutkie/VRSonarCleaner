@@ -17,8 +17,6 @@ ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripC
 
 ManipulateDataVolumeBehavior::~ManipulateDataVolumeBehavior()
 {
-	if (m_pScaleController)
-		m_pScaleController->detach(this);
 }
 
 void ManipulateDataVolumeBehavior::update()

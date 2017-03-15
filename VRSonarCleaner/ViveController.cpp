@@ -76,6 +76,7 @@ bool ViveController::update(vr::TrackedDevicePose_t pose)
 	m_LastPose = m_Pose;
 	m_Pose = pose;
 	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4LastDeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_LastPose.mDeviceToAbsoluteTracking);
 	
 	updateControllerState();
 
@@ -379,6 +380,11 @@ bool ViveController::isTouchpadTouched()
 bool ViveController::isTouchpadClicked()
 {
 	return m_bTouchpadClicked;
+}
+
+glm::mat4 ViveController::getLastDeviceToWorldTransform()
+{
+	return m_mat4LastDeviceToWorldTransform;
 }
 
 glm::vec4 ViveController::transformTouchPointToModelCoords(glm::vec2 * pt)

@@ -13,6 +13,7 @@ public:
 	virtual ~ProbeBehavior();
 
 	glm::mat4 getPose();
+	glm::mat4 getLastPose();
 
 	void update();
 
@@ -46,5 +47,8 @@ private:
 private:
 	virtual void receiveEvent(const int event, void* payloadData);
 	virtual void activateProbe();
+
+	std::vector<glm::vec3> makeCircle(int numSegments);
+	std::vector<glm::vec3> m_vvec3Circle;
 };
 

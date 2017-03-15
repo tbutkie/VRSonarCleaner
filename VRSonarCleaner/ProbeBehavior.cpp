@@ -33,105 +33,87 @@ glm::mat4 ProbeBehavior::getPose()
 	return m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
+glm::mat4 ProbeBehavior::getLastPose()
+{
+	return m_pController->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
+}
+
 void ProbeBehavior::update()
 {
 }
 
 void ProbeBehavior::draw()
 {
-	// Draw cursor hoop
 	if (m_bShowProbe)
 	{
-		GLuint num_segments = 64;
+		// Update time vars
+		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+		m_LastTime = std::chrono::high_resolution_clock::now();
 
+		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
+	
+		// Set color
 		glm::vec4 color;
 		if (m_pController->isTriggerClicked())
 			color = glm::vec4(1.f, 0.f, 0.f, 1.f);
 		else
 			color = glm::vec4(1.f, 1.f, 1.f - m_pController->getTriggerPullAmount(), 0.75f);
 
-		std::vector<glm::vec3> circlePoints;
-		for (GLuint i = 0; i < num_segments; i++)
-		{
-			GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(num_segments - 1);
+		// Update rotation angle
+		//float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+		//m_fCursorHoopAngle += angleNeeded;
 
-			glm::vec3 circlePt;
-			circlePt.x = cosf(theta);
-			circlePt.y = sinf(theta);
-			circlePt.z = 0.f;
+		// Draw wireframe sphere
+		//DebugDrawer::getInstance().setTransform(getPose() * glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)));
+		//DebugDrawer::getInstance().drawSphere(m_fProbeRadius, 3, color);
 
-			circlePoints.push_back(circlePt);
-		}
+		// Draw cursor hoop
+		//GLuint num_segments = 64;
+		//if (m_vvec3Circle.size() == 0u)
+		//	m_vvec3Circle = makeCircle(num_segments);
 
-		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-		m_LastTime = std::chrono::high_resolution_clock::now();
+		//glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
+		//glm::mat4 rot;
 
-		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
-
-		glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
-		glm::mat4 rot;
-
-		float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
-		m_fCursorHoopAngle += angleNeeded;
-
-		for (int n = 0; n < 3; ++n)
-		{
-			if (n == 0)
-				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(1.f, 0.f, 0.f));
-			if (n == 1)
-				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-			if (n == 2)
-				rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-
-			DebugDrawer::getInstance().setTransform(getPose() * rot * scl);
-
-			glm::vec3 prevVert = circlePoints.back();
-			for (size_t i = 0; i < circlePoints.size(); ++i)
-			{
-				glm::vec3 thisVert = circlePoints[i];
-
-				DebugDrawer::getInstance().drawLine(prevVert, thisVert, color);
-
-				prevVert = thisVert;
-			}
-		}
-
-		// DISPLAY CURSOR DOT
-		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
+		//for (int n = 0; n < 3; ++n)
 		//{
-		//	color = Vector3(1.f, 0.f, 0.f);
-		//	if (cursorActive())
+		//	if (n == 0)
+		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(1.f, 0.f, 0.f));
+		//	if (n == 1)
+		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+		//	if (n == 2)
+		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		//	DebugDrawer::getInstance().setTransform(getPose() * rot * scl);
+
+		//	glm::vec3 prevVert = m_vvec3Circle.back();
+		//	for (size_t i = 0; i < m_vvec3Circle.size(); ++i)
 		//	{
-		//		Vector4 thisCtrPos = m_mat4CursorCurrentPose * Vector4(0.f, 0.f, 0.f, 1.f);
-		//		Vector4 lastCtrPos = m_mat4CursorLastPose * Vector4(0.f, 0.f, 0.f, 1.f);
+		//		glm::vec3 thisVert = m_vvec3Circle[i];
 
-		//		vertdataarray.push_back(lastCtrPos.x);
-		//		vertdataarray.push_back(lastCtrPos.y);
-		//		vertdataarray.push_back(lastCtrPos.z);
-		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
+		//		DebugDrawer::getInstance().drawLine(prevVert, thisVert, color);
 
-		//		vertdataarray.push_back(thisCtrPos.x);
-		//		vertdataarray.push_back(thisCtrPos.y);
-		//		vertdataarray.push_back(thisCtrPos.z);
-		//		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-		//		m_uiLineVertcount += 2;
+		//		prevVert = thisVert;
 		//	}
 		//}
 
-		// DISPLAY CONNECTING LINE TO CURSOR
-		//if (!m_rbTrackedDeviceCleaningMode[unTrackedDevice])
-		{
-			color = glm::vec4(1.f, 1.f, 1.f, 0.8f);
-			if (m_bShowProbe)
-			{
-				glm::vec3 controllerCtr = glm::vec3(m_pController->getDeviceToWorldTransform() * glm::vec4(0.f, 0.f, 0.f, 1.f));
-				glm::vec3 cursorEdge = glm::vec3(getPose() * glm::vec4(0.f, 0.f, m_fProbeRadius, 1.f));
+		// DISPLAY CURSOR DOT
+		glm::vec4 colorTo = color;
+		colorTo.a = 0.25f;
 
-				DebugDrawer::getInstance().setTransformDefault();
-				DebugDrawer::getInstance().drawLine(controllerCtr, cursorEdge, color);
-			}
-		}
+		DebugDrawer::getInstance().setTransformDefault();
+		DebugDrawer::getInstance().drawPoint(glm::vec3(getPose()[3]), color);
+		DebugDrawer::getInstance().drawLine(glm::vec3(getPose()[3]), glm::vec3(getLastPose()[3]), color, colorTo);
+		
+		// DISPLAY CONNECTING LINE TO CURSOR
+		color = glm::vec4(1.f, 1.f, 1.f, 0.8f);
+
+		glm::vec3 controllerCtr = glm::vec3(m_pController->getDeviceToWorldTransform() * glm::vec4(0.f, 0.f, 0.f, 1.f));
+		//glm::vec3 cursorEdge = glm::vec3(getPose() * glm::vec4(0.f, 0.f, m_fProbeRadius, 1.f));
+		glm::vec3 cursorEdge = glm::vec3(getPose()[3]);
+
+		DebugDrawer::getInstance().setTransformDefault();
+		DebugDrawer::getInstance().drawLine(controllerCtr, cursorEdge, color);
 	}
 }
 
@@ -235,4 +217,21 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 
 void ProbeBehavior::activateProbe()
 {
+}
+
+std::vector<glm::vec3> ProbeBehavior::makeCircle(int numSegments)
+{
+	std::vector<glm::vec3> ret;
+	for (GLuint i = 0; i < numSegments; i++)
+	{
+		GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(numSegments - 1);
+
+		glm::vec3 circlePt;
+		circlePt.x = cosf(theta);
+		circlePt.y = sinf(theta);
+		circlePt.z = 0.f;
+
+		ret.push_back(circlePt);
+	}
+	return ret;
 }
