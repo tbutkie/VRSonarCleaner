@@ -2,12 +2,11 @@
 
 #include "DebugDrawer.h"
 
-IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler)
+IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc, CoordinateScaler *Scaler)
 {
 	x = xLoc;
 	y = yLoc;
-	depthBottom = DepthBottom;
-	depthTop = DepthTop;
+	z = zLoc;
 	
 	color = 0;
 	particlesPerSecond = DEFAULT_DYE_RATE;
@@ -116,26 +115,25 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(float tickCount)
 }
 float* IllustrativeParticleEmitter::getParticlesToEmit(int number) 
 {
-	float randAngle;
-	float randDist;
-	float randZ;
-	float topScaledZ = fabsf(scaler->getScaledDepth(depthTop));
-	float bottomScaledZ = fabsf(scaler->getScaledDepth(depthBottom));
-	float scaledZRange = fabsf(bottomScaledZ-topScaledZ);
-	//float zRange = depthBottom - depthTop;
 	float* verts = new float[3*number];
 	for (int i=0;i<number;i++)
 	{
-		randAngle = rand()%100;
-		randAngle = (randAngle/100)*6.28318; //2pi
-		randDist = rand()%100;
-		randDist = (randDist/100)*radius;
-		verts[i*3] = x + (randDist*cos(randAngle));
-		verts[i*3+1] = y + (randDist*sin(randAngle));
-		//randZ = rand()%100;
-		//randZ = (randZ/100)*zRange;
-		randZ = scaler->getUnscaledDepth( -1.0*  (((((float)(rand()%10000))/10000)*scaledZRange)+topScaledZ)  );
-		verts[i*3+2] = randZ;
+		verts[i * 3 + 0] = x;
+		verts[i * 3 + 1] = y;
+		verts[i * 3 + 2] = -z;
+
+		if (false)
+		{
+			float randAngle = rand() % 100;
+			randAngle = randAngle * 0.01f * 6.28318f; //2pi
+
+			float randDist = rand() % 100;
+			randDist = randDist * 0.01f * radius;
+
+			verts[i * 3 + 0] += randDist * cos(randAngle);
+			verts[i * 3 + 1] += randDist * sin(randAngle);
+			verts[i * 3 + 2] += randDist;
+		}
 	}
 	return verts;
 }
@@ -186,9 +184,8 @@ glm::vec3 IllustrativeParticleEmitter::getMutedColor()
 
 void IllustrativeParticleEmitter::drawSmall3D() ///need to swap zy before using in vr
 {
-	DebugDrawer::getInstance().drawLine(
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(depthTop), scaler->getScaledLatY(y)),
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(depthBottom), scaler->getScaledLatY(y)),
+	DebugDrawer::getInstance().drawPoint(
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(z), scaler->getScaledLatY(y)),
 		glm::vec4(getColor(), 1.f)
 	);
 	glEnd();
@@ -201,43 +198,9 @@ void IllustrativeParticleEmitter::drawSmall3D() ///need to swap zy before using 
 		float theta1 = glm::two_pi<float>() * static_cast<float>((i + 1) % nSegments) / (static_cast<float>(nSegments - 1));
 
 		DebugDrawer::getInstance().drawLine(
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthBottom)),
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthBottom)),
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(z)),
+			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(z)),
 			glm::vec4(getColor(), 1.f)
 		);
 	}
-
-	for (int i = 0; i < nSegments; ++i)
-	{
-		float theta0 = glm::two_pi<float>() * static_cast<float>(i) / (static_cast<float>(nSegments - 1));
-		float theta1 = glm::two_pi<float>() * static_cast<float>((i + 1) % nSegments) / (static_cast<float>(nSegments - 1));
-		
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthTop)),
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(depthTop)),
-			glm::vec4(getColor(), 1.f)
-		);
-	}
-
-}
-
-
-void IllustrativeParticleEmitter::setBottom(float DepthBottom)
-{
-	depthBottom = DepthBottom;
-}
-
-void IllustrativeParticleEmitter::setTop(float DepthTop)
-{
-	depthTop = DepthTop;
-}
-
-float IllustrativeParticleEmitter::getBottom()
-{
-	return depthBottom;
-}
-
-float IllustrativeParticleEmitter::getTop()
-{
-	return depthTop;
 }

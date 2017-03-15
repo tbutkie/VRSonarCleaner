@@ -20,8 +20,7 @@ void FlowProbe::update()
 	glm::vec3 innerPos = m_pDataVolume->convertToInnerCoords(glm::vec3(getPose()[3]));
 	m_pEmitter->x = innerPos.x;
 	m_pEmitter->y = innerPos.z;
-	m_pEmitter->depthTop = innerPos.y + 0.1f;
-	m_pEmitter->depthBottom = innerPos.y - 0.1f;
+	m_pEmitter->z = innerPos.y;
 }
 
 void FlowProbe::activateProbe()

@@ -20,7 +20,7 @@ IllustrativeDyePole::~IllustrativeDyePole()
 
 void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, DepthBottom, DepthTop, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (DepthTop - DepthBottom) * 0.5f, scaler);
 	if (emitters.size() > 0)
 		tempPE->changeColor(emitters.at(emitters.size()-1)->color+1);
 	else
@@ -30,7 +30,7 @@ void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 
 void IllustrativeDyePole::addDefaultEmitter()
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, depthBottom, depthTop, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (depthTop - depthBottom) * 0.5f, scaler);
 	emitters.push_back(tempPE);	
 }
 

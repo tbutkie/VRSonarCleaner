@@ -13,7 +13,7 @@
 class IllustrativeParticleEmitter
 {
 public:
-	IllustrativeParticleEmitter(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler);
+	IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc, CoordinateScaler *Scaler);
 	virtual ~IllustrativeParticleEmitter();
 
 	void drawSmall3D();
@@ -40,13 +40,7 @@ public:
 	glm::vec3 getColor();
 	glm::vec3 getMutedColor();
 
-	void setBottom(float DepthBottom);
-	void setTop(float DepthTop);
-
-	float getBottom();
-	float getTop();
-
-	float x, y, depthBottom, depthTop;
+	float x, y, z;
 	
 	CoordinateScaler *scaler;
 

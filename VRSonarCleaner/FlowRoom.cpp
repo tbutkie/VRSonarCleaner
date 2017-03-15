@@ -96,7 +96,7 @@ IllustrativeParticleEmitter* FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
 
 	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
-	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y - 0.1f, innerPos.y + 0.1f, m_pScaler);
+	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y, m_pScaler);
 	tmp->setRate(10.f);
 	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
 	m_pParticleSystem->m_vpDyePots.push_back(tmp);

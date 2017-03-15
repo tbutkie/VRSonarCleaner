@@ -625,7 +625,7 @@ IllustrativeParticleEmitter * IllustrativeParticleSystem::getDyePotClosestTo(flo
 	float dist;
 	for (int i = 0; i < m_vpDyePots.size(); i++)
 	{
-		glm::vec3 candidate(m_vpDyePots.at(i)->x, m_vpDyePots.at(i)->y, (m_vpDyePots.at(i)->depthTop - m_vpDyePots.at(i)->depthBottom) * 0.5f);
+		glm::vec3 candidate(m_vpDyePots.at(i)->x, m_vpDyePots.at(i)->y, m_vpDyePots.at(i)->z);
 		dist = glm::length(target - candidate);
 		if (dist < minDist)
 		{
