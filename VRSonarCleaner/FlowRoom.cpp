@@ -147,6 +147,11 @@ DataVolume * FlowRoom::getDataVolume()
 	return m_pMainModelVolume;
 }
 
+IllustrativeParticleSystem * FlowRoom::getParticleSystem()
+{
+	return m_pParticleSystem;
+}
+
 void FlowRoom::preRenderUpdates()
 {
 	//update time

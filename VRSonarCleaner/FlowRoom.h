@@ -40,6 +40,7 @@ public:
 	void reset();
 
 	DataVolume* getDataVolume();
+	IllustrativeParticleSystem* getParticleSystem();
 
 private:
 	glm::vec3 m_vec3RoomSize;
