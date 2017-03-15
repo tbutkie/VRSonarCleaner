@@ -56,7 +56,6 @@ protected:
 	glm::vec2 m_vec2TouchpadInitialTouchPoint;
 	glm::vec2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;
-	bool m_bTriggerFirstClick; // to deal with calibration errors from initial trigger pull
 	bool m_bTriggerClicked;
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
 	float m_fTriggerPull;

@@ -24,7 +24,6 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 	, m_vec2TouchpadCurrentTouchPoint(glm::vec2(0.f, 0.f))
 	, m_bTriggerEngaged(false)
 	, m_bTriggerClicked(false)
-	, m_bTriggerFirstClick(false)
 	, m_fTriggerPull(0.f)
 	, m_fHairTriggerThreshold(0.05f)
 	, m_nTriggerAxis(-1)
@@ -101,7 +100,7 @@ bool ViveController::updateControllerState()
 	for (auto &component : m_vComponents)
 	{
 		component.m_LastState = component.m_State;
-		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_controllerScrollModeState, &component.m_State);
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component.m_State);
 
 		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component.m_strComponentName.c_str());
 
@@ -352,7 +351,7 @@ glm::vec3 ViveController::getInitialTouchpadTouchPoint()
 
 void ViveController::setScrollWheelVisibility(bool visible)
 {
-	m_controllerScrollModeState.bScrollWheelVisible = visible;
+	m_ControllerScrollModeState.bScrollWheelVisible = visible;
 
 	for (auto &component : m_vComponents)
 	{
@@ -361,7 +360,7 @@ void ViveController::setScrollWheelVisibility(bool visible)
 			component.m_strComponentName.compare("touchpad_scroll_cut") == 0)
 		{
 			component.m_LastState = component.m_State;
-			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_controllerScrollModeState, &component.m_State);
+			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component.m_State);
 		}
 	}
 }
