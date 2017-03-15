@@ -99,9 +99,6 @@
     <ClCompile Include="LassoTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PointEmitterTool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ParticleManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -222,9 +219,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BroadcastSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PointEmitterTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ParticleManager.h">

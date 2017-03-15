@@ -34,7 +34,7 @@ public:
 
 	void preRenderUpdates();
 
-	bool placeDyeEmitterWorldCoords(glm::vec3 pos);
+	IllustrativeParticleEmitter* placeDyeEmitterWorldCoords(glm::vec3 pos);
 	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
 
 	void reset();

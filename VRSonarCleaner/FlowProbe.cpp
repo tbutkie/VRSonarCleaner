@@ -21,7 +21,7 @@ void FlowProbe::update()
 void FlowProbe::activateProbe()
 {
 	m_bProbeActive = true;
-	m_pFlowRoom->placeDyeEmitterWorldCoords(glm::vec3(getPose()[3]));
+	m_pEmitter = m_pFlowRoom->placeDyeEmitterWorldCoords(glm::vec3(getPose()[3]));
 }
 
 void FlowProbe::deactivateProbe()

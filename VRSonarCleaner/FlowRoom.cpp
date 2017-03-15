@@ -90,7 +90,7 @@ void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
 	m_vec3RoomSize.z = SizeZ;
 }
 
-bool FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
+IllustrativeParticleEmitter* FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
 {
 	glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(pos);
 
@@ -101,7 +101,7 @@ bool FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
 	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
 	m_pParticleSystem->m_vpDyePots.push_back(tmp);
 
-	return true;
+	return tmp;
 }
 
 bool FlowRoom::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)

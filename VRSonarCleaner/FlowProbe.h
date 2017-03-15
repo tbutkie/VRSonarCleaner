@@ -16,6 +16,7 @@ private:
 	bool m_bProbeActive;
 
 	FlowRoom* m_pFlowRoom;
+	IllustrativeParticleEmitter* m_pEmitter;
 
 private:
 	void activateProbe();
