@@ -12,20 +12,6 @@ FlowRoom::FlowRoom()
 	//Z-toward monitor
 
 	m_pScaler = new CoordinateScaler();
-
-	m_vec3RoomSize.x = 10;
-	m_vec3RoomSize.y = 4;
-	m_vec3RoomSize.z = 6;
-
-	m_pHolodeck = new HolodeckBackground(m_vec3RoomSize.x, m_vec3RoomSize.y, m_vec3RoomSize.z, 0.25);
-
-	m_vec3Min.x = 0 - (m_vec3RoomSize.x / 2);
-	m_vec3Min.y = 0 - (m_vec3RoomSize.y / 2);
-	m_vec3Min.z = 0;
-
-	m_vec3Max.x = (m_vec3RoomSize.x / 2);
-	m_vec3Max.y = (m_vec3RoomSize.y / 2);
-	m_vec3Max.z = m_vec3RoomSize.z;
 	
 	FlowGrid *tempFG = new FlowGrid("test.fg");
 	tempFG->setCoordinateScaler(m_pScaler);
@@ -83,13 +69,6 @@ void FlowRoom::recalcVolumeBounds()
 	m_pMainModelVolume->setInnerCoords(minCoords, maxCoords);
 }
 
-void FlowRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
-{
-	m_vec3RoomSize.x = SizeX;
-	m_vec3RoomSize.y = SizeY;
-	m_vec3RoomSize.z = SizeZ;
-}
-
 IllustrativeParticleEmitter* FlowRoom::placeDyeEmitterWorldCoords(glm::vec3 pos)
 {
 	glm::vec3 innerPos = m_pMainModelVolume->convertToInnerCoords(pos);
@@ -121,9 +100,6 @@ bool FlowRoom::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 void FlowRoom::draw()
 {
-	//printf("In CleaningRoom Draw()\n");
-	m_pHolodeck->drawSolid();
-
 	//draw debug
 	m_pMainModelVolume->drawBBox();
 	m_pMainModelVolume->drawBacking();

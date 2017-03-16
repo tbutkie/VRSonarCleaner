@@ -28,8 +28,6 @@ public:
 
 	void draw();
 
-	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
-
 	void recalcVolumeBounds();
 
 	void preRenderUpdates();
@@ -43,11 +41,6 @@ public:
 	IllustrativeParticleSystem* getParticleSystem();
 
 private:
-	glm::vec3 m_vec3RoomSize;
-	glm::vec3 m_vec3Min, m_vec3Max;
-	
-	HolodeckBackground *m_pHolodeck;
-
 	CoordinateScaler *m_pScaler;
 
 	float m_fFlowRoomTime;

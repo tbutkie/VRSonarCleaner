@@ -3,24 +3,10 @@
 
 #include <algorithm>
 
-CleaningRoom::CleaningRoom()
+CleaningRoom::CleaningRoom(glm::vec3 roomSize)
 {
-	roomSizeX = 10;
-	roomSizeY = 4;
-	roomSizeZ = 6;
-
-	holodeck = new HolodeckBackground(roomSizeX, roomSizeY, roomSizeZ, 0.25);
-	
-	minX = 0.f - (roomSizeX * 0.5f);
-	minY = 0.f - (roomSizeY * 0.5f);
-	minZ = 0.f;
-
-	maxX = roomSizeX * 0.5f;
-	maxY = roomSizeY * 0.5f;
-	maxZ = roomSizeZ;
-
-	glm::vec3 wallSize((roomSizeX*0.9), 0.8, (roomSizeY*0.80));
-	glm::vec3 wallPosition(0.f, (roomSizeY * 0.5f) + (roomSizeY * 0.09f), (roomSizeZ * 0.5f) - 0.42f);
+	glm::vec3 wallSize((roomSize.x * 0.9f), 0.8f, (roomSize.y * 0.8f));
+	glm::vec3 wallPosition(0.f, (roomSize.y * 0.5f) + (roomSize.y * 0.09f), (roomSize.z * 0.5f) - 0.42f);
 
 	glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
 	glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
@@ -53,13 +39,6 @@ void CleaningRoom::recalcVolumeBounds()
 			
 	tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
 	wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
-}
-
-void CleaningRoom::setRoomSize(float SizeX, float SizeY, float SizeZ)
-{
-	roomSizeX = SizeX;
-	roomSizeY = SizeY;
-	roomSizeZ = SizeZ;
 }
 
 // This function works but could be improved in efficiency if needed
@@ -303,9 +282,6 @@ float CleaningRoom::cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float 
 
 void CleaningRoom::draw()
 {
-	//printf("In CleaningRoom Draw()\n");
-	holodeck->drawSolid();
-
 	//draw debug
 	wallVolume->drawBBox();
 	wallVolume->drawBacking();

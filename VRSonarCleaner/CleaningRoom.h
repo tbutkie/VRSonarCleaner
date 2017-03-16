@@ -21,14 +21,12 @@ extern CloudCollection *clouds;
 class CleaningRoom
 {
 public:
-	CleaningRoom();
+	CleaningRoom(glm::vec3 roomSize);
 	virtual ~CleaningRoom();
 
 	float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, float radius_sq, const glm::vec3 & testpt);
 
 	void draw();
-
-	void setRoomSize(float RoomSizeX, float RoomSizeY, float RoomSizeZ);
 
 	void recalcVolumeBounds();
 
@@ -40,12 +38,6 @@ public:
 	DataVolume* getDataVolume();
 
 private:
-	float roomSizeX, roomSizeY, roomSizeZ;
-	float minX, minY, minZ;
-	float maxX, maxY, maxZ;
-
-	HolodeckBackground* holodeck;
-
 	DataVolume *wallVolume;
 	DataVolume *tableVolume;
 	

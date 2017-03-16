@@ -247,7 +247,7 @@ bool LassoWindow::BInitGL()
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	}
 		
-	cleaningRoom = new CleaningRoom();
+	cleaningRoom = new CleaningRoom(glm::vec3(10.f, 4.f, 6.f));
 
 	return true;
 }
