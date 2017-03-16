@@ -6,6 +6,7 @@ Node::Node(glm::vec3 initialPosition, glm::quat initialOrientation, glm::vec3 in
 	: m_vec3Position(initialPosition)
 	, m_qOrientation(initialOrientation)
 	, m_vec3Scale(initialScale)
+	, m_bDirty(true)
 {
 }
 
@@ -88,12 +89,23 @@ float Node::getScaleZ()
 
 glm::mat4 Node::getModelToWorldTransform()
 {
-	// M = T * R * S
-	return glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Scale);
+	if (m_bDirty)
+	{
+		// M = T * R * S
+		m_mat4ModelToWorld = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Scale);
+		m_bDirty = false;
+	}
+
+	return m_mat4ModelToWorld;
 }
 
 void Node::drawAxes()
 {
 	DebugDrawer::getInstance().setTransform(getModelToWorldTransform());
 	DebugDrawer::getInstance().drawTransform(0.1f); // 10 cm at scale = unity
+}
+
+bool Node::isDirty()
+{
+	return m_bDirty;
 }

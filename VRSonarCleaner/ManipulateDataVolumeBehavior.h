@@ -22,7 +22,7 @@ private:
 	bool m_bGripping;
 	bool m_bScaling;
 	float m_fInitialDistance;
-	glm::vec3 m_vec3InitialScale;
+	glm::vec3 m_vec3InitialDimensions;
 
 	//rotate action
 	bool m_bRotationInProgress; // Data Volume Rotating

@@ -25,7 +25,7 @@ void ManipulateDataVolumeBehavior::update()
 	{
 		float currentDist = controllerDistance();
 		float delta = currentDist - m_fInitialDistance;
-		m_pDataVolume->setSize(glm::vec3(exp(delta * 10.f) * m_vec3InitialScale));
+		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
 	}
 	
 	if (m_bGripping)
@@ -97,7 +97,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 			m_bScaling = true;
 
 			m_fInitialDistance = controllerDistance();
-			m_vec3InitialScale = m_pDataVolume->getSize();
+			m_vec3InitialDimensions = m_pDataVolume->getDimensions();
 		}
 		
 		break;

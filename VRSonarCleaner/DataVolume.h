@@ -15,14 +15,14 @@ class DataVolume
 	: public Node
 {
 public:
-	DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 size, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax);
+	DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 dimensions, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax);
 	virtual ~DataVolume();
 
 	void drawBBox();
 	void drawBacking();
 
-	void setSize(glm::vec3 size);
-	glm::vec3 getSize();
+	void setDimensions(glm::vec3 dimensions);
+	glm::vec3 getDimensions();
 	void setInnerCoords(glm::vec3 minCoords, glm::vec3 maxCoords);
 	
 	void recalcScaling();
@@ -43,7 +43,7 @@ private:
 	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position	
 	glm::quat m_qOriginalOrientation; // Original Data Volume Orientation
 
-	glm::vec3 m_vec3Size; // Data Volume Dimensions
+	glm::vec3 m_vec3Dimensions; // Data Volume Dimensions
 	glm::vec3 m_vec3InnerMin; // Minimum Data Dimensions
 	glm::vec3 m_vec3InnerMax; // Maximum Data Dimensions
 	glm::vec3 m_vec3InnerRange; // Range of Data Dimensions

@@ -30,13 +30,16 @@ public:
 
 	void drawAxes();
 
-protected:
-	bool m_bDirty; // a user flag to tell whether or not the node transform has changed
+	bool isDirty();
 
 private:
 	glm::vec3 m_vec3Position;
 	glm::quat m_qOrientation;
 	glm::vec3 m_vec3Scale;
+
+	glm::mat4 m_mat4ModelToWorld;
+
+	bool m_bDirty; // a user flag to tell whether or not the node transform has changed
 
 };
 
