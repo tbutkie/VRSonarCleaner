@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
+#include "Node.h"
 #include "../shared/glm/gtc/quaternion.hpp"
 #include "../shared/glm/gtx/quaternion.hpp"
 #include "../shared//glm/gtc/type_ptr.hpp"
@@ -11,6 +12,7 @@
 //#include <cstdlib>
 
 class DataVolume
+	: public Node
 {
 public:
 	DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 size, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax);
@@ -18,12 +20,9 @@ public:
 
 	void drawBBox();
 	void drawBacking();
-	void drawAxes();
 
 	void setSize(glm::vec3 size);
 	glm::vec3 getSize();
-	void setPosition(glm::vec3 pos);
-	void setOrientation(glm::mat4 orientation);
 	void setInnerCoords(glm::vec3 minCoords, glm::vec3 maxCoords);
 	
 	void recalcScaling();
@@ -41,18 +40,13 @@ public:
 private:
 	void updateTransforms();
 
-	glm::vec3 m_vec3Pos; // Data Volume Position
-	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position
-	
-	glm::quat m_qOrientation; // Data Volume Orientation
+	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position	
 	glm::quat m_qOriginalOrientation; // Original Data Volume Orientation
 
 	glm::vec3 m_vec3Size; // Data Volume Dimensions
 	glm::vec3 m_vec3InnerMin; // Minimum Data Dimensions
 	glm::vec3 m_vec3InnerMax; // Maximum Data Dimensions
 	glm::vec3 m_vec3InnerRange; // Range of Data Dimensions
-
-	glm::vec3 m_vec3Scale; // Data -> Volume Scaling Factors 
 
 	glm::vec3 m_vec3DataCenteringOffset; // Data Origin -> Volume Origin Offset
 
@@ -62,5 +56,4 @@ private:
 	glm::mat4 m_mat4DataTransformPrevious; // Previous Data to World Transform
 	
 	bool m_bFirstRun; // Flag for First Runthrough
-	bool m_bNeedsUpdate; // Transforms Update Flag
 };

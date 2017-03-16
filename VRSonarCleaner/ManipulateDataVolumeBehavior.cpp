@@ -27,8 +27,11 @@ void ManipulateDataVolumeBehavior::update()
 		float delta = currentDist - m_fInitialDistance;
 		m_pDataVolume->setSize(glm::vec3(exp(delta * 10.f) * m_vec3InitialScale));
 	}
-	else if (m_bGripping)
+	
+	if (m_bGripping)
+	{
 		continueRotation();
+	}
 }
 
 void ManipulateDataVolumeBehavior::draw()
@@ -60,45 +63,53 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 	{
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
 	{
-		BroadcastSystem::Payload::Trigger payload;
-		memcpy(&payload, payloadData, sizeof(BroadcastSystem::Payload::Trigger));
-		if (payload.m_pSelf == m_pGripController)
+		BroadcastSystem::Payload::Trigger* payload;
+		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
+		if (payload->m_pSelf == m_pGripController)
 		{
 			startRotation();
 			m_bGripping = true;
 		}
-		else
-		{
-			if (m_bGripping)
-			{
-				m_bGripping = false;
-				m_bScaling = true;
 
-				m_fInitialDistance = controllerDistance();
-				m_vec3InitialScale = m_pDataVolume->getSize();
-			}
-		}
 		break;
 	}
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
 	{
-		BroadcastSystem::Payload::Trigger payload;
-		memcpy(&payload, payloadData, sizeof(BroadcastSystem::Payload::Trigger));
-		if (payload.m_pSelf == m_pGripController)
+		BroadcastSystem::Payload::Trigger* payload;
+		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
+		if (payload->m_pSelf == m_pGripController)
 		{
 			endRotation();
 			m_bGripping = false;
 			m_bScaling = false;
 		}
-		else
+
+		break;
+	}
+	case BroadcastSystem::EVENT::VIVE_GRIP_DOWN:
+	{
+		ViveController* payload;
+		memcpy(&payload, &payloadData, sizeof(ViveController*));
+
+		if (payload == m_pGripController && m_pScaleController->isGripButtonPressed() ||
+			payload == m_pScaleController && m_pGripController->isGripButtonPressed())
 		{
-			if (m_bScaling)
-			{
-				m_bScaling = false;
-				startRotation();
-				m_bGripping = true;
-			}
+			m_bScaling = true;
+
+			m_fInitialDistance = controllerDistance();
+			m_vec3InitialScale = m_pDataVolume->getSize();
 		}
+		
+		break;
+	}
+	case BroadcastSystem::EVENT::VIVE_GRIP_UP:
+	{
+		ViveController* payload;
+		memcpy(&payload, &payloadData, sizeof(ViveController*));
+
+		if (m_bScaling)
+			m_bScaling = false;
+
 		break;
 	}
 	default:
@@ -132,7 +143,7 @@ void ManipulateDataVolumeBehavior::continueRotation()
 	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
 
 	m_pDataVolume->setPosition(glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose)[3]));
-	m_pDataVolume->setOrientation(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose);
+	m_pDataVolume->setOrientation(glm::quat_cast(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose));
 
 	DebugDrawer::getInstance().setTransformDefault();
 	DebugDrawer::getInstance().drawLine(

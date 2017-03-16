@@ -185,6 +185,7 @@
     <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="LightingSystem.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="ParticleManager.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
@@ -227,6 +228,7 @@
     <ClInclude Include="LassoTool.h" />
     <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="LightingSystem.h" />
+    <ClInclude Include="Node.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="ParticleManager.h" />
     <ClInclude Include="ProbeBehavior.h" />

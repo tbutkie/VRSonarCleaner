@@ -478,7 +478,7 @@ void LassoWindow::display()
 		glm::mat4 rot = arcball->getRotation();
 
 		DebugDrawer::getInstance().setTransformDefault();
-		dataVolume->setOrientation(rot);
+		dataVolume->setOrientation(glm::quat_cast(rot));
 		dataVolume->drawBBox();
 
 		//draw table

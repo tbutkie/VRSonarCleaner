@@ -7,19 +7,17 @@
 #include <math.h>
 
 DataVolume::DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 size, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax)
-	: m_vec3Pos(pos)
+	: Node(pos)
 	, m_vec3OriginalPosition(pos)
 	, m_vec3Size(size)
-	, m_vec3Scale(glm::vec3(1.f))
 	, m_bFirstRun(true)
-	, m_bNeedsUpdate(true)
 {
 	if (startingOrientation == 0)
-		m_qOrientation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
+		setOrientation(glm::angleAxis(0.f, glm::vec3(0, 0, 0)));
 	else
-		m_qOrientation = glm::angleAxis(-90.f, glm::vec3(1, 0, 0));
+		setOrientation(glm::angleAxis(-90.f, glm::vec3(1, 0, 0)));
 
-	m_qOriginalOrientation = m_qOrientation;			
+	m_qOriginalOrientation = getOrientation();			
 	
 	setInnerCoords(innerCoordsMin, innerCoordsMax);
 
@@ -33,10 +31,8 @@ DataVolume::~DataVolume()
 
 void DataVolume::resetPositionAndOrientation()
 {
-	m_vec3Pos = m_vec3OriginalPosition;
-	m_qOrientation = m_qOriginalOrientation;
-
-	m_bNeedsUpdate = true;
+	setPosition(m_vec3OriginalPosition);
+	setOrientation(m_qOriginalOrientation);
 }
 
 void DataVolume::setSize(glm::vec3 size)
@@ -49,18 +45,6 @@ void DataVolume::setSize(glm::vec3 size)
 glm::vec3 DataVolume::getSize()
 {
 	return m_vec3Size;
-}
-
-void DataVolume::setPosition(glm::vec3 pos)
-{
-	m_vec3Pos = pos;
-
-	m_bNeedsUpdate = true;
-}
-
-void DataVolume::setOrientation(glm::mat4 orientation)
-{
-	m_qOrientation = glm::quat_cast(orientation);
 }
 
 void DataVolume::setInnerCoords(glm::vec3 minCoords, glm::vec3  maxCoords)
@@ -79,9 +63,7 @@ void DataVolume::recalcScaling()
 	float XZscale = std::min(m_vec3Size.x / m_vec3InnerRange.x, m_vec3Size.z / m_vec3InnerRange.z);
 	float depthScale = m_vec3Size.y / m_vec3InnerRange.y;
 
-	m_vec3Scale = glm::vec3(XZscale, depthScale, XZscale);
-
-	m_bNeedsUpdate = true;
+	setScale(glm::vec3(XZscale, depthScale, XZscale));
 }//end recalc scaling
 
 glm::vec3 DataVolume::convertToInnerCoords(glm::vec3 worldPos)
@@ -101,7 +83,7 @@ void DataVolume::drawBBox()
 	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
 
 	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4(m_qOrientation) * glm::scale(m_vec3Size * 0.5f)
+		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Size * 0.5f)
 	);
 
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
@@ -114,7 +96,7 @@ void DataVolume::drawBacking()
 	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
 
 	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4(m_qOrientation) * glm::scale(m_vec3Size * 0.5f)
+		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Size * 0.5f)
 	);
 	
 	DebugDrawer::getInstance().drawSolidTriangle(
@@ -132,18 +114,9 @@ void DataVolume::drawBacking()
 	);	
 }
 
-void DataVolume::drawAxes()
-{
-	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4(m_qOrientation)
-	);
-
-	DebugDrawer::getInstance().drawTransform(0.1f);
-}
-
 glm::mat4 DataVolume::getCurrentDataTransform()
 {
-	if (m_bNeedsUpdate)
+	if (m_bDirty)
 		updateTransforms();
 
 	return m_mat4DataTransform;
@@ -156,7 +129,7 @@ glm::mat4 DataVolume::getLastDataTransform()
 
 glm::mat4 DataVolume::getCurrentVolumeTransform()
 {
-	if (m_bNeedsUpdate)
+	if (m_bDirty)
 		updateTransforms();
 
 	return m_mat4VolumeTransform;
@@ -172,11 +145,11 @@ void DataVolume::updateTransforms()
 	m_mat4DataTransformPrevious = m_mat4DataTransform;
 	m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 
-	glm::mat4 trans = glm::translate(glm::mat4(), m_vec3Pos);
+	glm::mat4 trans = glm::translate(glm::mat4(), getPosition());
 
-	glm::mat4 rot = glm::mat4_cast(m_qOrientation);
+	glm::mat4 rot = glm::mat4_cast(getOrientation());
 
-	glm::mat4 scl = glm::scale(m_vec3Scale);
+	glm::mat4 scl = glm::scale(getScale());
 
 	glm::mat4 dataCenterTrans = glm::translate(glm::mat4(), m_vec3DataCenteringOffset);
 
@@ -190,5 +163,5 @@ void DataVolume::updateTransforms()
 		m_bFirstRun = false;
 	}
 
-	m_bNeedsUpdate = false;
+	m_bDirty = false;
 }
