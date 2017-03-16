@@ -66,16 +66,18 @@ void DataVolume::recalcScaling()
 	setScale(glm::vec3(XZscale, depthScale, XZscale));
 
 	updateTransforms();
-}//end recalc scaling
+}
 
 glm::vec3 DataVolume::convertToInnerCoords(glm::vec3 worldPos)
 {
-	return glm::vec3(glm::inverse(m_mat4DataTransform) * glm::vec4(worldPos, 1.f));
+	return glm::vec3(glm::inverse(getCurrentDataTransform()) * glm::vec4(worldPos, 1.f));
 }
 
 glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 innerPos)
-{	
-	return glm::vec3(m_mat4DataTransform * glm::vec4(innerPos, 1.f));
+{
+	updateTransforms();
+
+	return glm::vec3(getCurrentDataTransform() * glm::vec4(innerPos, 1.f));
 }
 
 void DataVolume::drawBBox()
@@ -118,48 +120,47 @@ void DataVolume::drawBacking()
 
 glm::mat4 DataVolume::getCurrentDataTransform()
 {
-	if (isDirty())
-		updateTransforms();
+	updateTransforms();
 
 	return m_mat4DataTransform;
 }
 
 glm::mat4 DataVolume::getLastDataTransform()
 {
-	if (isDirty())
-		updateTransforms();
+	updateTransforms();
 
 	return m_mat4DataTransformPrevious;
 }
 
 glm::mat4 DataVolume::getCurrentVolumeTransform()
 {
-	if (isDirty())
-		updateTransforms();
+	updateTransforms();
 
 	return m_mat4VolumeTransform;
 }
 
 glm::mat4 DataVolume::getLastVolumeTransform()
 {
-	if (isDirty())
-		updateTransforms();
+	updateTransforms();
 
 	return m_mat4VolumeTransformPrevious;
 }
 
 void DataVolume::updateTransforms()
 {
-	m_mat4DataTransformPrevious = m_mat4DataTransform;
-	m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
-
-	m_mat4DataTransform = getModelToWorldTransform() * glm::translate(glm::mat4(), m_vec3DataCenteringOffset);
-	m_mat4VolumeTransform = getModelToWorldTransform() * glm::scale(1.f / getScale()); // undo the scaling
-
-	if (m_bFirstRun)
+	if (isDirty())
 	{
 		m_mat4DataTransformPrevious = m_mat4DataTransform;
 		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
-		m_bFirstRun = false;
+
+		m_mat4DataTransform = getModelToWorldTransform() * glm::translate(glm::mat4(), m_vec3DataCenteringOffset);
+		m_mat4VolumeTransform = getModelToWorldTransform() * glm::scale(1.f / getScale()); // undo the scaling
+
+		if (m_bFirstRun)
+		{
+			m_mat4DataTransformPrevious = m_mat4DataTransform;
+			m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
+			m_bFirstRun = false;
+		}
 	}
 }
