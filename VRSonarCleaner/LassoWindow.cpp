@@ -246,8 +246,6 @@ bool LassoWindow::BInitGL()
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	}
-		
-	cleaningRoom = new CleaningRoom(glm::vec3(10.f, 4.f, 6.f));
 
 	return true;
 }
@@ -296,7 +294,6 @@ bool LassoWindow::HandleInput()
 			{
 				printf("Pressed r, resetting marks\n");
 				clouds->resetMarksInAllClouds();
-				cleaningRoom->resetVolumes();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_g)
 			{
@@ -304,7 +301,6 @@ bool LassoWindow::HandleInput()
 				clouds->clearAllClouds();
 				clouds->generateFakeTestCloud(150, 150, 25, 40000); 
 				clouds->calculateCloudBoundsAndAlign();
-				cleaningRoom->recalcVolumeBounds();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 			{

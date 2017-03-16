@@ -39,8 +39,6 @@ public:
 	bool HandleInput();
 
 	void display();
-		
-	CleaningRoom* cleaningRoom;
 
 private:
 	bool checkForHits();
