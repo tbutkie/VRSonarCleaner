@@ -24,39 +24,6 @@ HolodeckBackground::~HolodeckBackground()
 
 void HolodeckBackground::draw()
 {
-	glm::vec4 floorOpacity(1.f, 1.f, 0.f, 0.3f);
-	glm::vec4 ceilingOpacity(1.f, 1.f, 0.f, 0.03f);
-	glm::vec4 inBetweenOpacity(1.f, 1.f, 0.f, 0.f);
-	
-	for (float x = m_vec3RoomMin.x; x <= m_vec3RoomMax.x; x += m_vec3RoomSpacings.x)
-	{
-		DebugDrawer::getInstance().drawLine(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMin.z), glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMin.z), floorOpacity, ceilingOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMax.z), glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMax.z), floorOpacity, ceilingOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMin.z), glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMax.z), floorOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMin.z), glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMax.z), ceilingOpacity);
-	}
-
-	for (float y = m_vec3RoomMin.y; y <= m_vec3RoomMax.y; y += m_vec3RoomSpacings.y)
-	{
-		inBetweenOpacity.a = ((1.f-(y / m_vec3RoomMax.y)) * (floorOpacity.a - ceilingOpacity.a)) + ceilingOpacity.a;
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMin.z), glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMin.z), inBetweenOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMax.z), glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMax.z), inBetweenOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMin.z), glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMax.z), inBetweenOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMin.z), glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMax.z), inBetweenOpacity);
-	}
-
-	for (float z = m_vec3RoomMin.z; z <= m_vec3RoomMax.z; z += m_vec3RoomSpacings.z)
-	{
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMin.y, z), glm::vec3(m_vec3RoomMax.x, m_vec3RoomMin.y, z), floorOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMax.y, z), glm::vec3(m_vec3RoomMax.x, m_vec3RoomMax.y, z), ceilingOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMin.y, z), glm::vec3(m_vec3RoomMin.x, m_vec3RoomMax.y, z), floorOpacity, ceilingOpacity);
-		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMax.x, m_vec3RoomMin.y, z), glm::vec3(m_vec3RoomMax.x, m_vec3RoomMax.y, z), floorOpacity, ceilingOpacity);
-	}
-}
-
-
-void HolodeckBackground::drawSolid()
-{
 	DebugDrawer::getInstance().setTransformDefault();
 
 	glm::vec3 majorGridColor(0.15f, 0.21f, 0.31f);

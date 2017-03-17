@@ -13,7 +13,8 @@ public:
 	virtual ~HolodeckBackground();
 
 	void draw();
-	void drawSolid();
+
+private:
 	void drawGrids(glm::vec3 color, float spacingFactor);
 
 private:

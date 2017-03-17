@@ -454,7 +454,7 @@ void CMainApplication::RunMainLoop()
 		for (auto const &b : g_vpBehaviors)
 			b->draw();
 
-		m_pHolodeck->drawSolid();
+		m_pHolodeck->draw();
 
 		if (mode == 0)
 		{
