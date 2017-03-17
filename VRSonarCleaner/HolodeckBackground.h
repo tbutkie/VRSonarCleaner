@@ -14,7 +14,7 @@ public:
 
 	void draw();
 	void drawSolid();
-	void drawGrids(float r, float g, float b, float spacingFactor);
+	void drawGrids(glm::vec3 color, float spacingFactor);
 
 private:
 	glm::vec3 m_vec3RoomSize;

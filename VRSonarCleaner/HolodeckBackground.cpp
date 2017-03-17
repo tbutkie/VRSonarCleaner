@@ -59,15 +59,17 @@ void HolodeckBackground::drawSolid()
 {
 	DebugDrawer::getInstance().setTransformDefault();
 
-	drawGrids(0.15, 0.21, 0.31, 1);
-	drawGrids(0.23, 0.29, 0.39, 0.25);	
+	glm::vec3 majorGridColor(0.15f, 0.21f, 0.31f);
+	glm::vec3 minorGridColor(0.23f, 0.29f, 0.39f);
+
+	drawGrids(majorGridColor, 1.f);
+	drawGrids(minorGridColor, 0.25f);	
 }
 
-void HolodeckBackground::drawGrids(float r, float g, float b, float spacingFactor)
+void HolodeckBackground::drawGrids(glm::vec3 color, float spacingFactor)
 {
-	glm::vec4 floorOpacity(r, g, b, 0.3f);
-	glm::vec4 ceilingOpacity(r, g, b, 0.03f);
-	glm::vec4 inBetweenOpacity(r, g, b, 0.f);
+	glm::vec4 floorOpacity(color, 0.3f);
+	glm::vec4 ceilingOpacity(color, 0.03f);
 
 	for (float x = m_vec3RoomMin.x; x <= m_vec3RoomMax.x; x += m_vec3RoomSpacings.x * spacingFactor)
 	{
@@ -79,7 +81,7 @@ void HolodeckBackground::drawGrids(float r, float g, float b, float spacingFacto
 
 	for (float y = m_vec3RoomMin.y; y <= m_vec3RoomMax.y; y += m_vec3RoomSpacings.y * spacingFactor)
 	{
-		inBetweenOpacity.a = ((1.f - (y / m_vec3RoomMax.y)) * (floorOpacity.a - ceilingOpacity.a)) + ceilingOpacity.a;
+		glm::vec4 inBetweenOpacity = ((1.f - (y / m_vec3RoomMax.y)) * (floorOpacity - ceilingOpacity)) + ceilingOpacity;
 
 		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMin.z), glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMin.z), inBetweenOpacity);
 		DebugDrawer::getInstance().drawLine(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMax.z), glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMax.z), inBetweenOpacity);
