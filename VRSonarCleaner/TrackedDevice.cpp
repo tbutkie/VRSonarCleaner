@@ -16,7 +16,6 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	, m_uiTriVertcount(0)
 	, m_unVAO(0)
 	, m_nMatrixLocation(-1)
-	, m_bShow(true)
 	, m_bShowAxes(false)
 {	
 }

@@ -365,6 +365,13 @@ void ViveController::setScrollWheelVisibility(bool visible)
 	}
 }
 
+bool ViveController::readyToRender()
+{
+	return m_Pose.bDeviceIsConnected &&
+		m_Pose.bPoseIsValid &&
+		m_Pose.eTrackingResult == vr::ETrackingResult::TrackingResult_Running_OK;
+}
+
 bool ViveController::isTouchpadTouched()
 {
 	return m_bTouchpadTouched;

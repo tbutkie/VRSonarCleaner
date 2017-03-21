@@ -36,6 +36,8 @@ public:
 
 	void setScrollWheelVisibility(bool visible);
 
+	bool readyToRender();
+
 protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 

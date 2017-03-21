@@ -100,8 +100,7 @@ protected:
 	unsigned int m_uiTriVertcount;
 	GLuint m_unTransformProgramID;
 	GLint m_nMatrixLocation;
-	
-	bool m_bShow;
+
 	bool m_bShowAxes;
 	bool m_bHasRenderModel;
 };
