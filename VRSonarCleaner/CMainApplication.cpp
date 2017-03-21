@@ -271,7 +271,9 @@ bool CMainApplication::BInitGL()
 	}
 	else if (mode == 1)
 	{
-		flowRoom = new FlowRoom();
+		FlowGrid *tempFG = new FlowGrid("test.fg");
+		tempFG->setCoordinateScaler(new CoordinateScaler());
+		flowVolume = new FlowVolume(tempFG);
 	}
 
 
@@ -382,7 +384,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting something...\n");
-					flowRoom->reset();
+					flowVolume->resetPositionAndOrientation();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_f)
@@ -435,14 +437,14 @@ void CMainApplication::RunMainLoop()
 
 		if (mode == 1 && m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
 		{
-			g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowRoom);
+			g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
 			g_vpBehaviors.push_back(g_pFlowProbeBehavior);
 		}
 
 		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
-			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowRoom->getDataVolume()));
+			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowVolume));
 			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
@@ -476,9 +478,9 @@ void CMainApplication::RunMainLoop()
 
 		if (mode == 1)
 		{
-			flowRoom->preRenderUpdates();
+			flowVolume->preRenderUpdates();
 
-			flowRoom->draw(); // currently draws to debug buffer
+			flowVolume->draw(); // currently draws to debug buffer
 		}
 
 		m_pLighting->updateLightingUniforms();		

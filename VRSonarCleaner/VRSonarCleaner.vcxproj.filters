@@ -72,9 +72,6 @@
     <ClCompile Include="arcball.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlowRoom.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FlowGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -130,6 +127,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FlowVolume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -194,9 +194,6 @@
     <ClInclude Include="arcball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FlowRoom.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FlowGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -258,6 +255,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FlowVolume.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

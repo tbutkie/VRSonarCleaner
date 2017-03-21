@@ -37,7 +37,7 @@ public:
 
 	void resetPositionAndOrientation();
 
-private:
+protected:
 	void updateTransforms();
 
 	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position	

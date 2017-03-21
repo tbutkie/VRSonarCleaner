@@ -1,13 +1,13 @@
 #pragma once
 #include "ProbeBehavior.h"
 
-#include "FlowRoom.h"
+#include "FlowVolume.h"
 
 class FlowProbe :
 	public ProbeBehavior
 {
 public:
-	FlowProbe(ViveController* controller, FlowRoom* flowRoom);
+	FlowProbe(ViveController* controller, FlowVolume* flowVolume);
 	~FlowProbe();
 
 	void update();
@@ -15,7 +15,7 @@ public:
 private:
 	bool m_bProbeActive;
 
-	FlowRoom* m_pFlowRoom;
+	FlowVolume* m_pFlowVolume;
 	IllustrativeParticleEmitter* m_pEmitter;
 
 private:

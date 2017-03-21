@@ -20,11 +20,12 @@
 
 #include <shared/glm/glm.hpp>
 
-class FlowRoom
+class FlowVolume
+	: public DataVolume
 {
 public:
-	FlowRoom();
-	virtual ~FlowRoom();
+	FlowVolume(FlowGrid* flowGrid);
+	virtual ~FlowVolume();
 
 	void draw();
 
@@ -35,22 +36,15 @@ public:
 	IllustrativeParticleEmitter* placeDyeEmitterWorldCoords(glm::vec3 pos);
 	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
 
-	void reset();
-
-	DataVolume* getDataVolume();
-	IllustrativeParticleSystem* getParticleSystem();
-
 private:
 	CoordinateScaler *m_pScaler;
 
 	float m_fFlowRoomTime;
 	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
 	ULONGLONG m_ullLastTimeUpdate;
-
-	DataVolume *m_pMainModelVolume;
 		
-	std::vector<FlowGrid*> m_vpFlowGridCollection;
+	FlowGrid* m_pFlowGrid;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
-	StreakletSystem *m_pStreakletSystem;
+	//StreakletSystem *m_pStreakletSystem;
 };

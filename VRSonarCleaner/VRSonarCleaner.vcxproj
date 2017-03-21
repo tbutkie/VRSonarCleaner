@@ -174,7 +174,7 @@
     <ClCompile Include="DualControllerBehavior.cpp" />
     <ClCompile Include="FlowGrid.cpp" />
     <ClCompile Include="FlowProbe.cpp" />
-    <ClCompile Include="FlowRoom.cpp" />
+    <ClCompile Include="FlowVolume.cpp" />
     <ClCompile Include="ManipulateDataVolumeBehavior.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
@@ -218,7 +218,7 @@
     <ClInclude Include="DualControllerBehavior.h" />
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowProbe.h" />
-    <ClInclude Include="FlowRoom.h" />
+    <ClInclude Include="FlowVolume.h" />
     <ClInclude Include="ManipulateDataVolumeBehavior.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />

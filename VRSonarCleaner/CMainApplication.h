@@ -10,7 +10,7 @@
 
 #include "CGLRenderModel.h"
 #include "CleaningRoom.h"
-#include "FlowRoom.h"
+#include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
 #include "LightingSystem.h"
 #include "Renderer.h"
@@ -60,7 +60,7 @@ private:
 	TrackedDeviceManager *m_pTDM;
 
 	CleaningRoom* cleaningRoom;
-	FlowRoom* flowRoom;
+	FlowVolume* flowVolume;
 	LightingSystem* m_pLighting;
 
 private: // SDL bookkeeping
