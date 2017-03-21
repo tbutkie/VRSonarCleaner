@@ -163,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
+    <ClCompile Include="AdvectionProbe.cpp" />
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
     <ClCompile Include="CleaningRoom.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="..\shared\lodepng.h" />
     <ClInclude Include="..\shared\pathtools.h" />
     <ClInclude Include="..\shared\Texture.h" />
+    <ClInclude Include="AdvectionProbe.h" />
     <ClInclude Include="arcball.h" />
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BroadcastSystem.h" />

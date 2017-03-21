@@ -5,6 +5,7 @@
 
 #include "ManipulateDataVolumeBehavior.h"
 #include "FlowProbe.h"
+#include "AdvectionProbe.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -13,11 +14,11 @@
 
 #include <ctime>
 
-HolodeckBackground *m_pHolodeck = NULL;
-glm::vec3 g_vec3RoomSize(10.f, 4.f, 6.f);
-
-ManipulateDataVolumeBehavior *g_pManipulateDataVolumeBehavior = NULL;
-FlowProbe *g_pFlowProbeBehavior = NULL;
+HolodeckBackground*				g_pHolodeck = NULL;
+glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
+ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
+FlowProbe*						g_pFlowProbeBehavior = NULL;
+AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
 std::vector<BehaviorBase*> g_vpBehaviors;
 
@@ -263,7 +264,7 @@ bool CMainApplication::BInitGL()
 	if (!Renderer::getInstance().init(m_pHMD, m_pTDM, m_pLighting))
 		return false;
 
-	m_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
+	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (mode == 0)
 	{
@@ -435,10 +436,19 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		if (mode == 1 && m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
+		if (mode == 1)
 		{
-			g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
-			g_vpBehaviors.push_back(g_pFlowProbeBehavior);
+			if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
+			{
+				g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
+				g_vpBehaviors.push_back(g_pFlowProbeBehavior);
+			}
+
+			if (m_pTDM->getSecondaryController() && !g_pAdvectionProbeBehavior)
+			{
+				g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), flowVolume);
+				g_vpBehaviors.push_back(g_pAdvectionProbeBehavior);
+			}
 		}
 
 		// Attach grip & scale behavior when both controllers available
@@ -456,7 +466,7 @@ void CMainApplication::RunMainLoop()
 		for (auto const &b : g_vpBehaviors)
 			b->draw();
 
-		m_pHolodeck->draw();
+		g_pHolodeck->draw();
 
 		if (mode == 0)
 		{
