@@ -28,15 +28,15 @@ void AdvectionProbe::update()
 	DebugDrawer::getInstance().drawLine(cursorPos, probePos, glm::vec4(0.f, 0.7f, 0.f, 0.5f));
 
 	// Draw an 'X' at the probe point
-	//{
-	//	glm::vec3 x = glm::cross(glm::normalize(probePos), glm::normalize(glm::vec3(glm::mat3_cast(m_pDataVolume->getOrientation())[1])));
-	//	glm::vec3 y = glm::cross(x, glm::normalize(probePos));
+	{
+		glm::vec3 x = glm::normalize(glm::cross(probePos - spherePos, glm::vec3(glm::mat3_cast(m_pDataVolume->getOrientation())[1])));
+		glm::vec3 y = glm::normalize(glm::cross(x, probePos - spherePos));
 
-	//	float crossSize = 0.05f;
+		float crossSize = sphereRad / 16.f;
 
-	//	DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 0.f, 0.f, 0.75f));
-	//	DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(0.f, 1.f, 0.f, 0.75f));
-	//}
+		DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
+		DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
+	}
 }
 
 void AdvectionProbe::activateProbe()
