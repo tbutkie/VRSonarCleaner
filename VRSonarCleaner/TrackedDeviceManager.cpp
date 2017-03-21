@@ -459,7 +459,7 @@ void TrackedDeviceManager::renderControllerCustomizations(glm::mat4 * matVP)
 	if (m_pPrimaryController && m_pPrimaryController->readyToRender())
 		m_pPrimaryController->render(*matVP);
 
-	if (m_pSecondaryController)
+	if (m_pSecondaryController && m_pSecondaryController->readyToRender())
 		m_pSecondaryController->render(*matVP);
 }
 
