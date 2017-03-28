@@ -281,7 +281,7 @@ void LightingSystem::generateLightingShader()
 		{
 			fBuffer.append("#define N_DIR_LIGHTS "); fBuffer.append(std::to_string(dLights.size())); fBuffer.append("\n");
 			fBuffer.append("struct DirLight {\n");
-			fBuffer.append("    vec3 position;\n");
+			fBuffer.append("    vec3 direction;\n");
 			fBuffer.append("    vec3 ambient;\n");
 			fBuffer.append("    vec3 diffuse;\n");
 			fBuffer.append("    vec3 specular;\n");
@@ -289,7 +289,7 @@ void LightingSystem::generateLightingShader()
 			fBuffer.append("uniform DirLight dirLights[N_DIR_LIGHTS];\n");
 			fBuffer.append("vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)\n");
 			fBuffer.append("{\n");
-			fBuffer.append("    vec3 lightDir = normalize(light.position);\n");
+			fBuffer.append("    vec3 lightDir = normalize(light.direction);\n");
 			fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
 			fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
 			fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");

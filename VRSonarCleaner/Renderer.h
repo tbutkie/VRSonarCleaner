@@ -84,7 +84,9 @@ private:
 	bool m_bGlFinishHack;
 	
 	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelMatrixLocation;
+	GLint m_nRenderModelmatMVPLocation;
+	GLint m_nRenderModelmatMVLocation;
+	GLint m_nRenderModelvec3LightDirLocation;
 
 	GLuint m_unCompanionWindowProgramID;
 
