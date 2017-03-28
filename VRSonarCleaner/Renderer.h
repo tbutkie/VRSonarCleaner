@@ -54,12 +54,10 @@ public:
 private:
 	Renderer();
 	~Renderer();
-
-	bool CreateCompanionWindowShader();
-	bool CreateRenderModelShader();
-
+	
 	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
+	void SetupShaders();
 	void SetupCameras();
 	bool SetupStereoRenderTargets();
 	void SetupCompanionWindow();
@@ -86,11 +84,7 @@ private:
 	bool m_bVblank;
 	bool m_bGlFinishHack;
 	
-	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelmatMVPLocation;
-	GLint m_nRenderModelmatMVLocation;
-	GLint m_nRenderModelvec3LightDirLocation;
-
+	GLuint* m_punRenderModelProgramID;
 	GLuint* m_punCompanionWindowProgramID;
 
 	int m_nCompanionWindowWidth;

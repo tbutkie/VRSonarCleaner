@@ -14,16 +14,13 @@ Renderer::Renderer()
 	: m_pHMD(NULL)
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
-	, m_unRenderModelProgramID(0)
-	, m_nRenderModelmatMVPLocation(-1)
-	, m_nRenderModelmatMVLocation(-1)
-	, m_nRenderModelvec3LightDirLocation(-1)
+	, m_punRenderModelProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
 	, m_fNearClip(0.1f)
-	, m_fFarClip(30.0f)
+	, m_fFarClip(50.0f)
 {
 }
 
@@ -45,14 +42,7 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSys
 		return false;
 	}
 
-	m_Shaders.SetVersion("450");
-
-	m_Shaders.SetPreambleFile("preamble.glsl");
-
-	if (!CreateCompanionWindowShader() ||
-		!CreateRenderModelShader())
-		return false;
-
+	SetupShaders();
 	SetupCameras();
 	SetupStereoRenderTargets();
 	SetupCompanionWindow();
@@ -75,73 +65,32 @@ void Renderer::resetRenderModelInstances()
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
 //-----------------------------------------------------------------------------
-bool Renderer::CreateCompanionWindowShader()
+void Renderer::SetupShaders()
 {
+	m_Shaders.SetVersion("450");
+
+	m_Shaders.SetPreambleFile("preamble.glsl");
+
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
-	
-	return m_punCompanionWindowProgramID != NULL;
+	m_punRenderModelProgramID = m_Shaders.AddProgramFromExts({ "shaders/renderModels.vert", "shaders/renderModels.frag" });
 }
 
-bool Renderer::CreateRenderModelShader()
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool Renderer::SetupStereoRenderTargets()
 {
-	m_unRenderModelProgramID = CompileGLShader(
-		"render model",
-
-		// vertex shader
-		"#version 410\n"
-		//"#include \"preamble.glsl\"\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3NormalIn;\n"
-		"layout(location = 2) in vec2 v2TexCoordsIn;\n"
-		"uniform mat4 matMVP;\n"
-		"uniform mat4 matMV;\n"
-		"out vec3 v3Normal;\n"
-		"out vec2 v2TexCoord;\n"
-		"void main()\n"
-		"{\n"
-		"	v3Normal = normalize(mat3(matMV) * v3NormalIn);\n"
-		"	v2TexCoord = v2TexCoordsIn;\n"
-		"	gl_Position = matMVP * vec4(position.xyz, 1);\n"
-		"}\n", 
-
-		//fragment shader
-		"#version 410 core\n"
-		"uniform vec3 lightDir;\n"
-		"uniform sampler2D diffuse;\n"
-		"in vec3 v3Normal;\n"
-		"in vec2 v2TexCoord;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = max(dot(v3Normal, lightDir), 0.0) * texture( diffuse, v2TexCoord);\n"
-		"}\n"
-
-	);
-
-	m_nRenderModelmatMVPLocation = glGetUniformLocation(m_unRenderModelProgramID, "matMVP");
-	if (m_nRenderModelmatMVPLocation == -1)
-	{
-		printf("Unable to find MVP matrix uniform in render model shader\n");
+	if (!m_pHMD)
 		return false;
-	}
 
-	m_nRenderModelmatMVLocation = glGetUniformLocation(m_unRenderModelProgramID, "matMV");
-	if (m_nRenderModelmatMVLocation == -1)
-	{
-		printf("Unable to find modelview matrix uniform in render model shader\n");
-		return false;
-	}
+	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
 
-	m_nRenderModelvec3LightDirLocation = glGetUniformLocation(m_unRenderModelProgramID, "lightDir");
-	if (m_nRenderModelvec3LightDirLocation == -1)
-	{
-		printf("Unable to find light direction uniform in render model shader\n");
-		return false;
-	}
+	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
+	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
 
-	return m_unRenderModelProgramID != 0;
+	return true;
 }
-
 
 
 //-----------------------------------------------------------------------------
@@ -180,22 +129,6 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	return true;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool Renderer::SetupStereoRenderTargets()
-{
-	if (!m_pHMD)
-		return false;
-
-	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
-
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
 
 	return true;
 }
@@ -263,6 +196,7 @@ void Renderer::SetupCameras()
 	m_mat4eyePoseLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
 	m_mat4eyePoseRight = GetHMDMatrixPoseEye(vr::Eye_Right);
 }
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -385,7 +319,9 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 	{
 		// ----- Render Model rendering -----
-		glUseProgram(m_unRenderModelProgramID);
+		if(*m_punRenderModelProgramID)
+
+		glUseProgram(*m_punRenderModelProgramID);
 
 		for (auto &rm : m_mapModelInstances)
 		{
@@ -395,9 +331,9 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 			{
 				for (auto const &instancePose : rm.second)
 				{
-					glUniformMatrix4fv(m_nRenderModelmatMVPLocation, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
-					glUniformMatrix4fv(m_nRenderModelmatMVLocation, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
-					glUniform3fv(m_nRenderModelvec3LightDirLocation, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
+					glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
+					glUniformMatrix4fv(MV_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
+					glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
 					pglRenderModel->Draw();
 				}
 			}
@@ -558,9 +494,9 @@ glm::mat4 Renderer::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 
 void Renderer::Shutdown()
 {
-	if (m_unRenderModelProgramID)
+	if (m_punRenderModelProgramID)
 	{
-		glDeleteProgram(m_unRenderModelProgramID);
+		glDeleteProgram(*m_punRenderModelProgramID);
 	}
 
 	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);
