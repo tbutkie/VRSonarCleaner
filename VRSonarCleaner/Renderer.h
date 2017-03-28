@@ -6,6 +6,7 @@
 #include "CGLRenderModel.h"
 #include "LightingSystem.h"
 #include "TrackedDeviceManager.h"
+#include "shaderset.h"
 
 class Renderer
 {
@@ -77,6 +78,8 @@ private:
 	TrackedDeviceManager *m_pTDM;
 	LightingSystem* m_pLighting;
 
+	ShaderSet m_Shaders;
+
 	std::map<std::string, CGLRenderModel*> m_mapModelCache;
 	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
 
@@ -88,7 +91,7 @@ private:
 	GLint m_nRenderModelmatMVLocation;
 	GLint m_nRenderModelvec3LightDirLocation;
 
-	GLuint m_unCompanionWindowProgramID;
+	GLuint* m_punCompanionWindowProgramID;
 
 	int m_nCompanionWindowWidth;
 	int m_nCompanionWindowHeight;

@@ -8,6 +8,8 @@
 #include "InfoBoxManager.h"
 #include "ShaderUtils.h"
 
+#include "preamble.glsl"
+
 Renderer::Renderer()
 	: m_pHMD(NULL)
 	, m_pTDM(NULL)
@@ -16,7 +18,7 @@ Renderer::Renderer()
 	, m_nRenderModelmatMVPLocation(-1)
 	, m_nRenderModelmatMVLocation(-1)
 	, m_nRenderModelvec3LightDirLocation(-1)
-	, m_unCompanionWindowProgramID(0)
+	, m_punCompanionWindowProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
@@ -42,6 +44,10 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSys
 		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
+
+	m_Shaders.SetVersion("450");
+
+	m_Shaders.SetPreambleFile("preamble.glsl");
 
 	if (!CreateCompanionWindowShader() ||
 		!CreateRenderModelShader())
@@ -71,32 +77,9 @@ void Renderer::resetRenderModelInstances()
 //-----------------------------------------------------------------------------
 bool Renderer::CreateCompanionWindowShader()
 {
-	m_unCompanionWindowProgramID = CompileGLShader(
-		"CompanionWindow",
-
-		// vertex shader
-		"#version 410 core\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec2 v2UVIn;\n"
-		"noperspective out vec2 v2UV;\n"
-		"void main()\n"
-		"{\n"
-		"	v2UV = v2UVIn;\n"
-		"	gl_Position = position;\n"
-		"}\n",
-
-		// fragment shader
-		"#version 410 core\n"
-		"uniform sampler2D mytexture;\n"
-		"noperspective in vec2 v2UV;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"		outputColor = texture(mytexture, v2UV);\n"
-		"}\n"
-	);
-
-	return m_unCompanionWindowProgramID != 0;
+	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
+	
+	return m_punCompanionWindowProgramID != NULL;
 }
 
 bool Renderer::CreateRenderModelShader()
@@ -254,16 +237,16 @@ void Renderer::SetupCompanionWindow()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCompanionWindowIDIndexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_uiCompanionWindowIndexSize * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, position));
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, position));
 
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, texCoord));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, texCoord));
 
 	glBindVertexArray(0);
 
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -288,6 +271,8 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 {
 	m_mat4CurrentHMDView = HMDView;
 	SDL_GetWindowSize(win, &m_nCompanionWindowWidth, &m_nCompanionWindowHeight);
+
+	m_Shaders.UpdatePrograms();
 
 	// for now as fast as possible
 	if (m_pHMD)
@@ -439,11 +424,14 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 //-----------------------------------------------------------------------------
 void Renderer::RenderCompanionWindow()
 {
+	if (m_punCompanionWindowProgramID == NULL)
+		return;
+
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
 
 	glBindVertexArray(m_unCompanionWindowVAO);
-	glUseProgram(m_unCompanionWindowProgramID);
+	glUseProgram(*m_punCompanionWindowProgramID);
 
 	// render left eye (first half of index array )
 	glBindTexture(GL_TEXTURE_2D, leftEyeDesc.m_nResolveTextureId);
@@ -578,9 +566,9 @@ void Renderer::Shutdown()
 	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);
 	glDeleteBuffers(1, &m_glCompanionWindowIDIndexBuffer);
 
-	if (m_unCompanionWindowProgramID)
+	if (m_punCompanionWindowProgramID != NULL)
 	{
-		glDeleteProgram(m_unCompanionWindowProgramID);
+		glDeleteProgram(*m_punCompanionWindowProgramID);
 	}
 
 	glDeleteRenderbuffers(1, &leftEyeDesc.m_nDepthBufferId);

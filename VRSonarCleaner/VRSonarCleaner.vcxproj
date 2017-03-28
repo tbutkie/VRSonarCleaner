@@ -191,6 +191,7 @@
     <ClCompile Include="ParticleManager.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="shaderset.cpp" />
     <ClCompile Include="SingleControllerBehavior.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
@@ -221,6 +222,7 @@
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
+    <ClInclude Include="preamble.glsl" />
     <ClInclude Include="ManipulateDataVolumeBehavior.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />
@@ -235,6 +237,7 @@
     <ClInclude Include="ParticleManager.h" />
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="shaderset.h" />
     <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SingleControllerBehavior.h" />
