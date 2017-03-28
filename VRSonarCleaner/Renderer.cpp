@@ -16,6 +16,7 @@ Renderer::Renderer()
 	, m_pLighting(NULL)
 	, m_punRenderModelProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
+	, m_punDebugDrawerProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
@@ -73,6 +74,7 @@ void Renderer::SetupShaders()
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punRenderModelProgramID = m_Shaders.AddProgramFromExts({ "shaders/renderModels.vert", "shaders/renderModels.frag" });
+	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 }
 
 
@@ -348,11 +350,20 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	
 	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
 
-	// DEBUG DRAWER RENDER CALL
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	DebugDrawer::getInstance().render(thisEyesViewProjectionMatrix);
-	glDisable(GL_BLEND);
+	if (*m_punDebugDrawerProgramID)
+	{
+		glUseProgram(*m_punDebugDrawerProgramID);
+
+		glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix));
+
+		// DEBUG DRAWER RENDER CALL
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		DebugDrawer::getInstance().render();
+		glDisable(GL_BLEND);
+
+		glUseProgram(0);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -505,6 +516,11 @@ void Renderer::Shutdown()
 	if (m_punCompanionWindowProgramID != NULL)
 	{
 		glDeleteProgram(*m_punCompanionWindowProgramID);
+	}
+
+	if (m_punDebugDrawerProgramID != NULL)
+	{
+		glDeleteProgram(*m_punDebugDrawerProgramID);
 	}
 
 	glDeleteRenderbuffers(1, &leftEyeDesc.m_nDepthBufferId);

@@ -1,5 +1,4 @@
 #include "CMainApplication.h"
-#include "ShaderUtils.h"
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
 #include "CloudCollection.h"

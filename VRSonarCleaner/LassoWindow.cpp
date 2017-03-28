@@ -455,7 +455,7 @@ void LassoWindow::display()
 		DebugDrawer::getInstance().setTransformDefault();
 		lasso->draw();
 
-		DebugDrawer::getInstance().render(projMat); // no view matrix needed in ortho
+		//DebugDrawer::getInstance().render(projMat); // no view matrix needed in ortho
 
 		// flush out orthographically-rendered lines
 		DebugDrawer::getInstance().flushLines();
@@ -483,7 +483,7 @@ void LassoWindow::display()
 		DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
 		clouds->drawCloud(0);
 
-		DebugDrawer::getInstance().render(projMat * viewMat);
+		//DebugDrawer::getInstance().render(projMat * viewMat);
 
 		// flush out perspective-rendered lines
 		DebugDrawer::getInstance().flushLines();

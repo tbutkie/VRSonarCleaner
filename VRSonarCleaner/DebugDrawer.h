@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <iterator>
 
-#include "ShaderUtils.h"
+#include "preamble.glsl"
 
 class DebugDrawer
 {
@@ -162,7 +162,7 @@ public:
 	}
 
 	// Render the mesh
-	void render(glm::mat4 matVP)
+	void render()
 	{
 		size_t nPointsVerts = m_vPointsVertices.size();
 		size_t nLinesVerts = m_vLinesVertices.size();
@@ -173,23 +173,17 @@ public:
 		std::copy(m_vPointsVertices.begin(), m_vPointsVertices.end(), std::back_inserter(buffer));
 		std::copy(m_vLinesVertices.begin(), m_vLinesVertices.end(),	std::back_inserter(buffer));
 		std::copy(m_vTrianglesVertices.begin(), m_vTrianglesVertices.end(), std::back_inserter(buffer));
-
-		glUseProgram(m_glTransformProgramID);
-
+		
 		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
 		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
 		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), buffer.data(), GL_STREAM_DRAW);
-
-		glUniformMatrix4fv(m_glViewProjectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
-		
+				
 		// Draw mesh
 		glBindVertexArray(this->m_glVAO);
 		glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(nPointsVerts));
 		glDrawArrays(GL_LINES, static_cast<GLint>(nPointsVerts), static_cast<GLsizei>(nLinesVerts));
 		glDrawArrays(GL_TRIANGLES, static_cast<GLint>(nPointsVerts + nLinesVerts), static_cast<GLsizei>(nTrisVerts));
 		glBindVertexArray(0);
-
-		glUseProgram(0);
 	}
 
 	void flushLines()
@@ -211,15 +205,12 @@ private:
 	};
 
 	GLuint m_glVAO, m_glVBO;
-	GLuint m_glTransformProgramID;
-	GLint m_glViewProjectionMatrixLocation;
 	std::vector<DebugVertex> m_vPointsVertices, m_vLinesVertices, m_vTrianglesVertices;
 	glm::mat4 m_mat4Transform;
 
 	// CTOR
 	DebugDrawer()
 	{
-		_createShader();
 		_initGL();
 	}
 
@@ -341,50 +332,13 @@ private:
 
 		// Set the vertex attribute pointers
 		// Vertex Positions
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)0);
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)0);
 		// Vertex Colors
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
 
 		glBindVertexArray(0);
-	}
-	
-	bool _createShader()
-	{
-		m_glTransformProgramID = CompileGLShader(
-			"Debugger",
-
-			// vertex shader
-			"#version 410\n"
-			"layout(location = 0) in vec3 v3Position;\n"
-			"layout(location = 1) in vec4 v4ColorIn;\n"
-			"uniform mat4 matVP;\n"
-			"out vec4 v4Color;\n"
-			"void main()\n"
-			"{\n"
-			"	v4Color = v4ColorIn;\n"
-			"	gl_Position = matVP * vec4(v3Position, 1.0);\n"
-			"}\n",
-
-			// fragment shader
-			"#version 410\n"
-			"in vec4 v4Color;\n"
-			"out vec4 outputColor;\n"
-			"void main()\n"
-			"{\n"
-			"   outputColor = v4Color;\n"
-			"}\n"
-		);
-
-		m_glViewProjectionMatrixLocation = glGetUniformLocation(m_glTransformProgramID, "matVP");
-		if (m_glViewProjectionMatrixLocation == -1)
-		{
-			printf("Unable to find view projection matrix uniform in debug shader\n");
-			return false;
-		}
-
-		return m_glTransformProgramID != 0;
 	}
 
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
