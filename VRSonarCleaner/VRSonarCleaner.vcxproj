@@ -166,7 +166,6 @@
     <ClCompile Include="AdvectionProbe.cpp" />
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="CGLRenderModel.cpp" />
-    <ClCompile Include="CleaningRoom.cpp" />
     <ClCompile Include="CloudCollection.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
@@ -210,7 +209,6 @@
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BroadcastSystem.h" />
     <ClInclude Include="CGLRenderModel.h" />
-    <ClInclude Include="CleaningRoom.h" />
     <ClInclude Include="CloudCollection.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorsAndSizes.h" />

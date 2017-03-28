@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <string>
 #include <cstdlib>
+#include <chrono>
 
 #include "CGLRenderModel.h"
-#include "CleaningRoom.h"
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
 #include "LightingSystem.h"
@@ -59,9 +59,15 @@ private:
 
 	TrackedDeviceManager *m_pTDM;
 
-	CleaningRoom* cleaningRoom;
+	bool editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	//CleaningRoom* cleaningRoom;
+	DataVolume* wallVolume;
+	DataVolume* tableVolume;
 	FlowVolume* flowVolume;
 	LightingSystem* m_pLighting;
+
+	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
+	float m_fPtHighlightAmt;
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;

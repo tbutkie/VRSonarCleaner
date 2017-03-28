@@ -9,7 +9,6 @@
 #include <string>
 #include <cstdlib>
 
-#include "CleaningRoom.h"
 #include "CloudCollection.h"
 //#include "FocalCamera.h"
 #include "DataVolume.h"

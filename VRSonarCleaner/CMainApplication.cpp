@@ -2,6 +2,7 @@
 #include "ShaderUtils.h"
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
+#include "CloudCollection.h"
 
 #include "ManipulateDataVolumeBehavior.h"
 #include "FlowProbe.h"
@@ -13,6 +14,8 @@
 #include <string>
 
 #include <ctime>
+
+extern CloudCollection *clouds;
 
 HolodeckBackground*				g_pHolodeck = NULL;
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
@@ -47,11 +50,13 @@ void dprintf(const char *fmt, ...)
 CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
 	: m_pWindow(NULL)
 	, m_pContext(NULL)
-	, m_nWindowWidth(1280)
-	, m_nWindowHeight(720)
+	, m_nWindowWidth(1660)
+	, m_nWindowHeight(980)
 	, m_pHMD(NULL)
 	, m_bVerbose(false)
 	, m_bPerf(false)
+	, m_fPtHighlightAmt(1.f)
+	, m_LastTime(std::chrono::high_resolution_clock::now())
 {
 #if _DEBUG
 	m_bDebugOpenGL = true;
@@ -125,8 +130,6 @@ bool CMainApplication::BInit()
 
 	int nWindowPosX = 10;// 700;
 	int nWindowPosY = 30;// 100;
-	m_nWindowWidth = 1660;// 1280;
-	m_nWindowHeight = 980;// 720;
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -268,7 +271,23 @@ bool CMainApplication::BInitGL()
 
 	if (mode == 0)
 	{
-		cleaningRoom = new CleaningRoom(g_vec3RoomSize);
+		//cleaningRoom = new CleaningRoom(g_vec3RoomSize);
+
+		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), 0.8f, (g_vec3RoomSize.y * 0.8f));
+		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
+
+		glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
+		glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+
+		glm::vec3 tablePosition(0.f, 1.1f, 0.f);
+		glm::vec3 tableSize(2.25f, 0.75f, 2.25f);
+
+		glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+		glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+
+		tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
+		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
+
 	}
 	else if (mode == 1)
 	{
@@ -368,7 +387,9 @@ bool CMainApplication::HandleInput()
 				{
 					printf("Pressed r, resetting marks\n");
 					clouds->resetMarksInAllClouds();
-					cleaningRoom->resetVolumes();
+					//cleaningRoom->resetVolumes();
+					wallVolume->resetPositionAndOrientation();
+					tableVolume->resetPositionAndOrientation();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_g)
@@ -377,7 +398,15 @@ bool CMainApplication::HandleInput()
 					clouds->clearAllClouds();
 					clouds->generateFakeTestCloud(150, 150, 25, 40000);
 					clouds->calculateCloudBoundsAndAlign();
-					cleaningRoom->recalcVolumeBounds();
+					//cleaningRoom->recalcVolumeBounds();
+					glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
+					glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+
+					glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
+					glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+
+					tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
+					wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
 				}
 			}//end if mode==0
 			else if (mode == 1) //flow
@@ -454,7 +483,7 @@ void CMainApplication::RunMainLoop()
 		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
-			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? cleaningRoom->getDataVolume() : flowVolume));
+			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? tableVolume : flowVolume));
 			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
@@ -475,15 +504,31 @@ void CMainApplication::RunMainLoop()
 			float cursorRadius;
 
 			// if editing controller not available or pose isn't valid, abort
-			if (!m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
-				return;
+			if (m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
+			{
+				// check point cloud for hits
+				//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
+				if (editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
+					m_pTDM->cleaningHit();
+			}
 
-			// check point cloud for hits
-			//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-			if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
-				m_pTDM->cleaningHit();
-			
-			cleaningRoom->draw(); // currently draws to debug buffer
+			//cleaningRoom->draw(); // currently draws to debug buffer
+			//draw debug
+			wallVolume->drawBBox();
+			wallVolume->drawBacking();
+			wallVolume->drawAxes();
+			tableVolume->drawBBox();
+			tableVolume->drawBacking();
+			tableVolume->drawAxes();
+
+
+			//draw table
+			DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
+			clouds->getCloud(0)->draw();
+
+			//draw wall
+			DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
+			clouds->drawAllClouds();
 		}
 
 		if (mode == 1)
@@ -652,4 +697,137 @@ bool CMainApplication::loadPoints(std::string fileName)
 	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
 
 	return true;
+}
+
+
+// This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
+// with credit to Greg James @ Nvidia
+float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, float radius_sq, const glm::vec3 & testpt)
+{
+	float dx, dy, dz;	// vector d  from line segment point 1 to point 2
+	float pdx, pdy, pdz;	// vector pd from point 1 to test point
+	float dot, dsq;
+
+	dx = pt2.x - pt1.x;	// translate so pt1 is origin.  Make vector from
+	dy = pt2.y - pt1.y;     // pt1 to pt2.  Need for this is easily eliminated
+	dz = pt2.z - pt1.z;
+
+	pdx = testpt.x - pt1.x;		// vector from pt1 to test point.
+	pdy = testpt.y - pt1.y;
+	pdz = testpt.z - pt1.z;
+
+	// Dot the d and pd vectors to see if point lies behind the 
+	// cylinder cap at pt1.x, pt1.y, pt1.z
+
+	dot = pdx * dx + pdy * dy + pdz * dz;
+
+	// If dot is less than zero the point is behind the pt1 cap.
+	// If greater than the cylinder axis line segment length squared
+	// then the point is outside the other end cap at pt2.
+
+	if (dot < 0.f || dot > lengthsq)
+		return(-1.f);
+	else
+	{
+		dsq = (pdx*pdx + pdy*pdy + pdz*pdz) - dot*dot / lengthsq;
+
+		if (dsq > radius_sq)
+			return(-1.f);
+		else
+			return(dsq);		// return distance squared to axis
+	}
+}
+
+
+bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
+{
+	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentDataTransform();
+	glm::mat4 mat4LastVolumeXform = tableVolume->getLastDataTransform();
+
+	if (mat4LastVolumeXform == glm::mat4())
+		mat4LastVolumeXform = mat4CurrentVolumeXform;
+
+	glm::vec3 vec3CurrentCursorPos = glm::vec3(currentCursorPose[3]);
+	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * lastCursorPose)[3]);
+
+	bool performCylTest = true;
+	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
+
+	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
+		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
+		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
+
+	// CLOCK UPDATE
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+	m_LastTime = std::chrono::high_resolution_clock::now();
+
+	float blink_rate_ms = 250.f;
+
+	float delta = static_cast<float>(elapsed_ms.count()) / blink_rate_ms;
+	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
+
+	// POINTS CHECK
+	bool anyHits = false;
+	bool pointsRefresh = false;
+
+	std::vector<glm::vec3> points = clouds->getCloud(0)->getPointPositions();
+
+	for (size_t i = 0ull; i < points.size(); ++i)
+	{
+		//skip already marked points
+		if (clouds->getCloud(0)->getPointMark(i) == 1)
+			continue;
+
+		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
+
+		// fast point-in-AABB failure test
+		if (thisPt.x < (std::min)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - radius ||
+			thisPt.x >(std::max)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + radius ||
+			thisPt.y < (std::min)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - radius ||
+			thisPt.y >(std::max)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
+			thisPt.z < (std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
+			thisPt.z >(std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
+		{
+			if (clouds->getCloud(0)->getPointMark(i) != 0)
+			{
+				clouds->getCloud(0)->markPoint(i, 0);
+				pointsRefresh = true;
+			}
+			continue;
+		}
+
+		float radius_sq = radius * radius;
+		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
+			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
+			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
+
+		if (current_dist_sq <= radius_sq ||
+			(performCylTest && cylTest(glm::vec4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
+				glm::vec4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
+				cyl_len_sq,
+				radius_sq,
+				glm::vec3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
+			)
+		{
+			if (clearPoints)
+			{
+				anyHits = true;
+				clouds->getCloud(0)->markPoint(i, 1);
+			}
+			else
+				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+
+			pointsRefresh = true;
+		}
+		else if (clouds->getCloud(0)->getPointMark(i) != 0)
+		{
+			clouds->getCloud(0)->markPoint(i, 0);
+			pointsRefresh = true;
+		}
+	}
+
+	if (pointsRefresh)
+		clouds->getCloud(0)->setRefreshNeeded();
+
+	return anyHits;
 }
