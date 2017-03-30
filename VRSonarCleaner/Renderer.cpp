@@ -8,7 +8,7 @@
 #include "InfoBoxManager.h"
 #include "ShaderUtils.h"
 
-#include "preamble.glsl"
+#include "GLSLpreamble.h"
 
 Renderer::Renderer()
 	: m_pHMD(NULL)
@@ -70,7 +70,7 @@ void Renderer::SetupShaders()
 {
 	m_Shaders.SetVersion("450");
 
-	m_Shaders.SetPreambleFile("preamble.glsl");
+	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punRenderModelProgramID = m_Shaders.AddProgramFromExts({ "shaders/renderModels.vert", "shaders/renderModels.frag" });

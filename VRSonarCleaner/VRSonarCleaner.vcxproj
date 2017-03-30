@@ -220,7 +220,7 @@
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
-    <ClInclude Include="preamble.glsl" />
+    <ClInclude Include="GLSLpreamble.h" />
     <ClInclude Include="ManipulateDataVolumeBehavior.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />

@@ -3,6 +3,8 @@
 
 #include "LightingSystem.h"
 
+#include "GLSLpreamble.h"
+
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
 #endif // !GLEW_STATIC
@@ -230,38 +232,50 @@ void LightingSystem::generateLightingShader()
 	// VERTEX SHADER
 	{
 		vBuffer.append("#version 450 core\n");
-		vBuffer.append("layout(location = 0) in vec3 position;\n");
-		vBuffer.append("layout(location = 1) in vec3 normal;\n");
-		vBuffer.append("out vec3 Normal;\n");
-		vBuffer.append("out vec3 FragPos;\n");
-		vBuffer.append("uniform mat4 model;\n");
-		vBuffer.append("uniform mat4 view;\n");
-		vBuffer.append("uniform mat4 projection;\n");
+		vBuffer.append("layout(location = "); vBuffer.append(std::to_string(POSITION_ATTRIB_LOCATION)); vBuffer.append(")");
+		vBuffer.append("	in vec3 v3Pposition;\n");
+		vBuffer.append("layout(location = "); vBuffer.append(std::to_string(NORMAL_ATTRIB_LOCATION)); vBuffer.append(")");
+		vBuffer.append("	in vec3 v3NormalIn;\n");
+		vBuffer.append("layout(location = "); vBuffer.append(std::to_string(MVP_UNIFORM_LOCATION)); vBuffer.append(")");
+		vBuffer.append("	uniform mat4 m4MVP;\n");
+		vBuffer.append("layout(location = "); vBuffer.append(std::to_string(MV_UNIFORM_LOCATION)); vBuffer.append(")");
+		vBuffer.append("	uniform mat4 m4MV;\n");
+		vBuffer.append("layout(location = "); vBuffer.append(std::to_string(MV_INV_TRANS_UNIFORM_LOCATION)); vBuffer.append(")");
+		vBuffer.append("	uniform mat3 m3MVInvTrans;\n");
+		vBuffer.append("out vec3 v3Normal;\n");
+		vBuffer.append("out vec3 v3FragPos;\n");
 		vBuffer.append("void main()\n");
 		vBuffer.append("{\n");
-		vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
-		vBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
-		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vBuffer.append("	gl_Position = m4MVP * vec4(v3Position, 1.0f);\n");
+		vBuffer.append("	v3FragPos = vec3(m4MV * vec4(v3Position, 1.0f));\n");
+		vBuffer.append("	v3Normal = normalize(m3MVInvTrans * v3NormalIn);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vBuffer.append("}\n");
 	} // VERTEX SHADER
 
 	// INSTANCED VERTEX SHADER
 	{
 		vInstancedBuffer.append("#version 450 core\n");
-		vInstancedBuffer.append("layout(location = 0) in vec3 position;\n");
-		vInstancedBuffer.append("layout(location = 1) in vec3 normal;\n");
-		vInstancedBuffer.append("layout(location = 3) in vec3 instanceLocation;\n");
-		vInstancedBuffer.append("layout(location = 4) in vec3 w;\n");		
-		vInstancedBuffer.append("out vec3 Normal;\n");
-		vInstancedBuffer.append("out vec3 FragPos;\n");
-		vInstancedBuffer.append("uniform mat4 model;\n");
-		vInstancedBuffer.append("uniform mat4 view;\n");
-		vInstancedBuffer.append("uniform mat4 projection;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(POSITION_ATTRIB_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	in vec3 v3Position;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(NORMAL_ATTRIB_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	in vec3 v3NormalIn;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(INSTANCE_POSITION_ATTRIB_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	in vec3 v3InstancePosition;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(INSTANCE_FORWARD_ATTRIB_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	in vec3 v3InstanceForward;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(MVP_UNIFORM_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	uniform mat4 m4MVP;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(MV_UNIFORM_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	uniform mat4 m4MV;\n");
+		vInstancedBuffer.append("layout(location = "); vBuffer.append(std::to_string(MV_INV_TRANS_UNIFORM_LOCATION)); vBuffer.append(")");
+		vInstancedBuffer.append("	uniform mat3 m3MVInvTrans;\n");
+		vInstancedBuffer.append("out vec3 v3Normal;\n");
+		vInstancedBuffer.append("out vec3 v3FragPos;\n");
 		vInstancedBuffer.append("void main()\n");
 		vInstancedBuffer.append("{\n");
-		vInstancedBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
-		vInstancedBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
-		vInstancedBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vInstancedBuffer.append("	gl_Position = m4MVP * vec4(v3Position, 1.0f);\n");
+		vInstancedBuffer.append("	v3FragPos = vec3(m4MV * vec4(v3Position, 1.0f));\n");
+		vInstancedBuffer.append("	v3Normal = normalize(m3MVInvTrans * v3NormalIn);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vInstancedBuffer.append("}\n");
 	}
 

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <iterator>
 
-#include "preamble.glsl"
+#include "GLSLpreamble.h"
 
 class DebugDrawer
 {

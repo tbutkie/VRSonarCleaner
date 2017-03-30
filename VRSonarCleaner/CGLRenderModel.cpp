@@ -1,6 +1,6 @@
 #include "CGLRenderModel.h"
 
-#include "preamble.glsl"
+#include "GLSLpreamble.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models

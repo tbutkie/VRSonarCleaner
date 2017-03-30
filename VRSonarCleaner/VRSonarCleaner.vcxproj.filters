@@ -263,10 +263,10 @@
     <ClInclude Include="AdvectionProbe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="preamble.glsl">
+    <ClInclude Include="shaderset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shaderset.h">
+    <ClInclude Include="GLSLpreamble.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
