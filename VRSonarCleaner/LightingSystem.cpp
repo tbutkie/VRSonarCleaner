@@ -260,7 +260,7 @@ void LightingSystem::generateLightingShader()
 		vBuffer.append("{\n");
 		vBuffer.append("	gl_Position = m4MVP * vec4(v3Position, 1.0f);\n");
 		vBuffer.append("	v3FragPos = vec3(m4MV * vec4(v3Position, 1.0f));\n");
-		vBuffer.append("	v3Normal =  normalize(m3MVInvTrans * v3NormalIn);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vBuffer.append("	v3Normal =  m3MVInvTrans * v3NormalIn;\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vBuffer.append("	v2TexCoords = v2TexCoordsIn;\n");
 		vBuffer.append("}\n");
 	} // VERTEX SHADER
@@ -291,7 +291,7 @@ void LightingSystem::generateLightingShader()
 		vInstancedBuffer.append("{\n");
 		vInstancedBuffer.append("	gl_Position = m4MVP * vec4(v3Position, 1.0f);\n");
 		vInstancedBuffer.append("	v3FragPos = vec3(m4MV * vec4(v3Position, 1.0f));\n");
-		vInstancedBuffer.append("	v3Normal = normalize(mat3(m4MV) * v3NormalIn);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vInstancedBuffer.append("	v3Normal = m3MVInvTrans * v3NormalIn;\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vInstancedBuffer.append("	v2TexCoords = v2TexCoordsIn;\n");
 		vInstancedBuffer.append("}\n");
 	}
@@ -404,22 +404,23 @@ void LightingSystem::generateLightingShader()
 
 		fBuffer.append("void main()\n");
 		fBuffer.append("{\n");
+		fBuffer.append("    vec3 norm = normalize(v3Normal);\n");
 		fBuffer.append("    vec3 viewDirection = normalize(-v3FragPos);\n");
 		fBuffer.append("    vec3 result = vec3(0.f);\n");
 		if (dLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_DIR_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcDirLight(dirLights[i], v3Normal, viewDirection);\n");
+			fBuffer.append("        result += CalcDirLight(dirLights[i], norm, viewDirection);\n");
 		}
 		if (pLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_POINT_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcPointLight(pointLights[i], v3Normal, v3FragPos, viewDirection);\n");
+			fBuffer.append("        result += CalcPointLight(pointLights[i], norm, v3FragPos, viewDirection);\n");
 		}
 		if (sLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_SPOT_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcSpotLight(spotLights[i], v3Normal, v3FragPos, viewDirection);\n");
+			fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, v3FragPos, viewDirection);\n");
 		}
 		//fBuffer.append("    result += vec3(texture(emissiveTex, v2TexCoords));\n");
 		//fBuffer.append("    vec3 gammaCorrection = vec3(1.f/2.2f);\n");

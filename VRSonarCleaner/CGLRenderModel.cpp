@@ -13,7 +13,7 @@ CGLRenderModel::CGLRenderModel(const std::string & sRenderModelName)
 	, m_glDiffuseTexture(0)
 	, m_glSpecularTexture(0)
 	, m_glEmissiveTexture(0)
-	, m_fShininess(32.f)
+	, m_fShininess(10.f)
 {
 }
 
@@ -75,7 +75,7 @@ bool CGLRenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderMo
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
-	GLsizei width = 2, height = 2;
+	GLsizei width = 1, height = 1;
 	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	GLubyte black[4] = { 0x00, 0x00, 0x00, 0xFF };
 
