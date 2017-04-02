@@ -37,7 +37,7 @@ public:
 		bool attachedToCamera;
 	};
 
-public:
+private:
 	std::vector<DLight> dLights;
 	std::vector<PLight> pLights;
 	std::vector<SLight> sLights;
@@ -48,32 +48,32 @@ public:
 
 	void update(glm::mat4 view);
 
-	bool addDirectLight(glm::vec3 direction = glm::vec3(-1.f)
+	DLight* addDirectLight(glm::vec3 direction = glm::vec3(-1.f)
 		, glm::vec3 ambient = glm::vec3(0.5f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
 		, glm::vec3 specular = glm::vec3(0.25f)
 		);
 
-	bool addPointLight(glm::vec3 position = glm::vec3(1.0f)
+	PLight* addPointLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.05f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
-		, glm::vec3 specular = glm::vec3(1.f)
+		, glm::vec3 specular = glm::vec3(0.25f)
 		, float constant = 1.f
 		, float linear = 0.09f
 		, float quadratic = 0.032f
 		);
 
-	bool addSpotLight(glm::vec3 position = glm::vec3(1.0f)
+	SLight* addSpotLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 direction = glm::vec3(0.0f)
 		, glm::vec3 ambient = glm::vec3(0.0f)
 		, glm::vec3 diffuse = glm::vec3(1.0f)
-		, glm::vec3 specular = glm::vec3(1.0f)
+		, glm::vec3 specular = glm::vec3(0.25f)
 		, float constant = 1.0f
 		, float linear = 0.09f
 		, float quadratic = 0.032f
 		, float cutOffDeg = 12.5f
 		, float outerCutOffDeg = 15.0f
-		, bool attachToCamera = true
+		, bool attachToCamera = false
 		);
 
 	void generateLightingShader();

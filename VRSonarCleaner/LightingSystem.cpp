@@ -151,7 +151,7 @@ void LightingSystem::updateLightingUniforms()
 	}
 }
 
-bool LightingSystem::addDirectLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
+LightingSystem::DLight* LightingSystem::addDirectLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
 {
 	DLight dl;
 
@@ -166,10 +166,10 @@ bool LightingSystem::addDirectLight(glm::vec3 direction, glm::vec3 ambient, glm:
 
 	m_bRefreshShader = true;
 
-	return true;
+	return &dLights.back();
 }
 
-bool LightingSystem::addPointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float constant, float linear, float quadratic)
+LightingSystem::PLight* LightingSystem::addPointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float constant, float linear, float quadratic)
 {
 	PLight pl;
 	pl.position = position;
@@ -186,10 +186,10 @@ bool LightingSystem::addPointLight(glm::vec3 position, glm::vec3 ambient, glm::v
 
 	m_bRefreshShader = true;
 
-	return true;
+	return &pLights.back();
 }
 
-bool LightingSystem::addSpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg, bool attachToCamera)
+LightingSystem::SLight* LightingSystem::addSpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg, bool attachToCamera)
 {
 	SLight sl;
 	sl.position = position;
@@ -210,7 +210,7 @@ bool LightingSystem::addSpotLight(glm::vec3 position, glm::vec3 direction, glm::
 
 	m_bRefreshShader = true;
 
-	return true;
+	return &sLights.back();
 }
 
 void LightingSystem::showPointLights(bool yesno)
