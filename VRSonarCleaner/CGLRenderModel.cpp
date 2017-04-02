@@ -13,7 +13,7 @@ CGLRenderModel::CGLRenderModel(const std::string & sRenderModelName)
 	, m_glDiffuseTexture(0)
 	, m_glSpecularTexture(0)
 	, m_glEmissiveTexture(0)
-	, m_fShininess(10.f)
+	, m_fShininess(110.f)
 {
 }
 
@@ -77,12 +77,14 @@ bool CGLRenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderMo
 
 	GLsizei width = 1, height = 1;
 	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
+	GLubyte dkgray[4] = { 0x0F, 0x0F, 0x0F, 0xFF };
 	GLubyte black[4] = { 0x00, 0x00, 0x00, 0xFF };
 
 	// Specular map
 	glGenTextures(1, &m_glSpecularTexture);
 	glBindTexture(GL_TEXTURE_2D, m_glSpecularTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

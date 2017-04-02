@@ -1,4 +1,5 @@
-layout(location = DIFFUSE_TEXTURE_BINDING) uniform sampler2D mytexture;
+layout(location = DIFFUSE_TEXTURE_BINDING)
+	uniform sampler2D mytexture;
 
 noperspective in vec2 v2UV;
 out vec4 outputColor;

@@ -14,7 +14,7 @@ Renderer::Renderer()
 	: m_pHMD(NULL)
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
-	, m_punRenderModelProgramID(NULL)
+	, m_punLightingProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
 	, m_punDebugDrawerProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
@@ -24,7 +24,6 @@ Renderer::Renderer()
 	, m_fFarClip(50.0f)
 {
 }
-
 
 Renderer::~Renderer()
 {
@@ -36,7 +35,9 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	m_pHMD = pHMD;
 	m_pTDM = pTDM;
 	m_pLighting = new LightingSystem();
-	m_pLighting->addDirectLight();
+	// add a directional light and change its ambient coefficient
+	m_pLighting->addDirectLight()->ambientCoefficient = 0.5f;
+
 	
 	if (SDL_GL_SetSwapInterval(m_bVblank ? 1 : 0) < 0)
 	{
@@ -74,7 +75,7 @@ void Renderer::SetupShaders()
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
-	m_punRenderModelProgramID = m_Shaders.AddProgramFromExts({ "shaders/renderModels.vert", "shaders/renderModels.frag" });
+	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
 	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 }
 
@@ -317,17 +318,16 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 
 	m_pTDM->renderControllerCustomizations(&thisEyesViewProjectionMatrix);
 
+	// ----- Render Model rendering -----
+	if(*m_punLightingProgramID)
+
+	glUseProgram(*m_punLightingProgramID);
+
+	m_pLighting->m_glProgramID = *m_punLightingProgramID;
 	m_pLighting->update(thisEyesViewMatrix);
 
 	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 	{
-		// ----- Render Model rendering -----
-		//if(*m_punRenderModelProgramID)
-
-		//glUseProgram(*m_punRenderModelProgramID);
-
-		m_pLighting->activateShader();
-
 		for (auto &rm : m_mapModelInstances)
 		{
 			CGLRenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
@@ -348,8 +348,6 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 				printf("Unable to load render model %s\n", rm.first.c_str());
 			}
 		}
-
-		glUseProgram(0);
 	}
 	
 	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
@@ -383,6 +381,8 @@ void Renderer::RenderCompanionWindow()
 
 	glBindVertexArray(m_unCompanionWindowVAO);
 	glUseProgram(*m_punCompanionWindowProgramID);
+
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 
 	// render left eye (first half of index array )
 	glBindTexture(GL_TEXTURE_2D, leftEyeDesc.m_nResolveTextureId);
@@ -509,9 +509,9 @@ glm::mat4 Renderer::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 
 void Renderer::Shutdown()
 {
-	if (m_punRenderModelProgramID)
+	if (m_punLightingProgramID)
 	{
-		glDeleteProgram(*m_punRenderModelProgramID);
+		glDeleteProgram(*m_punLightingProgramID);
 	}
 
 	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);

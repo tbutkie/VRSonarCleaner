@@ -85,7 +85,7 @@ private:
 	bool m_bGlFinishHack;
 
 	GLuint* m_punCompanionWindowProgramID;
-	GLuint* m_punRenderModelProgramID;
+	GLuint* m_punLightingProgramID;
 	GLuint* m_punDebugDrawerProgramID;
 
 	int m_nCompanionWindowWidth;
