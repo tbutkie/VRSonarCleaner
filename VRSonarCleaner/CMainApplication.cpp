@@ -259,11 +259,8 @@ bool CMainApplication::BInitGL()
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
 	m_pTDM->attach(&InfoBoxManager::getInstance());
-	
-	m_pLighting = new LightingSystem();
-	m_pLighting->addDirectLight();
 
-	if (!Renderer::getInstance().init(m_pHMD, m_pTDM, m_pLighting))
+	if (!Renderer::getInstance().init(m_pHMD, m_pTDM))
 		return false;
 
 	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
@@ -536,8 +533,6 @@ void CMainApplication::RunMainLoop()
 
 			flowVolume->draw(); // currently draws to debug buffer
 		}
-
-		m_pLighting->updateLightingUniforms();		
 		
 		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 		//start = std::clock();

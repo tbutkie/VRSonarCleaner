@@ -42,7 +42,7 @@ public:
 		return s_instance;
 	}
 	
-	bool init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSystem *pLS);
+	bool init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM);
 
 	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
 	void resetRenderModelInstances();

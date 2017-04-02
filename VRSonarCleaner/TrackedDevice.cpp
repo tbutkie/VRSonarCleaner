@@ -107,8 +107,10 @@ void TrackedDevice::render(glm::mat4 & matVP)
 	// so no model matrix is required
 	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
 	glBindVertexArray(m_unVAO);
-	glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
-	glDrawArrays(GL_TRIANGLES, m_uiLineVertcount, m_uiTriVertcount);
+	if(m_uiLineVertcount > 0)
+		glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
+	if (m_uiTriVertcount > 0)
+		glDrawArrays(GL_TRIANGLES, m_uiLineVertcount, m_uiTriVertcount);
 	glBindVertexArray(0);
 }
 

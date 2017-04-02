@@ -18,7 +18,10 @@ private:
 	GLuint m_glVertBuffer;
 	GLuint m_glIndexBuffer;
 	GLuint m_glVertArray;
-	GLuint m_glTexture;
+	GLuint m_glDiffuseTexture;
+	GLuint m_glSpecularTexture;
+	GLuint m_glEmissiveTexture;
+	float m_fShininess;
 	GLsizei m_unVertexCount;
 	std::string m_sModelName;
 };

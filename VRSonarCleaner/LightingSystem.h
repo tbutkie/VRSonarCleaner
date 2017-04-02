@@ -20,7 +20,7 @@ public:
 	};
 
 	struct DLight : BasicLight {
-		glm::vec3 position;
+		glm::vec3 direction;
 	};
 
 	struct PLight : BasicLight {
@@ -46,10 +46,9 @@ public:
 	LightingSystem();
 	~LightingSystem();
 
-	void updateLightingUniforms();
-	void updateView(glm::mat4 view);
+	void update(glm::mat4 view);
 
-	bool addDirectLight(glm::vec3 position = glm::vec3(1.0f)
+	bool addDirectLight(glm::vec3 direction = glm::vec3(-1.f)
 		, glm::vec3 ambient = glm::vec3(0.2f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
 		, glm::vec3 specular = glm::vec3(1.f)
@@ -84,6 +83,9 @@ public:
 
 	void activateShader();
 	void deactivateShader();
+
+private:
+	void updateLightingUniforms();
 
 private:
 	GLuint m_glProgramID, m_glInstancedProgramID;

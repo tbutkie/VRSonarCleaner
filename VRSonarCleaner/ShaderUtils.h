@@ -49,7 +49,19 @@ inline GLuint CompileGLShader(const char *pchShaderName, const char *pchVertexSh
 	if (programSuccess != GL_TRUE)
 	{
 		printf("%s - Error linking program %d!\n", pchShaderName, unProgramID);
+
+		GLint maxLength = 0;
+		glGetProgramiv(unProgramID, GL_INFO_LOG_LENGTH, &maxLength);
+
+		//The maxLength includes the NULL character
+		std::vector<GLchar> infoLog(maxLength);
+		glGetProgramInfoLog(unProgramID, maxLength, &maxLength, &infoLog[0]);
+
+		printf("%s\n", &infoLog[0]);
+
+		//The program is useless now. So delete it.
 		glDeleteProgram(unProgramID);
+
 		return 0;
 	}
 

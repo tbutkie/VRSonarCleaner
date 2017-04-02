@@ -31,11 +31,12 @@ Renderer::~Renderer()
 	Shutdown();
 }
 
-bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM, LightingSystem *pLS)
+bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 {
 	m_pHMD = pHMD;
 	m_pTDM = pTDM;
-	m_pLighting = pLS;
+	m_pLighting = new LightingSystem();
+	m_pLighting->addDirectLight();
 	
 	if (SDL_GL_SetSwapInterval(m_bVblank ? 1 : 0) < 0)
 	{
@@ -313,17 +314,19 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	
 	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDView;
 	glm::mat4 thisEyesViewProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight) * thisEyesViewMatrix;
-	
+
 	m_pTDM->renderControllerCustomizations(&thisEyesViewProjectionMatrix);
 
-	m_pLighting->updateView(thisEyesViewMatrix);
+	m_pLighting->update(thisEyesViewMatrix);
 
 	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 	{
 		// ----- Render Model rendering -----
-		if(*m_punRenderModelProgramID)
+		//if(*m_punRenderModelProgramID)
 
-		glUseProgram(*m_punRenderModelProgramID);
+		//glUseProgram(*m_punRenderModelProgramID);
+
+		m_pLighting->activateShader();
 
 		for (auto &rm : m_mapModelInstances)
 		{
@@ -335,7 +338,8 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 				{
 					glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
 					glUniformMatrix4fv(MV_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
-					glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
+					glUniformMatrix3fv(MV_INV_TRANS_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
+					//glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
 					pglRenderModel->Draw();
 				}
 			}

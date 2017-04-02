@@ -12,7 +12,6 @@
 #include "CGLRenderModel.h"
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
-#include "LightingSystem.h"
 #include "Renderer.h"
 
 #include <openvr.h>
@@ -64,7 +63,6 @@ private:
 	DataVolume* wallVolume;
 	DataVolume* tableVolume;
 	FlowVolume* flowVolume;
-	LightingSystem* m_pLighting;
 
 	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fPtHighlightAmt;
