@@ -45,6 +45,14 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 		return false;
 	}
 
+	glGenBuffers(1, &m_glFrameUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, NULL, GL_STATIC_DRAW); // allocate memory
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, 2 * sizeof(glm::mat4));
+
+
 	SetupShaders();
 	SetupCameras();
 	SetupStereoRenderTargets();
@@ -335,9 +343,12 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 				{
 					for (auto const &instancePose : rm.second)
 					{
+						glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
+						glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(thisEyesViewMatrix * instancePose));
+						glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
+						glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 						glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
-						glUniformMatrix4fv(MV_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
-						glUniformMatrix3fv(MV_INV_TRANS_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
 						//glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
 						pglRenderModel->Draw();
 					}

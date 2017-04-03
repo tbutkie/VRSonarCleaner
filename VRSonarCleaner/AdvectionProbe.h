@@ -14,6 +14,9 @@ public:
 
 private:
 	FlowVolume* m_pFlowVolume;
+	GLuint m_glVAO;
+	GLuint m_glVBO;
+	GLuint m_glIBO;
 
 private:
 	void activateProbe();

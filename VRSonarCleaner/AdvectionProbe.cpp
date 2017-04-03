@@ -2,10 +2,44 @@
 
 #include "DebugDrawer.h"
 
+#include "Icosphere.h"
+
 AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolume)
 	: ProbeBehavior(controller, flowVolume)
 	, m_pFlowVolume(flowVolume)
+	, m_glVAO(0)
+	, m_glVBO(0)
+	, m_glIBO(0)
 {
+	Icosphere s(3);
+	std::vector<glm::vec3> verts = s.getVertices();
+	std::vector<glm::vec3> norms = verts;
+	std::vector<glm::vec2> texcoords(verts.size(), glm::vec2(0.5f));
+	std::vector<unsigned int> inds = s.getIndices();
+
+	// create and bind a VAO to hold state for this model
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
+
+	// Populate a vertex buffer
+	glGenBuffers(1, &m_glVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * verts.size(), &verts[0], GL_STATIC_DRAW);
+
+	// Identify the components in the vertex buffer
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
+
+	// Create and populate the index buffer
+	glGenBuffers(1, &m_glIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * inds.size(), &inds[0], GL_STATIC_DRAW);
+
+	glBindVertexArray(0);
 }
 
 

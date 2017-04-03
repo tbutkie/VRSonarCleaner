@@ -89,6 +89,8 @@ private:
 	GLuint* m_punDebugDrawerProgramID;
 	GLuint* m_punInfoBoxProgramID;
 
+	GLuint m_glFrameUBO;
+
 	int m_nCompanionWindowWidth;
 	int m_nCompanionWindowHeight;
 	FramebufferDesc leftEyeDesc;

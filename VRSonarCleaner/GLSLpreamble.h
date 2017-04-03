@@ -25,6 +25,12 @@
 #define SPOT_LIGHTS_COUNT_UNIFORM_LOCATION		8
 
 
+// UNIFORM BLOCKS: layout(std40, binding = _____)
+
+#define SCENE_UNIFORM_BUFFER_LOCATION			0
+#define LIGHTS_UNIFORM_BUFFER_LOCATION			1
+
+
 // TEXTURE UNITS: layout(binding = _____)
 
 #define DIFFUSE_TEXTURE_BINDING					0
