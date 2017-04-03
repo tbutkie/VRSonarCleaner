@@ -1,5 +1,4 @@
 #include "TrackedDevice.h"
-#include "ShaderUtils.h"
 
 #include <shared/glm/gtc/type_ptr.hpp>
 
@@ -10,12 +9,6 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	, m_strRenderModelName("No model name")
 	, m_bHasRenderModel(false)
 	, m_ClassChar(0)
-	, m_unTransformProgramID(0)
-	, m_glVertBuffer(0)
-	, m_uiLineVertcount(0)
-	, m_uiTriVertcount(0)
-	, m_unVAO(0)
-	, m_nMatrixLocation(-1)
 	, m_bShowAxes(false)
 {	
 }
@@ -23,20 +16,10 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 
 TrackedDevice::~TrackedDevice()
 {
-	if (m_unVAO != 0)
-	{
-		glDeleteVertexArrays(1, &m_unVAO);
-	}
-	if (m_unTransformProgramID)
-	{
-		glDeleteProgram(m_unTransformProgramID);
-	}
 }
 
 bool TrackedDevice::BInit()
 {
-	createShaders();
-
 	return true;
 }
 
@@ -99,21 +82,6 @@ bool TrackedDevice::update(vr::TrackedDevicePose_t pose)
 	return m_Pose.bPoseIsValid;
 }
 
-void TrackedDevice::render(glm::mat4 & matVP)
-{
-	// draw the controller axis lines
-	glUseProgram(m_unTransformProgramID);
-	// for now this controller-centric geometry is written in tracking space coords,
-	// so no model matrix is required
-	glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
-	glBindVertexArray(m_unVAO);
-	if(m_uiLineVertcount > 0)
-		glDrawArrays(GL_LINES, 0, m_uiLineVertcount);
-	if (m_uiTriVertcount > 0)
-		glDrawArrays(GL_TRIANGLES, m_uiLineVertcount, m_uiTriVertcount);
-	glBindVertexArray(0);
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: Converts a SteamVR matrix to our local matrix class
 //-----------------------------------------------------------------------------
@@ -142,42 +110,6 @@ vr::HmdMatrix34_t TrackedDevice::ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &
 	matrixObj.m[0][3] = glm::value_ptr(matPose)[12]; matrixObj.m[1][3] = glm::value_ptr(matPose)[13]; matrixObj.m[2][3] = glm::value_ptr(matPose)[14];
 
 	return matrixObj;
-}
-
-bool TrackedDevice::createShaders()
-{
-	m_unTransformProgramID = CompileGLShader(
-		"Controller",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec3 position;\n"
-		"layout(location = 1) in vec4 v4ColorIn;\n"
-		"out vec4 v4Color;\n"
-		"void main()\n"
-		"{\n"
-		"	v4Color = v4ColorIn;\n"
-		"	gl_Position = matrix * vec4(position, 1.f);\n"
-		"}\n",
-
-		// fragment shader
-		"#version 410\n"
-		"in vec4 v4Color;\n"
-		"out vec4 outputColor;\n"
-		"void main()\n"
-		"{\n"
-		"   outputColor = v4Color;\n"
-		"}\n"
-	);
-	m_nMatrixLocation = glGetUniformLocation(m_unTransformProgramID, "matrix");
-	if (m_nMatrixLocation == -1)
-	{
-		printf("Unable to find matrix uniform in controller shader\n");
-		return false;
-	}
-	
-	return m_unTransformProgramID != 0;
 }
 
 uint32_t TrackedDevice::getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError * peError)

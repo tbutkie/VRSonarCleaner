@@ -87,6 +87,7 @@ private:
 	GLuint* m_punCompanionWindowProgramID;
 	GLuint* m_punLightingProgramID;
 	GLuint* m_punDebugDrawerProgramID;
+	GLuint* m_punInfoBoxProgramID;
 
 	int m_nCompanionWindowWidth;
 	int m_nCompanionWindowHeight;

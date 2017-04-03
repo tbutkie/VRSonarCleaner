@@ -1,5 +1,4 @@
 #include "TrackedDeviceManager.h"
-#include "ShaderUtils.h"
 #include "InfoBoxManager.h"
 #include "Renderer.h"
 #include <shared/glm/gtc/type_ptr.hpp>
@@ -260,6 +259,7 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 		}
 	}
 
+	m_rpTrackedDevices[unTrackedDeviceIndex] = NULL;
 }
 
 void TrackedDeviceManager::updateTrackedDeviceRenderModels()
@@ -452,15 +452,6 @@ void TrackedDeviceManager::update()
 	}
 
 	updateTrackedDeviceRenderModels();
-}
-
-void TrackedDeviceManager::renderControllerCustomizations(glm::mat4 * matVP)
-{
-	if (m_pPrimaryController && m_pPrimaryController->readyToRender())
-		m_pPrimaryController->render(*matVP);
-
-	if (m_pSecondaryController && m_pSecondaryController->readyToRender())
-		m_pSecondaryController->render(*matVP);
 }
 
 //-----------------------------------------------------------------------------

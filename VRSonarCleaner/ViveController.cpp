@@ -54,10 +54,6 @@ bool ViveController::BInit()
 	
 	if (m_nTouchpadAxis < 0)
 		printf("Unable to find proper axes for controller touchpad.\n");
-
-
-	// Create shaders used for our own custom geometry
-	createShaders();
 	
 	// Initialize controller state
 	m_pHMD->GetControllerState(m_unDeviceID, &m_ControllerState, sizeof(m_ControllerState));

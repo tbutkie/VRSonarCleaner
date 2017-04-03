@@ -15,6 +15,9 @@ AdvectionProbe::~AdvectionProbe()
 
 void AdvectionProbe::update()
 {
+	if (!m_pController->readyToRender())
+		return;
+
 	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
 	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), m_pDataVolume->getPosition()));
 	DebugDrawer::getInstance().drawSphere(sphereRad, 3, glm::vec4(0.f, 0.f, 1.f, 0.25f));

@@ -44,6 +44,9 @@ void ProbeBehavior::update()
 
 void ProbeBehavior::draw()
 {
+	if (!m_pController->readyToRender())
+		return;
+
 	if (m_bShowProbe)
 	{
 		// Update time vars

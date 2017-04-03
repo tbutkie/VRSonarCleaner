@@ -39,8 +39,6 @@ public:
 	void updateTrackedDeviceRenderModels();
 	void update();
 
-	void renderControllerCustomizations(glm::mat4 *matVP);
-
 private:
 	void TrackedDeviceManager::initDevices();
 	bool setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);

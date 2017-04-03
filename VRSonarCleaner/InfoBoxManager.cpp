@@ -1,7 +1,8 @@
 #include "InfoBoxManager.h"
-#include "ShaderUtils.h"
 #include <shared\glm\gtc\type_ptr.hpp>
 #include <shared\glm\gtc\matrix_transform.hpp>
+
+#include "GLSLpreamble.h"
 
 InfoBoxManager & InfoBoxManager::getInstance()
 {
@@ -33,14 +34,11 @@ bool InfoBoxManager::removeInfoBox(std::string name)
 }
 
 InfoBoxManager::InfoBoxManager()
-	: m_unTransformProgramID(0)
-	, m_glVertBuffer(0)
-	, m_nMatrixLocation(0)
+	: m_glVertBuffer(0)
 	, m_unVAO(0)
 	, m_pTDM(NULL)
 {
 	createGeometry();
-	createShaders();
 
 	createTutorial();
 	
@@ -90,7 +88,6 @@ void InfoBoxManager::render(const float *matVP)
 
 	glm::mat4 HMDXform = glm::inverse(m_pTDM->getHMDPose());
 
-	glUseProgram(m_unTransformProgramID);
 	glBindVertexArray(m_unVAO);
 	for (auto const& ib : m_mapInfoBoxes)
 	{
@@ -103,7 +100,8 @@ void InfoBoxManager::render(const float *matVP)
 		if (relToWhat == SECONDARY_CONTROLLER) relXform = m_pTDM->getSecondaryControllerPose();
 
 		// short-circuit if controller is not active
-		if (relXform == glm::mat4() && (relToWhat == PRIMARY_CONTROLLER || relToWhat == SECONDARY_CONTROLLER))
+		if ((relToWhat == PRIMARY_CONTROLLER && m_pTDM->getPrimaryController() && !m_pTDM->getPrimaryController()->readyToRender()) ||
+			(relToWhat == SECONDARY_CONTROLLER && m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->readyToRender()))
 			continue;
 
 		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);
@@ -121,13 +119,12 @@ void InfoBoxManager::render(const float *matVP)
 			infoBoxMat[2] = HMDXform[2];
 		}
 
-		glUniformMatrix4fv(m_nMatrixLocation, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat * scaleMat));
+		glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat * scaleMat));
 		std::get<IBIndex::TEXTURE>(ib.second)->activate();
 		glDrawElements(GL_TRIANGLES, m_uiIndexSize, GL_UNSIGNED_SHORT, 0); 
-		std::get<IBIndex::TEXTURE>(ib.second)->deactivate();
 	}
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArray(0);
-	glUseProgram(0);
 }
 
 bool InfoBoxManager::updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose)
@@ -191,56 +188,15 @@ void InfoBoxManager::createGeometry()
 		GLuint stride = 2 * sizeof(float) + 2 * sizeof(float);
 		GLuint offset = 0;
 
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		offset += 2 * sizeof(float);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
 
 		glBindVertexArray(0);
 	}
-}
-
-bool InfoBoxManager::createShaders()
-{
-	m_unTransformProgramID = CompileGLShader(
-		"InfoBox",
-
-		// vertex shader
-		"#version 410\n"
-		"uniform mat4 matrix;\n"
-		"layout(location = 0) in vec2 position;\n"
-		"layout(location = 1) in vec2 v2TexCoordIn;\n"
-		"out vec2 v2TexCoord;\n"
-		"void main()\n"
-		"{\n"
-		"	v2TexCoord = vec2(v2TexCoordIn.x, 1.f - v2TexCoordIn.y);\n"
-		"	gl_Position = matrix * vec4(position, 0.f, 1.f);\n"
-		"}\n",
-
-		// fragment shader
-		"#version 410\n"
-		"in vec2 v2TexCoord;\n"
-		"out vec4 outputColor;\n"
-		"uniform sampler2D texSampler;\n"
-		"void main()\n"
-		"{\n"
-		"   vec4 col = texture(texSampler, v2TexCoord);\n"
-		"   if (col.a < 0.2f)\n"
-		"      discard;\n"
-		"   outputColor = col;\n"
-		"}\n"
-	);
-
-	m_nMatrixLocation = glGetUniformLocation(m_unTransformProgramID, "matrix");
-	if (m_nMatrixLocation == -1)
-	{
-		printf("Unable to find matrix uniform in InfoBox shader\n");
-		return false;
-	}
-
-	return m_unTransformProgramID != 0;
 }
 
 void InfoBoxManager::createTutorial()

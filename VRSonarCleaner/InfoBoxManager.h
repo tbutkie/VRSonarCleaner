@@ -53,7 +53,6 @@ private:
 	~InfoBoxManager();
 
 	void createGeometry();
-	bool createShaders();
 
 	void createTutorial();
 
@@ -63,8 +62,6 @@ private:
 	IBMapT m_mapInfoBoxes;
 	std::map<std::string, Texture*> m_mapTextureBank;
 
-	GLuint m_unTransformProgramID;
-	GLint m_nMatrixLocation;
 	GLuint m_glVertBuffer;
 	GLuint m_glIndexBuffer;
 	GLuint m_uiIndexSize;

@@ -236,7 +236,6 @@
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="shaderset.h" />
-    <ClInclude Include="ShaderUtils.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SingleControllerBehavior.h" />
     <ClInclude Include="SonarPointCloud.h" />

@@ -1,5 +1,4 @@
 #include "LassoWindow.h"
-#include "ShaderUtils.h"
 #include "DebugDrawer.h"
 
 extern CloudCollection *clouds;

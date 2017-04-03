@@ -6,7 +6,6 @@
 
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
-#include "ShaderUtils.h"
 
 #include "GLSLpreamble.h"
 
@@ -17,6 +16,7 @@ Renderer::Renderer()
 	, m_punLightingProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
 	, m_punDebugDrawerProgramID(NULL)
+	, m_punInfoBoxProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
@@ -77,6 +77,7 @@ void Renderer::SetupShaders()
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
 	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
+	m_punInfoBoxProgramID = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 }
 
 
@@ -316,41 +317,47 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDView;
 	glm::mat4 thisEyesViewProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight) * thisEyesViewMatrix;
 
-	m_pTDM->renderControllerCustomizations(&thisEyesViewProjectionMatrix);
-
 	// ----- Render Model rendering -----
-	if(*m_punLightingProgramID)
-
-	glUseProgram(*m_punLightingProgramID);
-
-	m_pLighting->m_glProgramID = *m_punLightingProgramID;
-	m_pLighting->update(thisEyesViewMatrix);
-
-	if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
+	if (*m_punLightingProgramID)
 	{
-		for (auto &rm : m_mapModelInstances)
-		{
-			CGLRenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
+		glUseProgram(*m_punLightingProgramID);
 
-			if (pglRenderModel)
+		m_pLighting->m_glProgramID = *m_punLightingProgramID;
+		m_pLighting->update(thisEyesViewMatrix);
+
+		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
+		{
+			for (auto &rm : m_mapModelInstances)
 			{
-				for (auto const &instancePose : rm.second)
+				CGLRenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
+
+				if (pglRenderModel)
 				{
-					glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
-					glUniformMatrix4fv(MV_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
-					glUniformMatrix3fv(MV_INV_TRANS_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
-					//glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
-					pglRenderModel->Draw();
+					for (auto const &instancePose : rm.second)
+					{
+						glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
+						glUniformMatrix4fv(MV_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewMatrix * instancePose));
+						glUniformMatrix3fv(MV_INV_TRANS_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
+						//glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
+						pglRenderModel->Draw();
+					}
 				}
-			}
-			else
-			{
-				printf("Unable to load render model %s\n", rm.first.c_str());
+				else
+				{
+					printf("Unable to load render model %s\n", rm.first.c_str());
+				}
 			}
 		}
 	}
-	
-	InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
+
+	if (*m_punInfoBoxProgramID)
+	{
+		glUseProgram(*m_punInfoBoxProgramID);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
+		glDisable(GL_BLEND);
+	}
 
 	if (*m_punDebugDrawerProgramID)
 	{
@@ -363,9 +370,9 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		DebugDrawer::getInstance().render();
 		glDisable(GL_BLEND);
-
-		glUseProgram(0);
 	}
+
+	glUseProgram(0);
 }
 
 //-----------------------------------------------------------------------------

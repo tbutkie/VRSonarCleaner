@@ -36,8 +36,6 @@ public:
 
 	glm::mat4 getDeviceToWorldTransform();
 
-	void render(glm::mat4 & matVP);
-
 protected:
 	struct TrackedDeviceComponent {
 		uint32_t							m_unComponentIndex;
@@ -76,7 +74,6 @@ protected:
 	std::vector<TrackedDeviceComponent> m_vComponents;
 
 protected:
-	bool createShaders();
 	virtual bool update(vr::TrackedDevicePose_t pose);
 	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
@@ -93,13 +90,6 @@ protected:
 	vr::TrackedDevicePose_t m_Pose;
 
 	glm::mat4 m_mat4DeviceToWorldTransform;
-	
-	GLuint m_glVertBuffer;
-	GLuint m_unVAO;
-	unsigned int m_uiLineVertcount;
-	unsigned int m_uiTriVertcount;
-	GLuint m_unTransformProgramID;
-	GLint m_nMatrixLocation;
 
 	bool m_bShowAxes;
 	bool m_bHasRenderModel;

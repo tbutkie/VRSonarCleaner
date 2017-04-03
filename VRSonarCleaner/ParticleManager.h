@@ -4,8 +4,9 @@
 
 #include <shared/glm/glm.hpp>
 
-#include "ShaderUtils.h"
 #include "ParticleSystem.h"
+
+#include <GL\glew.h>
 
 #define MAX_NUM_PARTICLES 10000
 

@@ -4,11 +4,11 @@
 #include <vector>
 
 #include "BroadcastSystem.h"
-#include "ShaderUtils.h"
 #include "Icosphere.h"
 #include "GLSLpreamble.h"
 
 #include <shared/glm/glm.hpp>
+#include <GL\glew.h>
 
 class LightingSystem
 {
