@@ -92,8 +92,8 @@ void FlowVolume::draw()
 {
 	//draw debug
 	drawBBox();
-	drawBacking();
-	drawAxes();
+	//drawBacking();
+	//drawAxes();
 	
 	//draw model
 	DebugDrawer::getInstance().setTransform(getCurrentDataTransform());
