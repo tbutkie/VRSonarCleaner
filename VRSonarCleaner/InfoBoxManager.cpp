@@ -100,8 +100,8 @@ void InfoBoxManager::render(const float *matVP)
 		if (relToWhat == SECONDARY_CONTROLLER) relXform = m_pTDM->getSecondaryControllerPose();
 
 		// short-circuit if controller is not active
-		if ((relToWhat == PRIMARY_CONTROLLER && m_pTDM->getPrimaryController() && !m_pTDM->getPrimaryController()->readyToRender()) ||
-			(relToWhat == SECONDARY_CONTROLLER && m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->readyToRender()))
+		if ((relToWhat == PRIMARY_CONTROLLER && !(m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->readyToRender())) ||
+			(relToWhat == SECONDARY_CONTROLLER && !(m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->readyToRender())))
 			continue;
 
 		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);

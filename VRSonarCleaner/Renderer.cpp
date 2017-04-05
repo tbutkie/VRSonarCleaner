@@ -47,10 +47,11 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 
 	glGenBuffers(1, &m_glFrameUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, NULL, GL_STATIC_DRAW); // allocate memory
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, 2 * sizeof(glm::mat4));
+	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, sizeof(FrameUniforms));
 
 
 	SetupShaders();
@@ -323,7 +324,12 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glEnable(GL_DEPTH_TEST);
 	
 	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDView;
-	glm::mat4 thisEyesViewProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight) * thisEyesViewMatrix;
+	glm::mat4 thisEyesProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight);
+	glm::mat4 thisEyesViewProjectionMatrix = thisEyesProjectionMatrix * thisEyesViewMatrix;
+
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(thisEyesViewMatrix));
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
 
 	// ----- Render Model rendering -----
 	if (*m_punLightingProgramID)
@@ -344,8 +350,8 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 					for (auto const &instancePose : rm.second)
 					{
 						glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-						glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(thisEyesViewMatrix * instancePose));
-						glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(glm::mat3(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose)))));
+						glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4MV), sizeof(FrameUniforms::m4MV), glm::value_ptr(thisEyesViewMatrix * instancePose));
+						glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4MVInvTrans), sizeof(FrameUniforms::m4MVInvTrans), glm::value_ptr(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose))));
 						glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 						glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));

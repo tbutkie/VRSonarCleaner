@@ -13,7 +13,7 @@ CGLRenderModel::CGLRenderModel(const std::string & sRenderModelName)
 	, m_glDiffuseTexture(0)
 	, m_glSpecularTexture(0)
 	, m_glEmissiveTexture(0)
-	, m_fShininess(110.f)
+	, m_fShininess(20.f)
 {
 }
 

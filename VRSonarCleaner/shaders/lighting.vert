@@ -11,15 +11,12 @@ layout(location = MVP_UNIFORM_LOCATION)
 layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION) 
 	uniform FrameUniforms
 	{
-		//              	// base alignment  // aligned offset
-		mat4 m4MV;     		// 16              // 0   (column 0)
-							// 16              // 16  (column 1)
-							// 16              // 32  (column 2)
-							// 16              // 48  (column 3)
-		mat4 m4MVInvTrans;	// 16              // 64  (column 0)
-							// 16              // 80  (column 1)
-							// 16              // 96  (column 2)
-							// 16              // 112 (column 3)
+		vec4 v4Viewport;
+		mat4 m4MV;
+		mat4 m4MVInvTrans;
+		mat4 m4View;
+		mat4 m4Projection;
+		mat4 m4ViewProjection;
 	};
 
 out vec3 v3Normal;
