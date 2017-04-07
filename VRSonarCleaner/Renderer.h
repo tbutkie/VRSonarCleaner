@@ -10,8 +10,6 @@
 
 struct FrameUniforms {
 	glm::vec4 v4Viewport;
-	glm::mat4 m4MV;
-	glm::mat4 m4MVInvTrans;
 	glm::mat4 m4View;
 	glm::mat4 m4Projection;
 	glm::mat4 m4ViewProjection;

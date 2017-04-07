@@ -349,13 +349,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 				{
 					for (auto const &instancePose : rm.second)
 					{
-						glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-						glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4MV), sizeof(FrameUniforms::m4MV), glm::value_ptr(thisEyesViewMatrix * instancePose));
-						glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4MVInvTrans), sizeof(FrameUniforms::m4MVInvTrans), glm::value_ptr(glm::transpose(glm::inverse(thisEyesViewMatrix * instancePose))));
-						glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-						glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix * instancePose));
-						//glUniform3fv(LIGHTDIR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::normalize(glm::mat3(thisEyesViewMatrix) * glm::vec3(1.f))));
+						glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(instancePose));
 						pglRenderModel->Draw();
 					}
 				}
@@ -367,27 +361,22 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 		}
 	}
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	if (*m_punInfoBoxProgramID)
 	{
 		glUseProgram(*m_punInfoBoxProgramID);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		InfoBoxManager::getInstance().render(glm::value_ptr(thisEyesViewProjectionMatrix));
-		glDisable(GL_BLEND);
+		InfoBoxManager::getInstance().render();
 	}
 
 	if (*m_punDebugDrawerProgramID)
 	{
 		glUseProgram(*m_punDebugDrawerProgramID);
-
-		glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(thisEyesViewProjectionMatrix));
-
-		// DEBUG DRAWER RENDER CALL
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		DebugDrawer::getInstance().render();
-		glDisable(GL_BLEND);
 	}
+
+	glDisable(GL_BLEND);
 
 	glUseProgram(0);
 }

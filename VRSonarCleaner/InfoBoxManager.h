@@ -43,7 +43,7 @@ public:
 
 	virtual void receiveEvent(const int event, void* data = NULL);
 
-	void render(const float *matVP);
+	void render();
 
 	bool updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose);
 	bool updateInfoBoxSize(std::string infoBoxName, float size);

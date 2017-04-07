@@ -12,7 +12,6 @@
 
 #define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20
 
-#define MAX_PARTICLES 1000
 
 class IllustrativeParticleSystem
 {

@@ -82,10 +82,8 @@ void InfoBoxManager::receiveEvent(const int event, void* data)
 	
 }
 
-void InfoBoxManager::render(const float *matVP)
+void InfoBoxManager::render()
 {
-	glm::mat4 VP = glm::make_mat4(matVP);
-
 	glm::mat4 HMDXform = glm::inverse(m_pTDM->getHMDPose());
 
 	glBindVertexArray(m_unVAO);
@@ -119,7 +117,7 @@ void InfoBoxManager::render(const float *matVP)
 			infoBoxMat[2] = HMDXform[2];
 		}
 
-		glUniformMatrix4fv(MVP_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(VP * relXform * infoBoxMat * scaleMat));
+		glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(relXform * infoBoxMat * scaleMat));
 		std::get<IBIndex::TEXTURE>(ib.second)->activate();
 		glDrawElements(GL_TRIANGLES, m_uiIndexSize, GL_UNSIGNED_SHORT, 0); 
 	}
