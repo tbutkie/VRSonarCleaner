@@ -12,11 +12,11 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 	
 in vec3 v3FragPos[3];
 in vec3 v3Normal[3];
-in vec3 v2TexCoords[3];
+in vec2 v2TexCoords[3];
 		
 out vec3 GPos;
 out vec3 GNorm;
-out vec3 GTex;
+out vec2 GTex;
 
 noperspective out vec3 GEdgeDist;
 
@@ -34,38 +34,31 @@ vec3 getViewportCoord(vec4 ptIn)
 
 void main(void)
 {
-	// taken from 'Single-Pass Wireframe Rendering'
-	vec3 p0 = getViewportCoord(gl_in[0].gl_Position);
-	vec3 p1 = getViewportCoord(gl_in[1].gl_Position);
-	vec3 p2 = getViewportCoord(gl_in[2].gl_Position);
+	vec2 WIN_SCALE = vec2(v4Viewport[2], v4Viewport[3]);
 	
-	float a = length(p1 - p2);
-	float b = length(p2 - p0);
-	float c = length(p1 - p0);
-	
-	float alpha = acos((b*b + c*c - a*a) / (2.0*b*c));
-	float beta = acos((a*a + c*c - b*b) / (2.0*a*c));
-	
-	float ha = abs(c * sin(beta));
-	float hb = abs(c * sin(alpha));
-	float hc = abs(b * sin(alpha));
-	
-	// Send the triangle along with the edge distances
-	GEdgeDist = vec3(ha, 0, 0);
+	vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
+	vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
+	vec2 p2 = WIN_SCALE * gl_in[2].gl_Position.xy/gl_in[2].gl_Position.w;
+	vec2 v0 = p2-p1;
+	vec2 v1 = p2-p0;
+	vec2 v2 = p1-p0;
+	float area = abs(v1.x*v2.y - v1.y * v2.x);
+
+	GEdgeDist = vec3(area/length(v0),0,0);
 	GPos = v3FragPos[0];
 	GNorm = v3Normal[0];
 	GTex = v2TexCoords[0];
 	gl_Position = gl_in[0].gl_Position;
 	EmitVertex();
 	
-	GEdgeDist = vec3( 0, hb, 0 );
+	GEdgeDist = vec3(0,area/length(v1),0);
 	GPos = v3FragPos[1];
 	GNorm = v3Normal[1];
-	GTex = v2TexCoords[1];
+	GTex = v2TexCoords[2];
 	gl_Position = gl_in[1].gl_Position;
 	EmitVertex();
 	
-	GEdgeDist = vec3( 0, 0, hc );
+	GEdgeDist = vec3(0,0,area/length(v2));
 	GPos = v3FragPos[2];
 	GNorm = v3Normal[2];
 	GTex = v2TexCoords[2];

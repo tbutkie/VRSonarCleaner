@@ -368,6 +368,11 @@ bool CMainApplication::HandleInput()
 			{
 				bRet = true;
 			}
+
+			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
+			{
+				Renderer::getInstance().toggleWireframe();
+			}
 			
 			if (mode == 0) //cleaning
 			{

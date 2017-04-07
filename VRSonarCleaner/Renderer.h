@@ -54,6 +54,8 @@ public:
 	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
 	void resetRenderModelInstances();
 
+	void toggleWireframe();
+
 	void RenderFrame(SDL_Window *win, glm::mat4 &HMDView);
 
 	void Shutdown();
@@ -90,9 +92,11 @@ private:
 
 	bool m_bVblank;
 	bool m_bGlFinishHack;
+	bool m_bShowWireframe;
 
 	GLuint* m_punCompanionWindowProgramID;
 	GLuint* m_punLightingProgramID;
+	GLuint* m_punLightingWireframeProgramID;
 	GLuint* m_punDebugDrawerProgramID;
 	GLuint* m_punInfoBoxProgramID;
 

@@ -14,12 +14,14 @@ Renderer::Renderer()
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
 	, m_punLightingProgramID(NULL)
+	, m_punLightingWireframeProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
 	, m_punDebugDrawerProgramID(NULL)
 	, m_punInfoBoxProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
+	, m_bShowWireframe(false)
 	, m_fNearClip(0.1f)
 	, m_fFarClip(50.0f)
 {
@@ -48,7 +50,6 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	glGenBuffers(1, &m_glFrameUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, sizeof(FrameUniforms));
@@ -73,6 +74,11 @@ void Renderer::resetRenderModelInstances()
 		rm.second.clear();
 }
 
+void Renderer::toggleWireframe()
+{
+	m_bShowWireframe = !m_bShowWireframe;
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
@@ -85,7 +91,7 @@ void Renderer::SetupShaders()
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
-	//m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lightingWF.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
+	m_punLightingWireframeProgramID = m_Shaders.AddProgramFromExts({ "shaders/lightingWF.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 	m_punInfoBoxProgramID = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 }
@@ -100,6 +106,10 @@ bool Renderer::SetupStereoRenderTargets()
 		return false;
 
 	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
 	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
@@ -323,21 +333,27 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_mat4eyePoseLeft : m_mat4eyePoseRight) * m_mat4CurrentHMDView;
 	glm::mat4 thisEyesProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight);
 	glm::mat4 thisEyesViewProjectionMatrix = thisEyesProjectionMatrix * thisEyesViewMatrix;
 
+	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(thisEyesViewMatrix));
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+	GLuint* lightingShaderProg = m_bShowWireframe ? m_punLightingWireframeProgramID : m_punLightingProgramID;
 	// ----- Render Model rendering -----
-	if (*m_punLightingProgramID)
+	if (*lightingShaderProg)
 	{
-		glUseProgram(*m_punLightingProgramID);
+		glUseProgram(*lightingShaderProg);
 
-		m_pLighting->m_glProgramID = *m_punLightingProgramID;
+		m_pLighting->m_glProgramID = *lightingShaderProg;
 		m_pLighting->update(thisEyesViewMatrix);
 
 		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
@@ -361,9 +377,6 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 			}
 		}
 	}
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (*m_punInfoBoxProgramID)
 	{
