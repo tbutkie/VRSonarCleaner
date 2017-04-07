@@ -85,6 +85,7 @@ void Renderer::SetupShaders()
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
+	//m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lightingWF.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 	m_punInfoBoxProgramID = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 }
