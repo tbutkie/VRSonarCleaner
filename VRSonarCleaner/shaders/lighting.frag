@@ -6,12 +6,8 @@ layout(binding = EMISSIVE_TEXTURE_BINDING)
 	uniform sampler2D emissiveTex;
 layout(location = MATERIAL_SHININESS_UNIFORM_LOCATION)
 	uniform float shininess;
-layout(location = DIR_LIGHTS_COUNT_UNIFORM_LOCATION)
-	uniform int numDirectionalLights;
-layout(location = POINT_LIGHTS_COUNT_UNIFORM_LOCATION)
-	uniform int numPointLights;
-layout(location = SPOT_LIGHTS_COUNT_UNIFORM_LOCATION)
-	uniform int numSpotLights;
+layout(location = LIGHT_COUNT_UNIFORM_LOCATION)
+	uniform int numLights;
 
 in vec3 v3Normal;
 in vec3 v3FragPos;
@@ -19,22 +15,7 @@ in vec2 v2TexCoords;
 
 out vec4 color;
 
-struct DirLight {
-    vec4 direction;
-    vec4 color;
-	float ambientCoeff;
-};
-
-struct PointLight {
-    vec4 position;
-    vec4 color;
-	float ambientCoeff;
-    float constant;
-    float linear;
-    float quadratic;
-};
-
-struct SpotLight {
+struct Light {
     vec4 position;
     vec4 direction;
     vec4 color;
@@ -46,70 +27,21 @@ struct SpotLight {
     float outerCutOff;
 };
 
-uniform DirLight dirLights[MAX_DIRECTIONAL_LIGHTS];
-uniform PointLight pointLights[MAX_POINT_LIGHTS];
-uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
+uniform Light lights[MAX_LIGHTS];
 
-vec3 CalcDirLight(DirLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 surfToViewDir)
+// Helper functions to apply control flow without shader branchings from normal if/else statements
+float ifelsef(float valueIf, float valueElse, float valueIn)
 {
-	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
-
-    float diffCoeff = max(dot(normal, -light.direction.xyz), 0.0);
-    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
-	
-    float specCoeff = pow(max(dot(surfToViewDir, reflect(light.direction.xyz, normal)), 0.f), shininess);
-    vec3 specular =  specCoeff * surfSpecCol;
-	
-    return (ambient + diffuse + specular);
+    return valueIn * valueIf + (1.f - valueIn) * valueElse;
 }
 
-vec3 CalcPointLight(PointLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
+vec3 ifelse3v(vec3 valueIf, vec3 valueElse, float valueIn)
 {
-    float distance = length(light.position.xyz - fragPos);
-    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-	
-	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
-	
-    vec3 fragToLightDir = normalize(light.position.xyz - fragPos);
-	
-    float diffCoeff = max(dot(normal, fragToLightDir), 0.0);
-    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
-	
-    float specCoeff = pow(max(dot(surfToViewDir, reflect(-fragToLightDir, normal)), 0.0), shininess);
-    vec3 specular = light.color.rgb * specCoeff * surfSpecCol;
-	
-	ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-	
-    return (ambient + diffuse + specular);
+    return valueIn * valueIf + (1.f - valueIn) * valueElse;
 }
 
-vec3 CalcSpotLight(SpotLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
-{
-    float distance = length(light.position.xyz - fragPos);
-    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-	
-	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
-	
-    vec3 fragToLightDir = normalize(light.position.xyz - fragPos);
-	
-    float diffCoeff = max(dot(normal, fragToLightDir), 0.0);
-    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
-	
-    float specCoeff = pow(max(dot(surfToViewDir, reflect(-fragToLightDir, normal)), 0.0), shininess);
-    vec3 specular = light.color.rgb * specCoeff * surfSpecCol;
-	
-    float theta = dot(fragToLightDir, -light.direction.xyz);
-    float epsilon = light.cutOff - light.outerCutOff;
-    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
-	
-    ambient *= attenuation * intensity;
-    diffuse *= attenuation * intensity;
-    specular *= attenuation * intensity;
-    return (ambient + diffuse + specular);
-}
-
+// Declare light calc function
+vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir);
 
 void main()
 {
@@ -121,17 +53,41 @@ void main()
 	
     vec3 result = vec3(0.f);
 
-	for(int i = 0; i < numDirectionalLights; i++)
-		result += CalcDirLight(dirLights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, fragToViewDir);
-
-	for(int i = 0; i < numPointLights; i++)
-		result += CalcPointLight(pointLights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, v3FragPos, fragToViewDir);
-
-	for(int i = 0; i < numSpotLights; i++)
-		result += CalcSpotLight(spotLights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, v3FragPos, fragToViewDir);
+	for(int i = 0; i < numLights; i++)
+		result += phong(lights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, v3FragPos, fragToViewDir);
 
 	result += surfaceEmisColor.rgb;
 	//vec3 gammaCorrection = vec3(1.f/2.2f);
 	//color = vec4(pow(result, gammaCorrection), 1.0);
     color = vec4(result, surfaceDiffColor.a);
+}
+
+vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
+{
+	// Point light vars
+    float distance = length(light.position.xyz - fragPos);
+    float attenuation = 1.0f / ifelsef((light.constant + light.linear * distance + light.quadratic * (distance * distance)), 1.f, light.position.w);
+	// Directional (infinite) lights have a 0 w component for their position; point and spot lights have a 1
+    vec3 fragToLightDir = ifelse3v(normalize(light.position.xyz - fragPos), -light.direction.xyz, light.position.w);
+	
+	// Spotlight vars
+    float theta = dot(fragToLightDir, -light.direction.xyz);
+	// Avoid div by 0
+    float invEpsilon = 1.f / ifelsef(light.cutOff - light.outerCutOff, 1.f, light.position.w);
+    float intensity = clamp((theta - light.outerCutOff) * invEpsilon, 0.0, 1.0);
+	intensity = ifelsef(intensity, 1.f, float(light.cutOff > 0.f && light.outerCutOff > 0.f));
+	
+	// Calculate lighting
+	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
+	
+    float diffCoeff = max(dot(normal, fragToLightDir), 0.0);
+    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
+	
+    float specCoeff = pow(max(dot(surfToViewDir, reflect(-fragToLightDir, normal)), 0.0), shininess);
+    vec3 specular = light.color.rgb * specCoeff * surfSpecCol;
+	
+    ambient *= attenuation * intensity;
+    diffuse *= attenuation * intensity;
+    specular *= attenuation * intensity;
+    return (ambient + diffuse + specular);
 }

@@ -13,51 +13,27 @@
 class LightingSystem
 {
 public:
-	struct BasicLight {
-		bool on;
+	struct Light {
 		glm::vec4 color;
-		float ambientCoefficient;
-
-		BasicLight()
-			: on(false)
-			, color(glm::vec4(0.f))
-			, ambientCoefficient(0.f)
-		{}
-	};
-
-	struct DLight : BasicLight {
-		glm::vec4 direction;
-
-		DLight()
-			: direction(glm::vec4(0.f))
-		{}
-	};
-
-	struct PLight : BasicLight {
 		glm::vec4 position;
+		glm::vec4 direction;
+		float ambientCoefficient;
 		float constant;
 		float linear;
 		float quadratic;
+		float cutOff;
+		float outerCutOff;
 
-		PLight()
-			: position(glm::vec4(0.f))
+		Light()
+			: color(glm::vec4(0.f))
+			, position(glm::vec4(0.f))
+			, direction(glm::vec4(0.f))
+			, ambientCoefficient(0.f)
 			, constant(0.f)
 			, linear(0.f)
 			, quadratic(0.f)
-		{}
-	};
-
-	struct SLight : PLight {
-		glm::vec4 direction;
-		float cutOff;
-		float outerCutOff;
-		bool attachedToCamera;
-
-		SLight()
-			: direction(glm::vec4(0.f))
 			, cutOff(0.f)
 			, outerCutOff(0.f)
-			, attachedToCamera(false)
 		{}
 	};
 
@@ -69,12 +45,12 @@ public:
 
 	void update(glm::mat4 view);
 
-	DLight* addDirectLight(glm::vec4 direction = glm::vec4(-1.f, -1.f, -1.f, 0.f)
+	Light* addDirectLight(glm::vec4 direction = glm::vec4(-1.f, -1.f, -1.f, 0.f)
 		, glm::vec4 color = glm::vec4(1.f)
 		, float ambientCoeff = 0.1f
 		);
 
-	PLight* addPointLight(glm::vec4 position = glm::vec4(1.f)
+	Light* addPointLight(glm::vec4 position = glm::vec4(1.f)
 		, glm::vec4 color = glm::vec4(1.f)
 		, float ambientCoeff = 0.1f
 		, float constant = 1.f
@@ -82,7 +58,7 @@ public:
 		, float quadratic = 1.f
 		);
 
-	SLight* addSpotLight(glm::vec4 position = glm::vec4(1.f)
+	Light* addSpotLight(glm::vec4 position = glm::vec4(1.f)
 		, glm::vec4 direction = glm::vec4(-1.f, -1.f, -1.f, 0.f)
 		, glm::vec4 color = glm::vec4(1.f)
 		, float ambientCoeff = 0.1f
@@ -98,16 +74,12 @@ public:
 	bool toggleShowPointLights();
 
 private:
-	DLight m_arrDLights[MAX_DIRECTIONAL_LIGHTS];
-	PLight m_arrPLights[MAX_POINT_LIGHTS];
-	SLight m_arrSLights[MAX_SPOT_LIGHTS];
+	Light m_arrLights[MAX_LIGHTS];
 	bool m_bDrawLightBulbs;
 
 	GLuint m_glLightingUBO;
 
-	int m_nDLights;
-	int m_nPLights;
-	int m_nSLights;
+	int m_nLights;
 };
 
 #endif

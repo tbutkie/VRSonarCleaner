@@ -16,9 +16,7 @@
 LightingSystem::LightingSystem()
 	: m_bDrawLightBulbs(true)
 	, m_glLightingUBO(0)
-	, m_nDLights(0)
-	, m_nPLights(0)
-	, m_nSLights(0)
+	, m_nLights(0)
 {
 	//glCreateBuffers(1, &m_glLightingUBO);
 	//glNamedBufferData(m_glLightingUBO, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
@@ -34,115 +32,71 @@ void LightingSystem::update(glm::mat4 view)
 {
 	glm::vec3 black(0.f);
 
-	glUniform1i(DIR_LIGHTS_COUNT_UNIFORM_LOCATION, m_nDLights);
-	glUniform1i(POINT_LIGHTS_COUNT_UNIFORM_LOCATION, m_nPLights);
-	glUniform1i(SPOT_LIGHTS_COUNT_UNIFORM_LOCATION, m_nSLights);
+	glUniform1i(LIGHT_COUNT_UNIFORM_LOCATION, m_nLights);
 
 	// Directional light
-	for (int i = 0; i < MAX_DIRECTIONAL_LIGHTS; ++i)
+	for (int i = 0; i < MAX_LIGHTS; ++i)
 	{
-		std::string name = "dirLights[" + std::to_string(i);
+		std::string name = "lights[" + std::to_string(i);
 		name += "]";
 
 		{
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrDLights[i].direction)));
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrDLights[i].color));
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrDLights[i].ambientCoefficient);
-		}
-	}
-
-	// Point light
-	for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
-	{
-		std::string name = "pointLights[" + std::to_string(i);
-		name += "]";
-
-		{
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrPLights[i].position));
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrPLights[i].color));
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrPLights[i].ambientCoefficient);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrPLights[i].constant);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrPLights[i].linear);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrPLights[i].quadratic);
-		}
-	}
-
-	// SpotLight
-	for (int i = 0; i < MAX_SPOT_LIGHTS; ++i)
-	{
-		std::string name = "spotLights[" + std::to_string(i);
-		name += "]";
-
-		{
-			if (m_arrSLights[i].attachedToCamera)
-			{
-				m_arrSLights[i].position = glm::vec4(0.f, 0.f, 0.f, 1.f);
-				m_arrSLights[i].direction = glm::vec4(0.f, 0.f, -1.f, 0.f);
-			}
-			else
-			{
-				glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrSLights[i].position));
-				glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrSLights[i].direction)));
-			}
-
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrSLights[i].color));
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrSLights[i].ambientCoefficient);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrSLights[i].constant);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrSLights[i].linear);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrSLights[i].quadratic);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrSLights[i].cutOff);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrSLights[i].outerCutOff);
+			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrLights[i].color));
+			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrLights[i].position));
+			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrLights[i].direction)));
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrLights[i].ambientCoefficient);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrLights[i].constant);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrLights[i].linear);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
 		}
 	}
 }
 
-LightingSystem::DLight* LightingSystem::addDirectLight(glm::vec4 direction, glm::vec4 color, float ambientCoeff)
+LightingSystem::Light* LightingSystem::addDirectLight(glm::vec4 direction, glm::vec4 color, float ambientCoeff)
 {
-	if (m_nDLights == MAX_DIRECTIONAL_LIGHTS)
+	if (m_nLights == MAX_LIGHTS)
 		return nullptr;
 
-	m_arrDLights[m_nDLights].direction = direction;
-	m_arrDLights[m_nDLights].color = color;
-	m_arrDLights[m_nDLights].ambientCoefficient = ambientCoeff;
-	m_arrDLights[m_nDLights].on = true;
+	m_arrLights[m_nLights].direction = direction;
+	m_arrLights[m_nLights].color = color;
+	m_arrLights[m_nLights].ambientCoefficient = ambientCoeff;
 
-	return &m_arrDLights[m_nDLights++];
+	return &m_arrLights[m_nLights++];
 }
 
-LightingSystem::PLight* LightingSystem::addPointLight(glm::vec4 position, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic)
+LightingSystem::Light* LightingSystem::addPointLight(glm::vec4 position, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic)
 {
-	if (m_nPLights == MAX_POINT_LIGHTS)
+	if (m_nLights == MAX_LIGHTS)
 		return nullptr;
 
-	m_arrPLights[m_nPLights].position = position;
-	m_arrPLights[m_nPLights].color = color;
-	m_arrPLights[m_nPLights].ambientCoefficient = ambientCoeff;
-	m_arrPLights[m_nPLights].constant = constant;
-	m_arrPLights[m_nPLights].linear = linear;
-	m_arrPLights[m_nPLights].quadratic = quadratic;
-	m_arrPLights[m_nPLights].on = true;
+	m_arrLights[m_nLights].position = position;
+	m_arrLights[m_nLights].color = color;
+	m_arrLights[m_nLights].ambientCoefficient = ambientCoeff;
+	m_arrLights[m_nLights].constant = constant;
+	m_arrLights[m_nLights].linear = linear;
+	m_arrLights[m_nLights].quadratic = quadratic;
 
-	return &m_arrPLights[m_nPLights++];
+	return &m_arrLights[m_nLights++];
 }
 
-LightingSystem::SLight* LightingSystem::addSpotLight(glm::vec4 position, glm::vec4 direction, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg, bool attachToCamera)
+LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec4 direction, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg, bool attachToCamera)
 {
-	if (m_nSLights == MAX_SPOT_LIGHTS)
+	if (m_nLights == MAX_LIGHTS)
 		return nullptr;
 
-	m_arrSLights[m_nSLights].position = position;
-	m_arrSLights[m_nSLights].direction = direction;
-	m_arrSLights[m_nSLights].color = color;
-	m_arrSLights[m_nSLights].ambientCoefficient = ambientCoeff;
-	m_arrSLights[m_nSLights].constant = constant;
-	m_arrSLights[m_nSLights].linear = linear;
-	m_arrSLights[m_nSLights].quadratic = quadratic;
-	m_arrSLights[m_nSLights].cutOff = glm::cos(glm::radians(cutOffDeg));
-	m_arrSLights[m_nSLights].outerCutOff = glm::cos(glm::radians(outerCutOffDeg));
-	m_arrSLights[m_nSLights].attachedToCamera = attachToCamera;
-	m_arrSLights[m_nSLights].on = true;
+	m_arrLights[m_nLights].position = position;
+	m_arrLights[m_nLights].direction = direction;
+	m_arrLights[m_nLights].color = color;
+	m_arrLights[m_nLights].ambientCoefficient = ambientCoeff;
+	m_arrLights[m_nLights].constant = constant;
+	m_arrLights[m_nLights].linear = linear;
+	m_arrLights[m_nLights].quadratic = quadratic;
+	m_arrLights[m_nLights].cutOff = glm::cos(glm::radians(cutOffDeg));
+	m_arrLights[m_nLights].outerCutOff = glm::cos(glm::radians(outerCutOffDeg));
 
-	return &m_arrSLights[m_nSLights++];
+	return &m_arrLights[m_nLights++];
 }
 
 void LightingSystem::showPointLights(bool yesno)
