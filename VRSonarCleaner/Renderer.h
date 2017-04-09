@@ -25,6 +25,24 @@ public:
 		GLuint m_nRenderFramebufferId;
 		GLuint m_nResolveTextureId;
 		GLuint m_nResolveFramebufferId;
+
+		FramebufferDesc()
+		{
+			glCreateRenderbuffers(1, &m_nDepthBufferId);
+			glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_nRenderTextureId);
+			glCreateFramebuffers(1, &m_nRenderFramebufferId);
+			glCreateTextures(GL_TEXTURE_2D, 1, &m_nResolveTextureId);
+			glCreateFramebuffers(1, &m_nResolveFramebufferId);
+		}
+
+		~FramebufferDesc()
+		{
+			glDeleteFramebuffers(1, &m_nResolveFramebufferId);
+			glDeleteTextures(1, &m_nResolveTextureId);
+			glDeleteFramebuffers(1, &m_nRenderFramebufferId);
+			glDeleteTextures(1, &m_nRenderTextureId);
+			glDeleteRenderbuffers(1, &m_nDepthBufferId);
+		}
 	};
 
 	struct VertexDataScene

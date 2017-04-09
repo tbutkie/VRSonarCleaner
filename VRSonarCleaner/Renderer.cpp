@@ -47,13 +47,9 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 		return false;
 	}
 
-	glGenBuffers(1, &m_glFrameUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
+	glCreateBuffers(1, &m_glFrameUBO);
+	glNamedBufferData(m_glFrameUBO, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
 	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, sizeof(FrameUniforms));
-
 
 	SetupShaders();
 	SetupCameras();
@@ -107,9 +103,8 @@ bool Renderer::SetupStereoRenderTargets()
 
 	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	// Set viewport for shader uniforms
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
 
 	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
 	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
@@ -123,37 +118,33 @@ bool Renderer::SetupStereoRenderTargets()
 //-----------------------------------------------------------------------------
 bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc)
 {
-	glGenFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nRenderFramebufferId);
+	// Create the multisample depth buffer as a render buffer
+	glNamedRenderbufferStorageMultisample(framebufferDesc.m_nDepthBufferId, 4, GL_DEPTH_COMPONENT, nWidth, nHeight);
+	// Allocate render texture storage
+	glTextureStorage2DMultisample(framebufferDesc.m_nRenderTextureId, 4, GL_RGBA8, nWidth, nHeight, true);
+	// Allocate resolve texture storage
+	glTextureStorage2D(framebufferDesc.m_nResolveTextureId, 1, GL_RGBA8, nWidth, nHeight);
 
-	glGenRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
-	glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, nWidth, nHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
+	// Attach depth buffer to render framebuffer 
+	glNamedFramebufferRenderbuffer(framebufferDesc.m_nRenderFramebufferId, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
+	// Attach render texture as color attachment to render framebuffer
+	glNamedFramebufferTexture(framebufferDesc.m_nRenderFramebufferId, GL_COLOR_ATTACHMENT0, framebufferDesc.m_nRenderTextureId, 0);
 
-	glGenTextures(1, &framebufferDesc.m_nRenderTextureId);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, nWidth, nHeight, true);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId, 0);
+	// Attach resolve texture as color attachment to resolve framebuffer
+	glNamedFramebufferTexture(framebufferDesc.m_nResolveFramebufferId, GL_COLOR_ATTACHMENT0, framebufferDesc.m_nResolveTextureId, 0);
 
-	glGenFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nResolveFramebufferId);
+	// Set resolve texture parameters
+	glTextureParameteri(framebufferDesc.m_nResolveTextureId, GL_TEXTURE_MAX_LEVEL, 0);
+	glTextureParameteri(framebufferDesc.m_nResolveTextureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(framebufferDesc.m_nResolveTextureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(framebufferDesc.m_nResolveTextureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(framebufferDesc.m_nResolveTextureId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glGenTextures(1, &framebufferDesc.m_nResolveTextureId);
-	glBindTexture(GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId, 0);
-
-	// check FBO status
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
+	// check FBO statuses
+	GLenum renderStatus = glCheckNamedFramebufferStatus(framebufferDesc.m_nRenderFramebufferId, GL_FRAMEBUFFER);
+	GLenum resolveStatus = glCheckNamedFramebufferStatus(framebufferDesc.m_nResolveFramebufferId, GL_FRAMEBUFFER);
+	if (renderStatus != GL_FRAMEBUFFER_COMPLETE || resolveStatus != GL_FRAMEBUFFER_COMPLETE)
 		return false;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return true;
 }
@@ -184,27 +175,28 @@ void Renderer::SetupCompanionWindow()
 	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2,   4, 5, 7,   4, 7, 6 };
 	m_uiCompanionWindowIndexSize = _countof(vIndices);
 
+	// Generate/allocate and fill vertex buffer object
+	glCreateBuffers(1, &m_glCompanionWindowIDVertBuffer);
+	glNamedBufferData(m_glCompanionWindowIDVertBuffer, vVerts.size() * sizeof(VertexDataWindow), &vVerts[0], GL_STATIC_DRAW);
+
+	// Generate/allocate and fill index buffer object
+	glCreateBuffers(1, &m_glCompanionWindowIDIndexBuffer);
+	glNamedBufferData(m_glCompanionWindowIDIndexBuffer, m_uiCompanionWindowIndexSize * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
+	
+	// Define our Vertex Attribute Object
 	glGenVertexArrays(1, &m_unCompanionWindowVAO);
 	glBindVertexArray(m_unCompanionWindowVAO);
 
-	glGenBuffers(1, &m_glCompanionWindowIDVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glCompanionWindowIDVertBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vVerts.size() * sizeof(VertexDataWindow), &vVerts[0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glCompanionWindowIDVertBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCompanionWindowIDIndexBuffer);
 
-	glGenBuffers(1, &m_glCompanionWindowIDIndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCompanionWindowIDIndexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_uiCompanionWindowIndexSize * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, position));
 
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, position));
-
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, texCoord));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, texCoord));
 
 	glBindVertexArray(0);
-
-	glDisableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glDisableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -283,8 +275,8 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 //-----------------------------------------------------------------------------
 void Renderer::RenderStereoTargets()
 {
-	//glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
-	glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
+	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
+	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
 	// Left Eye
@@ -298,7 +290,9 @@ void Renderer::RenderStereoTargets()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftEyeDesc.m_nResolveFramebufferId);
 
-	glBlitFramebuffer(0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight,
+	glBlitFramebuffer(
+		0, 0, m_nRenderWidth, m_nRenderHeight,
+		0, 0, m_nRenderWidth, m_nRenderHeight,
 		GL_COLOR_BUFFER_BIT,
 		GL_LINEAR);
 
@@ -318,7 +312,9 @@ void Renderer::RenderStereoTargets()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightEyeDesc.m_nResolveFramebufferId);
 
-	glBlitFramebuffer(0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight,
+	glBlitFramebuffer(
+		0, 0, m_nRenderWidth, m_nRenderHeight, 
+		0, 0, m_nRenderWidth, m_nRenderHeight,
 		GL_COLOR_BUFFER_BIT,
 		GL_LINEAR);
 
@@ -341,11 +337,9 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glm::mat4 thisEyesProjectionMatrix = (nEye == vr::Eye_Left ? m_mat4ProjectionLeft : m_mat4ProjectionRight);
 	glm::mat4 thisEyesViewProjectionMatrix = thisEyesProjectionMatrix * thisEyesViewMatrix;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, m_glFrameUBO);
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(thisEyesViewMatrix));
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(thisEyesViewMatrix));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
 
 	GLuint* lightingShaderProg = m_bShowWireframe ? m_punLightingWireframeProgramID : m_punLightingProgramID;
 	// ----- Render Model rendering -----
@@ -406,26 +400,16 @@ void Renderer::RenderCompanionWindow()
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
 
-	glBindVertexArray(m_unCompanionWindowVAO);
 	glUseProgram(*m_punCompanionWindowProgramID);
+	glBindVertexArray(m_unCompanionWindowVAO);
 
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+		// render left eye (first half of index array )
+		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeDesc.m_nResolveTextureId);
+		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, 0);
 
-	// render left eye (first half of index array )
-	glBindTexture(GL_TEXTURE_2D, leftEyeDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, 0);
-
-	// render right eye (second half of index array )
-	glBindTexture(GL_TEXTURE_2D, rightEyeDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(m_uiCompanionWindowIndexSize));
+		// render right eye (second half of index array )
+		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeDesc.m_nResolveTextureId);
+		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(m_uiCompanionWindowIndexSize));
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -553,18 +537,6 @@ void Renderer::Shutdown()
 	{
 		glDeleteProgram(*m_punDebugDrawerProgramID);
 	}
-
-	glDeleteRenderbuffers(1, &leftEyeDesc.m_nDepthBufferId);
-	glDeleteTextures(1, &leftEyeDesc.m_nRenderTextureId);
-	glDeleteFramebuffers(1, &leftEyeDesc.m_nRenderFramebufferId);
-	glDeleteTextures(1, &leftEyeDesc.m_nResolveTextureId);
-	glDeleteFramebuffers(1, &leftEyeDesc.m_nResolveFramebufferId);
-
-	glDeleteRenderbuffers(1, &rightEyeDesc.m_nDepthBufferId);
-	glDeleteTextures(1, &rightEyeDesc.m_nRenderTextureId);
-	glDeleteFramebuffers(1, &rightEyeDesc.m_nRenderFramebufferId);
-	glDeleteTextures(1, &rightEyeDesc.m_nResolveTextureId);
-	glDeleteFramebuffers(1, &rightEyeDesc.m_nResolveFramebufferId);
 
 	if (m_unCompanionWindowVAO != 0)
 	{
