@@ -25,6 +25,8 @@ struct Light {
     float quadratic;
     float cutOff;
     float outerCutOff;
+	float isOn;
+	float isSpotLight;
 };
 
 uniform Light lights[MAX_LIGHTS];
@@ -54,7 +56,7 @@ void main()
     vec3 result = vec3(0.f);
 
 	for(int i = 0; i < numLights; i++)
-		result += phong(lights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, v3FragPos, fragToViewDir);
+		result += ifelse3v(phong(lights[i], surfaceDiffColor.rgb, surfaceSpecColor.rgb, norm, v3FragPos, fragToViewDir), vec3(0.f), lights[i].isOn);
 
 	result += surfaceEmisColor.rgb;
 	//vec3 gammaCorrection = vec3(1.f/2.2f);
@@ -75,7 +77,7 @@ vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fr
 	// Avoid div by 0
     float invEpsilon = 1.f / ifelsef(light.cutOff - light.outerCutOff, 1.f, light.position.w);
     float intensity = clamp((theta - light.outerCutOff) * invEpsilon, 0.0, 1.0);
-	intensity = ifelsef(intensity, 1.f, float(light.cutOff > 0.f && light.outerCutOff > 0.f));
+	intensity = ifelsef(intensity, 1.f, light.isSpotLight);
 	
 	// Calculate lighting
 	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;

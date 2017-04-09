@@ -50,6 +50,8 @@ void LightingSystem::update(glm::mat4 view)
 			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
 			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
 			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isOn").c_str()), m_arrLights[i].isOn);
+			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isSpotLight").c_str()), m_arrLights[i].isSpotLight);
 		}
 	}
 }
@@ -62,6 +64,7 @@ LightingSystem::Light* LightingSystem::addDirectLight(glm::vec4 direction, glm::
 	m_arrLights[m_nLights].direction = direction;
 	m_arrLights[m_nLights].color = color;
 	m_arrLights[m_nLights].ambientCoefficient = ambientCoeff;
+	m_arrLights[m_nLights].isOn = 1.f;
 
 	return &m_arrLights[m_nLights++];
 }
@@ -77,11 +80,12 @@ LightingSystem::Light* LightingSystem::addPointLight(glm::vec4 position, glm::ve
 	m_arrLights[m_nLights].constant = constant;
 	m_arrLights[m_nLights].linear = linear;
 	m_arrLights[m_nLights].quadratic = quadratic;
+	m_arrLights[m_nLights].isOn = 1.f;
 
 	return &m_arrLights[m_nLights++];
 }
 
-LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec4 direction, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg, bool attachToCamera)
+LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec4 direction, glm::vec4 color, float ambientCoeff, float constant, float linear, float quadratic, float cutOffDeg, float outerCutOffDeg)
 {
 	if (m_nLights == MAX_LIGHTS)
 		return nullptr;
@@ -95,6 +99,8 @@ LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec
 	m_arrLights[m_nLights].quadratic = quadratic;
 	m_arrLights[m_nLights].cutOff = glm::cos(glm::radians(cutOffDeg));
 	m_arrLights[m_nLights].outerCutOff = glm::cos(glm::radians(outerCutOffDeg));
+	m_arrLights[m_nLights].isOn = 1.f;
+	m_arrLights[m_nLights].isSpotLight = 1.f;
 
 	return &m_arrLights[m_nLights++];
 }

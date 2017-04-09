@@ -23,6 +23,8 @@ public:
 		float quadratic;
 		float cutOff;
 		float outerCutOff;
+		float isOn;
+		float isSpotLight;
 
 		Light()
 			: color(glm::vec4(0.f))
@@ -34,7 +36,11 @@ public:
 			, quadratic(0.f)
 			, cutOff(0.f)
 			, outerCutOff(0.f)
-		{}
+			, isOn(0.f)
+			, isSpotLight(0.f)
+		{
+
+		}
 	};
 
 	GLuint m_glProgramID;
@@ -67,7 +73,6 @@ public:
 		, float quadratic = 1.f
 		, float cutOffDeg = 12.5f
 		, float outerCutOffDeg = 15.f
-		, bool attachToCamera = false
 		);
 	
 	void showPointLights(bool yesno);
