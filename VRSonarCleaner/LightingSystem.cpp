@@ -15,6 +15,7 @@
 
 LightingSystem::LightingSystem()
 	: m_bDrawLightBulbs(true)
+	, m_glLightingUBO(0)
 	, m_nDLights(0)
 	, m_nPLights(0)
 	, m_nSLights(0)

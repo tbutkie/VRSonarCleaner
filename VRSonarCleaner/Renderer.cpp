@@ -13,6 +13,7 @@ Renderer::Renderer()
 	: m_pHMD(NULL)
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
+	, m_glFrameUBO(0)
 	, m_punLightingProgramID(NULL)
 	, m_punLightingWireframeProgramID(NULL)
 	, m_punCompanionWindowProgramID(NULL)
@@ -87,7 +88,7 @@ void Renderer::SetupShaders()
 
 	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
-	m_punLightingWireframeProgramID = m_Shaders.AddProgramFromExts({ "shaders/lightingWF.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
+	m_punLightingWireframeProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 	m_punInfoBoxProgramID = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 }
