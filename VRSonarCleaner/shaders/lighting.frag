@@ -20,14 +20,14 @@ in vec2 v2TexCoords;
 out vec4 color;
 
 struct DirLight {
-    vec3 direction;
-    vec3 color;
+    vec4 direction;
+    vec4 color;
 	float ambientCoeff;
 };
 
 struct PointLight {
-    vec3 position;
-    vec3 color;
+    vec4 position;
+    vec4 color;
 	float ambientCoeff;
     float constant;
     float linear;
@@ -35,15 +35,15 @@ struct PointLight {
 };
 
 struct SpotLight {
-    vec3 position;
-    vec3 direction;
-    vec3 color;
+    vec4 position;
+    vec4 direction;
+    vec4 color;
 	float ambientCoeff;
+    float constant;
     float linear;
     float quadratic;
     float cutOff;
     float outerCutOff;
-    float constant;
 };
 
 uniform DirLight dirLights[MAX_DIRECTIONAL_LIGHTS];
@@ -52,12 +52,12 @@ uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 vec3 CalcDirLight(DirLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 surfToViewDir)
 {
-	vec3 ambient = light.color * light.ambientCoeff * surfDiffCol;
+	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
 
-    float diffCoeff = max(dot(normal, -light.direction), 0.0);
-    vec3 diffuse = light.color * diffCoeff * surfDiffCol;
+    float diffCoeff = max(dot(normal, -light.direction.xyz), 0.0);
+    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
 	
-    float specCoeff = pow(max(dot(surfToViewDir, reflect(light.direction, normal)), 0.f), shininess);
+    float specCoeff = pow(max(dot(surfToViewDir, reflect(light.direction.xyz, normal)), 0.f), shininess);
     vec3 specular =  specCoeff * surfSpecCol;
 	
     return (ambient + diffuse + specular);
@@ -65,18 +65,18 @@ vec3 CalcDirLight(DirLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 norma
 
 vec3 CalcPointLight(PointLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
 {
-    float distance = length(light.position - fragPos);
+    float distance = length(light.position.xyz - fragPos);
     float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	
-	vec3 ambient = light.color * light.ambientCoeff * surfDiffCol;
+	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
 	
-    vec3 fragToLightDir = normalize(light.position - fragPos);
+    vec3 fragToLightDir = normalize(light.position.xyz - fragPos);
 	
     float diffCoeff = max(dot(normal, fragToLightDir), 0.0);
-    vec3 diffuse = light.color * diffCoeff * surfDiffCol;
+    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
 	
     float specCoeff = pow(max(dot(surfToViewDir, reflect(-fragToLightDir, normal)), 0.0), shininess);
-    vec3 specular = light.color * specCoeff * surfSpecCol;
+    vec3 specular = light.color.rgb * specCoeff * surfSpecCol;
 	
 	ambient *= attenuation;
     diffuse *= attenuation;
@@ -87,20 +87,20 @@ vec3 CalcPointLight(PointLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 n
 
 vec3 CalcSpotLight(SpotLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
 {
-    float distance = length(light.position - fragPos);
+    float distance = length(light.position.xyz - fragPos);
     float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	
-	vec3 ambient = light.color * light.ambientCoeff * surfDiffCol;
+	vec3 ambient = light.color.rgb * light.ambientCoeff * surfDiffCol;
 	
-    vec3 fragToLightDir = normalize(light.position - fragPos);
+    vec3 fragToLightDir = normalize(light.position.xyz - fragPos);
 	
     float diffCoeff = max(dot(normal, fragToLightDir), 0.0);
-    vec3 diffuse = light.color * diffCoeff * surfDiffCol;
+    vec3 diffuse = light.color.rgb * diffCoeff * surfDiffCol;
 	
     float specCoeff = pow(max(dot(surfToViewDir, reflect(-fragToLightDir, normal)), 0.0), shininess);
-    vec3 specular = light.color * specCoeff * surfSpecCol;
+    vec3 specular = light.color.rgb * specCoeff * surfSpecCol;
 	
-    float theta = dot(fragToLightDir, -light.direction);
+    float theta = dot(fragToLightDir, -light.direction.xyz);
     float epsilon = light.cutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 	
