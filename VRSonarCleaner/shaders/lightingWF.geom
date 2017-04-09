@@ -20,21 +20,9 @@ out vec2 GTex;
 
 noperspective out vec3 GEdgeDist;
 
-vec3 getViewportCoord(vec4 ptIn)
-{
-	vec4 tmp = m4Projection * ptIn;
-
-	tmp /= tmp.w;
-	tmp = tmp * 0.5f + 0.5f;
-	tmp[0] = tmp[0] * v4Viewport[2] + v4Viewport[0]; // scale x to VP coords
-	tmp[1] = tmp[1] * v4Viewport[3] + v4Viewport[1]; // scale y to VP coords
-
-	return vec3(tmp);
-}
-
 void main(void)
 {
-	vec2 WIN_SCALE = vec2(v4Viewport[2], v4Viewport[3]);
+	vec2 WIN_SCALE = vec2(v4Viewport[2] - v4Viewport[0], v4Viewport[3] - v4Viewport[1]);
 	
 	vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
 	vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;

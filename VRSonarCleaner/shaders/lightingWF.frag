@@ -15,6 +15,7 @@ layout(location = SPOT_LIGHTS_COUNT_UNIFORM_LOCATION)
 
 float lineWidth = 1.f;
 vec4 lineColor = vec4(0.f, 0.f, 0.f, 1.f);
+vec4 fillColor = vec4(0.f, 0.f, 0.f, 0.f);
 
 in vec3 GNorm;
 in vec3 GPos;
@@ -61,6 +62,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 nor
 void main()
 {
     vec3 norm = normalize(GNorm);
+	norm = float(gl_FrontFacing) * norm + (1.f - float(gl_FrontFacing)) * -norm;
     vec3 fragToViewDir = normalize(-GPos);
 	vec4 surfaceDiffColor = texture(diffuseTex, GTex);
 	vec4 surfaceSpecColor = texture(specularTex, GTex);
@@ -82,13 +84,20 @@ void main()
 	//color = vec4(pow(result, gammaCorrection), 1.0);	
 	color = vec4(result, surfaceDiffColor.a);
 	
-	// wireframe
+	// Smallest distance to edge
 	float d = min(min(GEdgeDist.x, GEdgeDist.y), GEdgeDist.z);
 	
+	// Nice interpolation
 	float mixVal = smoothstep(lineWidth - 1.f, lineWidth + 1.f, d);
 
-	// Mix the surface color with the line color
-	color = mix(lineColor, color, mixVal);
+	// Set wireframe line and transparent fill
+	lineColor = color;
+	fillColor = vec4(lineColor.rbg, 0.f);
+	color = mix(lineColor, fillColor, mixVal);
+	
+	// Discard transparent fragments so they don't write to depth buffer
+	if (color.a <= 0.f)
+		discard;
 }
 
 vec3 CalcDirLight(DirLight light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 surfToViewDir)
