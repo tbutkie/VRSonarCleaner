@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <chrono>
 
-#include "CGLRenderModel.h"
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
 #include "Renderer.h"

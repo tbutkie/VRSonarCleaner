@@ -34,25 +34,22 @@ void LightingSystem::update(glm::mat4 view)
 
 	glUniform1i(LIGHT_COUNT_UNIFORM_LOCATION, m_nLights);
 
-	// Directional light
-	for (int i = 0; i < MAX_LIGHTS; ++i)
+	for (int i = 0; i < m_nLights; ++i)
 	{
 		std::string name = "lights[" + std::to_string(i);
 		name += "]";
-
-		{
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrLights[i].color));
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrLights[i].position));
-			glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrLights[i].direction)));
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrLights[i].ambientCoefficient);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrLights[i].constant);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrLights[i].linear);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isOn").c_str()), m_arrLights[i].isOn);
-			glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isSpotLight").c_str()), m_arrLights[i].isSpotLight);
-		}
+		
+		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrLights[i].color));
+		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrLights[i].position));
+		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrLights[i].direction)));
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrLights[i].ambientCoefficient);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrLights[i].constant);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrLights[i].linear);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isOn").c_str()), m_arrLights[i].isOn);
+		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isSpotLight").c_str()), m_arrLights[i].isSpotLight);
 	}
 }
 

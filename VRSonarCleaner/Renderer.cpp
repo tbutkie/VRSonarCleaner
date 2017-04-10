@@ -14,11 +14,6 @@ Renderer::Renderer()
 	, m_pTDM(NULL)
 	, m_pLighting(NULL)
 	, m_glFrameUBO(0)
-	, m_punLightingProgramID(NULL)
-	, m_punLightingWireframeProgramID(NULL)
-	, m_punCompanionWindowProgramID(NULL)
-	, m_punDebugDrawerProgramID(NULL)
-	, m_punInfoBoxProgramID(NULL)
 	, m_unCompanionWindowVAO(0)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
@@ -86,11 +81,11 @@ void Renderer::SetupShaders()
 
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
-	m_punCompanionWindowProgramID = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
-	m_punLightingProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
-	m_punLightingWireframeProgramID = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
-	m_punDebugDrawerProgramID = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
-	m_punInfoBoxProgramID = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
+	m_mapShaders["companionWindow"] = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
+	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
+	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
+	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
+	m_mapShaders["infoBox"] = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 }
 
 
@@ -342,7 +337,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
 
-	GLuint* lightingShaderProg = m_bShowWireframe ? m_punLightingWireframeProgramID : m_punLightingProgramID;
+	GLuint* lightingShaderProg = m_bShowWireframe ? m_mapShaders["lightingWireframe"] : m_mapShaders["lighting"];
 	// ----- Render Model rendering -----
 	if (*lightingShaderProg)
 	{
@@ -355,7 +350,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 		{
 			for (auto &rm : m_mapModelInstances)
 			{
-				CGLRenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
+				RenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
 
 				if (pglRenderModel)
 				{
@@ -373,15 +368,15 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 		}
 	}
 
-	if (*m_punInfoBoxProgramID)
+	if (*m_mapShaders["infoBox"])
 	{
-		glUseProgram(*m_punInfoBoxProgramID);
+		glUseProgram(*m_mapShaders["infoBox"]);
 		InfoBoxManager::getInstance().render();
 	}
 
-	if (*m_punDebugDrawerProgramID)
+	if (*m_mapShaders["debug"])
 	{
-		glUseProgram(*m_punDebugDrawerProgramID);
+		glUseProgram(*m_mapShaders["debug"]);
 		DebugDrawer::getInstance().render();
 	}
 
@@ -395,13 +390,13 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 //-----------------------------------------------------------------------------
 void Renderer::RenderCompanionWindow()
 {
-	if (m_punCompanionWindowProgramID == NULL)
+	if (m_mapShaders["companionWindow"] == NULL)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
 
-	glUseProgram(*m_punCompanionWindowProgramID);
+	glUseProgram(*m_mapShaders["companionWindow"]);
 	glBindVertexArray(m_unCompanionWindowVAO);
 
 		// render left eye (first half of index array )
@@ -420,10 +415,10 @@ void Renderer::RenderCompanionWindow()
 //-----------------------------------------------------------------------------
 // Purpose: Finds a render model we've already loaded or loads a new one
 //-----------------------------------------------------------------------------
-CGLRenderModel* Renderer::findOrLoadRenderModel(const char *pchRenderModelName)
+RenderModel* Renderer::findOrLoadRenderModel(const char *pchRenderModelName)
 {
 	// check model cache for existing model
-	CGLRenderModel *pRenderModel = m_mapModelCache[std::string(pchRenderModelName)];
+	RenderModel *pRenderModel = m_mapModelCache[std::string(pchRenderModelName)];
 
 	// found model in the cache, so return it
 	if (pRenderModel)
@@ -466,7 +461,7 @@ CGLRenderModel* Renderer::findOrLoadRenderModel(const char *pchRenderModelName)
 		return NULL; // move on to the next tracked device
 	}
 
-	pRenderModel = new CGLRenderModel(pchRenderModelName);
+	pRenderModel = new RenderModel(pchRenderModelName);
 	if (!pRenderModel->BInit(*pModel, *pTexture))
 	{
 		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
@@ -521,26 +516,6 @@ glm::mat4 Renderer::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
 
 void Renderer::Shutdown()
 {
-	if (m_punLightingProgramID)
-	{
-		glDeleteProgram(*m_punLightingProgramID);
-	}
-
 	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);
 	glDeleteBuffers(1, &m_glCompanionWindowIDIndexBuffer);
-
-	if (m_punCompanionWindowProgramID != NULL)
-	{
-		glDeleteProgram(*m_punCompanionWindowProgramID);
-	}
-
-	if (m_punDebugDrawerProgramID != NULL)
-	{
-		glDeleteProgram(*m_punDebugDrawerProgramID);
-	}
-
-	if (m_unCompanionWindowVAO != 0)
-	{
-		glDeleteVertexArrays(1, &m_unCompanionWindowVAO);
-	}
 }

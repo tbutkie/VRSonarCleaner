@@ -36,6 +36,7 @@ struct Light {
 
 uniform Light lights[MAX_LIGHTS];
 
+
 // Helper functions to apply control flow without shader branchings from normal if/else statements
 float ifelsef(float valueIf, float valueElse, float valueIn)
 {
@@ -47,8 +48,10 @@ vec3 ifelse3v(vec3 valueIf, vec3 valueElse, float valueIn)
     return valueIn * valueIf + (1.f - valueIn) * valueElse;
 }
 
+
 // Declare light calc function
 vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir);
+
 
 void main()
 {
@@ -84,6 +87,7 @@ void main()
 	if (color.a <= 0.f)
 		discard;
 }
+
 
 vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fragPos, vec3 surfToViewDir)
 {

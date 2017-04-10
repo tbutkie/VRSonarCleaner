@@ -3,11 +3,11 @@
 #include <string>
 #include <openvr.h>
 
-class CGLRenderModel
+class RenderModel
 {
 public:
-	CGLRenderModel(const std::string & sRenderModelName);
-	~CGLRenderModel();
+	RenderModel(const std::string & sRenderModelName);
+	~RenderModel();
 
 	bool BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel_TextureMap_t & vrDiffuseTexture);
 	void Cleanup();

@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 #include <openvr.h>
 #include <SDL.h>
-#include "CGLRenderModel.h"
+#include "RenderModel.h"
 #include "LightingSystem.h"
 #include "TrackedDeviceManager.h"
 #include "shaderset.h"
@@ -89,7 +89,7 @@ private:
 	bool SetupStereoRenderTargets();
 	void SetupCompanionWindow();
 	
-	CGLRenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
+	RenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 
 	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
 	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
@@ -105,18 +105,14 @@ private:
 
 	ShaderSet m_Shaders;
 
-	std::map<std::string, CGLRenderModel*> m_mapModelCache;
+	std::map<std::string, RenderModel*> m_mapModelCache;
 	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
 
 	bool m_bVblank;
 	bool m_bGlFinishHack;
 	bool m_bShowWireframe;
 
-	GLuint* m_punCompanionWindowProgramID;
-	GLuint* m_punLightingProgramID;
-	GLuint* m_punLightingWireframeProgramID;
-	GLuint* m_punDebugDrawerProgramID;
-	GLuint* m_punInfoBoxProgramID;
+	std::map<std::string, GLuint*> m_mapShaders;
 
 	GLuint m_glFrameUBO;
 

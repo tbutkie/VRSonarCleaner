@@ -30,9 +30,6 @@
     <ClCompile Include="..\shared\pathtools.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="CGLRenderModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CMainApplication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -138,6 +135,9 @@
     <ClCompile Include="LassoTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RenderModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -145,9 +145,6 @@
     </ClInclude>
     <ClInclude Include="..\shared\pathtools.h">
       <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="CGLRenderModel.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CMainApplication.h">
       <Filter>Header Files</Filter>
@@ -268,6 +265,9 @@
     </ClInclude>
     <ClInclude Include="AdvectionProbe.h">
       <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderModel.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

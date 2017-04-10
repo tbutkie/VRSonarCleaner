@@ -4,7 +4,6 @@
 
 #include "TrackedDevice.h"
 #include "ViveController.h"
-#include "CGLRenderModel.h"
 #include "BroadcastSystem.h"
 
 #include <shared/glm/glm.hpp>

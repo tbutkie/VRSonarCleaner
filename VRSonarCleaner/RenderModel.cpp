@@ -1,11 +1,11 @@
-#include "CGLRenderModel.h"
+#include "RenderModel.h"
 
 #include "GLSLpreamble.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models
 //-----------------------------------------------------------------------------
-CGLRenderModel::CGLRenderModel(const std::string & sRenderModelName)
+RenderModel::RenderModel(const std::string & sRenderModelName)
 	: m_sModelName(sRenderModelName)
 	, m_glIndexBuffer(0)
 	, m_glVertArray(0)
@@ -18,7 +18,7 @@ CGLRenderModel::CGLRenderModel(const std::string & sRenderModelName)
 }
 
 
-CGLRenderModel::~CGLRenderModel()
+RenderModel::~RenderModel()
 {
 	Cleanup();
 }
@@ -27,7 +27,7 @@ CGLRenderModel::~CGLRenderModel()
 //-----------------------------------------------------------------------------
 // Purpose: Allocates and populates the GL resources for a render model
 //-----------------------------------------------------------------------------
-bool CGLRenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel_TextureMap_t & vrDiffuseTexture)
+bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel_TextureMap_t & vrDiffuseTexture)
 {
 	// create and bind a VAO to hold state for this model
 	glGenVertexArrays(1, &m_glVertArray);
@@ -129,7 +129,7 @@ bool CGLRenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderMo
 //-----------------------------------------------------------------------------
 // Purpose: Frees the GL resources for a render model
 //-----------------------------------------------------------------------------
-void CGLRenderModel::Cleanup()
+void RenderModel::Cleanup()
 {
 	if (m_glVertBuffer)
 	{
@@ -146,9 +146,8 @@ void CGLRenderModel::Cleanup()
 //-----------------------------------------------------------------------------
 // Purpose: Draws the render model
 //-----------------------------------------------------------------------------
-void CGLRenderModel::Draw()
+void RenderModel::Draw()
 {
-	glBindVertexArray(m_glVertArray);
 
 	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 	glBindTexture(GL_TEXTURE_2D, m_glDiffuseTexture);
@@ -161,7 +160,7 @@ void CGLRenderModel::Draw()
 
 	glUniform1fv(MATERIAL_SHININESS_UNIFORM_LOCATION, 1, &m_fShininess);
 
+	glBindVertexArray(m_glVertArray);
 	glDrawElements(GL_TRIANGLES, m_unVertexCount, GL_UNSIGNED_SHORT, 0);
-
 	glBindVertexArray(0);
 }

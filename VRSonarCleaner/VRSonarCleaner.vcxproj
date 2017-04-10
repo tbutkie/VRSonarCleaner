@@ -165,7 +165,7 @@
     <ClCompile Include="..\shared\pathtools.cpp" />
     <ClCompile Include="AdvectionProbe.cpp" />
     <ClCompile Include="arcball.cpp" />
-    <ClCompile Include="CGLRenderModel.cpp" />
+    <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="CloudCollection.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
@@ -208,7 +208,7 @@
     <ClInclude Include="arcball.h" />
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BroadcastSystem.h" />
-    <ClInclude Include="CGLRenderModel.h" />
+    <ClInclude Include="RenderModel.h" />
     <ClInclude Include="CloudCollection.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorsAndSizes.h" />
