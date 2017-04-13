@@ -1,6 +1,8 @@
 #include "Icosphere.h"
 #include <list>
 
+#include "GLSLpreamble.h"
+
 Icosphere::Icosphere(int recursionLevel)
 	: index(0)
 {
@@ -106,6 +108,52 @@ void Icosphere::recalculate(int recursionLevel)
 std::vector<glm::vec3> Icosphere::getVertices(void) { return vertices; }
 
 std::vector<unsigned int> Icosphere::getIndices(void) { return indices; }
+
+GLuint Icosphere::getVAO()
+{
+	std::vector<IcoVert> buff;
+	for (int i = 0; i < int(vertices.size()); ++i)
+	{
+		IcoVert iv;
+		iv.v = iv.n = vertices[i];
+		iv.t = glm::vec2(0.5f);
+
+		buff.push_back(iv);
+	}
+	
+	GLuint m_glVBO, m_glIBO;
+
+	// Populate a vertex buffer
+	glCreateBuffers(1, &m_glVBO);
+	glNamedBufferData(m_glVBO, sizeof(IcoVert) * buff.size(), &buff[0], GL_STATIC_DRAW);
+
+	// Create and populate the index buffer
+	glCreateBuffers(1, &m_glIBO);
+	glBufferData(m_glIBO, sizeof(unsigned int) * indices.size(), &indices[0], GL_STATIC_DRAW);
+
+	GLuint m_glVAO;
+
+	// create and bind a VAO to hold state for this model
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
+		
+		// Bind our VBO and IBO to this VAO
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
+
+		// Identify the components in the vertex buffer
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (void *)offsetof(IcoVert, v));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (void *)offsetof(IcoVert, n));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (void *)offsetof(IcoVert, t));
+
+
+	glBindVertexArray(0);
+
+	return m_glVAO;
+}
 
 std::vector<glm::vec3> Icosphere::getUnindexedVertices(void)
 {

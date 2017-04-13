@@ -12,6 +12,8 @@ public:
 
 	void update();
 
+	void draw();
+
 private:
 	bool m_bProbeActive;
 

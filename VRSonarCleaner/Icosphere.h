@@ -4,6 +4,8 @@
 
 #include <shared/glm/glm.hpp>
 
+#include <GL/glew.h>
+
 class Icosphere
 {
 public:	
@@ -14,6 +16,8 @@ public:
 
 	std::vector<glm::vec3> getVertices(void);
 	std::vector<unsigned int> getIndices(void);
+
+	GLuint getVAO();
 
 	std::vector<glm::vec3> getUnindexedVertices(void);
 
@@ -32,6 +36,13 @@ private:
             this->v3 = v3;
         }
     };
+
+	struct IcoVert
+	{
+		glm::vec3 v;
+		glm::vec3 n;
+		glm::vec2 t;
+	};
 
 	int addVertex(glm::vec3 p);
 	int getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap);

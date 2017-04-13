@@ -28,6 +28,11 @@ void FlowProbe::update()
 	m_pEmitter->z = innerPos.y;
 }
 
+void FlowProbe::draw()
+{
+	drawProbe();
+}
+
 void FlowProbe::activateProbe()
 {
 	m_bProbeActive = true;

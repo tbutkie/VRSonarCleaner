@@ -42,7 +42,7 @@ void ProbeBehavior::update()
 {
 }
 
-void ProbeBehavior::draw()
+void ProbeBehavior::drawProbe()
 {
 	if (!m_pController->readyToRender())
 		return;

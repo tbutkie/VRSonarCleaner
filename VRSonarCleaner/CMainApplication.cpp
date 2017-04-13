@@ -49,8 +49,8 @@ void dprintf(const char *fmt, ...)
 CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
 	: m_pWindow(NULL)
 	, m_pContext(NULL)
-	, m_nWindowWidth(1660)
-	, m_nWindowHeight(980)
+	, m_nWindowWidth(1920)
+	, m_nWindowHeight(1080)
 	, m_pHMD(NULL)
 	, m_bVerbose(false)
 	, m_bPerf(false)
@@ -127,9 +127,9 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-	int nWindowPosX = 10;// 700;
-	int nWindowPosY = 30;// 100;
-	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+	int nWindowPosX = 1920;// 700;
+	int nWindowPosY = 0;// 100;
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);

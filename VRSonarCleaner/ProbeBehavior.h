@@ -17,7 +17,7 @@ public:
 
 	virtual void update();
 
-	void draw();
+	void draw() = 0;
 
 protected:
 	DataVolume* m_pDataVolume;
@@ -48,6 +48,8 @@ protected:
 	virtual void receiveEvent(const int event, void* payloadData);
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;
+
+	virtual void drawProbe();
 
 	std::vector<glm::vec3> makeCircle(int numSegments);
 	std::vector<glm::vec3> m_vvec3Circle;

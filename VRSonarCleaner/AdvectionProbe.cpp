@@ -7,39 +7,21 @@
 AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolume)
 	: ProbeBehavior(controller, flowVolume)
 	, m_pFlowVolume(flowVolume)
-	, m_glVAO(0)
-	, m_glVBO(0)
-	, m_glIBO(0)
+	, m_glIcoSphereVAO(0)
 {
 	Icosphere s(3);
-	std::vector<glm::vec3> verts = s.getVertices();
-	std::vector<glm::vec3> norms = verts;
-	std::vector<glm::vec2> texcoords(verts.size(), glm::vec2(0.5f));
-	std::vector<unsigned int> inds = s.getIndices();
+	m_glIcoSphereVAO = s.getVAO();
+	m_glIcoSphereVertCount = s.getVertices().size();
 
-	// create and bind a VAO to hold state for this model
-	glGenVertexArrays(1, &m_glVAO);
-	glBindVertexArray(m_glVAO);
+	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
+	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereDiffuse);
+	glTextureStorage2D(m_glIcoSphereDiffuse, 1, GL_RGBA, 1, 1);
+	glTextureSubImage2D(m_glIcoSphereDiffuse, 1, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
 
-	// Populate a vertex buffer
-	glGenBuffers(1, &m_glVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * verts.size(), &verts[0], GL_STATIC_DRAW);
-
-	// Identify the components in the vertex buffer
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
-
-	// Create and populate the index buffer
-	glGenBuffers(1, &m_glIBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * inds.size(), &inds[0], GL_STATIC_DRAW);
-
-	glBindVertexArray(0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereSpecular);
+	glTextureStorage2D(m_glIcoSphereSpecular, 1, GL_RGBA, 1, 1);
+	glTextureSubImage2D(m_glIcoSphereSpecular, 1, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &white);
 }
 
 
@@ -53,7 +35,7 @@ void AdvectionProbe::update()
 		return;
 
 	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
-	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), m_pDataVolume->getPosition()));
+	DebugDrawer::getInstance().setTransform(m_pDataVolume->getCurrentVolumeTransform());
 	DebugDrawer::getInstance().drawSphere(sphereRad, 3, glm::vec4(0.f, 0.f, 1.f, 0.25f));
 
 	glm::vec3 cursorPos(getPose()[3]);
@@ -74,6 +56,26 @@ void AdvectionProbe::update()
 		DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 		DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 	}
+}
+
+void AdvectionProbe::draw()
+{
+	if (!m_pController->readyToRender())
+		return;
+
+	drawProbe();
+
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
+
+	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
+
+	glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, 32.f);
+
+	glBindVertexArray(m_glIcoSphereVAO);
+	glDrawElements(GL_TRIANGLES, m_glIcoSphereVertCount, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
 }
 
 void AdvectionProbe::activateProbe()

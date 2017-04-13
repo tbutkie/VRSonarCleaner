@@ -12,11 +12,13 @@ public:
 
 	void update();
 
+	void draw();
+
 private:
 	FlowVolume* m_pFlowVolume;
-	GLuint m_glVAO;
-	GLuint m_glVBO;
-	GLuint m_glIBO;
+	GLuint m_glIcoSphereVAO;
+	size_t m_glIcoSphereVertCount;
+	GLuint m_glIcoSphereDiffuse, m_glIcoSphereSpecular;
 
 private:
 	void activateProbe();

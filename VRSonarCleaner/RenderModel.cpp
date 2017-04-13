@@ -12,7 +12,6 @@ RenderModel::RenderModel(const std::string & sRenderModelName)
 	, m_glVertBuffer(0)
 	, m_glDiffuseTexture(0)
 	, m_glSpecularTexture(0)
-	, m_glEmissiveTexture(0)
 	, m_fShininess(20.f)
 {
 }
@@ -99,27 +98,6 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-
-	// Emissive map
-	glGenTextures(1, &m_glEmissiveTexture);
-	glActiveTexture(GL_TEXTURE0 + EMISSIVE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glEmissiveTexture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &black);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenerateTextureMipmap(m_glEmissiveTexture);
-
-	glTextureParameteri(m_glEmissiveTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glEmissiveTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glEmissiveTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTextureParameteri(m_glEmissiveTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-
-	glActiveTexture(GL_TEXTURE0);
-
 	m_unVertexCount = vrModel.unTriangleCount * 3;
 
 	return true;
@@ -154,9 +132,6 @@ void RenderModel::Draw()
 
 	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
 	glBindTexture(GL_TEXTURE_2D, m_glSpecularTexture);
-
-	glActiveTexture(GL_TEXTURE0 + EMISSIVE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glEmissiveTexture);
 
 	glUniform1fv(MATERIAL_SHININESS_UNIFORM_LOCATION, 1, &m_fShininess);
 
