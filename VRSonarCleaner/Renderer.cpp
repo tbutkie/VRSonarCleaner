@@ -275,47 +275,37 @@ void Renderer::RenderStereoTargets()
 	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
-	// Left Eye
+	// Left Eye Render
 	glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
 	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
 	RenderScene(vr::Eye_Left);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glDisable(GL_MULTISAMPLE);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftEyeDesc.m_nResolveFramebufferId);
-
-	glBlitFramebuffer(
-		0, 0, m_nRenderWidth, m_nRenderHeight,
-		0, 0, m_nRenderWidth, m_nRenderHeight,
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-	glEnable(GL_MULTISAMPLE);
-
-	// Right Eye
+	// Right Eye Render
 	glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
 	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
 	RenderScene(vr::Eye_Right);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glDisable(GL_MULTISAMPLE);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightEyeDesc.m_nResolveFramebufferId);
-
-	glBlitFramebuffer(
-		0, 0, m_nRenderWidth, m_nRenderHeight, 
+	
+	// Left Eye Blit
+	glBlitNamedFramebuffer(
+		leftEyeDesc.m_nRenderFramebufferId,
+		leftEyeDesc.m_nResolveFramebufferId,
+		0, 0, m_nRenderWidth, m_nRenderHeight,
 		0, 0, m_nRenderWidth, m_nRenderHeight,
 		GL_COLOR_BUFFER_BIT,
 		GL_LINEAR);
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	// Right Eye Blit
+	glBlitNamedFramebuffer(
+		rightEyeDesc.m_nRenderFramebufferId,
+		rightEyeDesc.m_nResolveFramebufferId,
+		0, 0, m_nRenderWidth, m_nRenderHeight, 
+		0, 0, m_nRenderWidth, m_nRenderHeight,
+		GL_COLOR_BUFFER_BIT,
+		GL_LINEAR);
 }
 
 //-----------------------------------------------------------------------------
