@@ -49,8 +49,6 @@ void dprintf(const char *fmt, ...)
 CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
 	: m_pWindow(NULL)
 	, m_pContext(NULL)
-	, m_nWindowWidth(1920)
-	, m_nWindowHeight(1080)
 	, m_pHMD(NULL)
 	, m_bVerbose(false)
 	, m_bPerf(false)
@@ -127,8 +125,15 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-	int nWindowPosX = 1920;// 700;
-	int nWindowPosY = 0;// 100;
+	int numDisplays = SDL_GetNumVideoDisplays();
+
+	SDL_Rect displayBounds;
+
+	if (numDisplays > 1)
+		SDL_GetDisplayBounds(1, &displayBounds);
+	else
+		SDL_GetDisplayBounds(0, &displayBounds);
+
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -141,7 +146,7 @@ bool CMainApplication::BInit()
 	if (m_bDebugOpenGL)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
-	m_pWindow = SDL_CreateWindow("hellovr_sdl", nWindowPosX, nWindowPosY, m_nWindowWidth, m_nWindowHeight, unWindowFlags);
+	m_pWindow = SDL_CreateWindow("hellovr_sdl", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
 	if (m_pWindow == NULL)
 	{
 		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());

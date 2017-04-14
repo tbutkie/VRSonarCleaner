@@ -30,7 +30,7 @@ void ParticleManager::_initGL()
 	// ------------------------------ DATA GENERATION ------------------------------
 	Icosphere sphere(3);
 	std::vector<glm::vec3> verts = sphere.getVertices();
-	std::vector<unsigned int> indices = sphere.getIndices();
+	std::vector<GLushort> indices = sphere.getIndices();
 
 	m_glPrimIndCount = indices.size();
 

@@ -43,12 +43,11 @@ public:
 		}
 	};
 
-	GLuint m_glProgramID;
-
 public:
 	LightingSystem();
 	~LightingSystem();
 
+	void addShaderToUpdate(GLuint* shader);
 	void update(glm::mat4 view);
 
 	Light* addDirectLight(glm::vec4 direction = glm::vec4(-1.f, -1.f, -1.f, 0.f)
@@ -74,15 +73,13 @@ public:
 		, float cutOffDeg = 12.5f
 		, float outerCutOffDeg = 15.f
 		);
-	
-	void showPointLights(bool yesno);
-	bool toggleShowPointLights();
 
 private:
 	Light m_arrLights[MAX_LIGHTS];
-	bool m_bDrawLightBulbs;
 
 	GLuint m_glLightingUBO;
+
+	std::vector<GLuint*> m_vpShadersWithLighting;
 
 	int m_nLights;
 };

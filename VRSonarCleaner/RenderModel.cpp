@@ -62,7 +62,6 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	// If this renders black ask McJohn what's wrong.
 	glGenerateTextureMipmap(m_glDiffuseTexture);
 
 	glTextureParameteri(m_glDiffuseTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

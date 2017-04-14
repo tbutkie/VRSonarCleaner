@@ -45,18 +45,16 @@ public:
 		}
 	};
 
-	struct VertexDataScene
+	struct RendererSubmission
 	{
-		glm::vec3 position;
-		glm::vec2 texCoord;
-	};
-
-	struct VertexDataWindow
-	{
-		glm::vec2 position;
-		glm::vec2 texCoord;
-
-		VertexDataWindow(const glm::vec2 & pos, const glm::vec2 tex) : position(pos), texCoord(tex) {	}
+		GLenum			primitiveType;
+		GLuint			VAO;
+		int				vertCount;
+		std::string		shaderName;
+		GLuint			diffuseTex;
+		GLuint			specularTex;
+		float			specularExponent;
+		glm::mat4		modelToWorldTransform;
 	};
 
 public:	
@@ -71,6 +69,8 @@ public:
 
 	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
 	void resetRenderModelInstances();
+
+	void addToRenderQueue(RendererSubmission &rs);
 
 	void toggleWireframe();
 
@@ -104,6 +104,8 @@ private:
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;
+
+	std::vector<RendererSubmission> m_vRenderQueue;
 
 	std::map<std::string, RenderModel*> m_mapModelCache;
 	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;

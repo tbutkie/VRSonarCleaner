@@ -66,6 +66,11 @@ void Renderer::resetRenderModelInstances()
 		rm.second.clear();
 }
 
+void Renderer::addToRenderQueue(RendererSubmission &rs)
+{
+	m_vRenderQueue.push_back(rs);
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -86,6 +91,9 @@ void Renderer::SetupShaders()
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
 	m_mapShaders["infoBox"] = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
+
+	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
+	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
 }
 
 
@@ -153,6 +161,14 @@ void Renderer::SetupCompanionWindow()
 {
 	if (!m_pHMD)
 		return;
+
+	struct VertexDataWindow
+	{
+		glm::vec2 position;
+		glm::vec2 texCoord;
+
+		VertexDataWindow(const glm::vec2 & pos, const glm::vec2 tex) : position(pos), texCoord(tex) {	}
+	};
 
 	std::vector<VertexDataWindow> vVerts;
 
@@ -262,6 +278,7 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 		glFinish();
 	}
 
+	m_vRenderQueue.clear();
 	DebugDrawer::getInstance().flushLines();
 }
 
@@ -327,14 +344,13 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
 
+	m_pLighting->update(thisEyesViewMatrix);
+
 	GLuint* lightingShaderProg = m_bShowWireframe ? m_mapShaders["lightingWireframe"] : m_mapShaders["lighting"];
 	// ----- Render Model rendering -----
 	if (*lightingShaderProg)
 	{
 		glUseProgram(*lightingShaderProg);
-
-		m_pLighting->m_glProgramID = *lightingShaderProg;
-		m_pLighting->update(thisEyesViewMatrix);
 
 		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
 		{
@@ -368,6 +384,23 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	{
 		glUseProgram(*m_mapShaders["debug"]);
 		DebugDrawer::getInstance().render();
+	}
+
+	for (auto i : m_vRenderQueue)
+	{
+		if (*m_mapShaders[i.shaderName])
+		{
+			glUseProgram(*m_mapShaders[i.shaderName]);
+			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(i.modelToWorldTransform));
+			glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
+
+			glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
+			glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
+
+			glBindVertexArray(i.VAO);
+			glDrawElements(i.primitiveType, i.vertCount, GL_UNSIGNED_SHORT, 0);
+			glBindVertexArray(0);
+		}
 	}
 
 	glDisable(GL_BLEND);

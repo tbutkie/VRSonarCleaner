@@ -68,8 +68,6 @@ private:
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;
-	uint32_t m_nWindowWidth;
-	uint32_t m_nWindowHeight;
 
 	SDL_GLContext m_pContext;
 

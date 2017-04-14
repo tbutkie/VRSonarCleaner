@@ -14,8 +14,7 @@
 #include <string>
 
 LightingSystem::LightingSystem()
-	: m_bDrawLightBulbs(true)
-	, m_glLightingUBO(0)
+	: m_glLightingUBO(0)
 	, m_nLights(0)
 {
 	//glCreateBuffers(1, &m_glLightingUBO);
@@ -27,30 +26,45 @@ LightingSystem::~LightingSystem()
 {
 }
 
+void LightingSystem::addShaderToUpdate(GLuint * shader)
+{
+	m_vpShadersWithLighting.push_back(shader);
+}
+
 // Uses the current shader
 void LightingSystem::update(glm::mat4 view)
 {
 	glm::vec3 black(0.f);
 
-	glUniform1i(LIGHT_COUNT_UNIFORM_LOCATION, m_nLights);
-
-	for (int i = 0; i < m_nLights; ++i)
+	for (auto pShader : m_vpShadersWithLighting)
 	{
-		std::string name = "lights[" + std::to_string(i);
-		name += "]";
-		
-		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".color").c_str()), 1, glm::value_ptr(m_arrLights[i].color));
-		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrLights[i].position));
-		glUniform4fv(glGetUniformLocation(m_glProgramID, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrLights[i].direction)));
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".ambientCoeff").c_str()), m_arrLights[i].ambientCoefficient);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".constant").c_str()), m_arrLights[i].constant);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".linear").c_str()), m_arrLights[i].linear);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isOn").c_str()), m_arrLights[i].isOn);
-		glUniform1f(glGetUniformLocation(m_glProgramID, (name + ".isSpotLight").c_str()), m_arrLights[i].isSpotLight);
+		if (*pShader)
+		{
+			glUseProgram(*pShader);
+
+			glUniform1i(LIGHT_COUNT_UNIFORM_LOCATION, m_nLights);
+
+			for (int i = 0; i < m_nLights; ++i)
+			{
+				std::string name = "lights[" + std::to_string(i);
+				name += "]";
+
+				glUniform4fv(glGetUniformLocation(*pShader, (name + ".color").c_str()), 1, glm::value_ptr(m_arrLights[i].color));
+				glUniform4fv(glGetUniformLocation(*pShader, (name + ".position").c_str()), 1, glm::value_ptr(view * m_arrLights[i].position));
+				glUniform4fv(glGetUniformLocation(*pShader, (name + ".direction").c_str()), 1, glm::value_ptr(glm::normalize(view * m_arrLights[i].direction)));
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".ambientCoeff").c_str()), m_arrLights[i].ambientCoefficient);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".constant").c_str()), m_arrLights[i].constant);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".linear").c_str()), m_arrLights[i].linear);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".quadratic").c_str()), m_arrLights[i].quadratic);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".cutOff").c_str()), m_arrLights[i].cutOff);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".outerCutOff").c_str()), m_arrLights[i].outerCutOff);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".isOn").c_str()), m_arrLights[i].isOn);
+				glUniform1f(glGetUniformLocation(*pShader, (name + ".isSpotLight").c_str()), m_arrLights[i].isSpotLight);
+			}
+		}
 	}
+
+	glUseProgram(0);
 }
 
 LightingSystem::Light* LightingSystem::addDirectLight(glm::vec4 direction, glm::vec4 color, float ambientCoeff)
@@ -100,17 +114,6 @@ LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec
 	m_arrLights[m_nLights].isSpotLight = 1.f;
 
 	return &m_arrLights[m_nLights++];
-}
-
-void LightingSystem::showPointLights(bool yesno)
-{
-	m_bDrawLightBulbs = yesno;
-}
-
-bool LightingSystem::toggleShowPointLights()
-{
-	m_bDrawLightBulbs = !m_bDrawLightBulbs;
-	return m_bDrawLightBulbs;
 }
 
 #endif

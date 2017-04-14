@@ -1,8 +1,8 @@
 #include "AdvectionProbe.h"
-
 #include "DebugDrawer.h"
-
 #include "Icosphere.h"
+#include "Renderer.h"
+#include <shared/glm/gtc/matrix_transform.hpp>
 
 AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolume)
 	: ProbeBehavior(controller, flowVolume)
@@ -11,17 +11,36 @@ AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolum
 {
 	Icosphere s(3);
 	m_glIcoSphereVAO = s.getVAO();
-	m_glIcoSphereVertCount = s.getVertices().size();
+	m_glIcoSphereVertCount = s.getIndices().size();
 
 	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
 	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereDiffuse);
-	glTextureStorage2D(m_glIcoSphereDiffuse, 1, GL_RGBA, 1, 1);
-	glTextureSubImage2D(m_glIcoSphereDiffuse, 1, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereSpecular);
-	glTextureStorage2D(m_glIcoSphereSpecular, 1, GL_RGBA, 1, 1);
-	glTextureSubImage2D(m_glIcoSphereSpecular, 1, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+	glGenTextures(1, &m_glIcoSphereDiffuse);
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenTextures(1, &m_glIcoSphereSpecular);
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereDiffuse);
+	//glTextureStorage2D(m_glIcoSphereDiffuse, 1, GL_RGBA8, 1, 1);
+	//glTextureSubImage2D(m_glIcoSphereDiffuse, 0, 0, 0, 1, 1, GL_RGBA8, GL_UNSIGNED_BYTE, &gray);
+	//
+	//glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereSpecular);
+	//glTextureStorage2D(m_glIcoSphereSpecular, 1, GL_RGBA8, 1, 1);
+	//glTextureSubImage2D(m_glIcoSphereSpecular, 0, 0, 0, 1, 1, GL_RGBA8, GL_UNSIGNED_BYTE, &white);
 }
 
 
@@ -31,12 +50,23 @@ AdvectionProbe::~AdvectionProbe()
 
 void AdvectionProbe::update()
 {
+	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
+
+	Renderer::RendererSubmission rs;
+
+	rs.primitiveType = GL_TRIANGLES;
+	rs.VAO = m_glIcoSphereVAO;
+	rs.vertCount = m_glIcoSphereVertCount;
+	rs.diffuseTex = m_glIcoSphereDiffuse;
+	rs.specularTex = m_glIcoSphereSpecular;
+	rs.specularExponent = 32.f;
+	rs.shaderName = "lightingWireframe";
+	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));
+
+	Renderer::getInstance().addToRenderQueue(rs);
+
 	if (!m_pController->readyToRender())
 		return;
-
-	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
-	DebugDrawer::getInstance().setTransform(m_pDataVolume->getCurrentVolumeTransform());
-	DebugDrawer::getInstance().drawSphere(sphereRad, 3, glm::vec4(0.f, 0.f, 1.f, 0.25f));
 
 	glm::vec3 cursorPos(getPose()[3]);
 	glm::vec3 spherePos(m_pDataVolume->getPosition());
@@ -65,17 +95,17 @@ void AdvectionProbe::draw()
 
 	drawProbe();
 
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
-
-	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
-
-	glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, 32.f);
-
-	glBindVertexArray(m_glIcoSphereVAO);
-	glDrawElements(GL_TRIANGLES, m_glIcoSphereVertCount, GL_UNSIGNED_SHORT, 0);
-	glBindVertexArray(0);
+	//glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	//glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
+	//
+	//glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
+	//glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
+	//
+	//glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, 32.f);
+	//
+	//glBindVertexArray(m_glIcoSphereVAO);
+	//glDrawElements(GL_TRIANGLES, m_glIcoSphereVertCount, GL_UNSIGNED_SHORT, 0);
+	//glBindVertexArray(0);
 }
 
 void AdvectionProbe::activateProbe()
