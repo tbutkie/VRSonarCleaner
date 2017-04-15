@@ -9,9 +9,9 @@
 //-----------------------------------------------------------------------------
 RenderModel::RenderModel(const std::string & sRenderModelName)
 	: m_sModelName(sRenderModelName)
-	, m_glIndexBuffer(0)
-	, m_glVertArray(0)
-	, m_glVertBuffer(0)
+	, m_glVBO(0)
+	, m_glIBO(0)
+	, m_glVAO(0)
 	, m_glDiffuseTexture(0)
 	, m_glSpecularTexture(0)
 	, m_fShininess(20.f)
@@ -31,12 +31,12 @@ RenderModel::~RenderModel()
 bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel_TextureMap_t & vrDiffuseTexture)
 {
 	// create and bind a VAO to hold state for this model
-	glGenVertexArrays(1, &m_glVertArray);
-	glBindVertexArray(m_glVertArray);
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
 
 	// Populate a vertex buffer
-	glGenBuffers(1, &m_glVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
+	glGenBuffers(1, &m_glVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vr::RenderModel_Vertex_t) * vrModel.unVertexCount, vrModel.rVertexData, GL_STATIC_DRAW);
 
 	// Identify the components in the vertex buffer
@@ -48,8 +48,8 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(vr::RenderModel_Vertex_t), (void *)offsetof(vr::RenderModel_Vertex_t, rfTextureCoord));
 
 	// Create and populate the index buffer
-	glGenBuffers(1, &m_glIndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
+	glGenBuffers(1, &m_glIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * vrModel.unTriangleCount * 3, vrModel.rIndexData, GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
@@ -99,14 +99,14 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 //-----------------------------------------------------------------------------
 void RenderModel::Cleanup()
 {
-	if (m_glVertBuffer)
+	if (m_glVBO)
 	{
-		glDeleteBuffers(1, &m_glIndexBuffer);
-		glDeleteVertexArrays(1, &m_glVertArray);
-		glDeleteBuffers(1, &m_glVertBuffer);
-		m_glIndexBuffer = 0;
-		m_glVertArray = 0;
-		m_glVertBuffer = 0;
+		glDeleteBuffers(1, &m_glIBO);
+		glDeleteBuffers(1, &m_glVBO);
+		glDeleteVertexArrays(1, &m_glVAO);
+		m_glIBO = 0;
+		m_glVBO = 0;
+		m_glVAO = 0;
 	}
 }
 
@@ -125,7 +125,27 @@ void RenderModel::Draw()
 
 	glUniform1fv(MATERIAL_SHININESS_UNIFORM_LOCATION, 1, &m_fShininess);
 
-	glBindVertexArray(m_glVertArray);
+	glBindVertexArray(m_glVAO);
 	glDrawElements(GL_TRIANGLES, m_unVertexCount, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
+}
+
+GLuint RenderModel::getVAO()
+{
+	return m_glVAO;
+}
+
+float RenderModel::getMaterialShininess()
+{
+	return m_fShininess;
+}
+
+GLuint RenderModel::getDiffuseTexture()
+{
+	return m_glDiffuseTexture;
+}
+
+GLuint RenderModel::getSpecularTexture()
+{
+	return m_glSpecularTexture;
 }

@@ -14,10 +14,15 @@ public:
 	void Draw();
 	const std::string & GetName() const { return m_sModelName; }
 
+	GLuint getVAO();
+	float getMaterialShininess();
+	GLuint getDiffuseTexture();
+	GLuint getSpecularTexture();
+
 private:
-	GLuint m_glVertBuffer;
-	GLuint m_glIndexBuffer;
-	GLuint m_glVertArray;
+	GLuint m_glVBO;
+	GLuint m_glIBO;
+	GLuint m_glVAO;
 	GLuint m_glDiffuseTexture;
 	GLuint m_glSpecularTexture;
 	float m_fShininess;
