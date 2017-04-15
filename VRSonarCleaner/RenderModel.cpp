@@ -2,6 +2,8 @@
 
 #include "GLSLpreamble.h"
 
+#include <algorithm>
+
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models
 //-----------------------------------------------------------------------------
@@ -52,15 +54,14 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 
 	glBindVertexArray(0);
 
+	// Calculate number of mipmap levels for diffuse texture
+	// this is taken straight from the spec for glTexStorage2D
+	int diffuseMipMapLevels = floor(log2(std::max(vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight))) + 1;
+
 	// create and populate the texture
-	glGenTextures(1, &m_glDiffuseTexture);
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glDiffuseTexture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, vrDiffuseTexture.rubTextureMapData);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_glDiffuseTexture);
+	glTextureStorage2D(m_glDiffuseTexture, diffuseMipMapLevels, GL_RGBA8, vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight);
+	glTextureSubImage2D(m_glDiffuseTexture, 0, 0, 0, vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight, GL_RGBA, GL_UNSIGNED_BYTE, vrDiffuseTexture.rubTextureMapData);
 
 	glGenerateTextureMipmap(m_glDiffuseTexture);
 
@@ -73,24 +74,14 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
 	glTextureParameterf(m_glDiffuseTexture, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
 
-
-
 	GLsizei width = 1, height = 1;
-	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
-	GLubyte dkgray[4] = { 0x0F, 0x0F, 0x0F, 0xFF };
-	GLubyte black[4] = { 0x00, 0x00, 0x00, 0xFF };
 
 	// Specular map
-	glGenTextures(1, &m_glSpecularTexture);
-	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glSpecularTexture);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_glSpecularTexture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenerateTextureMipmap(m_glSpecularTexture);
+	glTextureStorage2D(m_glSpecularTexture, 1, GL_RGBA8, width, height);
+	glTextureSubImage2D(m_glSpecularTexture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
 
 	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

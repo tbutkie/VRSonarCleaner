@@ -22,19 +22,9 @@ public:
 			std::cerr << "error " << error << ": " << lodepng_error_text(error) << std::endl;
 
 		// Generate texture
-		glGenTextures(1, &m_uiID);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_uiID);
-		glTexImage2D(GL_TEXTURE_2D,
-			0,
-			GL_RGBA,
-			m_uiWidth,
-			m_uiHeight,
-			0,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			&image[0]);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glCreateTextures(GL_TEXTURE_2D, 1, &m_uiID);
+		glTextureStorage2D(m_uiID, 1, GL_RGBA8, m_uiWidth, m_uiHeight);
+		glTextureSubImage2D(m_uiID, 0, 0, 0, m_uiWidth, m_uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
 		glGenerateTextureMipmap(m_uiID);
 
