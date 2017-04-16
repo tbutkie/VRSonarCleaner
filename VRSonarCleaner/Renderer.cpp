@@ -377,7 +377,7 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	if (*m_mapShaders["infoBox"])
 	{
 		glUseProgram(*m_mapShaders["infoBox"]);
-		InfoBoxManager::getInstance().render();
+		InfoBoxManager::getInstance().draw();
 	}
 
 	if (*m_mapShaders["debug"])

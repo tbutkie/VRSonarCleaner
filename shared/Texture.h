@@ -43,16 +43,7 @@ public:
 	unsigned getHeight() { return m_uiHeight; }
 	std::string getName() { return m_strFileName; }
 
-	void activate()
-	{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_uiID);
-	}
-
-	void deactivate()
-	{
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	GLuint getTexture() { return m_uiID; }
 
 private:
 	GLuint m_uiID;

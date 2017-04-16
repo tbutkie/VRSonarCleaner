@@ -5,9 +5,9 @@
 #include <queue>
 #include <openvr.h>
 
-#include <shared\glm\glm.hpp>
+#include <shared/glm/glm.hpp>
+#include <shared/Texture.h>
 
-#include "shared/Texture.h"
 #include "BroadcastSystem.h"
 #include "TrackedDeviceManager.h"
 
@@ -43,7 +43,7 @@ public:
 
 	virtual void receiveEvent(const int event, void* data = NULL);
 
-	void render();
+	void draw();
 
 	bool updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose);
 	bool updateInfoBoxSize(std::string infoBoxName, float size);
