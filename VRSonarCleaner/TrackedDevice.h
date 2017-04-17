@@ -93,5 +93,6 @@ protected:
 
 	bool m_bShowAxes;
 	bool m_bHasRenderModel;
+	bool m_bHidden;
 };
 

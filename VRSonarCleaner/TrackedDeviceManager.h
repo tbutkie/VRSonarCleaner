@@ -20,6 +20,8 @@ public:
 
 	void handleEvents();
 
+	void hideBaseStations(bool hidden);
+
 	bool cleaningModeActive();
 	bool getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius);
 	void cleaningHit();
@@ -29,11 +31,6 @@ public:
 	ViveController* getSecondaryController();
 	glm::mat4& getPrimaryControllerPose();
 	glm::mat4& getSecondaryControllerPose();
-
-	bool attachToPrimaryController(BroadcastSystem::Listener *l);
-	bool attachToSecondaryController(BroadcastSystem::Listener *l);
-	bool detachFromPrimaryController(BroadcastSystem::Listener *l);
-	bool detachFromSecondaryController(BroadcastSystem::Listener *l);
 
 	void updateTrackedDeviceRenderModels();
 	void update();

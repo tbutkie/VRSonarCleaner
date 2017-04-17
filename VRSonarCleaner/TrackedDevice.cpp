@@ -10,6 +10,7 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	, m_bHasRenderModel(false)
 	, m_ClassChar(0)
 	, m_bShowAxes(false)
+	, m_bHidden(false)
 {	
 }
 

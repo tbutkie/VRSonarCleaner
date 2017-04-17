@@ -81,6 +81,13 @@ void TrackedDeviceManager::handleEvents()
 	}
 }
 
+void TrackedDeviceManager::hideBaseStations(bool hidden)
+{
+	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
+		if (m_pHMD->IsTrackedDeviceConnected(nDevice) && m_rpTrackedDevices[nDevice]->getClassChar() == 'T')
+			m_rpTrackedDevices[nDevice]->m_bHidden = hidden;
+}
+
 bool TrackedDeviceManager::cleaningModeActive()
 {
 	return m_pPrimaryController && m_pPrimaryController->isTriggerClicked();
@@ -171,8 +178,8 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 		// Loop over model components and add them to the tracked device
 		for (uint32_t i = 0; i < nModelComponents; ++i)
 		{
-			TrackedDevice::TrackedDeviceComponent c;
-			c.m_unComponentIndex = i;
+			TrackedDevice::TrackedDeviceComponent component;
+			component.m_unComponentIndex = i;
 
 			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(strRenderModelName.c_str(), i, NULL, 0);
 			if (unRequiredBufferLen == 0)
@@ -183,46 +190,52 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 			{
 				char *pchBuffer1 = new char[unRequiredBufferLen];
 				unRequiredBufferLen = m_pRenderModels->GetComponentName(strRenderModelName.c_str(), i, pchBuffer1, unRequiredBufferLen);
-				c.m_strComponentName = pchBuffer1;
+				component.m_strComponentName = pchBuffer1;
 				delete[] pchBuffer1;
 
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), c.m_strComponentName.c_str(), NULL, 0);
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), component.m_strComponentName.c_str(), NULL, 0);
 				if (unRequiredBufferLen == 0)
-					c.m_bHasRenderModel = false;
+					component.m_bHasRenderModel = false;
 				else
 				{
 					char *pchBuffer2 = new char[unRequiredBufferLen];
-					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), c.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-					c.m_strComponentRenderModelName = pchBuffer2;
+					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), component.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+					component.m_strComponentRenderModelName = pchBuffer2;
 
 					delete[] pchBuffer2;
 
-					c.m_bHasRenderModel = true;
+					component.m_bHasRenderModel = true;
 
 					vr::RenderModel_ControllerMode_State_t controllerModeState;
 					m_pRenderModels->GetComponentState(
 						strRenderModelName.c_str(),
-						c.m_strComponentRenderModelName.c_str(),
+						component.m_strComponentRenderModelName.c_str(),
 						&static_cast<ViveController*>(thisDevice)->m_ControllerState,
 						&controllerModeState,
-						&(c.m_State)
+						&(component.m_State)
 					);
 
-					c.m_LastState = c.m_State;
+					component.m_LastState = component.m_State;
 				}
 
 
-				c.m_bInitialized = true;
+				component.m_bInitialized = true;
 
-				thisDevice->m_vComponents.push_back(c);
+				thisDevice->m_vComponents.push_back(component);
 
-				std::cout << "\t" << (c.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << c.m_strComponentName << std::endl;
+				std::cout << "\t" << (component.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component.m_strComponentName << std::endl;
 			}
 		}
 
 		// attach listeners to controllers
 		for (auto &l : m_vpListeners)
 			thisDevice->attach(l);
+	}
+
+	// hide base stations
+	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_TrackingReference)
+	{
+		thisDevice->m_bHidden = true;
 	}
 
 	m_rpTrackedDevices[unTrackedDeviceIndex] = thisDevice;
@@ -267,6 +280,7 @@ void TrackedDeviceManager::updateTrackedDeviceRenderModels()
 	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
 	{
 		if (!m_rpTrackedDevices[unTrackedDevice] ||
+			m_rpTrackedDevices[unTrackedDevice]->m_bHidden ||
 			!m_rpTrackedDevices[unTrackedDevice]->hasRenderModel() ||
 			!m_rpTrackedDevices[unTrackedDevice]->poseValid())
 			continue;
@@ -338,46 +352,6 @@ glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
 	return glm::mat4();
 }
 
-bool TrackedDeviceManager::attachToPrimaryController(BroadcastSystem::Listener * l)
-{
-	if (!m_pPrimaryController)
-		return false;
-
-	m_pPrimaryController->attach(l);
-
-	return true;
-}
-
-bool TrackedDeviceManager::attachToSecondaryController(BroadcastSystem::Listener * l)
-{
-	if (!m_pSecondaryController)
-		return false;
-
-	m_pSecondaryController->attach(l);
-
-	return true;
-}
-
-bool TrackedDeviceManager::detachFromPrimaryController(BroadcastSystem::Listener * l)
-{
-	if (!m_pPrimaryController)
-		return false;
-
-	m_pPrimaryController->detach(l);
-
-	return true;
-}
-
-bool TrackedDeviceManager::detachFromSecondaryController(BroadcastSystem::Listener * l)
-{
-	if (!m_pSecondaryController)
-		return false;
-
-	m_pSecondaryController->detach(l);
-
-	return true;
-}
-
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -433,8 +407,7 @@ void TrackedDeviceManager::update()
 		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
 		float widthX, widthZ;
-		vr::IVRChaperone* chap = vr::VRChaperone();
-		chap->GetPlayAreaSize(&widthX, &widthZ);
+		vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
 
 		BroadcastSystem::Payload::HMD payload = {
 			m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
