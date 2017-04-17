@@ -174,17 +174,17 @@ void Renderer::SetupCompanionWindow()
 
 	// left eye verts
 	vVerts.push_back(VertexDataWindow(glm::vec2(-1, -1), glm::vec2(0, 0)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(1, 0)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(-1, 1), glm::vec2(0, 1)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(1, 1)));
-
-	// right eye verts
-	vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
 	vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(0, 1)));
+	vVerts.push_back(VertexDataWindow(glm::vec2(-1, 1), glm::vec2(0, 1)));
 	vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
 
-	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2,   4, 5, 7,   4, 7, 6 };
+	// right eye verts
+	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(0, 1)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
+
+	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2 };//,   4, 5, 7,   4, 7, 6 };
 	m_uiCompanionWindowIndexSize = _countof(vIndices);
 
 	// Generate/allocate and fill vertex buffer object
@@ -417,18 +417,18 @@ void Renderer::RenderCompanionWindow()
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
+	glViewport(m_nCompanionWindowWidth / 4, 0, m_nCompanionWindowWidth / 2, m_nCompanionWindowHeight);
 
 	glUseProgram(*m_mapShaders["companionWindow"]);
 	glBindVertexArray(m_unCompanionWindowVAO);
 
 		// render left eye (first half of index array )
 		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeDesc.m_nResolveTextureId);
-		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize, GL_UNSIGNED_SHORT, 0);
 
 		// render right eye (second half of index array )
-		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeDesc.m_nResolveTextureId);
-		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(m_uiCompanionWindowIndexSize));
+		//glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeDesc.m_nResolveTextureId);
+		//glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(m_uiCompanionWindowIndexSize));
 
 	glBindVertexArray(0);
 	glUseProgram(0);
