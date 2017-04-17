@@ -39,8 +39,6 @@ private:
 	void TrackedDeviceManager::initDevices();
 	bool setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	void removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
-
-	std::string getPropertyString(vr::TrackedDeviceIndex_t deviceID, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;

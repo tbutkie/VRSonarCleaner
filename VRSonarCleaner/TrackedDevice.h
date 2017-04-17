@@ -75,9 +75,11 @@ protected:
 
 protected:
 	virtual bool update(vr::TrackedDevicePose_t pose);
+
 	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
 	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;

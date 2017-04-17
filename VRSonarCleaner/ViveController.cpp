@@ -38,7 +38,84 @@ ViveController::~ViveController()
 }
 
 bool ViveController::BInit()
-{	
+{
+	switch (m_pHMD->GetTrackedDeviceClass(m_unDeviceID))
+	{
+	case vr::TrackedDeviceClass_Controller:		   setClassChar('C'); break;
+	case vr::TrackedDeviceClass_HMD:               setClassChar('H'); break;
+	case vr::TrackedDeviceClass_Invalid:           setClassChar('I'); break;
+	case vr::TrackedDeviceClass_GenericTracker:    setClassChar('G'); break;
+	case vr::TrackedDeviceClass_TrackingReference: setClassChar('T'); break;
+	default:                                       setClassChar('?'); break;
+	}
+
+	setRenderModelName(getPropertyString(vr::Prop_RenderModelName_String));
+
+	std::cout << "Device " << m_unDeviceID << "'s RenderModel name is " << m_strRenderModelName.c_str() << std::endl;
+	
+	m_pHMD->GetControllerState(
+		m_unDeviceID,
+		&m_ControllerState,
+		sizeof(m_ControllerState)
+	);
+
+	m_LastControllerState = m_ControllerState;
+
+	// Check if there are model components
+	uint32_t nModelComponents = m_pRenderModels->GetComponentCount(m_strRenderModelName.c_str());
+
+	// Loop over model components and add them to the tracked device
+	for (uint32_t i = 0; i < nModelComponents; ++i)
+	{
+		TrackedDevice::TrackedDeviceComponent component;
+		component.m_unComponentIndex = i;
+
+		uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, NULL, 0);
+		if (unRequiredBufferLen == 0)
+		{
+			printf("Controller [device %d] component %d index out of range.\n", m_unDeviceID, i);
+		}
+		else
+		{
+			char *pchBuffer1 = new char[unRequiredBufferLen];
+			unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, pchBuffer1, unRequiredBufferLen);
+			component.m_strComponentName = pchBuffer1;
+			delete[] pchBuffer1;
+
+			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), NULL, 0);
+			if (unRequiredBufferLen == 0)
+				component.m_bHasRenderModel = false;
+			else
+			{
+				char *pchBuffer2 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+				component.m_strComponentRenderModelName = pchBuffer2;
+
+				delete[] pchBuffer2;
+
+				component.m_bHasRenderModel = true;
+
+				vr::RenderModel_ControllerMode_State_t controllerModeState;
+				m_pRenderModels->GetComponentState(
+					m_strRenderModelName.c_str(),
+					component.m_strComponentRenderModelName.c_str(),
+					&m_ControllerState,
+					&controllerModeState,
+					&(component.m_State)
+				);
+
+				component.m_LastState = component.m_State;
+			}
+
+
+			component.m_bInitialized = true;
+
+			m_vComponents.push_back(component);
+
+			std::cout << "\t" << (component.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component.m_strComponentName.c_str() << std::endl;
+		}
+	}
+
 	// Figure out controller axis indices
 	for (uint32_t i = 0u; i < vr::k_unControllerStateAxisCount; ++i)
 	{
@@ -54,10 +131,6 @@ bool ViveController::BInit()
 	
 	if (m_nTouchpadAxis < 0)
 		printf("Unable to find proper axes for controller touchpad.\n");
-	
-	// Initialize controller state
-	m_pHMD->GetControllerState(m_unDeviceID, &m_ControllerState, sizeof(m_ControllerState));
-	m_LastControllerState = m_ControllerState;
 
 	return true;
 }

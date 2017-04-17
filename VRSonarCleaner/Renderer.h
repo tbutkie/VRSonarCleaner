@@ -67,6 +67,8 @@ public:
 	
 	bool init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM);
 
+	void SetupCompanionWindow(int width, int height);
+
 	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
 	void resetRenderModelInstances();
 
@@ -87,7 +89,6 @@ private:
 	void SetupShaders();
 	void SetupCameras();
 	bool SetupStereoRenderTargets();
-	void SetupCompanionWindow();
 	
 	RenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 

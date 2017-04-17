@@ -145,100 +145,29 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	TrackedDevice* thisDevice;
 	
 	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
-		thisDevice = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-	else
-		thisDevice = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
-
-	thisDevice->BInit();
-		
-	std::string strRenderModelName = getPropertyString(unTrackedDeviceIndex, vr::Prop_RenderModelName_String);
-
-	thisDevice->setRenderModelName(strRenderModelName);
-
-	std::cout << "Device " << unTrackedDeviceIndex << "'s RenderModel name is " << strRenderModelName << std::endl;
-
-	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_Controller)
 	{
+		thisDevice = new ViveController(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+
 		if (!m_pPrimaryController)
 			m_pPrimaryController = static_cast<ViveController*>(thisDevice);
 		else if (!m_pSecondaryController)
 			m_pSecondaryController = static_cast<ViveController*>(thisDevice);
+	}
+	else
+	{
+		thisDevice = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+	}
 
-		m_pHMD->GetControllerState(
-			unTrackedDeviceIndex,
-			&(static_cast<ViveController*>(thisDevice)->m_ControllerState),
-			sizeof(static_cast<ViveController*>(thisDevice)->m_ControllerState)
-		);
+	thisDevice->BInit();	
+	
+	m_rpTrackedDevices[unTrackedDeviceIndex] = thisDevice;
 
-		static_cast<ViveController*>(thisDevice)->m_LastControllerState = static_cast<ViveController*>(thisDevice)->m_ControllerState;
-
-		// Check if there are model components
-		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(strRenderModelName.c_str());
-
-		// Loop over model components and add them to the tracked device
-		for (uint32_t i = 0; i < nModelComponents; ++i)
-		{
-			TrackedDevice::TrackedDeviceComponent component;
-			component.m_unComponentIndex = i;
-
-			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(strRenderModelName.c_str(), i, NULL, 0);
-			if (unRequiredBufferLen == 0)
-			{
-				printf("Controller [device %d] component %d index out of range.\n", unTrackedDeviceIndex, i);
-			}
-			else
-			{
-				char *pchBuffer1 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = m_pRenderModels->GetComponentName(strRenderModelName.c_str(), i, pchBuffer1, unRequiredBufferLen);
-				component.m_strComponentName = pchBuffer1;
-				delete[] pchBuffer1;
-
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), component.m_strComponentName.c_str(), NULL, 0);
-				if (unRequiredBufferLen == 0)
-					component.m_bHasRenderModel = false;
-				else
-				{
-					char *pchBuffer2 = new char[unRequiredBufferLen];
-					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(strRenderModelName.c_str(), component.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-					component.m_strComponentRenderModelName = pchBuffer2;
-
-					delete[] pchBuffer2;
-
-					component.m_bHasRenderModel = true;
-
-					vr::RenderModel_ControllerMode_State_t controllerModeState;
-					m_pRenderModels->GetComponentState(
-						strRenderModelName.c_str(),
-						component.m_strComponentRenderModelName.c_str(),
-						&static_cast<ViveController*>(thisDevice)->m_ControllerState,
-						&controllerModeState,
-						&(component.m_State)
-					);
-
-					component.m_LastState = component.m_State;
-				}
-
-
-				component.m_bInitialized = true;
-
-				thisDevice->m_vComponents.push_back(component);
-
-				std::cout << "\t" << (component.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component.m_strComponentName << std::endl;
-			}
-		}
-
-		// attach listeners to controllers
+	if (thisDevice->getClassChar() == 'C')
+	{
+		// attach listeners to controller
 		for (auto &l : m_vpListeners)
 			thisDevice->attach(l);
 	}
-
-	// hide base stations
-	if (m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_TrackingReference)
-	{
-		thisDevice->m_bHidden = true;
-	}
-
-	m_rpTrackedDevices[unTrackedDeviceIndex] = thisDevice;
 
 	return true;
 }
@@ -377,15 +306,7 @@ void TrackedDeviceManager::update()
 
 			if (m_rpTrackedDevices[nDevice]->getClassChar() == 0)
 			{
-				switch (m_pHMD->GetTrackedDeviceClass(nDevice))
-				{
-				case vr::TrackedDeviceClass_Controller:		   m_rpTrackedDevices[nDevice]->setClassChar('C'); m_iTrackedControllerCount++; break;
-				case vr::TrackedDeviceClass_HMD:               m_rpTrackedDevices[nDevice]->setClassChar('H'); break;
-				case vr::TrackedDeviceClass_Invalid:           m_rpTrackedDevices[nDevice]->setClassChar('I'); break;
-				case vr::TrackedDeviceClass_GenericTracker:    m_rpTrackedDevices[nDevice]->setClassChar('G'); break;
-				case vr::TrackedDeviceClass_TrackingReference: m_rpTrackedDevices[nDevice]->setClassChar('T'); break;
-				default:                                       m_rpTrackedDevices[nDevice]->setClassChar('?'); break;
-				}
+
 			}
 			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
@@ -425,23 +346,4 @@ void TrackedDeviceManager::update()
 	}
 
 	updateTrackedDeviceRenderModels();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Helper to get a string from a tracked device property and turn it
-//			into a std::string
-//-----------------------------------------------------------------------------
-std::string TrackedDeviceManager::getPropertyString(vr::TrackedDeviceIndex_t deviceID, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError)
-{
-	vr::EVRInitError eError = vr::VRInitError_None;
-	
-	uint32_t unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(deviceID, prop, NULL, 0, peError);
-	if (unRequiredBufferLen == 0)
-		return "";
-
-	char *pchBuffer = new char[unRequiredBufferLen];
-	unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(deviceID, prop, pchBuffer, unRequiredBufferLen, peError);
-	std::string sResult = pchBuffer;
-	delete[] pchBuffer;
-	return sResult;
 }

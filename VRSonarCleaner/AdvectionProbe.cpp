@@ -9,7 +9,7 @@ AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolum
 	, m_pFlowVolume(flowVolume)
 	, m_glIcoSphereVAO(0)
 {
-	Icosphere s(3);
+	Icosphere s(1);
 	m_glIcoSphereVAO = s.getVAO();
 	m_glIcoSphereVertCount = s.getIndices().size();
 

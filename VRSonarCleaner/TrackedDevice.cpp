@@ -2,6 +2,8 @@
 
 #include <shared/glm/gtc/type_ptr.hpp>
 
+#include <iostream>
+
 TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels * pRenderModels)
 	: m_unDeviceID(id)
 	, m_pHMD(pHMD)
@@ -21,6 +23,25 @@ TrackedDevice::~TrackedDevice()
 
 bool TrackedDevice::BInit()
 {
+	switch (m_pHMD->GetTrackedDeviceClass(m_unDeviceID))
+	{
+	case vr::TrackedDeviceClass_Controller:		   setClassChar('C'); break;
+	case vr::TrackedDeviceClass_HMD:               setClassChar('H'); break;
+	case vr::TrackedDeviceClass_Invalid:           setClassChar('I'); break;
+	case vr::TrackedDeviceClass_GenericTracker:    setClassChar('G'); break;
+	case vr::TrackedDeviceClass_TrackingReference: setClassChar('T'); break;
+	default:                                       setClassChar('?'); break;
+	}
+
+	setRenderModelName(getPropertyString(vr::Prop_RenderModelName_String));
+
+	std::cout << "Device " << m_unDeviceID << "'s RenderModel name is " << m_strRenderModelName.c_str() << std::endl;
+	
+	// hide base stations
+	if (m_ClassChar == 'T')
+		m_bHidden = true;
+	
+
 	return true;
 }
 
@@ -119,4 +140,23 @@ uint32_t TrackedDevice::getPropertyInt32(vr::TrackedDeviceProperty prop, vr::Tra
 	vr::IVRSystem *pHMD = (vr::IVRSystem *)vr::VR_GetGenericInterface(vr::IVRSystem_Version, &eError);
 	
 	return pHMD->GetInt32TrackedDeviceProperty(m_unDeviceID, prop, peError);;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Helper to get a string from a tracked device property and turn it
+//			into a std::string
+//-----------------------------------------------------------------------------
+std::string TrackedDevice::getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError)
+{
+	vr::EVRInitError eError = vr::VRInitError_None;
+
+	uint32_t unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(m_unDeviceID, prop, NULL, 0, peError);
+	if (unRequiredBufferLen == 0)
+		return "";
+
+	char *pchBuffer = new char[unRequiredBufferLen];
+	unRequiredBufferLen = m_pHMD->GetStringTrackedDeviceProperty(m_unDeviceID, prop, pchBuffer, unRequiredBufferLen, peError);
+	std::string sResult = pchBuffer;
+	delete[] pchBuffer;
+	return sResult;
 }

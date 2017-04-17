@@ -50,7 +50,6 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	SetupShaders();
 	SetupCameras();
 	SetupStereoRenderTargets();
-	SetupCompanionWindow();
 
 	return true;
 }
@@ -157,8 +156,11 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::SetupCompanionWindow()
+void Renderer::SetupCompanionWindow(int width, int height)
 {
+	m_nCompanionWindowWidth = width;
+	m_nCompanionWindowHeight = height;
+
 	if (!m_pHMD)
 		return;
 
@@ -172,11 +174,15 @@ void Renderer::SetupCompanionWindow()
 
 	std::vector<VertexDataWindow> vVerts;
 
-	// left eye verts
-	vVerts.push_back(VertexDataWindow(glm::vec2(-1, -1), glm::vec2(0, 0)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(-1, 1), glm::vec2(0, 1)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
+	// Calculate aspect ratio and use it to letterbox-clip the left eye texture coordinates
+	float ar = static_cast<float>(m_nCompanionWindowHeight) / static_cast<float>(m_nCompanionWindowWidth);
+
+	// left eye verts	
+	vVerts.push_back(VertexDataWindow(glm::vec2(-1, -1), glm::vec2(0.f, 0.5f - 0.5f * ar)));
+	vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1.f, 0.5f - 0.5f * ar)));
+	vVerts.push_back(VertexDataWindow(glm::vec2(-1, 1), glm::vec2(0.f, 0.5f + 0.5f * ar)));
+	vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1.f, 0.5f + 0.5f * ar)));
+	
 
 	// right eye verts
 	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
@@ -417,7 +423,7 @@ void Renderer::RenderCompanionWindow()
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glViewport(m_nCompanionWindowWidth / 4, 0, m_nCompanionWindowWidth / 2, m_nCompanionWindowHeight);
+	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
 
 	glUseProgram(*m_mapShaders["companionWindow"]);
 	glBindVertexArray(m_unCompanionWindowVAO);

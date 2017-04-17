@@ -268,6 +268,10 @@ bool CMainApplication::BInitGL()
 	if (!Renderer::getInstance().init(m_pHMD, m_pTDM))
 		return false;
 
+	int w, h;
+	SDL_GetWindowSize(m_pWindow, &w, &h);
+	Renderer::getInstance().SetupCompanionWindow(w, h);
+
 	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (mode == 0)
