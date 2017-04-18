@@ -15,8 +15,6 @@ Renderer::Renderer()
 	, m_pLighting(NULL)
 	, m_glFrameUBO(0)
 	, m_unCompanionWindowVAO(0)
-	, m_bVblank(false)
-	, m_bGlFinishHack(true)
 	, m_bShowWireframe(false)
 	, m_fNearClip(0.1f)
 	, m_fFarClip(50.0f)
@@ -35,9 +33,8 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
 	m_pLighting->addDirectLight()->ambientCoefficient = 0.5f;
-
-	
-	if (SDL_GL_SetSwapInterval(m_bVblank ? 1 : 0) < 0)
+		
+	if (SDL_GL_SetSwapInterval(0) < 0)
 	{
 		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
@@ -255,37 +252,13 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 	}
 
-	if (m_bVblank && m_bGlFinishHack)
-	{
-		//$ HACKHACK. From gpuview profiling, it looks like there is a bug where two renders and a present
-		// happen right before and after the vsync causing all kinds of jittering issues. This glFinish()
-		// appears to clear that up. Temporary fix while I try to get nvidia to investigate this problem.
-		// 1/29/2014 mikesart
-		glFinish();
-	}
+	m_vRenderQueue.clear();
+	DebugDrawer::getInstance().flushLines();
 
 	// SwapWindow
 	{
 		SDL_GL_SwapWindow(win);
 	}
-
-	// Clear
-	{
-		// We want to make sure the glFinish waits for the entire present to complete, not just the submission
-		// of the command. So, we do a clear here right here so the glFinish will wait fully for the swap.
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	// Flush and wait for swap.
-	if (m_bVblank)
-	{
-		glFlush();
-		glFinish();
-	}
-
-	m_vRenderQueue.clear();
-	DebugDrawer::getInstance().flushLines();
 }
 
 

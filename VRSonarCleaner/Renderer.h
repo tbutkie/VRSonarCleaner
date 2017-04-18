@@ -111,8 +111,6 @@ private:
 	std::map<std::string, RenderModel*> m_mapModelCache;
 	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
 
-	bool m_bVblank;
-	bool m_bGlFinishHack;
 	bool m_bShowWireframe;
 
 	std::map<std::string, GLuint*> m_mapShaders;
