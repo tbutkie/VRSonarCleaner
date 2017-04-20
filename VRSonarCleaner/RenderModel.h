@@ -15,6 +15,7 @@ public:
 	const std::string & GetName() const { return m_sModelName; }
 
 	GLuint getVAO();
+	int getVertexCount();
 	float getMaterialShininess();
 	GLuint getDiffuseTexture();
 	GLuint getSpecularTexture();

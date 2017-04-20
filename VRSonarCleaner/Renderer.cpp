@@ -51,17 +51,6 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	return true;
 }
 
-void Renderer::addRenderModelInstance(const char * name, glm::mat4 instancePose)
-{
-	m_mapModelInstances[std::string(name)].push_back(instancePose);
-}
-
-void Renderer::resetRenderModelInstances()
-{
-	for (auto &rm : m_mapModelInstances)
-		rm.second.clear();
-}
-
 void Renderer::addToRenderQueue(RendererSubmission &rs)
 {
 	m_vRenderQueue.push_back(rs);
@@ -325,39 +314,6 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 
 	m_pLighting->update(thisEyesViewMatrix);
 
-	GLuint* lightingShaderProg = m_bShowWireframe ? m_mapShaders["lightingWireframe"] : m_mapShaders["lighting"];
-	// ----- Render Model rendering -----
-	if (*lightingShaderProg)
-	{
-		glUseProgram(*lightingShaderProg);
-
-		if (!m_pHMD->IsInputFocusCapturedByAnotherProcess())
-		{
-			for (auto &rm : m_mapModelInstances)
-			{
-				RenderModel *pglRenderModel = findOrLoadRenderModel(rm.first.c_str());
-
-				if (pglRenderModel)
-				{
-					for (auto const &instancePose : rm.second)
-					{
-						glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(instancePose));
-						pglRenderModel->Draw();
-					}
-				}
-				else
-				{
-					printf("Unable to load render model %s\n", rm.first.c_str());
-				}
-			}
-		}
-	}
-
-	if (*m_mapShaders["infoBox"])
-	{
-		glUseProgram(*m_mapShaders["infoBox"]);
-		InfoBoxManager::getInstance().draw();
-	}
 
 	if (*m_mapShaders["debug"])
 	{
@@ -411,72 +367,6 @@ void Renderer::RenderCompanionWindow()
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Finds a render model we've already loaded or loads a new one
-//-----------------------------------------------------------------------------
-RenderModel* Renderer::findOrLoadRenderModel(const char *pchRenderModelName)
-{
-	// check model cache for existing model
-	RenderModel *pRenderModel = m_mapModelCache[std::string(pchRenderModelName)];
-
-	// found model in the cache, so return it
-	if (pRenderModel)
-	{
-		//printf("Found existing render model for %s\n", pchRenderModelName);
-		return pRenderModel;
-	}
-
-	vr::RenderModel_t *pModel;
-	vr::EVRRenderModelError error;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		::Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
-		return NULL; // move on to the next tracked device
-	}
-
-	vr::RenderModel_TextureMap_t *pTexture;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		::Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
-		vr::VRRenderModels()->FreeRenderModel(pModel);
-		return NULL; // move on to the next tracked device
-	}
-
-	pRenderModel = new RenderModel(pchRenderModelName);
-	if (!pRenderModel->BInit(*pModel, *pTexture))
-	{
-		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
-		delete pRenderModel;
-		pRenderModel = NULL;
-	}
-
-	vr::VRRenderModels()->FreeRenderModel(pModel);
-	vr::VRRenderModels()->FreeTexture(pTexture);
-
-	m_mapModelCache[std::string(pchRenderModelName)] = pRenderModel;
-
-	return pRenderModel;
 }
 
 //-----------------------------------------------------------------------------

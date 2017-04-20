@@ -69,9 +69,6 @@ public:
 
 	void SetupCompanionWindow(int width, int height);
 
-	void addRenderModelInstance(const char* name, glm::mat4 instancePose);
-	void resetRenderModelInstances();
-
 	void addToRenderQueue(RendererSubmission &rs);
 
 	void toggleWireframe();
@@ -89,8 +86,6 @@ private:
 	void SetupShaders();
 	void SetupCameras();
 	bool SetupStereoRenderTargets();
-	
-	RenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 
 	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
 	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
@@ -108,7 +103,6 @@ private:
 
 	std::vector<RendererSubmission> m_vRenderQueue;
 
-	std::map<std::string, RenderModel*> m_mapModelCache;
 	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
 
 	bool m_bShowWireframe;

@@ -5,6 +5,7 @@
 #include "TrackedDevice.h"
 #include "ViveController.h"
 #include "BroadcastSystem.h"
+#include "RenderModel.h"
 
 #include <shared/glm/glm.hpp>
 
@@ -20,6 +21,9 @@ public:
 
 	void handleEvents();
 
+	void update();
+	void draw();
+
 	void hideBaseStations(bool hidden);
 
 	bool cleaningModeActive();
@@ -32,16 +36,16 @@ public:
 	glm::mat4& getPrimaryControllerPose();
 	glm::mat4& getSecondaryControllerPose();
 
-	void updateTrackedDeviceRenderModels();
-	void update();
 
 private:
 	void TrackedDeviceManager::initDevices();
 	bool setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	void removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	RenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
+	std::map<std::string, RenderModel*> m_mapModelCache;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	ViveController* m_pPrimaryController;

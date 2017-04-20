@@ -135,6 +135,11 @@ GLuint RenderModel::getVAO()
 	return m_glVAO;
 }
 
+int RenderModel::getVertexCount()
+{
+	return m_unVertexCount;
+}
+
 float RenderModel::getMaterialShininess()
 {
 	return m_fShininess;

@@ -507,6 +507,10 @@ void CMainApplication::RunMainLoop()
 
 		g_pHolodeck->draw();
 
+		m_pTDM->draw();
+
+		InfoBoxManager::getInstance().draw();
+
 		if (mode == 0)
 		{
 			glm::mat4 currentCursorPose;
@@ -552,8 +556,6 @@ void CMainApplication::RunMainLoop()
 		//start = std::clock();
 
 		Renderer::getInstance().RenderFrame(m_pWindow, m_pTDM->getHMDPose());
-
-		Renderer::getInstance().resetRenderModelInstances();
 
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 

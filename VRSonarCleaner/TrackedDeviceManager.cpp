@@ -204,7 +204,7 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 	m_rpTrackedDevices[unTrackedDeviceIndex] = NULL;
 }
 
-void TrackedDeviceManager::updateTrackedDeviceRenderModels()
+void TrackedDeviceManager::draw()
 {
 	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
 	{
@@ -238,14 +238,38 @@ void TrackedDeviceManager::updateTrackedDeviceRenderModels()
 						);
 						matModel = m_rpTrackedDevices[unTrackedDevice]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 					}
-					Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str(), matModel);
+					//Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str(), matModel);
+					RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str());
+					
+					Renderer::RendererSubmission rs;
+					rs.shaderName = "lighting";
+					rs.VAO = rm->getVAO();
+					rs.vertCount = rm->getVertexCount();
+					rs.primitiveType = GL_TRIANGLES;
+					rs.diffuseTex = rm->getDiffuseTexture();
+					rs.specularTex = rm->getSpecularTexture();
+					rs.specularExponent = rm->getMaterialShininess();
+					rs.modelToWorldTransform = matModel;
+					Renderer::getInstance().addToRenderQueue(rs);
 				}
 		}
 		else // render model without components
 		{
 			glm::mat4 matModel = m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
 
-			Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str(), matModel);
+			//Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str(), matModel);
+			RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str());
+
+			Renderer::RendererSubmission rs;
+			rs.shaderName = "lighting";
+			rs.VAO = rm->getVAO();
+			rs.vertCount = rm->getVertexCount();
+			rs.primitiveType = GL_TRIANGLES;
+			rs.diffuseTex = rm->getDiffuseTexture();
+			rs.specularTex = rm->getSpecularTexture();
+			rs.specularExponent = rm->getMaterialShininess();
+			rs.modelToWorldTransform = matModel;
+			Renderer::getInstance().addToRenderQueue(rs);
 		}
 	}
 }
@@ -344,6 +368,70 @@ void TrackedDeviceManager::update()
 			notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
 		}
 	}
+}
 
-	updateTrackedDeviceRenderModels();
+
+//-----------------------------------------------------------------------------
+// Purpose: Finds a render model we've already loaded or loads a new one
+//-----------------------------------------------------------------------------
+RenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderModelName)
+{
+	// check model cache for existing model
+	RenderModel *pRenderModel = m_mapModelCache[std::string(pchRenderModelName)];
+
+	// found model in the cache, so return it
+	if (pRenderModel)
+	{
+		//printf("Found existing render model for %s\n", pchRenderModelName);
+		return pRenderModel;
+	}
+
+	vr::RenderModel_t *pModel;
+	vr::EVRRenderModelError error;
+	while (1)
+	{
+		error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
+		if (error != vr::VRRenderModelError_Loading)
+			break;
+
+		::Sleep(1);
+	}
+
+	if (error != vr::VRRenderModelError_None)
+	{
+		printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
+		return NULL; // move on to the next tracked device
+	}
+
+	vr::RenderModel_TextureMap_t *pTexture;
+	while (1)
+	{
+		error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
+		if (error != vr::VRRenderModelError_Loading)
+			break;
+
+		::Sleep(1);
+	}
+
+	if (error != vr::VRRenderModelError_None)
+	{
+		printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
+		vr::VRRenderModels()->FreeRenderModel(pModel);
+		return NULL; // move on to the next tracked device
+	}
+
+	pRenderModel = new RenderModel(pchRenderModelName);
+	if (!pRenderModel->BInit(*pModel, *pTexture))
+	{
+		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
+		delete pRenderModel;
+		pRenderModel = NULL;
+	}
+
+	vr::VRRenderModels()->FreeRenderModel(pModel);
+	vr::VRRenderModels()->FreeTexture(pTexture);
+
+	m_mapModelCache[std::string(pchRenderModelName)] = pRenderModel;
+
+	return pRenderModel;
 }
