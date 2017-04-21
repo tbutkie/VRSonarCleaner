@@ -55,6 +55,17 @@ public:
 		GLuint			specularTex;
 		float			specularExponent;
 		glm::mat4		modelToWorldTransform;
+
+		RendererSubmission()
+			: primitiveType(GL_NONE)
+			, VAO(0)
+			, vertCount(0)
+			, shaderName("")
+			, diffuseTex(0)
+			, specularTex(0)
+			, specularExponent(0.f)
+			, modelToWorldTransform(glm::mat4())
+		{}
 	};
 
 public:	
@@ -69,7 +80,8 @@ public:
 
 	void SetupCompanionWindow(int width, int height);
 
-	void addToRenderQueue(RendererSubmission &rs);
+	void addToStaticRenderQueue(RendererSubmission &rs);
+	void addToDynamicRenderQueue(RendererSubmission &rs);
 
 	void toggleWireframe();
 
@@ -101,9 +113,8 @@ private:
 
 	ShaderSet m_Shaders;
 
-	std::vector<RendererSubmission> m_vRenderQueue;
-
-	std::map<std::string, std::vector<glm::mat4>> m_mapModelInstances;
+	std::vector<RendererSubmission> m_vStaticRenderQueue;
+	std::vector<RendererSubmission> m_vDynamicRenderQueue;
 
 	bool m_bShowWireframe;
 

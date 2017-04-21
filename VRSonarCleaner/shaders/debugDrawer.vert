@@ -3,6 +3,9 @@ layout(location = POSITION_ATTRIB_LOCATION)
 layout(location = COLOR_ATTRIB_LOCATION)
 	in vec4 v4ColorIn;
 	
+layout(location = MODEL_MAT_UNIFORM_LOCATION)
+	uniform mat4 m4Model;
+	
 layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION) 
 	uniform FrameUniforms
 	{

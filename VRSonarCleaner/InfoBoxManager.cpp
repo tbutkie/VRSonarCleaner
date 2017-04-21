@@ -127,7 +127,7 @@ void InfoBoxManager::draw()
 		rs.vertCount = m_uiIndexSize;
 		rs.modelToWorldTransform = relXform * infoBoxMat * scaleMat;
 
-		Renderer::getInstance().addToRenderQueue(rs);
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
 }
 

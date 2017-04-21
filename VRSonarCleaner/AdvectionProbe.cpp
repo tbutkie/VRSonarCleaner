@@ -63,7 +63,7 @@ void AdvectionProbe::update()
 	rs.shaderName = "lightingWireframe";
 	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));
 
-	Renderer::getInstance().addToRenderQueue(rs);
+	Renderer::getInstance().addToDynamicRenderQueue(rs);
 
 	if (!m_pController->readyToRender())
 		return;

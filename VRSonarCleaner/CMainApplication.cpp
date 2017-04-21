@@ -505,8 +505,6 @@ void CMainApplication::RunMainLoop()
 		for (auto const &b : g_vpBehaviors)
 			b->draw();
 
-		g_pHolodeck->draw();
-
 		m_pTDM->draw();
 
 		InfoBoxManager::getInstance().draw();

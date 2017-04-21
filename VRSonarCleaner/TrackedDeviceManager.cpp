@@ -305,7 +305,7 @@ void TrackedDeviceManager::draw()
 						);
 						matModel = m_rpTrackedDevices[unTrackedDevice]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 					}
-					//Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str(), matModel);
+
 					RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str());
 					
 					Renderer::RendererSubmission rs;
@@ -317,14 +317,13 @@ void TrackedDeviceManager::draw()
 					rs.specularTex = rm->getSpecularTexture();
 					rs.specularExponent = rm->getMaterialShininess();
 					rs.modelToWorldTransform = matModel;
-					Renderer::getInstance().addToRenderQueue(rs);
+					Renderer::getInstance().addToDynamicRenderQueue(rs);
 				}
 		}
 		else // render model without components
 		{
 			glm::mat4 matModel = m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
 
-			//Renderer::getInstance().addRenderModelInstance(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str(), matModel);
 			RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str());
 
 			Renderer::RendererSubmission rs;
@@ -336,7 +335,7 @@ void TrackedDeviceManager::draw()
 			rs.specularTex = rm->getSpecularTexture();
 			rs.specularExponent = rm->getMaterialShininess();
 			rs.modelToWorldTransform = matModel;
-			Renderer::getInstance().addToRenderQueue(rs);
+			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}
 	}
 }

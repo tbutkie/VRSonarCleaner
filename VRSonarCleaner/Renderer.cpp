@@ -51,9 +51,14 @@ bool Renderer::init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM)
 	return true;
 }
 
-void Renderer::addToRenderQueue(RendererSubmission &rs)
+void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 {
-	m_vRenderQueue.push_back(rs);
+	m_vStaticRenderQueue.push_back(rs);
+}
+
+void Renderer::addToDynamicRenderQueue(RendererSubmission &rs)
+{
+	m_vDynamicRenderQueue.push_back(rs);
 }
 
 void Renderer::toggleWireframe()
@@ -241,7 +246,7 @@ void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 	}
 
-	m_vRenderQueue.clear();
+	m_vDynamicRenderQueue.clear();
 	DebugDrawer::getInstance().flushLines();
 
 	// SwapWindow
@@ -318,10 +323,34 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	if (*m_mapShaders["debug"])
 	{
 		glUseProgram(*m_mapShaders["debug"]);
+		glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
 		DebugDrawer::getInstance().render();
 	}
 
-	for (auto i : m_vRenderQueue)
+	// STATIC OBJECTS
+	for (auto i : m_vStaticRenderQueue)
+	{
+		if (m_mapShaders[i.shaderName] && *m_mapShaders[i.shaderName])
+		{
+			glUseProgram(*m_mapShaders[i.shaderName]);
+			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(i.modelToWorldTransform));
+
+			if (i.specularExponent > 0.f)
+				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
+
+			if (i.diffuseTex > 0u)
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
+			if (i.specularTex > 0u)
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
+
+			glBindVertexArray(i.VAO);
+			glDrawElements(i.primitiveType, i.vertCount, GL_UNSIGNED_SHORT, 0);
+			glBindVertexArray(0);
+		}
+	}
+
+	// DYNAMIC OBJECTS
+	for (auto i : m_vDynamicRenderQueue)
 	{
 		if (*m_mapShaders[i.shaderName])
 		{

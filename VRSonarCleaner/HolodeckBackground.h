@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <math.h>
 #include <stdio.h>
+#include <vector>
 
 #include <shared/glm/glm.hpp>
 
@@ -12,9 +13,23 @@ public:
 	HolodeckBackground(glm::vec3 roomSizeMeters, float gridSpacingMeters);
 	virtual ~HolodeckBackground();
 
-	void draw();
+	GLuint getVAO();
+	GLuint getVertexCount();
 
 private:
+	struct HolodeckVertex {
+		glm::vec3 pos;
+		glm::vec4 col;
+
+		HolodeckVertex(glm::vec3 p, glm::vec4 c)
+			: pos(p)
+			, col(c)
+		{}
+	};
+
+
+private:
+	void draw();
 	void drawGrids(glm::vec3 color, float spacingFactor);
 
 private:
@@ -24,4 +39,9 @@ private:
 	glm::vec3 m_vec3Spaces;
 	glm::vec3 m_vec3RoomMin;
 	glm::vec3 m_vec3RoomMax;
+
+	std::vector<HolodeckVertex> m_vHolodeckGeometry;
+
+	GLuint m_glVAO;
+	GLuint m_glVBO, m_glEBO;
 };
