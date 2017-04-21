@@ -204,6 +204,73 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 	m_rpTrackedDevices[unTrackedDeviceIndex] = NULL;
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void TrackedDeviceManager::update()
+{
+	if (!m_pHMD)
+		return;
+
+	vr::TrackedDevicePose_t poses[vr::k_unMaxTrackedDeviceCount];
+	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+
+	m_iValidPoseCount = 0;
+	m_iTrackedControllerCount = 0;
+	m_strPoseClasses = "";
+	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
+	{
+		if (!m_rpTrackedDevices[nDevice])
+			continue;
+
+		if (m_rpTrackedDevices[nDevice]->update(poses[nDevice]))
+		{
+			m_iValidPoseCount++;
+
+			if (m_rpTrackedDevices[nDevice]->getClassChar() == 0)
+			{
+
+			}
+			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
+		}
+	}
+
+	// Spew out the controller and pose count whenever they change.
+	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
+	{
+		m_iValidPoseCount_Last = m_iValidPoseCount;
+		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
+
+		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
+	}
+
+	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
+	{
+		m_mat4HMDView = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
+
+		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
+		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
+		float widthX, widthZ;
+		vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
+
+		BroadcastSystem::Payload::HMD payload = {
+			m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
+			HMDtoWorldMat
+		};
+
+		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
+		{
+			notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
+		}
+		else
+		{
+			notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
+		}
+	}
+}
+
+
 void TrackedDeviceManager::draw()
 {
 	for (uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++)
@@ -279,6 +346,27 @@ glm::mat4 & TrackedDeviceManager::getHMDPose()
 	return m_mat4HMDView;
 }
 
+// Returns vr::k_unTrackedDeviceIndexInvalid if not found
+uint32_t TrackedDeviceManager::getDeviceComponentID(uint32_t deviceID, std::string componentName)
+{
+	for (auto c : m_rpTrackedDevices[deviceID]->m_vComponents)
+		if (c.m_strComponentName.compare(componentName) == 0)
+			return c.m_unComponentIndex;
+
+	return vr::k_unTrackedDeviceIndexInvalid;
+}
+
+glm::mat4 TrackedDeviceManager::getDeviceComponentPose(uint32_t deviceID, uint32_t componentID)
+{
+	vr::TrackedDevicePose_t p;
+	m_pHMD->ApplyTransform(
+		&p,
+		&(m_rpTrackedDevices[deviceID]->m_Pose),
+		&(m_rpTrackedDevices[deviceID]->m_vComponents[componentID].m_State.mTrackingToComponentLocal)
+	);
+	return m_rpTrackedDevices[deviceID]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+}
+
 ViveController * TrackedDeviceManager::getPrimaryController()
 {
 	return m_pPrimaryController;
@@ -303,71 +391,6 @@ glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
 		return m_pSecondaryController->getDeviceToWorldTransform();
 
 	return glm::mat4();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void TrackedDeviceManager::update()
-{
-	if (!m_pHMD)
-		return;
-
-	vr::TrackedDevicePose_t poses[vr::k_unMaxTrackedDeviceCount];
-	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
-
-	m_iValidPoseCount = 0;
-	m_iTrackedControllerCount = 0;
-	m_strPoseClasses = "";
-	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-	{
-		if (!m_rpTrackedDevices[nDevice])
-			continue;
-
-		if (m_rpTrackedDevices[nDevice]->update(poses[nDevice]))
-		{
-			m_iValidPoseCount++;
-
-			if (m_rpTrackedDevices[nDevice]->getClassChar() == 0)
-			{
-
-			}
-			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
-		}
-	}
-
-	// Spew out the controller and pose count whenever they change.
-	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
-	{
-		m_iValidPoseCount_Last = m_iValidPoseCount;
-		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
-
-		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
-	}
-	
-	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
-	{
-		m_mat4HMDView = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
-
-		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
-		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
-		float widthX, widthZ;
-		vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
-
-		BroadcastSystem::Payload::HMD payload = {
-			m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
-			HMDtoWorldMat 
-		};
-
-		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
-		{
-			notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
-		}
-		else
-		{
-			notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
-		}
-	}
 }
 
 

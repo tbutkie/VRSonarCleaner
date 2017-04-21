@@ -31,6 +31,8 @@ public:
 	void cleaningHit();
 
 	glm::mat4& getHMDPose();
+	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);
+	glm::mat4 getDeviceComponentPose(uint32_t deviceID, uint32_t componentID);
 	ViveController* getPrimaryController();
 	ViveController* getSecondaryController();
 	glm::mat4& getPrimaryControllerPose();
