@@ -328,7 +328,19 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 	}
 
 	// STATIC OBJECTS
-	for (auto i : m_vStaticRenderQueue)
+	processRenderQueue(m_vStaticRenderQueue);
+
+	// DYNAMIC OBJECTS
+	processRenderQueue(m_vDynamicRenderQueue);
+
+	glDisable(GL_BLEND);
+
+	glUseProgram(0);
+}
+
+void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
+{
+	for (auto i : renderQueue)
 	{
 		if (m_mapShaders[i.shaderName] && *m_mapShaders[i.shaderName])
 		{
@@ -348,28 +360,6 @@ void Renderer::RenderScene(vr::Hmd_Eye nEye)
 			glBindVertexArray(0);
 		}
 	}
-
-	// DYNAMIC OBJECTS
-	for (auto i : m_vDynamicRenderQueue)
-	{
-		if (*m_mapShaders[i.shaderName])
-		{
-			glUseProgram(*m_mapShaders[i.shaderName]);
-			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(i.modelToWorldTransform));
-			glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
-
-			glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
-			glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
-
-			glBindVertexArray(i.VAO);
-			glDrawElements(i.primitiveType, i.vertCount, GL_UNSIGNED_SHORT, 0);
-			glBindVertexArray(0);
-		}
-	}
-
-	glDisable(GL_BLEND);
-
-	glUseProgram(0);
 }
 
 //-----------------------------------------------------------------------------

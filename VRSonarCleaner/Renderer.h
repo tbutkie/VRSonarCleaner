@@ -102,6 +102,8 @@ private:
 	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
 	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
 
+	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
+
 	void RenderStereoTargets();
 	void RenderScene(vr::Hmd_Eye nEye);
 	void RenderCompanionWindow();
