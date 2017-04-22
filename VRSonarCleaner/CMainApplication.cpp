@@ -127,12 +127,15 @@ bool CMainApplication::BInit()
 
 	int numDisplays = SDL_GetNumVideoDisplays();
 
-	SDL_Rect displayBounds;
+	std::vector<SDL_Rect> vDisplayBounds(numDisplays);
+	int dispID = 0;
 
-	if (numDisplays > 1)
-		SDL_GetDisplayBounds(1, &displayBounds);
-	else
-		SDL_GetDisplayBounds(0, &displayBounds);
+	for (int i = 0; i < numDisplays; ++i)
+	{
+		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
+		if (vDisplayBounds[i].w > 0)
+			dispID = i;
+	}
 
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
@@ -146,7 +149,7 @@ bool CMainApplication::BInit()
 	if (m_bDebugOpenGL)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
-	m_pWindow = SDL_CreateWindow("hellovr_sdl", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
+	m_pWindow = SDL_CreateWindow("hellovr_sdl", vDisplayBounds[dispID].x, vDisplayBounds[dispID].y, vDisplayBounds[dispID].w, vDisplayBounds[dispID].h, unWindowFlags);
 	if (m_pWindow == NULL)
 	{
 		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
