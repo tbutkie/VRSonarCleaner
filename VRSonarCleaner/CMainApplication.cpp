@@ -125,18 +125,6 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-	int numDisplays = SDL_GetNumVideoDisplays();
-
-	std::vector<SDL_Rect> vDisplayBounds(numDisplays);
-	int dispID = 0;
-
-	for (int i = 0; i < numDisplays; ++i)
-	{
-		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
-		if (vDisplayBounds[i].w > 0)
-			dispID = i;
-	}
-
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -148,6 +136,18 @@ bool CMainApplication::BInit()
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
 	if (m_bDebugOpenGL)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+
+	int numDisplays = SDL_GetNumVideoDisplays();
+
+	std::vector<SDL_Rect> vDisplayBounds(numDisplays);
+	int dispID = 0;
+
+	for (int i = 0; i < numDisplays; ++i)
+	{
+		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
+		if (vDisplayBounds[i].x > 0)
+			dispID = i;
+	}
 
 	m_pWindow = SDL_CreateWindow("hellovr_sdl", vDisplayBounds[dispID].x, vDisplayBounds[dispID].y, vDisplayBounds[dispID].w, vDisplayBounds[dispID].h, unWindowFlags);
 	if (m_pWindow == NULL)
