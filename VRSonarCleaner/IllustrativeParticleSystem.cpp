@@ -62,26 +62,51 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 		}
 	}
 
-	int particleToReplace = deadParticleToReplace >= 0 ? deadParticleToReplace : nonUserParticle;
+	int particleIndexToReplace = deadParticleToReplace >= 0 ? deadParticleToReplace : nonUserParticle;
 
-	if (particleToReplace == -1)
+	if (particleIndexToReplace == -1)
 	{
 		printf("YOU SHOULD NEVER SEE THIS! 18515 addDyeParticle()");
-		particleToReplace = 0;
+		particleIndexToReplace = 0;
 	}
 	
 	float tick = GetTickCount64();
 	lifetime = lifetime*((float)(rand()%25)/100) + lifetime*0.75;  //randomize the lifetimes by +\- 25% so they dont all die simultaneously					
-	IllustrativeParticle* tmpPart = new IllustrativeParticle(x, y, z, lifetime, 1000, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-	tmpPart->m_fGravity = 0;
-	tmpPart->m_bUserCreated = true;
-	tmpPart->m_iFlowGridIndex = -1;
-	tmpPart->m_vec3Color.r = r;
-	tmpPart->m_vec3Color.g = g;
-	tmpPart->m_vec3Color.b = b;
+	//IllustrativeParticle* tmpPart = new IllustrativeParticle(x, y, z, lifetime, 1000, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
+	//tmpPart->m_fGravity = 0;
+	//tmpPart->m_bUserCreated = true;
+	//tmpPart->m_iFlowGridIndex = -1;
+	//tmpPart->m_vec3Color.r = r;
+	//tmpPart->m_vec3Color.g = g;
+	//tmpPart->m_vec3Color.b = b;
 
-	delete m_vpParticles[particleToReplace];
-	m_vpParticles[particleToReplace] = tmpPart;
+	
+	IllustrativeParticle* p = m_vpParticles[particleIndexToReplace];
+
+	p->m_bDead = false;
+	p->m_bDying = false;
+	p->m_bUserCreated = true;
+	p->m_fGravity = 0;
+	p->m_fTimeToLive;
+	p->m_fTrailTime = 1000.f;
+	p->m_iBufferHead = 1;
+	p->m_iBufferTail = 0;
+	p->m_iFlowGridIndex = -1;
+	p->m_ullBirthTime = tick;
+	p->m_ullLastUpdateTimestamp;
+	p->m_ullLiveTimeElapsed = 0ull;
+	p->m_ullTimeOfDeath = 0ull;
+	p->m_ullTimeToStartDying = tick + lifetime;
+	p->m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
+	p->m_vec3StartingPosition = glm::vec3(x, y, z);
+	p->m_vullTimes.clear();
+	p->m_vullTimes[0] = tick;
+	p->m_vvec3Positions.clear();
+	p->m_vvec3Positions[0] = p->m_vec3StartingPosition;
+	p->m_vvec3Positions[1] = p->m_vec3StartingPosition;
+
+	//delete m_vpParticles[particleIndexToReplace];
+	//m_vpParticles[particleIndexToReplace] = tmpPart;
 }
 
 void IllustrativeParticleSystem::update(float time)
