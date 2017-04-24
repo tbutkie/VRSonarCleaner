@@ -484,38 +484,38 @@ void IllustrativeParticleSystem::update(float time)
 
 void IllustrativeParticleSystem::drawStreakVBOs()
 {	
-	for (int i=0;i<m_nMaxParticles;i++)
+	for (auto particle : m_vpParticles)
 	{
-		int numPositions = m_vpParticles[i]->getNumLivePositions();
+		int numPositions = particle->getNumLivePositions();
 		if (numPositions > 1)
 		{
-			float timeElapsed = m_vpParticles[i]->m_ullLiveTimeElapsed;
+			float timeElapsed = particle ->m_ullLiveTimeElapsed;
 			for (int j=1;j<numPositions;j++)
 			{
-				int posIndex1 = m_vpParticles[i]->getLivePosition(j-1);
-				int posIndex2 = m_vpParticles[i]->getLivePosition(j);
+				int posIndex1 = particle->getLivePosition(j-1);
+				int posIndex2 = particle->getLivePosition(j);
 
 				glm::vec3 pos1, pos2;
 				glm::vec4 col1, col2;
 
-				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
-				pos1.y = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);  //SWAPPED
-				pos1.z = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y); //SWAPPED
+				pos1.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex1].x);
+				pos1.y = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex1].z);  //SWAPPED
+				pos1.z = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex1].y); //SWAPPED
 
-				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
-				pos2.y = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z); //SWAPPED
-				pos2.z = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);  //SWAPPED
+				pos2.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex2].x);
+				pos2.y = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex2].z); //SWAPPED
+				pos2.z = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex2].y);  //SWAPPED
 
 				//printf("line at: %f, %f, %f - %f, %f, %f\n", positions[(index*6)], positions[(index*6)+1], positions[(index*6)+2], positions[(index*6)+3], positions[(index*6)+4], positions[(index*6)+5]);
 
-				float opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1])/timeElapsed;
-				float opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2])/timeElapsed;
+				float opacity1 = 1 - (particle->m_ullLastUpdateTimestamp - particle->m_vullTimes[posIndex1])/timeElapsed;
+				float opacity2 = 1 - (particle->m_ullLastUpdateTimestamp - particle->m_vullTimes[posIndex2])/timeElapsed;
 
 				//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
 					
-				col1.r = m_vpParticles[i]->m_vec3Color.r;
-				col1.g = m_vpParticles[i]->m_vec3Color.g;
-				col1.b = m_vpParticles[i]->m_vec3Color.b;
+				col1.r = particle->m_vec3Color.r;
+				col1.g = particle->m_vec3Color.g;
+				col1.b = particle->m_vec3Color.b;
 				col1.a = opacity1;
 
 				col2 = col1;
