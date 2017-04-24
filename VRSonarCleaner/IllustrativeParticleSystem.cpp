@@ -47,26 +47,23 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, float lifetime)
 {
 	//find particle to replace:
-	int particleToReplace = -1;
+	int deadParticleToReplace = -1;
+	int nonUserParticle = -1;
 	for (int i=0;i<m_nMaxParticles;i++)
 	{
 		if (m_vpParticles[i]->m_bDead)
 		{
-			particleToReplace = i;
+			deadParticleToReplace = i;
 			break;
 		}
-	}
-	if (particleToReplace == -1)
-	{
-		for (int i=0;i<m_nMaxParticles;i++)
+		else if (!m_vpParticles[i]->m_bUserCreated && nonUserParticle < 0)
 		{
-			if (!m_vpParticles[i]->m_bUserCreated && !m_vpParticles[i]->m_bDead)
-			{
-				particleToReplace = i;
-				break;	
-			}
+			nonUserParticle = i;
 		}
 	}
+
+	int particleToReplace = deadParticleToReplace >= 0 ? deadParticleToReplace : nonUserParticle;
+
 	if (particleToReplace == -1)
 	{
 		printf("YOU SHOULD NEVER SEE THIS! 18515 addDyeParticle()");
