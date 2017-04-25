@@ -7,7 +7,7 @@
 #include <shared/glm/glm.hpp>
 
 // number of particle positions to store for things like trails, etc.
-#define MAX_NUM_POSITIONS 100
+#define MAX_NUM_TRAIL_POSITIONS 100
 
 class IllustrativeParticle
 {
@@ -35,7 +35,7 @@ public:
 
 	bool m_bDead;
 	bool m_bDying;
-	ULONGLONG m_ullTimeOfDeath;
+	ULONGLONG m_ullTimeDeathBegan;
 
 	bool m_bUserCreated;
 	//int color;

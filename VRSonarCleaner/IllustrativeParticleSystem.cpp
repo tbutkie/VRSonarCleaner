@@ -72,14 +72,6 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 	
 	float tick = GetTickCount64();
 	lifetime = lifetime*((float)(rand()%25)/100) + lifetime*0.75;  //randomize the lifetimes by +\- 25% so they dont all die simultaneously					
-	//IllustrativeParticle* tmpPart = new IllustrativeParticle(x, y, z, lifetime, 1000, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-	//tmpPart->m_fGravity = 0;
-	//tmpPart->m_bUserCreated = true;
-	//tmpPart->m_iFlowGridIndex = -1;
-	//tmpPart->m_vec3Color.r = r;
-	//tmpPart->m_vec3Color.g = g;
-	//tmpPart->m_vec3Color.b = b;
-
 	
 	IllustrativeParticle* p = m_vpParticles[particleIndexToReplace];
 
@@ -95,7 +87,7 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 	p->m_ullBirthTime = tick;
 	p->m_ullLastUpdateTimestamp;
 	p->m_ullLiveTimeElapsed = 0ull;
-	p->m_ullTimeOfDeath = 0ull;
+	p->m_ullTimeDeathBegan = 0ull;
 	p->m_ullTimeToStartDying = tick + lifetime;
 	p->m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
 	p->m_vec3StartingPosition = glm::vec3(x, y, z);
@@ -104,9 +96,6 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 	p->m_vvec3Positions.clear();
 	p->m_vvec3Positions[0] = p->m_vec3StartingPosition;
 	p->m_vvec3Positions[1] = p->m_vec3StartingPosition;
-
-	//delete m_vpParticles[particleIndexToReplace];
-	//m_vpParticles[particleIndexToReplace] = tmpPart;
 }
 
 void IllustrativeParticleSystem::update(float time)
