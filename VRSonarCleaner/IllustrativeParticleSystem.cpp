@@ -3,6 +3,7 @@
 //NOTE: modified from VTT4D to use x,z lat/long and y as depth dimension!
 
 #include <shared/glm/glm.hpp>
+#include <map>
 
 #include "DebugDrawer.h"
 
@@ -83,7 +84,7 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 	p->m_fTrailTime = 1000.f;
 	p->m_iBufferHead = 1;
 	p->m_iBufferTail = 0;
-	p->m_iFlowGridIndex = -1;
+	p->m_pFlowGrid = NULL;
 	p->m_ullBirthTime = tick;
 	p->m_ullLastUpdateTimestamp;
 	p->m_ullLiveTimeElapsed = 0ull;
@@ -114,45 +115,35 @@ void IllustrativeParticleSystem::update(float time)
 	
 	//printf("Updating existing particles..\n");
 	
-	float x, y, z;
-	float u, v, w;
-	float newPos[3];
+	glm::vec3 currentPos, newPos;
+	glm::vec3 vel;
 	float prodTimeVelocity;
 	float prodTimeSeconds = 1000*timeSinceLastUpdate;
-	bool result;
+	bool result = true;
 	//Update all current particles
-	for (int i=0;i<m_nMaxParticles;i++)
+	for (auto &particle : m_vpParticles)
 	{
-		if (!m_vpParticles[i]->m_bDead)
+		if (!particle->m_bDead)
 		{
-			if (m_vpParticles[i]->m_bDying)
+			//get current position
+			currentPos = particle->getCurrentXYZ();
+
+			if (particle->m_pFlowGrid) //if attached to a flow grid
 			{
-				//printf("Dying...\n");
-				m_vpParticles[i]->updatePosition(tick, 0, 0, 0);
-			}
-			else if (m_vpParticles[i]->m_iFlowGridIndex > -1) //if attached to a flow grid
-			{
-				//get current position
-				m_vpParticles[i]->getCurrentXYZ(&x, &y, &z);
 				//get UVW at current position
-				result = m_vpFlowGridCollection.at(m_vpParticles[i]->m_iFlowGridIndex)->getUVWat(x, y, z, time, &u, &v, &w);
-				//printf("Result: %d, U: %f, V: %f\n", result, u ,v);
+				result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+
 				//calc new position
-				prodTimeVelocity = timeSinceLastUpdate*m_vpFlowGridCollection.at(m_vpParticles[i]->m_iFlowGridIndex)->illustrativeParticleVelocityScale;
-				//printf("Current Pos: %f, %f, %f\n", x, y, z);
-				newPos[0] = x + u*prodTimeVelocity;
-				newPos[1] = y + v*prodTimeVelocity;
-				newPos[2] = z + w*prodTimeVelocity + (m_vpParticles[i]->m_fGravity / prodTimeSeconds);
+				prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->illustrativeParticleVelocityScale;
+
+				newPos = currentPos + vel * prodTimeVelocity;
+				newPos.z += particle->m_fGravity / prodTimeSeconds;
 
 				//check in bounds or not
-				if (!m_vpFlowGridCollection.at(m_vpParticles[i]->m_iFlowGridIndex)->contains(newPos[0], newPos[1], newPos[2]))
+				if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
 				{
-					//no begin killing off particle
-					//printf("OOB: ", newPos[0], newPos[1], newPos[2]);
-					m_vpParticles[i]->m_bDying = true;
+					particle->m_bDying = true;
 				}
-				//printf("P %d, Pos: %f, %f, %f\n", i, newPos[0], newPos[1], newPos[2]);
-				m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
 
 			}//end if attached to flow grid
 			else //not attached to flow grid
@@ -161,25 +152,23 @@ void IllustrativeParticleSystem::update(float time)
 				bool foundGrid = false;
 				if (m_vpFlowGridCollection.size() > 0)
 				{
-					//get current position
-					m_vpParticles[i]->getCurrentXYZ(&x, &y, &z);
 					//check in bounds or not
-					for (int gridID = 0; gridID < m_vpFlowGridCollection.size(); ++gridID)
+					for (auto const &fg : m_vpFlowGridCollection)
 					{
-						if (m_vpFlowGridCollection.at(gridID)->contains(x, y, z))
+						if (fg->contains(currentPos.x, currentPos.y, currentPos.z))
 						{
 							//found one
-							m_vpParticles[i]->m_iFlowGridIndex = gridID;
-							//printf("particle %d moved to grid %d\n", i, grid);
-							//update
+							particle->m_pFlowGrid = fg;
+
 							//get UVW at current position
-							result = m_vpFlowGridCollection.at(gridID)->getUVWat(x, y, z, time, &u, &v, &w);
+							result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+
 							//calc new position
-							prodTimeVelocity = timeSinceLastUpdate*m_vpFlowGridCollection.at(gridID)->illustrativeParticleVelocityScale;
-							newPos[0] = x + u*prodTimeVelocity;
-							newPos[1] = y + v*prodTimeVelocity;
-							newPos[2] = z + w*prodTimeVelocity + (m_vpParticles[i]->m_fGravity / prodTimeSeconds);
-							m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
+							prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->illustrativeParticleVelocityScale;
+
+							newPos = currentPos + vel * prodTimeVelocity;
+							newPos.z += particle->m_fGravity / prodTimeSeconds;
+
 							foundGrid = true;
 							break;
 						}
@@ -191,21 +180,21 @@ void IllustrativeParticleSystem::update(float time)
 					//if there are flow grids, lets kill it, so it doesn't clutter the scene
 					if (m_vpFlowGridCollection.size() > 0)
 					{
-						m_vpParticles[i]->kill();
+						particle->kill();
 					}
 					else
 					{
-						//if no flow grids, just let it sit there and die out naturally
-						m_vpParticles[i]->getCurrentXYZ(&x, &y, &z);
-						newPos[0] = x;
-						newPos[1] = y;
-						newPos[2] = z + (m_vpParticles[i]->m_fGravity / prodTimeSeconds); //only gravity for this one
-						m_vpParticles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
+						newPos = currentPos;
+						newPos.z += particle->m_fGravity / prodTimeSeconds;
 					}
 				}
 
 			}//end else not attached to flow grid
+
+			particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);
 		}//end if not dead
+		
+		particle->updateBufferIndices(tick);
 	}//end for all particles
 	//printf("Updated Particles in %f ms.\n", GetTickCount()-tick);
 	
@@ -365,19 +354,18 @@ void IllustrativeParticleSystem::update(float time)
 
 	float maxAddable = numParticlesDead;
 	//count particles in each grid
-	int *activeWithinGrid;
-	activeWithinGrid = new int[m_vpFlowGridCollection.size()];
+	std::map<FlowGrid*, int> activeWithinGridMap;
 	//count active in each grid
-	for (int i=0;i<m_vpFlowGridCollection.size();i++)
+	for (auto &grid : m_vpFlowGridCollection)
 	{
-		activeWithinGrid[i] = 0;
+		activeWithinGridMap[grid] = 0;
 	}
-	for (int i=0;i<m_nMaxParticles;i++)
+	for (auto const & particle : m_vpParticles)
 	{
-		if (!m_vpParticles[i]->m_bDead)
+		if (!particle->m_bDead)
 		{
-			if (m_vpParticles[i]->m_iFlowGridIndex > -1 && m_vpParticles[i]->m_iFlowGridIndex < m_vpFlowGridCollection.size())
-				activeWithinGrid[m_vpParticles[i]->m_iFlowGridIndex]++;
+			if (particle->m_pFlowGrid)
+				activeWithinGridMap[particle->m_pFlowGrid]++;
 		}
 	}
 
@@ -390,21 +378,21 @@ void IllustrativeParticleSystem::update(float time)
 	bool inWater, skipGrid;
 	int chancesNotInWater;
 	float minScaledZ, maxScaledZ, scaledZRange;
-	for (int i=0;i<m_vpFlowGridCollection.size();i++)
+	for (auto &grid : m_vpFlowGridCollection)
 	{
 		//printf("FG1, ");
 		//if particles enabled
-		if (m_vpFlowGridCollection.at(i)->enableIllustrativeParticles)
+		if (grid->enableIllustrativeParticles)
 		{
 			//if more particles needed
-			int numNeeded = m_vpFlowGridCollection.at(i)->numIllustrativeParticles - activeWithinGrid[i];
+			int numNeeded = grid->numIllustrativeParticles - activeWithinGridMap[grid];
 			//printf("Req: %d, Active: %d, Need: %d\n", flowGridCollection->at(i)->numIllustrativeParticles, activeWithinGrid[i], numNeeded);
 			if (numNeeded > 0)
 			{
 				//spawn some here
 				skipGrid = false;
-				minScaledZ = abs(m_pScaler->getScaledDepth(m_vpFlowGridCollection.at(i)->getMinDepth()));
-				maxScaledZ = abs(m_pScaler->getScaledDepth(m_vpFlowGridCollection.at(i)->getMaxDepth()));
+				minScaledZ = abs(m_pScaler->getScaledDepth(grid->getMinDepth()));
+				maxScaledZ = abs(m_pScaler->getScaledDepth(grid->getMaxDepth()));
 				scaledZRange = maxScaledZ - minScaledZ;
 				//printf("minZ: %f, maxZ: %f, rangeZ: %f\n", flowGridCollection->at(i)->getMinDepth(), flowGridCollection->at(i)->getMaxDepth(), flowGridCollection->at(i)->getMaxDepth()-flowGridCollection->at(i)->getMinDepth());
 				//printf("minSZ: %f, maxSZ: %f, rangeSZ: %f\n", minScaledZ, maxScaledZ, scaledZRange);
@@ -423,8 +411,8 @@ void IllustrativeParticleSystem::update(float time)
 							//randX = seedBBox[0] + onscreenXRange*(((float)(rand()%10000))/10000);
 							///randY = seedBBox[2] + onscreenYRange*(((float)(rand()%10000))/10000);
 
-							randX = m_vpFlowGridCollection.at(i)->xMin + m_vpFlowGridCollection.at(i)->xRange*(((float)(rand()%10000))/10000);
-							randY = m_vpFlowGridCollection.at(i)->yMin + m_vpFlowGridCollection.at(i)->yRange*(((float)(rand()%10000))/10000);
+							randX = grid->xMin + grid->xRange*(((float)(rand()%10000))/10000);
+							randY = grid->yMin + grid->yRange*(((float)(rand()%10000))/10000);
 		
 							//randZ = dataset->minDepthVal + rand()%(int)dataset->rangeDepthVal; 
 							//randZlevel = rand()%(int)dataset->cellsD;
@@ -437,7 +425,7 @@ void IllustrativeParticleSystem::update(float time)
 
 							//printf("Chance: %d, rand: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
 
-							if (m_vpFlowGridCollection.at(i)->getIsWaterAt(randX, randY, randZ, time))
+							if (grid->getIsWaterAt(randX, randY, randZ, time))
 								inWater = true;
 							else
 								chancesNotInWater--;
@@ -451,12 +439,12 @@ void IllustrativeParticleSystem::update(float time)
 						{
 							//printf("found water!\n");
 							//printf("C:%d, Spawning at: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
-							lifetime = m_vpFlowGridCollection.at(i)->illustrativeParticleLifetime*((float)(rand()%25)/100) + m_vpFlowGridCollection.at(i)->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
-							IllustrativeParticle* tmpPart = new IllustrativeParticle(randX, randY, randZ, lifetime, m_vpFlowGridCollection.at(i)->illustrativeParticleTrailTime, tick);
-							tmpPart->m_iFlowGridIndex = i;
-							tmpPart->m_vec3Color.r = m_vpFlowGridCollection.at(i)->colorIllustrativeParticles[0];
-							tmpPart->m_vec3Color.g = m_vpFlowGridCollection.at(i)->colorIllustrativeParticles[1];
-							tmpPart->m_vec3Color.b = m_vpFlowGridCollection.at(i)->colorIllustrativeParticles[2];
+							lifetime = grid->illustrativeParticleLifetime*((float)(rand()%25)/100) + grid->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
+							IllustrativeParticle* tmpPart = new IllustrativeParticle(randX, randY, randZ, lifetime, grid->illustrativeParticleTrailTime, tick);
+							tmpPart->m_pFlowGrid = grid;
+							tmpPart->m_vec3Color.r = grid->colorIllustrativeParticles[0];
+							tmpPart->m_vec3Color.g = grid->colorIllustrativeParticles[1];
+							tmpPart->m_vec3Color.b = grid->colorIllustrativeParticles[2];
 
 							if (searchIndex == 1234)
 								printf("Spawed at: %0.4f, %0.4f, %0.4f\n", randX, randY, randZ);

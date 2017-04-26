@@ -6,6 +6,8 @@
 
 #include <shared/glm/glm.hpp>
 
+#include "FlowGrid.h"
+
 // number of particle positions to store for things like trails, etc.
 #define MAX_NUM_TRAIL_POSITIONS 100
 
@@ -16,6 +18,7 @@ public:
 	virtual ~IllustrativeParticle();
 
 	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ);
+	void updateBufferIndices(ULONGLONG currentTime);
 
 	void reset();
 	void reset(float x, float y, float z);
@@ -29,7 +32,7 @@ public:
 	float getCurrentX();
 	float getCurrentY();
 	float getCurrentZ();
-	void getCurrentXYZ(float *x, float *y, float *z);
+	glm::vec3 getCurrentXYZ();
 	 
 	float getFadeInFadeOutOpacity();
 
@@ -50,7 +53,7 @@ public:
 	std::vector<ULONGLONG> m_vullTimes;
 
 	int m_iBufferTail;
-	int m_iBufferHead;
+	int m_iBufferHead; // Index of the next FREE buffer slot
 	ULONGLONG m_ullLiveTimeElapsed;
 	ULONGLONG m_ullLastUpdateTimestamp;
 	
@@ -58,11 +61,10 @@ public:
 	int getLivePosition(int index);
 	
 	//Index of which flowGrid in the flowGridCollection it is within
-	int m_iFlowGridIndex;
-	void setFlowGridIndex(int index);
-	int getFlowGridIndex();
+	FlowGrid* m_pFlowGrid;
 
 private:
+	int getWrappedIndex(int index);
 
 	//update() vars, put them here so no alloc needed each frame
 	ULONGLONG m_ullTimeSince;

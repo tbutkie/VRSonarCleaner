@@ -1,6 +1,7 @@
 #include "IllustrativeParticle.h"
 
 IllustrativeParticle::IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime)
+	: m_pFlowGrid(NULL)
 {
 	reset();
 	m_ullTimeToStartDying = currentTime + TimeToLive;
@@ -12,7 +13,6 @@ IllustrativeParticle::IllustrativeParticle(float x, float y, float z, float Time
 	m_vec3Color.b = 1.0;
 	m_fGravity = 0;
 
-	m_iFlowGridIndex = -1;
 
 	m_ullBirthTime = currentTime;
 
@@ -92,7 +92,14 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 			m_iBufferHead = 1;
 		}
 	}//end if not dying
+	
+	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
 
+	return;
+}
+
+void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
+{
 	//move liveStartIndex up past too-old positions
 	if (m_iBufferTail < m_iBufferHead) //no wrap around
 	{
@@ -112,7 +119,7 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 			else break;
 		}
 	}
-	
+
 	if (m_iBufferTail > m_iBufferHead) //wrap around
 	{
 		//check start to end of array
@@ -143,22 +150,18 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 				m_ullTimeSince = currentTime - m_vullTimes[i];
 				if (m_ullTimeSince > m_fTrailTime)
 				{
-					m_iBufferTail = i+1;
+					m_iBufferTail = i + 1;
 				}
 				else break;
 			}
 		}
 	}
-	
+
 	if (m_bDying && m_iBufferTail == m_iBufferHead)
 	{
 		//printf("F");
 		m_bDead = true;
 	}
-	
-	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
-
-	return;
 }
 
 
@@ -217,21 +220,9 @@ float IllustrativeParticle::getCurrentZ()
 		return m_vvec3Positions[m_iBufferHead - 1].z;
 }
 
-void IllustrativeParticle::getCurrentXYZ(float *x, float *y, float *z)
+glm::vec3 IllustrativeParticle::getCurrentXYZ()
 {
-	int index;
-	if (m_iBufferHead == 0)
-	{
-		index = MAX_NUM_TRAIL_POSITIONS -1;
-	}
-	else
-	{
-		index = m_iBufferHead -1;
-	}
-
-	*x = m_vvec3Positions[index].x;
-	*y = m_vvec3Positions[index].y;
-	*z = m_vvec3Positions[index].z;
+	return m_vvec3Positions[getWrappedIndex(m_iBufferHead - 1)];
 }
 
 float IllustrativeParticle::getFadeInFadeOutOpacity()
@@ -265,12 +256,7 @@ void IllustrativeParticle::getColor(float *r, float *g, float *b)
 	*b = m_vec3Color.b;
 }
 
-void IllustrativeParticle::setFlowGridIndex(int index)
+int IllustrativeParticle::getWrappedIndex(int index)
 {
-	m_iFlowGridIndex = index;
-}
-
-int IllustrativeParticle::getFlowGridIndex()
-{
-	return m_iFlowGridIndex;
+	return ((index % MAX_NUM_TRAIL_POSITIONS) + MAX_NUM_TRAIL_POSITIONS) % MAX_NUM_TRAIL_POSITIONS;
 }

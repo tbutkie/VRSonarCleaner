@@ -621,7 +621,7 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 void FlowGrid::drawBBox()
 {
 	float BBox[6];
-	float visualOffset = 0.1;
+	float visualOffset = 0.f;
 
 	//HAD TO SWAP ZY again for VR coord system
 	glm::vec3 bbMin(scaler->getScaledLonX(xMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset, scaler->getScaledLatY(yMin) - visualOffset);
@@ -692,7 +692,7 @@ bool FlowGrid::contains(float x, float y, float z)
 		return false;
 	else if (y > yMax)
 		return false;
-	else if (z < 0)
+	else if (z < m_vDepthValues.front())
 		return false;
 	else if (z > m_vDepthValues.back())
 		return false;
