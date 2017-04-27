@@ -125,14 +125,12 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(float tickCount)
 		return 0;
 	}
 }
-float* IllustrativeParticleEmitter::getParticlesToEmit(int number) 
+std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int number) 
 {
-	float* verts = new float[3*number];
+	std::vector<glm::vec3> verts;
 	for (int i = 0; i < number; ++i)
 	{
-		verts[i * 3 + 0] = x;
-		verts[i * 3 + 1] = y;
-		verts[i * 3 + 2] = -z;
+		verts.push_back(glm::vec3(x, y, -z));
 
 		if (i > 0)
 		{
@@ -142,9 +140,9 @@ float* IllustrativeParticleEmitter::getParticlesToEmit(int number)
 			float randDist = rand() % 100;
 			randDist = randDist * 0.01f * radius;
 
-			verts[i * 3 + 0] += randDist * cos(randAngle);
-			verts[i * 3 + 1] += randDist * sin(randAngle);
-			verts[i * 3 + 2] += randDist;
+			verts.back().x += randDist * cos(randAngle);
+			verts.back().y += randDist * sin(randAngle);
+			verts.back().z += randDist;
 		}
 	}
 	return verts;

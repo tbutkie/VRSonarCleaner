@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <vector>
 #include <GL/glew.h>
 #include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
@@ -31,7 +32,7 @@ public:
 	void setRadius(float rad);
 
 	int getNumParticlesToEmit(float tickCount);
-	float* getParticlesToEmit(int number);
+	std::vector<glm::vec3> getParticlesToEmit(int number);
 
 	float getLifetime();
 

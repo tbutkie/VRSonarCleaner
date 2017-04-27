@@ -119,7 +119,7 @@ void IllustrativeParticleSystem::update(float time)
 	glm::vec3 vel;
 	float prodTimeVelocity;
 	float prodTimeSeconds = 1000*timeSinceLastUpdate;
-	bool result = true;
+
 	//Update all current particles
 	for (auto &particle : m_vpParticles)
 	{
@@ -128,216 +128,198 @@ void IllustrativeParticleSystem::update(float time)
 			//get current position
 			currentPos = particle->getCurrentXYZ();
 
-			if (particle->m_pFlowGrid) //if attached to a flow grid
+			if (!particle->m_pFlowGrid) //if not attached to a flow grid
+			{
+				for (auto const &fg : m_vpFlowGridCollection)
+				{
+					if (fg->contains(currentPos.x, currentPos.y, currentPos.z))
+					{
+						//found one
+						particle->m_pFlowGrid = fg;
+						break;
+					}
+				}
+			}//end else not attached to flow grid
+
+			if (particle->m_pFlowGrid)
 			{
 				//get UVW at current position
-				result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+				bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
 
 				//calc new position
 				prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->illustrativeParticleVelocityScale;
 
 				newPos = currentPos + vel * prodTimeVelocity;
-				newPos.z += particle->m_fGravity / prodTimeSeconds;
 
 				//check in bounds or not
 				if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
 				{
 					particle->m_bDying = true;
 				}
-
-			}//end if attached to flow grid
-			else //not attached to flow grid
+			}
+			else
 			{
-				//if there are flow grids, check if in one of them
-				bool foundGrid = false;
+				//if there are flow grids, lets kill it, so it doesn't clutter the scene
 				if (m_vpFlowGridCollection.size() > 0)
 				{
-					//check in bounds or not
-					for (auto const &fg : m_vpFlowGridCollection)
-					{
-						if (fg->contains(currentPos.x, currentPos.y, currentPos.z))
-						{
-							//found one
-							particle->m_pFlowGrid = fg;
-
-							//get UVW at current position
-							result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
-
-							//calc new position
-							prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->illustrativeParticleVelocityScale;
-
-							newPos = currentPos + vel * prodTimeVelocity;
-							newPos.z += particle->m_fGravity / prodTimeSeconds;
-
-							foundGrid = true;
-							break;
-						}
-					}//end for each grid					
-				}//end if flow grids to check
-
-				if (!foundGrid)
-				{
-					//if there are flow grids, lets kill it, so it doesn't clutter the scene
-					if (m_vpFlowGridCollection.size() > 0)
-					{
-						particle->kill();
-					}
-					else
-					{
-						newPos = currentPos;
-						newPos.z += particle->m_fGravity / prodTimeSeconds;
-					}
+					particle->kill();
 				}
+				else
+				{
+					newPos = currentPos;
+				}
+			}
 
-			}//end else not attached to flow grid
-
+			newPos.z += particle->m_fGravity / prodTimeSeconds;
 			particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);
 		}//end if not dead
 		
 		particle->updateBufferIndices(tick);
 	}//end for all particles
-	//printf("Updated Particles in %f ms.\n", GetTickCount()-tick);
 	
 	//handle dyepoles/emitters
 	
 	//printf("Counting dead...\n");
 
 	bool resortedToKilling = false;
-	int* deadParticles = new int[m_nMaxParticles];
-	int numDeadParticles = 0;
-	int* killableSeeds = new int[m_nMaxParticles];
-	int numKillableSeeds = 0;
-	for (int i=0;i<m_nMaxParticles;i++)
+	std::vector<IllustrativeParticle*> deadParticles;
+	std::vector<IllustrativeParticle*> killableSeeds;
+	for (auto const &particle : m_vpParticles)
 	{
-		if (m_vpParticles[i]->m_bDead)
+		if (particle->m_bDead)
 		{
-			deadParticles[numDeadParticles] = i;
-			numDeadParticles++;
+			deadParticles.push_back(particle);
 		}
-		else if (!m_vpParticles[i]->m_bUserCreated && !m_vpParticles[i]->m_bDead)
+		else if (!particle->m_bUserCreated && !particle->m_bDead)
 		{
-			killableSeeds[numKillableSeeds] = i;
-			numKillableSeeds++;
+			killableSeeds.push_back(particle);
 		}
 	}
 
-	//printf("Dead: %d\n", numDeadParticles);
-
-	//printf("Emitting from Emitters...\n");
-	
-	float lifetime;
-	int numToSpawn;
-
 	// DYE POTS
-	for (int i = 0; i<m_vpDyePots.size(); i++)
+	for (auto const &pot : m_vpDyePots)
 	{
-		numToSpawn = m_vpDyePots.at(i)->getNumParticlesToEmit(tick);
+		int numToSpawn = pot->getNumParticlesToEmit(tick);
 		if (numToSpawn > 0)
 		{
-			float* vertsToSpawn = m_vpDyePots.at(i)->getParticlesToEmit(numToSpawn);//new float[numToSpawn*3];
-			for (int k = 0; k<numToSpawn; k++)
+			std::vector<glm::vec3> vertsToSpawn = pot->getParticlesToEmit(numToSpawn);
+			for (auto const &vert : vertsToSpawn)
 			{
-				lifetime = m_vpDyePots.at(i)->getLifetime()*((float)(rand() % 25) / 100) + m_vpDyePots.at(i)->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
-				IllustrativeParticle* tmpPart = new IllustrativeParticle(vertsToSpawn[k * 3], vertsToSpawn[k * 3 + 1], vertsToSpawn[k * 3 + 2], lifetime, m_vpDyePots.at(i)->trailTime, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-				tmpPart->m_fGravity = m_vpDyePots.at(i)->getGravity();
-				tmpPart->m_bUserCreated = true;
-
-				tmpPart->m_vec3Color = m_vpDyePots.at(i)->getColor();
-
-				//= dyePoles.at(i)->emitters.at(j)->getColor();
-				if (!resortedToKilling) //if we havent already resorted to killing particles because no dead ones left
+				IllustrativeParticle* particleToUse = NULL;
+				if (deadParticles.size() > 0)
 				{
-					if (numDeadParticles > 0)
-					{
-						delete m_vpParticles[deadParticles[numDeadParticles - 1]];
-						m_vpParticles[deadParticles[numDeadParticles - 1]] = tmpPart;
-						numDeadParticles--;
-					}
-					else
-					{
-						resortedToKilling = true;
-					}
+					particleToUse = deadParticles.back();
+					deadParticles.pop_back();
 				}
-				else //replace a live seed particle
+				else if (killableSeeds.size() > 0)
 				{
-					if (numKillableSeeds > 0)
+					particleToUse = killableSeeds.back();
+					killableSeeds.pop_back();
+				}
+				else
+				{
+					//no particles left, what do we do here?
+					//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
+				}
+
+				float lifetime = pot->getLifetime()*((float)(rand() % 25) / 100) + pot->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
+				
+				particleToUse->m_bDead = false;
+				particleToUse->m_bDying = false;
+				//updated = false;
+				particleToUse->m_ullLiveTimeElapsed = 0ull;
+
+				particleToUse->m_ullTimeToStartDying = tick + lifetime;
+				particleToUse->m_vec3StartingPosition = vert;
+				particleToUse->m_fTrailTime = pot->trailTime;
+
+
+				particleToUse->m_ullBirthTime = tick;
+
+				particleToUse->m_vullTimes.clear();
+				particleToUse->m_vullTimes[0] = tick;
+
+				particleToUse->m_vvec3Positions.clear();
+
+				particleToUse->m_vvec3Positions[0] = vert;
+				particleToUse->m_vvec3Positions[1] = vert;
+
+				particleToUse->m_iBufferTail = 0;
+				particleToUse->m_iBufferHead = 1;
+				particleToUse->m_ullLiveTimeElapsed = 0ull;
+
+
+				particleToUse->m_fGravity = pot->getGravity();
+				particleToUse->m_bUserCreated = true;
+				particleToUse->m_vec3Color = pot->getColor();
+			}//end for numToSpawn
+		}
+	}
+
+	// DYE POLES
+	for (auto const &pole : m_vpDyePoles)
+	{
+		for (auto const &emitter : pole->emitters)
+		{
+			int numToSpawn = emitter->getNumParticlesToEmit(tick);
+			if (numToSpawn > 0)
+			{
+				std::vector<glm::vec3> vertsToSpawn = emitter->getParticlesToEmit(numToSpawn);//new float[numToSpawn*3];
+				for (auto const &vert : vertsToSpawn)
+				{
+					IllustrativeParticle* particleToUse = NULL;
+					if (deadParticles.size() > 0)
 					{
-						delete m_vpParticles[killableSeeds[numKillableSeeds - 1]];
-						m_vpParticles[killableSeeds[numKillableSeeds - 1]] = tmpPart;
-						numKillableSeeds--;
+						particleToUse = deadParticles.back();
+						deadParticles.pop_back();
+					}
+					else if (killableSeeds.size() > 0)
+					{
+						particleToUse = killableSeeds.back();
+						killableSeeds.pop_back();
 					}
 					else
 					{
 						//no particles left, what do we do here?
 						//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
 					}
-				}
 
-			}//end for numToSpawn
-			delete vertsToSpawn;
-		}
-	}
+					float lifetime = emitter->getLifetime()*((float)(rand() % 25) / 100) + emitter->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
 
-	// DYE POLES
-	for (int i=0;i<m_vpDyePoles.size();i++)
-	{
-		for (int j=0;j<m_vpDyePoles.at(i)->emitters.size();j++)
-		{
-			numToSpawn = m_vpDyePoles.at(i)->emitters.at(j)->getNumParticlesToEmit(tick);
-			if (numToSpawn > 0)
-			{
-				float* vertsToSpawn = m_vpDyePoles.at(i)->emitters.at(j)->getParticlesToEmit(numToSpawn);//new float[numToSpawn*3];
-				for (int k=0;k<numToSpawn;k++)
-				{
-					lifetime = m_vpDyePoles.at(i)->emitters.at(j)->getLifetime()*((float)(rand()%25)/100) + m_vpDyePoles.at(i)->emitters.at(j)->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
-					IllustrativeParticle* tmpPart = new IllustrativeParticle(vertsToSpawn[k*3], vertsToSpawn[k*3+1], vertsToSpawn[k*3+2], lifetime, m_vpDyePoles.at(i)->emitters.at(j)->trailTime, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-					tmpPart->m_fGravity = m_vpDyePoles.at(i)->emitters.at(j)->getGravity();
-					tmpPart->m_bUserCreated = true;
-					tmpPart->m_vec3Color.r = 1;
-					tmpPart->m_vec3Color.g = 1;
-					tmpPart->m_vec3Color.b = 0;
+					particleToUse->m_bDead = false;
+					particleToUse->m_bDying = false;
+					//updated = false;
+					particleToUse->m_ullLiveTimeElapsed = 0ull;
 
-					//= dyePoles.at(i)->emitters.at(j)->getColor();
-					if (!resortedToKilling) //if we havent already resorted to killing particles because no dead ones left
-					{
-						if (numDeadParticles > 0)
-						{
-							delete m_vpParticles[deadParticles[numDeadParticles-1]];
-							m_vpParticles[deadParticles[numDeadParticles-1]] = tmpPart;
-							numDeadParticles--;
-						}
-						else
-						{
-							resortedToKilling = true;	
-						}
-					}
-					else //replace a live seed particle
-					{
-						if (numKillableSeeds > 0)
-						{
-							delete m_vpParticles[killableSeeds[numKillableSeeds-1]];
-							m_vpParticles[killableSeeds[numKillableSeeds-1]] = tmpPart;
-							numKillableSeeds--;
-						}
-						else
-						{
-							//no particles left, what do we do here?
-							//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
-						}
-					}
+					particleToUse->m_ullTimeToStartDying = tick + lifetime;
+					particleToUse->m_vec3StartingPosition = vert;
+					particleToUse->m_fTrailTime = emitter->trailTime;
 
+
+					particleToUse->m_ullBirthTime = tick;
+
+					particleToUse->m_vullTimes.clear();
+					particleToUse->m_vullTimes[0] = tick;
+
+					particleToUse->m_vvec3Positions.clear();
+
+					particleToUse->m_vvec3Positions[0] = vert;
+					particleToUse->m_vvec3Positions[1] = vert;
+
+					particleToUse->m_iBufferTail = 0;
+					particleToUse->m_iBufferHead = 1;
+					particleToUse->m_ullLiveTimeElapsed = 0ull;
+
+
+					particleToUse->m_fGravity = emitter->getGravity();
+					particleToUse->m_bUserCreated = true;
+					particleToUse->m_vec3Color = emitter->getColor();
 				}//end for numToSpawn
-				delete vertsToSpawn;
 			}
 		}
 	}
 
-	delete[] deadParticles;
-	delete[] killableSeeds;
-
-	//printf("Counting Again...\n");
-
- //finally add however many seeds we need to keep our desired amount and with however many particle slots we have left
+	//finally add however many seeds we need to keep our desired amount and with however many particle slots we have left
 	//recount available slots:
 	int numSeedsActive = 0;
 	int numParticlesDead = 0;
@@ -439,7 +421,7 @@ void IllustrativeParticleSystem::update(float time)
 						{
 							//printf("found water!\n");
 							//printf("C:%d, Spawning at: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
-							lifetime = grid->illustrativeParticleLifetime*((float)(rand()%25)/100) + grid->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
+							float lifetime = grid->illustrativeParticleLifetime*((float)(rand()%25)/100) + grid->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
 							IllustrativeParticle* tmpPart = new IllustrativeParticle(randX, randY, randZ, lifetime, grid->illustrativeParticleTrailTime, tick);
 							tmpPart->m_pFlowGrid = grid;
 							tmpPart->m_vec3Color.r = grid->colorIllustrativeParticles[0];
