@@ -80,18 +80,9 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 
 	if (!m_bDying)//translate particle, filling next spot in array with new position/timestamp
 	{
-		if (m_iBufferHead < MAX_NUM_TRAIL_POSITIONS)//no wrap needed, just fill next spot
-		{
-			m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
-			m_vullTimes[m_iBufferHead] = currentTime;
-			m_iBufferHead++;
-		}
-		else if (m_iBufferHead == 0 || m_iBufferHead == MAX_NUM_TRAIL_POSITIONS)//wrap around in progress or wrap around needed
-		{
-			m_vvec3Positions[0] = m_vec3NewPos;
-			m_vullTimes[0] = currentTime;
-			m_iBufferHead = 1;
-		}
+		m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
+		m_vullTimes[m_iBufferHead] = currentTime;
+		m_iBufferHead = getWrappedIndex(m_iBufferHead + 1);
 	}//end if not dying
 	
 	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
@@ -117,57 +108,35 @@ void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
 
 int IllustrativeParticle::getNumLivePositions()
 {
-	if (m_bDead)//	if (!updated || dead)
+	if (m_bDead)
 		return 0;
-	if (m_iBufferTail < m_iBufferHead) //no wrap around
-	{
-		return m_iBufferHead - m_iBufferTail;
-	}
-	else if (m_iBufferTail > m_iBufferHead) //wrap around
-	{
-		return (MAX_NUM_TRAIL_POSITIONS - m_iBufferTail) + m_iBufferHead;
-	}
-	else if (m_iBufferTail = m_iBufferHead) //this should not happen
-	{
-		printf("ERROR in get num: liveStartIndex equals liveEndIndex!!!\n");
-		return 0;
-	}
+
+	int numLivePos = 0;
+	
+	for(int i = m_iBufferTail; i != m_iBufferHead; i = getWrappedIndex(i +1))
+		numLivePos++;
+
+	return numLivePos;
 }
 
 int IllustrativeParticle::getLivePosition(int index)
 {
-	if (m_iBufferTail + index < MAX_NUM_TRAIL_POSITIONS) //no wrap around needed
-	{
-		return m_iBufferTail + index;
-	}
-	else //wrap around needed
-	{
-		return index - (MAX_NUM_TRAIL_POSITIONS - m_iBufferTail);
-	}
+	return getWrappedIndex(m_iBufferTail + index);
 }
 
 float IllustrativeParticle::getCurrentX()
 {
-	if (m_iBufferHead == 0)
-		return m_vvec3Positions[MAX_NUM_TRAIL_POSITIONS -1].x;
-	else
-		return m_vvec3Positions[m_iBufferHead -1].x;
+	return m_vvec3Positions[getWrappedIndex(m_iBufferHead - 1)].x;
 }
 
 float IllustrativeParticle::getCurrentY()
 {
-	if (m_iBufferHead == 0)
-		return m_vvec3Positions[MAX_NUM_TRAIL_POSITIONS -1].y;
-	else
-		return m_vvec3Positions[m_iBufferHead -1].y;
+	return m_vvec3Positions[getWrappedIndex(m_iBufferHead - 1)].y;
 }
 
 float IllustrativeParticle::getCurrentZ()
 {
-	if (m_iBufferHead == 0)
-		return m_vvec3Positions[MAX_NUM_TRAIL_POSITIONS - 1].z;
-	else
-		return m_vvec3Positions[m_iBufferHead - 1].z;
+	return m_vvec3Positions[getWrappedIndex(m_iBufferHead - 1)].z;
 }
 
 glm::vec3 IllustrativeParticle::getCurrentXYZ()
