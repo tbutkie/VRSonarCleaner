@@ -23,7 +23,6 @@ public:
 	void updateBufferIndices(ULONGLONG currentTime);
 
 	void reset();
-	void kill();
 
 	ULONGLONG m_ullBirthTime;
 	float m_fTimeToLive;

@@ -5,8 +5,6 @@ IllustrativeParticle::IllustrativeParticle()
 	, m_bDead(true)
 	, m_bDying(false)
 {
-	m_vullTimes.resize(MAX_NUM_TRAIL_POSITIONS);
-	m_vvec3Positions.resize(MAX_NUM_TRAIL_POSITIONS);
 	reset();
 }
 
@@ -59,18 +57,9 @@ void IllustrativeParticle::reset()
 	m_vec3StartingPosition = glm::vec3(0.f);
 
 	m_vullTimes.clear();
+	m_vullTimes.resize(MAX_NUM_TRAIL_POSITIONS);
 	m_vvec3Positions.clear();
-}
-
-void IllustrativeParticle::kill()
-{
-	//printf("K");
-	m_bDead = true;
-	m_bDying = true;
-	//updated = false;
-	m_iBufferTail = 0;
-	m_iBufferHead = 0;
-	m_ullLiveTimeElapsed = 0ull;
+	m_vvec3Positions.resize(MAX_NUM_TRAIL_POSITIONS);
 }
 
 //returns true if needs to be deleted
@@ -107,7 +96,7 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 	
 	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
 
-	return;
+	updateBufferIndices(currentTime);
 }
 
 void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
@@ -141,12 +130,7 @@ void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
 			m_ullTimeSince = currentTime - m_vullTimes[i];
 			if (m_ullTimeSince > m_fTrailTime)
 			{
-				m_iBufferTail = i + 1;
-				if (m_iBufferTail == MAX_NUM_TRAIL_POSITIONS)
-				{
-					m_iBufferTail = 0;
-					break;
-				}
+				m_iBufferTail = getWrappedIndex(i + 1);
 			}
 			else
 			{
