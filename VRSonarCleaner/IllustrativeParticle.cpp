@@ -101,63 +101,17 @@ void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, flo
 
 void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
 {
-	//move liveStartIndex up past too-old positions
-	if (m_iBufferTail < m_iBufferHead) //no wrap around
+	for (int i = m_iBufferTail; i != m_iBufferHead; i = getWrappedIndex(i + 1))
 	{
-		for (int i = m_iBufferTail; i < m_iBufferHead; i++)
-		{
-			m_ullTimeSince = currentTime - m_vullTimes[i];
-			if (m_ullTimeSince > m_fTrailTime)
-			{
-				m_iBufferTail = i + 1;
-				if (m_iBufferTail == MAX_NUM_TRAIL_POSITIONS)
-				{
-					m_iBufferTail = 0;
-					m_iBufferHead = 0; //because liveEndIndex must have equaled MAX_NUM_POSITIONS
-					break;
-				}
-			}
-			else break;
-		}
-	}
-
-	if (m_iBufferTail > m_iBufferHead) //wrap around
-	{
-		//check start to end of array
-		foundValid = false;
-		for (int i = m_iBufferTail; i < MAX_NUM_TRAIL_POSITIONS; i++)
-		{
-			m_ullTimeSince = currentTime - m_vullTimes[i];
-			if (m_ullTimeSince > m_fTrailTime)
-			{
-				m_iBufferTail = getWrappedIndex(i + 1);
-			}
-			else
-			{
-				foundValid = true;
-				break;
-			}
-		}
-
-		if (!foundValid)//check start to end of array
-		{
-			for (int i = 0; i < m_iBufferHead; i++)
-			{
-				m_ullTimeSince = currentTime - m_vullTimes[i];
-				if (m_ullTimeSince > m_fTrailTime)
-				{
-					m_iBufferTail = i + 1;
-				}
-				else break;
-			}
-		}
-	}
+		m_ullTimeSince = currentTime - m_vullTimes[i];
+		if (m_ullTimeSince > m_fTrailTime)
+			m_iBufferTail = getWrappedIndex(i + 1);
+		else 
+			break;
+	}	
 
 	if (m_bDying && m_iBufferTail == m_iBufferHead)
-	{
-		//printf("F");
 		m_bDead = true;
-	}
 }
 
 
