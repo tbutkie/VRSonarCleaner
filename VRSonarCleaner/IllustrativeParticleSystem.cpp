@@ -19,13 +19,11 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 	ULONGLONG tick = GetTickCount64();
 	printf("Initializing particle system...");
 	m_vpParticles.resize(MAX_PARTICLES);
-	for (int i=0;i<m_nMaxParticles;i++)
+	for (int i = 0; i < m_nMaxParticles; i++)
 	{
-		m_vpParticles[i] = new IllustrativeParticle(0, 0, 0, 1, 100, tick);
-		m_vpParticles[i]->kill();
+		m_vpParticles[i] = new IllustrativeParticle();
 	}
 	printf("Done!\n");
-
 }
 
 IllustrativeParticleSystem::~IllustrativeParticleSystem()
@@ -178,22 +176,17 @@ void IllustrativeParticleSystem::update(float time)
 	}//end for all particles
 	
 	//handle dyepoles/emitters
-	
-	//printf("Counting dead...\n");
 
+	// Take inventory of dead particles and particles which can be killed
 	bool resortedToKilling = false;
 	std::vector<IllustrativeParticle*> deadParticles;
 	std::vector<IllustrativeParticle*> killableSeeds;
 	for (auto const &particle : m_vpParticles)
 	{
 		if (particle->m_bDead)
-		{
 			deadParticles.push_back(particle);
-		}
 		else if (!particle->m_bUserCreated && !particle->m_bDead)
-		{
 			killableSeeds.push_back(particle);
-		}
 	}
 
 	// DYE POTS
@@ -224,34 +217,9 @@ void IllustrativeParticleSystem::update(float time)
 
 				float lifetime = pot->getLifetime()*((float)(rand() % 25) / 100) + pot->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
 				
-				particleToUse->m_bDead = false;
-				particleToUse->m_bDying = false;
-				//updated = false;
-				particleToUse->m_ullLiveTimeElapsed = 0ull;
+				particleToUse->reset();
 
-				particleToUse->m_ullTimeToStartDying = tick + lifetime;
-				particleToUse->m_vec3StartingPosition = vert;
-				particleToUse->m_fTrailTime = pot->trailTime;
-
-
-				particleToUse->m_ullBirthTime = tick;
-
-				particleToUse->m_vullTimes.clear();
-				particleToUse->m_vullTimes[0] = tick;
-
-				particleToUse->m_vvec3Positions.clear();
-
-				particleToUse->m_vvec3Positions[0] = vert;
-				particleToUse->m_vvec3Positions[1] = vert;
-
-				particleToUse->m_iBufferTail = 0;
-				particleToUse->m_iBufferHead = 1;
-				particleToUse->m_ullLiveTimeElapsed = 0ull;
-
-
-				particleToUse->m_fGravity = pot->getGravity();
-				particleToUse->m_bUserCreated = true;
-				particleToUse->m_vec3Color = pot->getColor();
+				particleToUse->init(vert, pot->getColor(), pot->getGravity(), lifetime, pot->trailTime, tick, true);
 			}//end for numToSpawn
 		}
 	}
@@ -285,35 +253,10 @@ void IllustrativeParticleSystem::update(float time)
 					}
 
 					float lifetime = emitter->getLifetime()*((float)(rand() % 25) / 100) + emitter->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
+					
+					particleToUse->reset();
 
-					particleToUse->m_bDead = false;
-					particleToUse->m_bDying = false;
-					//updated = false;
-					particleToUse->m_ullLiveTimeElapsed = 0ull;
-
-					particleToUse->m_ullTimeToStartDying = tick + lifetime;
-					particleToUse->m_vec3StartingPosition = vert;
-					particleToUse->m_fTrailTime = emitter->trailTime;
-
-
-					particleToUse->m_ullBirthTime = tick;
-
-					particleToUse->m_vullTimes.clear();
-					particleToUse->m_vullTimes[0] = tick;
-
-					particleToUse->m_vvec3Positions.clear();
-
-					particleToUse->m_vvec3Positions[0] = vert;
-					particleToUse->m_vvec3Positions[1] = vert;
-
-					particleToUse->m_iBufferTail = 0;
-					particleToUse->m_iBufferHead = 1;
-					particleToUse->m_ullLiveTimeElapsed = 0ull;
-
-
-					particleToUse->m_fGravity = emitter->getGravity();
-					particleToUse->m_bUserCreated = true;
-					particleToUse->m_vec3Color = emitter->getColor();
+					particleToUse->init(vert, emitter->getColor(), emitter->getGravity(), lifetime, emitter->trailTime, tick, true);
 				}//end for numToSpawn
 			}
 		}
@@ -323,33 +266,24 @@ void IllustrativeParticleSystem::update(float time)
 	//recount available slots:
 	int numSeedsActive = 0;
 	int numParticlesDead = 0;
-	for (int i=0;i<m_nMaxParticles;i++)
+	for (auto const & particle : m_vpParticles)
 	{
-		if (!m_vpParticles[i]->m_bUserCreated && !m_vpParticles[i]->m_bDead)
+		if (!particle->m_bUserCreated && !particle->m_bDead)
 			numSeedsActive++;
-		else if (m_vpParticles[i]->m_bDead)
+		else if (particle->m_bDead)
 			numParticlesDead++;
 	}
-
-	//printf("LatLonMinMAx: %f, %f, %f, %f\n", dataset->minLonVal, dataset->maxLonVal, dataset->minLatVal, dataset->maxLatVal);
-	//printf("CORners: %f, %f, %f, %f\n", seedBBox[0], seedBBox[1], seedBBox[2], seedBBox[3]);
 
 	float maxAddable = numParticlesDead;
 	//count particles in each grid
 	std::map<FlowGrid*, int> activeWithinGridMap;
 	//count active in each grid
 	for (auto &grid : m_vpFlowGridCollection)
-	{
 		activeWithinGridMap[grid] = 0;
-	}
+
 	for (auto const & particle : m_vpParticles)
-	{
-		if (!particle->m_bDead)
-		{
-			if (particle->m_pFlowGrid)
+		if (!particle->m_bDead && particle->m_pFlowGrid)
 				activeWithinGridMap[particle->m_pFlowGrid]++;
-		}
-	}
 
 	float randX;
 	float randY;
@@ -422,17 +356,13 @@ void IllustrativeParticleSystem::update(float time)
 							//printf("found water!\n");
 							//printf("C:%d, Spawning at: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
 							float lifetime = grid->illustrativeParticleLifetime*((float)(rand()%25)/100) + grid->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
-							IllustrativeParticle* tmpPart = new IllustrativeParticle(randX, randY, randZ, lifetime, grid->illustrativeParticleTrailTime, tick);
-							tmpPart->m_pFlowGrid = grid;
-							tmpPart->m_vec3Color.r = grid->colorIllustrativeParticles[0];
-							tmpPart->m_vec3Color.g = grid->colorIllustrativeParticles[1];
-							tmpPart->m_vec3Color.b = grid->colorIllustrativeParticles[2];
 
-							if (searchIndex == 1234)
-								printf("Spawed at: %0.4f, %0.4f, %0.4f\n", randX, randY, randZ);
+							m_vpParticles[searchIndex]->reset();
 
-							delete m_vpParticles[searchIndex];
-							m_vpParticles[searchIndex] = tmpPart;
+							m_vpParticles[searchIndex]->init(glm::vec3(randX, randY, randZ), grid->colorIllustrativeParticles, 0, lifetime, grid->illustrativeParticleTrailTime, tick, false);
+
+							m_vpParticles[searchIndex]->m_pFlowGrid = grid;
+							
 							numNeeded--;
 							searchIndex++;
 						}
@@ -460,7 +390,6 @@ void IllustrativeParticleSystem::update(float time)
 	}
 	m_nLastCountLiveParticles = m_nMaxParticles - numParticlesDead;
 	m_nLastCountLiveSeeds = numSeedsActive;
-	//printf("Live: %d, Dead: %d\n", numSeedsActive, numParticlesDead);
 }
 
 void IllustrativeParticleSystem::drawStreakVBOs()

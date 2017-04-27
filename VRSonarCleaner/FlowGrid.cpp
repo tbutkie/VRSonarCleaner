@@ -135,9 +135,7 @@ void FlowGrid::init()
 	illustrativeParticleLifetime = 2500;
 	illustrativeParticleSize = 1;
 
-	colorIllustrativeParticles[0] = 0.25;
-	colorIllustrativeParticles[1] = 0.95;
-	colorIllustrativeParticles[2] = 1.0;
+	colorIllustrativeParticles = glm::vec3(0.25f, 0.95f, 1.f);
 	illustrativeParticleVelocityScale = .01;//0.000001;
 }
 
@@ -868,13 +866,13 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 	//*ycellmin = minYCell;
 	//*ycells = maxYCell - minYCell;
 
-	*xcellmin = min(minXCell, maxXCell);
-	*xcellmax = max(minXCell, maxXCell);
+	*xcellmin = std::min(minXCell, maxXCell);
+	*xcellmax = std::max(minXCell, maxXCell);
 
 	//*xcells = max(minXCell, maxXCell) - min(minXCell, maxXCell) + 1;
 
-	*ycellmin = min(minYCell, maxYCell);
-	*ycellmax = max(minYCell, maxYCell);
+	*ycellmin = std::min(minYCell, maxYCell);
+	*ycellmax = std::max(minYCell, maxYCell);
 	//*ycells = max(minYCell, maxYCell) - min(minYCell, maxYCell) + 1;
 
 	return true;

@@ -7,11 +7,8 @@
 #include <algorithm> 
 #include <vector>
 #include <GL/glew.h>
+#include <shared/glm/glm.hpp>
 #include "CoordinateScaler.h"
-
-using namespace std;
-
-extern unsigned int textureIDs[100];
 
 class FlowGrid
 {
@@ -111,7 +108,7 @@ class FlowGrid
 		//particle sys stuff:
 		bool enableIllustrativeParticles;
 		int numIllustrativeParticles;
-		float colorIllustrativeParticles[3];
+		glm::vec3 colorIllustrativeParticles;
 		float illustrativeParticleVelocityScale;
 
 		float illustrativeParticleLifetime;

@@ -1,32 +1,13 @@
 #include "IllustrativeParticle.h"
 
-IllustrativeParticle::IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime)
+IllustrativeParticle::IllustrativeParticle()
 	: m_pFlowGrid(NULL)
+	, m_bDead(true)
+	, m_bDying(false)
 {
-	reset();
-	m_ullTimeToStartDying = currentTime + TimeToLive;
-	m_vec3StartingPosition = glm::vec3(x, y, z);
-	m_fTrailTime = TrailTime;
-	m_bUserCreated = false;
-	m_vec3Color.r = 0.25;
-	m_vec3Color.g = 0.95;
-	m_vec3Color.b = 1.0;
-	m_fGravity = 0;
-
-
-	m_ullBirthTime = currentTime;
-
 	m_vullTimes.resize(MAX_NUM_TRAIL_POSITIONS);
-	m_vullTimes[0] = currentTime;
-
 	m_vvec3Positions.resize(MAX_NUM_TRAIL_POSITIONS);
-
-	m_vvec3Positions[0] = m_vec3StartingPosition;
-	m_vvec3Positions[1] = m_vec3StartingPosition;
-
-	m_iBufferTail = 0;
-	m_iBufferHead = 1;
-	m_ullLiveTimeElapsed = 0ull;
+	reset();
 }
 
 IllustrativeParticle::~IllustrativeParticle()
@@ -34,20 +15,51 @@ IllustrativeParticle::~IllustrativeParticle()
 
 }
 
-void IllustrativeParticle::reset()
+void IllustrativeParticle::init(glm::vec3 pos, glm::vec3 color, float gravity, float timeToLive, float trailTime, ULONGLONG currentTime, bool userCreated)
 {
 	m_bDead = false;
 	m_bDying = false;
-	//updated = false;
-	m_ullLiveTimeElapsed = 0ull;
+	m_ullTimeToStartDying = currentTime + timeToLive;
+	m_vec3StartingPosition = pos;
+	m_fTrailTime = trailTime;
+	m_bUserCreated = userCreated;
+	m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
+	m_fGravity = gravity;
+	
+	m_ullBirthTime = currentTime;
+	m_vullTimes[0] = currentTime;
+
+	m_vvec3Positions[0] = m_vec3StartingPosition;
+	m_vvec3Positions[1] = m_vec3StartingPosition;
+
 	m_iBufferTail = 0;
-	m_iBufferHead = 0;
+	m_iBufferHead = 1;
+	m_ullLiveTimeElapsed = 0ull;
+
+	m_vec3Color = color;
 }
 
-void IllustrativeParticle::reset(float x, float y, float z)
+void IllustrativeParticle::reset()
 {
-	reset();
-	m_vec3StartingPosition = glm::vec3(x, y, z);
+	m_bDead = true;
+	m_bDying = false;
+	m_bUserCreated = false;
+	m_fGravity = 0.f;
+	m_fTimeToLive = 0.f;
+	m_fTrailTime = 0.f;
+	m_iBufferTail = 0;
+	m_iBufferHead = 0;
+	m_ullBirthTime = 0ull;
+	m_ullLastUpdateTimestamp = 0ull;
+	m_ullLiveTimeElapsed = 0ull;
+	m_ullTimeDeathBegan = 0ull;
+	m_ullTimeSince = 0ull;
+	m_ullTimeToStartDying = 0ull;
+	m_vec3Color = glm::vec3(0.f);
+	m_vec3StartingPosition = glm::vec3(0.f);
+
+	m_vullTimes.clear();
+	m_vvec3Positions.clear();
 }
 
 void IllustrativeParticle::kill()

@@ -14,14 +14,15 @@
 class IllustrativeParticle
 {
 public:
-	IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime);
+	IllustrativeParticle();
 	virtual ~IllustrativeParticle();
+
+	void init(glm::vec3 pos, glm::vec3 color, float gravity, float timeToLive, float trailTime, ULONGLONG currentTime, bool userCreated);
 
 	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ);
 	void updateBufferIndices(ULONGLONG currentTime);
 
 	void reset();
-	void reset(float x, float y, float z);
 	void kill();
 
 	ULONGLONG m_ullBirthTime;
