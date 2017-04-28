@@ -199,7 +199,7 @@ void IllustrativeParticleSystem::update(float time)
 		particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);
 		
 		
-	}//end for all particles
+	}//end for all active particles
 	
 	//handle dyepoles/emitters
 
@@ -368,7 +368,6 @@ void IllustrativeParticleSystem::drawStreakVBOs()
 				int posIndex2 = particle->getLivePosition(j);
 
 				glm::vec3 pos1, pos2;
-				glm::vec4 col1, col2;
 
 				pos1.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex1].x);
 				pos1.y = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex1].z);  //SWAPPED
@@ -385,13 +384,8 @@ void IllustrativeParticleSystem::drawStreakVBOs()
 
 				//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
 					
-				col1.r = particle->m_vec3Color.r;
-				col1.g = particle->m_vec3Color.g;
-				col1.b = particle->m_vec3Color.b;
-				col1.a = opacity1;
-
-				col2 = col1;
-				col2.a = opacity2;
+				glm::vec4 col1(particle->m_vec3Color, opacity1);
+				glm::vec4 col2(particle->m_vec3Color, opacity2);
 
 				DebugDrawer::getInstance().drawLine(pos1, pos2, col1, col2);
 			}//end for each position
