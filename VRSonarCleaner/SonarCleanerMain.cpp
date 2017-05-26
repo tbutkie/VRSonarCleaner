@@ -15,17 +15,18 @@ ColorScaler *colorScalerTPU;
 //-----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-	AllocConsole();
-	freopen("CONOUT$", "wb", stdout);
+	//AllocConsole();
+	//freopen("CONOUT$", "wb", stdout);
 
-	printf("Select Mode: (0=VR Cleaner) (1=VR Flow) (2=Study-VR) (3=Study-Desktop\n");
-	char selectedMode;
-	selectedMode = getch();
+	printf("CCOM VR Project Modes:\n\n\t0: VR Cleaner\n\t1: VR Flow\n\t2: Study-VR\n\t3: Study-Desktop\n\nSelect Mode: ");
+	int selectedMode;
+	scanf("%d", &selectedMode);
+	while (getchar() != '\n');
 	//scanf("%d", &selectedMode);
 
 
 	//bool lassoMode = false;
-	if (selectedMode == '0') //VR Cleaner
+	if (selectedMode == 0) //VR Cleaner
 	{
 		colorScalerTPU = new ColorScaler();
 		colorScalerTPU->setColorScale(2);
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 
 		pMainApplication->Shutdown();
 	}
-	else if (selectedMode == '1') //VR Flow
+	else if (selectedMode == 1) //VR Flow
 	{
 		CMainApplication *pMainApplication = new CMainApplication(argc, argv, 1);
 
