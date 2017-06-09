@@ -145,7 +145,8 @@ bool CMainApplication::BInit()
 	for (int i = 0; i < numDisplays; ++i)
 	{
 		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
-		if (vDisplayBounds[i].x > 0)
+		std::cout << "Display " << i << ": " << vDisplayBounds[i].x << ", " << vDisplayBounds[i].y << " (" << vDisplayBounds[i].w << "x" << vDisplayBounds[i].h << ")" << std::endl;
+		if (vDisplayBounds[i].x > 0 || vDisplayBounds[i].y < vDisplayBounds[0].y)
 			dispID = i;
 	}
 
