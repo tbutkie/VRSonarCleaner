@@ -5,12 +5,11 @@
 
 #include <GL/glew.h>
 
-#include "DebugDrawer.h"
 
-const glm::vec4 g_vec3ActiveLineColor(0.25f, 0.65f, 0.25f, 1.f);
-const glm::vec4 g_vec3LineColor(0.65f, 0.25f, 0.25f, 1.f);
-const glm::vec4 g_vec3ConnectorColor(0.75f, 0.75f, 0.75f, 1.f);
-const glm::vec4 g_vec3BBoxColor(1.f, 1.f, 1.f, 1.f);
+const glm::vec4 g_vec4ActiveLineColor(0.25f, 0.65f, 0.25f, 1.f);
+const glm::vec4 g_vec4LineColor(0.65f, 0.25f, 0.25f, 1.f);
+const glm::vec4 g_vec4ConnectorColor(0.75f, 0.75f, 0.75f, 1.f);
+const glm::vec4 g_vec4BBoxColor(1.f, 1.f, 1.f, 1.f);
 
 const float g_fBBoxPadding(2.f);
 
@@ -22,6 +21,22 @@ LassoTool::LassoTool()
 	, m_vec2MinBB(glm::vec2(0.f))
 	, m_vec2MaxBB(glm::vec2(0.f))
 {
+	glGenVertexArrays(1, &m_glVAO);
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
+
+	glBindVertexArray(this->m_glVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+
+		// Set the vertex attribute pointers
+		// Vertex Positions
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+
+	glBindVertexArray(0);
 }
 
 LassoTool::~LassoTool()
@@ -33,10 +48,10 @@ void LassoTool::start(int mx, int my)
 {
 	reset();
 
-	glm::vec2 newPt(mx, my);
+	glm::vec3 newPt(mx, my, 0.f);
 
 	m_vvec3LassoPoints.push_back(newPt);
-	m_vec2MinBB = m_vec2MaxBB = newPt;
+	m_vec2MinBB = m_vec2MaxBB = glm::vec2(newPt);
 	m_bLassoActive = true;
 }
 
@@ -46,7 +61,7 @@ void LassoTool::move(int mx, int my)
 	if (!m_bLassoActive)
 		return;
 	
-	glm::vec2 newPt(mx, my);
+	glm::vec3 newPt(mx, my, 0.f);
 
 	if (m_vvec3LassoPoints.back() != newPt)
 	{
@@ -79,7 +94,7 @@ bool LassoTool::readyToCheck()
 	return true;
 }
 
-void LassoTool::draw()
+void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 {	
 	int n = m_vvec3LassoPoints.size();
 
@@ -89,73 +104,98 @@ void LassoTool::draw()
 	glm::vec4 color;
 
 	if(m_bLassoActive)
-		color = g_vec3ActiveLineColor;
+		color = g_vec4ActiveLineColor;
 	else
-		color = g_vec3LineColor;
+		color = g_vec4LineColor;
 
+	// Lasso segments
 	for (int i = 0; i < n - 1; ++i)
 	{
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vvec3LassoPoints[i].x, m_vvec3LassoPoints[i].y, 0.f),
-			glm::vec3(m_vvec3LassoPoints[i + 1].x, m_vvec3LassoPoints[i + 1].y, 0.f),
-			color
-		);
+		m_vusLassoIndices.push_back((unsigned short)i);
+		m_vvec4Colors.push_back(color);
+		m_vusLassoIndices.push_back((unsigned short)i + 1);
+		m_vvec4Colors.push_back(color);
 	}
 
 	// connecting line from last to first points
 	if (m_bLassoActive)
-	{
-		glColor3f(g_vec3ConnectorColor.r, g_vec3ConnectorColor.g, g_vec3ConnectorColor.b);
-
+	{		
 		if (m_bShowConnector)
 		{
-			DebugDrawer::getInstance().drawLine(
-				glm::vec3(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y, 0.f),
-				glm::vec3(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y, 0.f),
-				g_vec3ConnectorColor
-			);
+			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+			m_vvec4Colors.push_back(g_vec4ConnectorColor);
+			m_vusLassoIndices.push_back((unsigned short)0);
+			m_vvec4Colors.push_back(g_vec4ConnectorColor);
 		}
 	}
 	else
 	{
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vvec3LassoPoints.back().x, m_vvec3LassoPoints.back().y, 0.f),
-			glm::vec3(m_vvec3LassoPoints.front().x, m_vvec3LassoPoints.front().y, 0.f),
-			color
-		);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+		m_vvec4Colors.push_back(color);
+		m_vusLassoIndices.push_back((unsigned short)0);
+		m_vvec4Colors.push_back(color);
 	}
 
+	glm::vec3 bboxPts[4];
+	glm::vec4 bboxColors[4];
+	// Lasso bounding box
 	if (m_bShowBBox)
 	{
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
-			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
-			g_vec3BBoxColor
-		);
+		// Push bbox points
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f));
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));		
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));		
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f));
 
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
-			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
-			g_vec3BBoxColor
-		);
+		// Push bbox indices
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
 
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f),
-			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
-			g_vec3BBoxColor
-		);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
 
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
-			glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f),
-			g_vec3BBoxColor
-		);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
 	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, m_vvec3LassoPoints.size() * sizeof(glm::vec3) + m_vvec4Colors.size() * sizeof(glm::vec4), 0, GL_STREAM_DRAW);
+	// Sub buffer data for points, then colors
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vvec3LassoPoints.size() * sizeof(glm::vec3), &m_vvec3LassoPoints[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, m_vvec3LassoPoints.size() * sizeof(glm::vec3), m_vvec4Colors.size() * sizeof(glm::vec4), &m_vvec4Colors[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLassoIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLassoIndices.size() * sizeof(unsigned short), &m_vusLassoIndices[0], GL_STREAM_DRAW);
+
+	// Set color sttribute pointer now that point array size is known
+	glBindVertexArray(this->m_glVAO);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_vvec3LassoPoints.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+	
+	rs.primitiveType = GL_LINES;
+	rs.shaderName = "flat";
+	rs.VAO = m_glVAO;
+	rs.vertCount = m_vusLassoIndices.size();
 }
 
 void LassoTool::reset()
 {
 	m_vvec3LassoPoints.clear();
+	m_vusLassoIndices.clear();
+	m_vvec4Colors.clear();
 	m_vec2MinBB = glm::vec2(0.f);
 	m_vec2MaxBB = glm::vec2(0.f);
 	m_bPrecalcsDone = false;

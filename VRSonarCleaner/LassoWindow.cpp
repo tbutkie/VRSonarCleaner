@@ -1,5 +1,4 @@
 #include "LassoWindow.h"
-#include "DebugDrawer.h"
 
 extern CloudCollection *clouds;
 
@@ -115,14 +114,18 @@ LassoWindow::LassoWindow(int argc, char *argv[])
 	, leftMouseDown(false)
 	, rightMouseDown(false)
 {
+#if _DEBUG
+	m_bDebugOpenGL = true;
+#else
+	m_bDebugOpenGL = false;
+#endif
+
 	ballEye = glm::vec3(0.f, 0.f, 10.f);
 	ballCenter = glm::vec3(0.f);
 	ballUp = glm::vec3(0.f, -1.f, 0.f);
 	ballRadius = 2;
 	arcball = new Arcball(false);
-
-	lasso = new LassoTool();
-
+	
 	glm::vec3 pos(0.f, 0.f, 0.f);
 	glm::vec3 size(2.f, 0.75f, 2.f);
 	glm::vec3 minCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
@@ -169,7 +172,7 @@ bool LassoWindow::BInit()
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -222,6 +225,8 @@ bool LassoWindow::BInit()
 	//SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW));
 	SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR));
 	//SDL_SetCursor(init_system_cursor(arrow));
+
+	lasso = new LassoTool();
 
 	return true;
 }
@@ -451,13 +456,8 @@ void LassoWindow::display()
 	{
 		glm::mat4 projMat = glm::ortho(0.f, static_cast<float>(m_nWindowWidth), 0.f, static_cast<float>(m_nWindowHeight), -1.f, 1.f);
 
-		DebugDrawer::getInstance().setTransformDefault();
-		lasso->draw();
-
-		//DebugDrawer::getInstance().render(projMat); // no view matrix needed in ortho
-
-		// flush out orthographically-rendered lines
-		DebugDrawer::getInstance().flushLines();
+		Renderer::RendererSubmission rs;
+		lasso->prepareForRender(rs);
 	}
 
 	//draw 3D elements
@@ -474,18 +474,18 @@ void LassoWindow::display()
 		// (generally you would want to render everything here)
 		glm::mat4 rot = arcball->getRotation();
 
-		DebugDrawer::getInstance().setTransformDefault();
+		//DebugDrawer::getInstance().setTransformDefault();
 		dataVolume->setOrientation(glm::quat_cast(rot));
 		dataVolume->drawBBox();
 
 		//draw table
-		DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
+		//DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
 		clouds->drawCloud(0);
 
 		//DebugDrawer::getInstance().render(projMat * viewMat);
 
 		// flush out perspective-rendered lines
-		DebugDrawer::getInstance().flushLines();
+		//DebugDrawer::getInstance().flushLines();
 	}
 	// Flush and wait for swap.
 	if (m_bVblank)

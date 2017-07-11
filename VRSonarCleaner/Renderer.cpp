@@ -79,7 +79,8 @@ void Renderer::SetupShaders()
 	m_mapShaders["companionWindow"] = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
 	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
-	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/debugDrawer.vert", "shaders/debugDrawer.frag" });
+	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
+	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
 	m_mapShaders["infoBox"] = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
@@ -379,10 +380,6 @@ void Renderer::RenderCompanionWindow()
 		// render left eye (first half of index array )
 		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeDesc.m_nResolveTextureId);
 		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize, GL_UNSIGNED_SHORT, 0);
-
-		// render right eye (second half of index array )
-		//glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeDesc.m_nResolveTextureId);
-		//glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(m_uiCompanionWindowIndexSize));
 
 	glBindVertexArray(0);
 	glUseProgram(0);
