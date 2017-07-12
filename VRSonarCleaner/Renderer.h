@@ -3,9 +3,7 @@
 #include <GL/glew.h>
 #include <openvr.h>
 #include <SDL.h>
-#include "RenderModel.h"
 #include "LightingSystem.h"
-#include "TrackedDeviceManager.h"
 #include "shaderset.h"
 
 struct FrameUniforms {
@@ -68,6 +66,13 @@ public:
 		{}
 	};
 
+	struct StereoInfo {
+		glm::mat4 eyePoseLeft;
+		glm::mat4 eyePoseRight;
+		glm::mat4 projectionLeft;
+		glm::mat4 projectionRight;
+	};
+
 public:	
 	// Singleton instance access
 	static Renderer& getInstance()
@@ -76,7 +81,7 @@ public:
 		return s_instance;
 	}
 	
-	bool init(vr::IVRSystem *pHMD, TrackedDeviceManager *pTDM);
+	bool init(vr::IVRSystem *pHMD);
 
 	void SetupCompanionWindow(int width, int height);
 
@@ -110,7 +115,6 @@ private:
 
 private:
 	vr::IVRSystem *m_pHMD;
-	TrackedDeviceManager *m_pTDM;
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;
@@ -139,11 +143,7 @@ private:
 	float m_fNearClip;
 	float m_fFarClip;
 
-	glm::mat4 m_mat4eyePoseLeft;
-	glm::mat4 m_mat4eyePoseRight;
-
-	glm::mat4 m_mat4ProjectionLeft;
-	glm::mat4 m_mat4ProjectionRight;
+	StereoInfo m_StereoInfo;
 
 	glm::mat4 m_mat4CurrentHMDView;
 

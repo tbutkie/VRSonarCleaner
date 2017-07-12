@@ -63,7 +63,7 @@ void AdvectionProbe::update()
 	rs.shaderName = "lightingWireframe";
 	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));
 
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
+	//Renderer::getInstance().addToDynamicRenderQueue(rs);
 
 	if (!m_pController->readyToRender())
 		return;
@@ -73,8 +73,8 @@ void AdvectionProbe::update()
 	glm::vec3 vecCursorSphere(spherePos - cursorPos);
 	float connectorLength = glm::length(vecCursorSphere) - sphereRad;
 	glm::vec3 probePos(cursorPos + glm::normalize(vecCursorSphere) * connectorLength);
-	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(cursorPos, probePos, glm::vec4(0.f, 0.7f, 0.f, 0.5f));
+	//DebugDrawer::getInstance().setTransformDefault();
+	//DebugDrawer::getInstance().drawLine(cursorPos, probePos, glm::vec4(0.f, 0.7f, 0.f, 0.5f));
 
 	// Draw an 'X' at the probe point
 	{
@@ -83,8 +83,8 @@ void AdvectionProbe::update()
 
 		float crossSize = sphereRad / 16.f;
 
-		DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
-		DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
+		//DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
+		//DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 	}
 }
 

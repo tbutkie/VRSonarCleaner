@@ -147,7 +147,10 @@ bool CMainApplication::BInit()
 		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
 		std::cout << "Display " << i << ": " << vDisplayBounds[i].x << ", " << vDisplayBounds[i].y << " (" << vDisplayBounds[i].w << "x" << vDisplayBounds[i].h << ")" << std::endl;
 		if (vDisplayBounds[i].x > 0 || vDisplayBounds[i].y < vDisplayBounds[0].y)
+		{
 			dispID = i;
+			break;
+		}
 	}
 
 	m_pWindow = SDL_CreateWindow("hellovr_sdl", vDisplayBounds[dispID].x, vDisplayBounds[dispID].y, vDisplayBounds[dispID].w, vDisplayBounds[dispID].h, unWindowFlags);
@@ -269,7 +272,7 @@ bool CMainApplication::BInitGL()
 	InfoBoxManager::getInstance().BInit(m_pTDM);
 	m_pTDM->attach(&InfoBoxManager::getInstance());
 
-	if (!Renderer::getInstance().init(m_pHMD, m_pTDM))
+	if (!Renderer::getInstance().init(m_pHMD))
 		return false;
 
 	int w, h;
