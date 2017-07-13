@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GL/glew.h>
-#include <openvr.h>
 #include <SDL.h>
 #include "LightingSystem.h"
 #include "shaderset.h"
@@ -66,11 +65,12 @@ public:
 		{}
 	};
 
-	struct StereoInfo {
-		glm::mat4 eyePoseLeft;
-		glm::mat4 eyePoseRight;
-		glm::mat4 projectionLeft;
-		glm::mat4 projectionRight;
+	struct SceneViewInfo {
+		glm::mat4 view;
+		glm::mat4 projection;
+		glm::mat4 viewTransform; // for e.g. transforming from head to eye space;
+		uint32_t m_nRenderWidth;
+		uint32_t m_nRenderHeight;
 	};
 
 public:	
@@ -81,16 +81,20 @@ public:
 		return s_instance;
 	}
 	
-	bool init(vr::IVRSystem *pHMD);
+	bool init();
+
+	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
 	void SetupCompanionWindow(int width, int height);
 
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
+	void clearDynamicRenderQueue();
 
 	void toggleWireframe();
 
-	void RenderFrame(SDL_Window *win, glm::mat4 &HMDView);
+	void RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
+	void RenderCompanionWindow(int width, int height, GLuint textureID);
 
 	void Shutdown();
 
@@ -98,23 +102,11 @@ private:
 	Renderer();
 	~Renderer();
 	
-	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
-
 	void SetupShaders();
-	void SetupCameras();
-	bool SetupStereoRenderTargets();
-
-	glm::mat4 GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye);
-	glm::mat4 GetHMDMatrixPoseEye(vr::Hmd_Eye nEye);
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
-	void RenderStereoTargets();
-	void RenderScene(vr::Hmd_Eye nEye);
-	void RenderCompanionWindow();
-
 private:
-	vr::IVRSystem *m_pHMD;
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;
@@ -127,25 +119,14 @@ private:
 	std::map<std::string, GLuint*> m_mapShaders;
 
 	GLuint m_glFrameUBO;
-
-	int m_nCompanionWindowWidth;
-	int m_nCompanionWindowHeight;
-	FramebufferDesc leftEyeDesc;
-	FramebufferDesc rightEyeDesc;
 	
 	GLuint m_unCompanionWindowVAO;
 	GLuint m_glCompanionWindowIDVertBuffer;
 	GLuint m_glCompanionWindowIDIndexBuffer;
 	unsigned int m_uiCompanionWindowIndexSize;
 
-	uint32_t m_nRenderWidth;
-	uint32_t m_nRenderHeight;
 	float m_fNearClip;
 	float m_fFarClip;
-
-	StereoInfo m_StereoInfo;
-
-	glm::mat4 m_mat4CurrentHMDView;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

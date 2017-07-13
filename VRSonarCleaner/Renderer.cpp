@@ -5,13 +5,11 @@
 #include <shared/glm/gtc/type_ptr.hpp>
 
 #include "DebugDrawer.h"
-#include "InfoBoxManager.h"
 
 #include "GLSLpreamble.h"
 
 Renderer::Renderer()
-	: m_pHMD(NULL)
-	, m_pLighting(NULL)
+	: m_pLighting(NULL)
 	, m_glFrameUBO(0)
 	, m_unCompanionWindowVAO(0)
 	, m_bShowWireframe(false)
@@ -25,9 +23,8 @@ Renderer::~Renderer()
 	Shutdown();
 }
 
-bool Renderer::init(vr::IVRSystem *pHMD)
+bool Renderer::init()
 {
-	m_pHMD = pHMD;
 	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
 	m_pLighting->addDirectLight()->ambientCoefficient = 0.5f;
@@ -43,8 +40,6 @@ bool Renderer::init(vr::IVRSystem *pHMD)
 	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, sizeof(FrameUniforms));
 
 	SetupShaders();
-	SetupCameras();
-	SetupStereoRenderTargets();
 
 	return true;
 }
@@ -57,6 +52,11 @@ void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 void Renderer::addToDynamicRenderQueue(RendererSubmission &rs)
 {
 	m_vDynamicRenderQueue.push_back(rs);
+}
+
+void Renderer::clearDynamicRenderQueue()
+{
+	m_vDynamicRenderQueue.clear();
 }
 
 void Renderer::toggleWireframe()
@@ -83,26 +83,6 @@ void Renderer::SetupShaders()
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool Renderer::SetupStereoRenderTargets()
-{
-	if (!m_pHMD)
-		return false;
-
-	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
-
-	// Set viewport for shader uniforms
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, m_nRenderWidth, m_nRenderHeight)));
-
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
-
-	return true;
 }
 
 
@@ -148,12 +128,6 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 //-----------------------------------------------------------------------------
 void Renderer::SetupCompanionWindow(int width, int height)
 {
-	m_nCompanionWindowWidth = width;
-	m_nCompanionWindowHeight = height;
-
-	if (!m_pHMD)
-		return;
-
 	struct VertexDataWindow
 	{
 		glm::vec2 position;
@@ -165,7 +139,7 @@ void Renderer::SetupCompanionWindow(int width, int height)
 	std::vector<VertexDataWindow> vVerts;
 
 	// Calculate aspect ratio and use it to letterbox-clip the left eye texture coordinates
-	float ar = static_cast<float>(m_nCompanionWindowHeight) / static_cast<float>(m_nCompanionWindowWidth);
+	float ar = static_cast<float>(height) / static_cast<float>(width);
 
 	// left eye verts	
 	vVerts.push_back(VertexDataWindow(glm::vec2(-1, -1), glm::vec2(0.f, 0.5f - 0.5f * ar)));
@@ -214,128 +188,63 @@ void Renderer::SetupCompanionWindow(int width, int height)
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::SetupCameras()
+void Renderer::RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer)
 {
-	m_StereoInfo.projectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
-	m_StereoInfo.projectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
-	m_StereoInfo.eyePoseLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
-	m_StereoInfo.eyePoseRight = GetHMDMatrixPoseEye(vr::Eye_Right);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::RenderFrame(SDL_Window *win, glm::mat4 &HMDView)
-{
-	m_mat4CurrentHMDView = HMDView;
-	SDL_GetWindowSize(win, &m_nCompanionWindowWidth, &m_nCompanionWindowHeight);
-
 	m_Shaders.UpdatePrograms();
-
-	// for now as fast as possible
-	if (m_pHMD)
-	{
-		RenderStereoTargets();
-		RenderCompanionWindow();
-
-		vr::Texture_t leftEyeTexture = { (void*)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-		vr::Texture_t rightEyeTexture = { (void*)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-	}
-
-	m_vDynamicRenderQueue.clear();
-	DebugDrawer::getInstance().flushLines();
-
-	// SwapWindow
-	{
-		SDL_GL_SwapWindow(win);
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::RenderStereoTargets()
-{
-	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
+	
+	// Set viewport for and send it as a shader uniform
+	glViewport(0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight)));
 
 	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
-	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
+												//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
 	// Left Eye Render
-	glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-	RenderScene(vr::Eye_Left);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->m_nRenderFramebufferId);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 
-	// Right Eye Render
-	glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
-	//glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
-	RenderScene(vr::Eye_Right);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		glm::mat4 thisEyesViewProjectionMatrix = sceneViewInfo->projection * sceneViewInfo->view;
+
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewInfo->view));
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
+
+		m_pLighting->update(sceneViewInfo->view);
+
+
+		if (*m_mapShaders["debug"])
+		{
+			glUseProgram(*m_mapShaders["debug"]);
+			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
+			DebugDrawer::getInstance().render();
+		}
+
+		// STATIC OBJECTS
+		processRenderQueue(m_vStaticRenderQueue);
+
+		// DYNAMIC OBJECTS
+		processRenderQueue(m_vDynamicRenderQueue);
+
+		glDisable(GL_BLEND);
+
+		glUseProgram(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 	glDisable(GL_MULTISAMPLE);
-	
-	// Left Eye Blit
+
+	// Blit Framebuffer to screen
 	glBlitNamedFramebuffer(
-		leftEyeDesc.m_nRenderFramebufferId,
-		leftEyeDesc.m_nResolveFramebufferId,
-		0, 0, m_nRenderWidth, m_nRenderHeight,
-		0, 0, m_nRenderWidth, m_nRenderHeight,
+		frameBuffer->m_nRenderFramebufferId,
+		frameBuffer->m_nResolveFramebufferId,
+		0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight,
+		0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight,
 		GL_COLOR_BUFFER_BIT,
 		GL_LINEAR);
-
-	// Right Eye Blit
-	glBlitNamedFramebuffer(
-		rightEyeDesc.m_nRenderFramebufferId,
-		rightEyeDesc.m_nResolveFramebufferId,
-		0, 0, m_nRenderWidth, m_nRenderHeight, 
-		0, 0, m_nRenderWidth, m_nRenderHeight,
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::RenderScene(vr::Hmd_Eye nEye)
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glm::mat4 thisEyesViewMatrix = (nEye == vr::Eye_Left ? m_StereoInfo.eyePoseLeft : m_StereoInfo.eyePoseRight) * m_mat4CurrentHMDView;
-	glm::mat4 thisEyesProjectionMatrix = (nEye == vr::Eye_Left ? m_StereoInfo.projectionLeft : m_StereoInfo.projectionRight);
-	glm::mat4 thisEyesViewProjectionMatrix = thisEyesProjectionMatrix * thisEyesViewMatrix;
-
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(thisEyesViewMatrix));
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(thisEyesProjectionMatrix));
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
-
-	m_pLighting->update(thisEyesViewMatrix);
-
-
-	if (*m_mapShaders["debug"])
-	{
-		glUseProgram(*m_mapShaders["debug"]);
-		glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
-		DebugDrawer::getInstance().render();
-	}
-
-	// STATIC OBJECTS
-	processRenderQueue(m_vStaticRenderQueue);
-
-	// DYNAMIC OBJECTS
-	processRenderQueue(m_vDynamicRenderQueue);
-
-	glDisable(GL_BLEND);
-
-	glUseProgram(0);
 }
 
 void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
@@ -365,60 +274,23 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderCompanionWindow()
+void Renderer::RenderCompanionWindow(int width, int height, GLuint textureID)
 {
 	if (m_mapShaders["companionWindow"] == NULL)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, m_nCompanionWindowWidth, m_nCompanionWindowHeight);
+	glViewport(0, 0, width, height);
 
 	glUseProgram(*m_mapShaders["companionWindow"]);
 	glBindVertexArray(m_unCompanionWindowVAO);
 
 		// render left eye (first half of index array )
-		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeDesc.m_nResolveTextureId);
+		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
 		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize, GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-glm::mat4 Renderer::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
-{
-	if (!m_pHMD)
-		return glm::mat4();
-
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip);
-
-	return glm::mat4(
-		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
-		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
-		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
-		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
-	);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-glm::mat4 Renderer::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
-{
-	if (!m_pHMD)
-		return glm::mat4();
-
-	vr::HmdMatrix34_t matEyeToHead = m_pHMD->GetEyeToHeadTransform(nEye);
-	glm::mat4 matrixObj(
-		matEyeToHead.m[0][0], matEyeToHead.m[1][0], matEyeToHead.m[2][0], 0.f,
-		matEyeToHead.m[0][1], matEyeToHead.m[1][1], matEyeToHead.m[2][1], 0.f,
-		matEyeToHead.m[0][2], matEyeToHead.m[1][2], matEyeToHead.m[2][2], 0.f,
-		matEyeToHead.m[0][3], matEyeToHead.m[1][3], matEyeToHead.m[2][3], 1.f
-	);
-
-	return glm::inverse(matrixObj);
 }
 
 void Renderer::Shutdown()

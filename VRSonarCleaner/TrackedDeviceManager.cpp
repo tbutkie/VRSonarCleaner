@@ -457,3 +457,39 @@ RenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderMo
 
 	return pRenderModel;
 }
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+glm::mat4 TrackedDeviceManager::getHMDEyeProjection(vr::Hmd_Eye nEye, float nearClipPlane, float farClipPlane)
+{
+	if (!m_pHMD)
+		return glm::mat4();
+
+	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, nearClipPlane, farClipPlane);
+
+	return glm::mat4(
+		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
+		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
+		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
+		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
+	);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+glm::mat4 TrackedDeviceManager::getHMDEyeToHeadTransform(vr::Hmd_Eye nEye)
+{
+	if (!m_pHMD)
+		return glm::mat4();
+
+	vr::HmdMatrix34_t matEyeToHead = m_pHMD->GetEyeToHeadTransform(nEye);
+
+	return glm::mat4(
+		matEyeToHead.m[0][0], matEyeToHead.m[1][0], matEyeToHead.m[2][0], 0.f,
+		matEyeToHead.m[0][1], matEyeToHead.m[1][1], matEyeToHead.m[2][1], 0.f,
+		matEyeToHead.m[0][2], matEyeToHead.m[1][2], matEyeToHead.m[2][2], 0.f,
+		matEyeToHead.m[0][3], matEyeToHead.m[1][3], matEyeToHead.m[2][3], 1.f
+	);
+}

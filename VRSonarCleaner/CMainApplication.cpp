@@ -22,6 +22,10 @@ ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
 FlowProbe*						g_pFlowProbeBehavior = NULL;
 AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
+float							g_fNearClip = 0.001f;
+float							g_fFarClip = 1000.f;
+
+
 std::vector<BehaviorBase*> g_vpBehaviors;
 
 //-----------------------------------------------------------------------------
@@ -266,25 +270,43 @@ bool CMainApplication::BInitGL()
 	if (!m_pTDM->BInit())
 	{
 		dprintf("Error initializing TrackedDeviceManager\n");
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not get render model interface", NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
 	}
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
 	m_pTDM->attach(&InfoBoxManager::getInstance());
 
-	if (!Renderer::getInstance().init(m_pHMD))
+	if (!Renderer::getInstance().init())
 		return false;
+		
+	uint32_t renderWidth, renderHeight;
+	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+	
+	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
 
-	int w, h;
-	SDL_GetWindowSize(m_pWindow, &w, &h);
-	Renderer::getInstance().SetupCompanionWindow(w, h);
+	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
+
+	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
+	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
+		dprintf("Could not create left eye framebuffer!\n");
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
+		dprintf("Could not create right eye framebuffer!\n");
+
+	SDL_GetWindowSize(m_pWindow, &m_nCompanionWindowWidth, &m_nCompanionWindowHeight);
+	Renderer::getInstance().SetupCompanionWindow(m_nCompanionWindowWidth, m_nCompanionWindowHeight);
 
 	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (mode == 0)
 	{
-		//cleaningRoom = new CleaningRoom(g_vec3RoomSize);
-
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), 0.8f, (g_vec3RoomSize.y * 0.8f));
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 
@@ -303,7 +325,8 @@ bool CMainApplication::BInitGL()
 	}
 	else if (mode == 1)
 	{
-		FlowGrid *tempFG = new FlowGrid("test.fg");
+		FlowGrid *tempFG = new FlowGrid("test.fg", true);
+		//FlowGrid *tempFG = new FlowGrid("gb.fg", false);
 		tempFG->setCoordinateScaler(new CoordinateScaler());
 		flowVolume = new FlowVolume(tempFG);
 	}
@@ -335,6 +358,9 @@ bool CMainApplication::BInitCompositor()
 //-----------------------------------------------------------------------------
 void CMainApplication::Shutdown()
 {
+	delete m_pLeftEyeFramebuffer;
+	delete m_pRightEyeFramebuffer;
+
 	if (m_pHMD)
 	{
 		vr::VR_Shutdown();
@@ -453,7 +479,7 @@ bool CMainApplication::HandleInput()
 	}
 	
 	m_pTDM->handleEvents();
-	
+		
 	return bRet;
 }
 
@@ -505,7 +531,7 @@ void CMainApplication::RunMainLoop()
 		}
 
 		m_pTDM->update();
-
+		
 		for (auto const &b : g_vpBehaviors)
 			b->update();
 
@@ -558,9 +584,26 @@ void CMainApplication::RunMainLoop()
 		}
 		
 		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-		//start = std::clock();
+		//start = std::clock();		
 
-		Renderer::getInstance().RenderFrame(m_pWindow, m_pTDM->getHMDPose());
+		// Update eye positions using current HMD position
+		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getHMDPose();
+		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getHMDPose();
+		
+		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+		
+		vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+		vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+
+		Renderer::getInstance().RenderCompanionWindow(m_nCompanionWindowWidth, m_nCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
+
+		SDL_GL_SwapWindow(m_pWindow);
+
+		Renderer::getInstance().clearDynamicRenderQueue();
+		DebugDrawer::getInstance().flushLines();
 
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 

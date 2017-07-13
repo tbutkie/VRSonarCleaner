@@ -2,21 +2,7 @@
 
 #include "DebugDrawer.h"
 
-FlowGrid::FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps)
-{
-	printf("new grid: %f-%f,%f-%f (%d, %d)x%d\n", minX, maxX, minY, maxY, cellsX, cellsY, cellsZ);
-	numTimesteps = timesteps;
-	xCells = cellsX;
-	yCells = cellsY;
-	zCells = cellsZ;
-	xMin = minX;
-	xMax = maxX;
-	yMin = minY;
-	yMax = maxY;
-	init();
-}
-
-FlowGrid::FlowGrid(char* filename)
+FlowGrid::FlowGrid(char* filename, bool hasZRange)
 {
 	FILE *inputFile;
 	printf("opening: %s\n", filename);
@@ -29,28 +15,36 @@ FlowGrid::FlowGrid(char* filename)
 
 	float zMin, zMax; //temp for now
 
-	fread(&xMin, sizeof(float), 1, inputFile);
-	fread(&xMax, sizeof(float), 1, inputFile);
-	fread(&xCells, sizeof(int), 1, inputFile);
-	fread(&yMin, sizeof(float), 1, inputFile);
-	fread(&yMax, sizeof(float), 1, inputFile);
-	fread(&yCells, sizeof(int), 1, inputFile);
-	fread(&zMin, sizeof(float), 1, inputFile);
-	fread(&zMax, sizeof(float), 1, inputFile);
-	fread(&zCells, sizeof(int), 1, inputFile);
-	fread(&numTimesteps, sizeof(int), 1, inputFile);
+	fread(&m_fXMin, sizeof(float), 1, inputFile);
+	fread(&m_fXMax, sizeof(float), 1, inputFile);
+	fread(&m_nXCells, sizeof(int), 1, inputFile);
+	fread(&m_fYMin, sizeof(float), 1, inputFile);
+	fread(&m_fYMax, sizeof(float), 1, inputFile);
+	fread(&m_nYCells, sizeof(int), 1, inputFile);
+	if (hasZRange)
+	{
+		fread(&zMin, sizeof(float), 1, inputFile);
+		fread(&zMax, sizeof(float), 1, inputFile);
+	}
+	else
+	{
+		zMin = 0.f;
+		zMax = 1.f;
+	}
+	fread(&m_nZCells, sizeof(int), 1, inputFile);
+	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
 
 	init();
 
 	float tempDepth;
-	for (int i = 0; i < zCells; i++)
+	for (int i = 0; i < m_nZCells; i++)
 	{
 		fread(&tempDepth, sizeof(float), 1, inputFile);
 		setDepthValue(i, tempDepth);
 	}
 
 	float tempTime;
-	for (int i = 0; i < numTimesteps; i++)
+	for (int i = 0; i < m_nTimesteps; i++)
 	{
 		fread(&tempTime, sizeof(float), 1, inputFile);
 		setTimeValue(i, tempTime);
@@ -59,19 +53,22 @@ FlowGrid::FlowGrid(char* filename)
 	int index4d;
 	int tempIsWater;
 	float tempU, tempV, tempW;
-	for (int x = 0; x<xCells; x++)
+	for (int x = 0; x<m_nXCells; x++)
 	{
-		for (int y = 0; y<yCells; y++)
+		for (int y = 0; y<m_nYCells; y++)
 		{
-			for (int z = 0; z<zCells; z++)
+			for (int z = 0; z<m_nZCells; z++)
 			{
-				for (int t = 0; t<numTimesteps; t++)
+				for (int t = 0; t<m_nTimesteps; t++)
 				{
-					index4d = (t*xyzCells) + (z*xyCells) + (y*xCells) + x;
+					index4d = (t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
 					fread(&tempIsWater, sizeof(int), 1, inputFile);
 					fread(&tempU, sizeof(float), 1, inputFile);
 					fread(&tempV, sizeof(float), 1, inputFile);
-					fread(&tempW, sizeof(float), 1, inputFile);
+					if (hasZRange)
+						fread(&tempW, sizeof(float), 1, inputFile);
+					else
+						tempW = 0.f;
 					setIsWaterValue(x, y, z, t, tempIsWater);
 					setCellValue(x, y, z, t, tempU, tempV, tempW);
 				}//end for z
@@ -93,61 +90,58 @@ FlowGrid::~FlowGrid()
 
 void FlowGrid::init()
 {
-	activeTimestep = -1;
-	times = new float[numTimesteps];
-	gridSize2d = xCells * yCells;
-	gridSize3d = xCells * yCells * zCells;
-	gridSize4d = xCells * yCells * zCells * numTimesteps;
-	xyCells = xCells*yCells;
-	xyzCells = xCells*yCells*zCells;
-	xCellsFloat = (float)xCells;
-	yCellsFloat = (float)yCells;
-	zCellsFloat = (float)zCells;
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
-	m_vDepthValues.resize(zCells);
-	depthsSet = false;
+	m_nActiveTimestep = -1;
+	m_arrfTimes = new float[m_nTimesteps];
+	m_nGridSize2d = m_nXCells * m_nYCells;
+	m_nGridSize3d = m_nXCells * m_nYCells * m_nZCells;
+	m_nGridSize4d = m_nXCells * m_nYCells * m_nZCells * m_nTimesteps;
+	m_nXYCells = m_nXCells * m_nYCells;
+	m_nXYZCells = m_nXCells * m_nYCells * m_nZCells;
+	m_fXCells = (float)m_nXCells;
+	m_fYCells = (float)m_nYCells;
+	m_fZCells = (float)m_nZCells;
+	m_fXRange = m_fXMax - m_fXMin;
+	m_fYRange = m_fYMax - m_fYMin;
+	m_vDepthValues.resize(m_nZCells);
+	m_bDepthsSet = false;
 
-	xCellSize = xRange / xCellsFloat;
-	yCellSize = yRange / yCellsFloat;
+	m_fXCellSize = m_fXRange / m_fXCells;
+	m_fYCellSize = m_fYRange / m_fYCells;
 
-	maxVelocity = 0;
-
-
+	m_fMaxVelocity = 0;
 
 	//allocate storage arrays
-	isWater = new bool[gridSize4d];
+	m_arrbIsWater = new bool[m_nGridSize4d];
 	//bathyDepth2d = new float[gridSize2d];
 
-	uValues = new float[gridSize4d];
-	vValues = new float[gridSize4d];
-	wValues = new float[gridSize4d];
-	velocityValues = new float[gridSize4d];
-	//tValues = new float[gridSize4d];
-	//sValues = new float[gridSize4d];
+	m_arrfUValues = new float[m_nGridSize4d];
+	m_arrfVValues = new float[m_nGridSize4d];
+	m_arrfWValues = new float[m_nGridSize4d];
+	m_arrfVelocityValues = new float[m_nGridSize4d];
+	//tValues = new float[m_nGridSize4d];
+	//sValues = new float[m_nGridSize4d];
 
-	lastTimeRequested = -1;
-	lastTimeRequested = true;
+	m_fLastTimeRequested = -1.f;
 
-	enableIllustrativeParticles = true;
-	numIllustrativeParticles = 1000;
-	illustrativeParticleTrailTime = 500;
-	illustrativeParticleLifetime = 2500;
-	illustrativeParticleSize = 1;
+	m_bIllustrativeParticlesEnabled = true;
+	m_nIllustrativeParticles = 1000;
+	m_fIllustrativeParticleTrailTime = 500;
+	m_fIllustrativeParticleLifetime = 2500;
+	m_fIllustrativeParticleSize = 1;
 
-	colorIllustrativeParticles = glm::vec3(0.25f, 0.95f, 1.f);
-	illustrativeParticleVelocityScale = .01;//0.000001;
+	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
+	m_fIllustrativeParticleVelocityScale = .01;//0.000001;
 }
 
 void FlowGrid::deleteSelf()
 {
-	delete[] times;
-	delete[] isWater;
+	delete[] m_arrfTimes;
+	delete[] m_arrbIsWater;
 	//delete[] bathyDepth2d;
-	delete[] uValues;
-	delete[] vValues;
-	delete[] wValues;
-	delete[] velocityValues;
+	delete[] m_arrfUValues;
+	delete[] m_arrfVValues;
+	delete[] m_arrfWValues;
+	delete[] m_arrfVelocityValues;
 	//delete[] tValues;
 	//delete[] sValues;
 
@@ -171,131 +165,131 @@ float FlowGrid::getMaxDepth()
 
 void FlowGrid::setTimeValue(int timeIndex, float timeValue)
 {
-	times[timeIndex] = timeValue;
-	if (timeValue < minTime)
-		minTime = timeValue;
-	if (timeValue > maxTime)
-		maxTime = timeValue;
+	m_arrfTimes[timeIndex] = timeValue;
+	if (timeValue < m_fMinTime)
+		m_fMinTime = timeValue;
+	if (timeValue > m_fMaxTime)
+		m_fMaxTime = timeValue;
 }
 
 void FlowGrid::setCellValue(int x, int y, int z, int timestep, float u, float v)
 {
-	int index4d = (timestep*xyzCells) + (z*xyCells) + (y*xCells) + x;
-	uValues[index4d] = u;
-	vValues[index4d] = v;
-	velocityValues[index4d] = sqrt(u*u + v*v);
+	int index4d = (timestep*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
+	m_arrfUValues[index4d] = u;
+	m_arrfVValues[index4d] = v;
+	m_arrfVelocityValues[index4d] = sqrt(u*u + v*v);
 	
-	if (velocityValues[index4d] > maxVelocity)
-		maxVelocity = velocityValues[index4d];
+	if (m_arrfVelocityValues[index4d] > m_fMaxVelocity)
+		m_fMaxVelocity = m_arrfVelocityValues[index4d];
 }
 
 void FlowGrid::setCellValue(int x, int y, int z, int timestep, float u, float v, float w)
 {
-	int index4d = (timestep*xyzCells) + (z*xyCells) + (y*xCells) + x;
-	uValues[index4d] = u;
-	vValues[index4d] = v;
-	wValues[index4d] = w;
-	velocityValues[index4d] = sqrt(u*u + v*v + w*w);
+	int index4d = (timestep*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
+	m_arrfUValues[index4d] = u;
+	m_arrfVValues[index4d] = v;
+	m_arrfWValues[index4d] = w;
+	m_arrfVelocityValues[index4d] = sqrt(u*u + v*v + w*w);
 	
-	if (velocityValues[index4d] > maxVelocity)
-		maxVelocity = velocityValues[index4d];
+	if (m_arrfVelocityValues[index4d] > m_fMaxVelocity)
+		m_fMaxVelocity = m_arrfVelocityValues[index4d];
 }
 
 void FlowGrid::setIsWaterValue(int x, int y, int z, int t, bool isCellWater)
 {
-	isWater[(t*xyzCells) + (z*xyCells) + (y*xCells) + x] = isCellWater;
+	m_arrbIsWater[(t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x] = isCellWater;
 }
 
 bool FlowGrid::getIsWaterAt(float lonX, float latY, float depth, float time)
 {
-	int x = (int)floor(((lonX-xMin)/xCellSize)+0.5);
-	int y = (int)floor(((latY-yMin)/yCellSize)+0.5);
+	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
+	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
 	int z = 0;
-	for (int i=0;i<zCells;i++)
+	for (int i=0;i<m_nZCells;i++)
 	{
 		if (depth >= m_vDepthValues[i])
 			z = i;
 	}
 
 	int t = 0;
-	for (int i=0;i<numTimesteps;i++)
+	for (int i=0;i<m_nTimesteps;i++)
 	{
-		if (time >= times[i])
+		if (time >= m_arrfTimes[i])
 		{
 			t = i;
 		}
 	}
 	
-	return isWater[(t*xyzCells) + (z*xyCells) + (y*xCells) + x];
+	return m_arrbIsWater[(t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x];
 }
 
 bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u, float *v)
 {
 	//first we check time requested to see if its the same as last time
-	if (time != lastTimeRequested)
+	if (time != m_fLastTimeRequested)
 	{
 		//new time, have to find time values anew
-		lastTimeRequested = time;
+		m_fLastTimeRequested = time;
 		
 		//find if on timestep exactly, or is between what times
 		int above = -1;
 		int below = -1;
-		lastTimeOnTimestep = false;
-		for (int i=0;i<numTimesteps;i++)
+		m_bLastTimeOnTimestep = false;
+		for (int i=0;i<m_nTimesteps;i++)
 		{
-			if (time > times[i])
+			if (time > m_arrfTimes[i])
 			{
 				below = i;
 			}
-			else if (time == times[i])
+			else if (time == m_arrfTimes[i])
 			{
-				lastTimeOnTimestep = true;
-				lastTime1 = i;
-				lastTimeFactor1 = 1;
-				lastTime2 = i;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = i;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = i;
+				m_fLastTimeFactor2 = 0;
 				above = i;
 				below = i;
 				break;
 			}
-			else if (time < times[i])
+			else if (time < m_arrfTimes[i])
 			{
 				above = i;
 				break;
 			}
 		}
-		if (!lastTimeOnTimestep) //if didn't match a timestep exactly
+		if (!m_bLastTimeOnTimestep) //if didn't match a timestep exactly
 		{
 			//if was below min time
 			if (below == -1)
 			{
 				//set to min time
-				lastTimeOnTimestep = true;
-				lastTime1 = 0;
-				lastTimeFactor1 = 1;
-				lastTime2 = 0;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = 0;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = 0;
+				m_fLastTimeFactor2 = 0;
 			}
 			//if was above max time
 			else if (above == -1)
 			{
 				//set to max time
-				lastTimeOnTimestep = true;
-				lastTime1 = numTimesteps-1;
-				lastTimeFactor1 = 1;
-				lastTime2 = numTimesteps-1;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = m_nTimesteps-1;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = m_nTimesteps-1;
+				m_fLastTimeFactor2 = 0;
 			}
 			else //is in between two timesteps
 			{
 				//set both times and factor for each
-				float range = times[above] - times[below];
-				float fromBelow = time - times[below];
+				float range = m_arrfTimes[above] - m_arrfTimes[below];
+				float fromBelow = time - m_arrfTimes[below];
 				float factor = fromBelow / range;
-				lastTime1 = below;
-				lastTimeFactor1 = 1-factor;
-				lastTime2 = above;
-				lastTimeFactor2 = factor;
+				m_iLastTime1 = below;
+				m_fLastTimeFactor1 = 1-factor;
+				m_iLastTime2 = above;
+				m_fLastTimeFactor2 = factor;
 			}
 		}//end if !lastTimeOnTimestep
 
@@ -310,28 +304,28 @@ bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u
 	{
 		return false;
 	}
-	for (int i=0;i<zCells;i++)
+	for (int i=0;i<m_nZCells;i++)
 	{
 		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
-	int x = (int)floor(((lonX-xMin)/xCellSize)+0.5);
-	int y = (int)floor(((latY-yMin)/yCellSize)+0.5);
-	//int x = (int)floor( (((lonX - xMin)/xRange)*xCellsFloat) + 0.5);
+	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
+	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
+	//int x = (int)floor( (((lonX - m_fXMin)/m_fXRange)*m_fXCells) + 0.5);
 	//int y = (int)floor( (((latY - yMin)/yRange)*yCellsFloat) + 0.5);
 	int z = deepestLevelAbove;
 		
 	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
 
 	//check if in bounds of the dataset
-	if (x < 0 || y < 0 || z < 0 || x > xCells-1 || y > yCells-1 || z > zCells-1)
+	if (x < 0 || y < 0 || z < 0 || x > m_nXCells-1 || y > m_nYCells-1 || z > m_nZCells-1)
 		return false;
 	//xyz index
-	int index3d = ((z*xyCells)+(y*xCells)+(x));
+	int index3d = ((z*m_nXYCells)+(y*m_nXCells)+(x));
 			
 	//check if in water
-	if (!isWater[(lastTime1*xyzCells) + index3d])
+	if (!m_arrbIsWater[(m_iLastTime1*m_nXYZCells) + index3d])
 	{
 		//printf("not in water\n");
 		return false; //if not in water, return false
@@ -339,18 +333,18 @@ bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u
 	else
 	{
 		//if single timestep
-		if (lastTimeOnTimestep)
+		if (m_bLastTimeOnTimestep)
 		{
-			*u = uValues[(lastTime1*xyzCells) + index3d];
-			*v = vValues[(lastTime1*xyzCells) + index3d];
+			*u = m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d];
+			*v = m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d];
 			//printf("on timestep\n");
 			//printf ("U: %f, V: %f\n", uValues[(lastTime1*size3d) + index3d], vValues[(lastTime1*size3d) + index3d]);
 		}
 		else //between timesteps
 		{ 
 			//printf("betwen timesteps\n");
-			*u = (uValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (uValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);
-			*v = (vValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (vValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);
+			*u = (m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfUValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
+			*v = (m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfVValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
 			//printf ("U: %f, V: %f\n", (uValues[(lastTime1*size3d) + index3d]*lastTimeFactor1) + (uValues[(lastTime2*size3d) + index3d]*lastTimeFactor2), (vValues[(lastTime1*size3d) + index3d]*lastTimeFactor1) + (vValues[(lastTime2*size3d) + index3d]*lastTimeFactor2));
 		}
 		return true;
@@ -362,70 +356,70 @@ bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u
 bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *u, float *v, float *w)
 {
 	//first we check time requested to see if its the same as last time
-	if (time != lastTimeRequested)
+	if (time != m_fLastTimeRequested)
 	{
 		//new time, have to find time values anew
-		lastTimeRequested = time;
+		m_fLastTimeRequested = time;
 		
 		//find if on timestep exactly, or is between what times
 		int above = -1;
 		int below = -1;
-		lastTimeOnTimestep = false;
-		for (int i=0;i<numTimesteps;i++)
+		m_bLastTimeOnTimestep = false;
+		for (int i=0;i<m_nTimesteps;i++)
 		{
-			if (time > times[i])
+			if (time > m_arrfTimes[i])
 			{
 				below = i;
 			}
-			else if (time == times[i])
+			else if (time == m_arrfTimes[i])
 			{
-				lastTimeOnTimestep = true;
-				lastTime1 = i;
-				lastTimeFactor1 = 1;
-				lastTime2 = i;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = i;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = i;
+				m_fLastTimeFactor2 = 0;
 				above = i;
 				below = i;
 				break;
 			}
-			else if (time < times[i])
+			else if (time < m_arrfTimes[i])
 			{
 				above = i;
 				break;
 			}
 		}
-		if (!lastTimeOnTimestep) //if didn't match a timestep exactly
+		if (!m_bLastTimeOnTimestep) //if didn't match a timestep exactly
 		{
 			//if was below min time
 			if (below == -1)
 			{
 				//set to min time
-				lastTimeOnTimestep = true;
-				lastTime1 = 0;
-				lastTimeFactor1 = 1;
-				lastTime2 = 0;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = 0;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = 0;
+				m_fLastTimeFactor2 = 0;
 			}
 			//if was above max time
 			else if (above == -1)
 			{
 				//set to max time
-				lastTimeOnTimestep = true;
-				lastTime1 = numTimesteps-1;
-				lastTimeFactor1 = 1;
-				lastTime2 = numTimesteps-1;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = m_nTimesteps-1;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = m_nTimesteps-1;
+				m_fLastTimeFactor2 = 0;
 			}
 			else //is in between two timesteps
 			{
 				//set both times and factor for each
-				float range = times[above] - times[below];
-				float fromBelow = time - times[below];
+				float range = m_arrfTimes[above] - m_arrfTimes[below];
+				float fromBelow = time - m_arrfTimes[below];
 				float factor = fromBelow / range;
-				lastTime1 = below;
-				lastTimeFactor1 = 1-factor;
-				lastTime2 = above;
-				lastTimeFactor2 = factor;
+				m_iLastTime1 = below;
+				m_fLastTimeFactor1 = 1-factor;
+				m_iLastTime2 = above;
+				m_fLastTimeFactor2 = factor;
 			}
 		}//end if !lastTimeOnTimestep
 
@@ -440,28 +434,28 @@ bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *
 	{
 		return false;
 	}
-	for (int i=0;i<zCells;i++)
+	for (int i=0;i<m_nZCells;i++)
 	{
 		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
-	int x = (int)floor(((lonX-xMin)/xCellSize)+0.5);
-	int y = (int)floor(((latY-yMin)/yCellSize)+0.5);
-	//int x = (int)floor( (((lonX - xMin)/xRange)*xCellsFloat) + 0.5);
+	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
+	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
+	//int x = (int)floor( (((lonX - m_fXMin)/m_fXRange)*m_fXCells) + 0.5);
 	//int y = (int)floor( (((latY - yMin)/yRange)*yCellsFloat) + 0.5);
 	int z = deepestLevelAbove;
 		
 	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
 
 	//check if in bounds of the dataset
-	if (x < 0 || y < 0 || z < 0 || x > xCells-1 || y > yCells-1 || z > zCells-1)
+	if (x < 0 || y < 0 || z < 0 || x > m_nXCells-1 || y > m_nYCells-1 || z > m_nZCells-1)
 		return false;
 	//xyz index
-	int index3d = ((z*xyCells)+(y*xCells)+(x));
+	int index3d = ((z*m_nXYCells)+(y*m_nXCells)+(x));
 			
 	//check if in water
-	if (!isWater[(lastTime1*xyzCells) + index3d])
+	if (!m_arrbIsWater[(m_iLastTime1*m_nXYZCells) + index3d])
 	{
 		//printf("not in water\n");
 		return false; //if not in water, return false
@@ -469,20 +463,20 @@ bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *
 	else
 	{
 		//if single timestep
-		if (lastTimeOnTimestep)
+		if (m_bLastTimeOnTimestep)
 		{
-			*u = uValues[(lastTime1*xyzCells) + index3d];
-			*v = vValues[(lastTime1*xyzCells) + index3d];
-			*w = wValues[(lastTime1*xyzCells) + index3d];
+			*u = m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d];
+			*v = m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d];
+			*w = m_arrfWValues[(m_iLastTime1*m_nXYZCells) + index3d];
 			//printf("on timestep\n");
 			//printf ("U: %f, V: %f\n", uValues[(lastTime1*size3d) + index3d], vValues[(lastTime1*size3d) + index3d]);
 		}
 		else //between timesteps
 		{ 
 			//printf("betwen timesteps\n");
-			*u = (uValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (uValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);
-			*v = (vValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (vValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);
-			*w = (wValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (wValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);
+			*u = (m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfUValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
+			*v = (m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfVValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
+			*w = (m_arrfWValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfWValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
 			//printf ("U: %f, V: %f\n", (uValues[(lastTime1*size3d) + index3d]*lastTimeFactor1) + (uValues[(lastTime2*size3d) + index3d]*lastTimeFactor2), (vValues[(lastTime1*size3d) + index3d]*lastTimeFactor1) + (vValues[(lastTime2*size3d) + index3d]*lastTimeFactor2));
 		}
 		return true;
@@ -495,70 +489,70 @@ bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *
 bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, float *velocity)
 {
 	//first we check time requested to see if its the same as last time
-	if (time != lastTimeRequested)
+	if (time != m_fLastTimeRequested)
 	{
 		//new time, have to find time values anew
-		lastTimeRequested = time;
+		m_fLastTimeRequested = time;
 		
 		//find if on timestep exactly, or is between what times
 		int above = -1;
 		int below = -1;
-		lastTimeOnTimestep = false;
-		for (int i=0;i<numTimesteps;i++)
+		m_bLastTimeOnTimestep = false;
+		for (int i=0;i<m_nTimesteps;i++)
 		{
-			if (time > times[i])
+			if (time > m_arrfTimes[i])
 			{
 				below = i;
 			}
-			else if (time == times[i])
+			else if (time == m_arrfTimes[i])
 			{
-				lastTimeOnTimestep = true;
-				lastTime1 = i;
-				lastTimeFactor1 = 1;
-				lastTime2 = i;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = i;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = i;
+				m_fLastTimeFactor2 = 0;
 				above = i;
 				below = i;
 				break;
 			}
-			else if (time < times[i])
+			else if (time < m_arrfTimes[i])
 			{
 				above = i;
 				break;
 			}
 		}
-		if (!lastTimeOnTimestep) //if didn't match a timestep exactly
+		if (!m_bLastTimeOnTimestep) //if didn't match a timestep exactly
 		{
 			//if was below min time
 			if (below == -1)
 			{
 				//set to min time
-				lastTimeOnTimestep = true;
-				lastTime1 = 0;
-				lastTimeFactor1 = 1;
-				lastTime2 = 0;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = 0;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = 0;
+				m_fLastTimeFactor2 = 0;
 			}
 			//if was above max time
 			else if (above == -1)
 			{
 				//set to max time
-				lastTimeOnTimestep = true;
-				lastTime1 = numTimesteps-1;
-				lastTimeFactor1 = 1;
-				lastTime2 = numTimesteps-1;
-				lastTimeFactor2 = 0;
+				m_bLastTimeOnTimestep = true;
+				m_iLastTime1 = m_nTimesteps-1;
+				m_fLastTimeFactor1 = 1;
+				m_iLastTime2 = m_nTimesteps-1;
+				m_fLastTimeFactor2 = 0;
 			}
 			else //is in between two timesteps
 			{
 				//set both times and factor for each
-				float range = times[above] - times[below];
-				float fromBelow = time - times[below];
+				float range = m_arrfTimes[above] - m_arrfTimes[below];
+				float fromBelow = time - m_arrfTimes[below];
 				float factor = fromBelow / range;
-				lastTime1 = below;
-				lastTimeFactor1 = 1-factor;
-				lastTime2 = above;
-				lastTimeFactor2 = factor;
+				m_iLastTime1 = below;
+				m_fLastTimeFactor1 = 1-factor;
+				m_iLastTime2 = above;
+				m_fLastTimeFactor2 = factor;
 			}
 		}//end if !lastTimeOnTimestep
 
@@ -573,28 +567,28 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 	{
 		return false;
 	}
-	for (int i=0;i<zCells;i++)
+	for (int i=0;i<m_nZCells;i++)
 	{
 		if (depth >= m_vDepthValues[i])
 			deepestLevelAbove = i;
 	}
 	//get index of requested location
-	int x = (int)floor(((lonX-xMin)/xCellSize)+0.5);
-	int y = (int)floor(((latY-yMin)/yCellSize)+0.5);
-	//int x = (int)floor( (((lonX - xMin)/xRange)*xCellsFloat) + 0.5);
+	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
+	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
+	//int x = (int)floor( (((lonX - m_fXMin)/m_fXRange)*m_fXCells) + 0.5);
 	//int y = (int)floor( (((latY - yMin)/yRange)*yCellsFloat) + 0.5);
 	int z = deepestLevelAbove;
 		
 	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
 
 	//check if in bounds of the dataset
-	if (x < 0 || y < 0 || z < 0 || x > xCells-1 || y > yCells-1 || z > zCells-1)
+	if (x < 0 || y < 0 || z < 0 || x > m_nXCells -1 || y > m_nYCells-1 || z > m_nZCells-1)
 		return false;
 	//xyz index
-	int index3d = ((z*xyCells)+(y*xCells)+(x));
+	int index3d = ((z*m_nXYCells)+(y*m_nXCells)+(x));
 			
 	//check if in water
-	if (!isWater[(lastTime1*xyzCells) + index3d])
+	if (!m_arrbIsWater[(m_iLastTime1*m_nXYZCells) + index3d])
 	{
 		//printf("not in water\n");
 		return false; //if not in water, return false
@@ -602,13 +596,13 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 	else
 	{
 		//if single timestep
-		if (lastTimeOnTimestep)
+		if (m_bLastTimeOnTimestep)
 		{
-			*velocity = velocityValues[(lastTime1*xyzCells) + index3d];
+			*velocity = m_arrfVelocityValues[(m_iLastTime1*m_nXYZCells) + index3d];
 		}
 		else //between timesteps
 		{ 
-			*velocity = (velocityValues[(lastTime1*xyzCells) + index3d]*lastTimeFactor1) + (velocityValues[(lastTime2*xyzCells) + index3d]*lastTimeFactor2);	
+			*velocity = (m_arrfVelocityValues[(m_iLastTime1*m_nXYZCells) + index3d]* m_fLastTimeFactor1) + (m_arrfVelocityValues[(m_iLastTime2*m_nXYZCells) + index3d]* m_fLastTimeFactor2);
 		}
 		return true;
 	}
@@ -622,8 +616,8 @@ void FlowGrid::drawBBox()
 	float visualOffset = 0.f;
 
 	//HAD TO SWAP ZY again for VR coord system
-	glm::vec3 bbMin(scaler->getScaledLonX(xMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset, scaler->getScaledLatY(yMin) - visualOffset);
-	glm::vec3 bbMax(scaler->getScaledLonX(xMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset, scaler->getScaledLatY(yMax) + visualOffset);
+	glm::vec3 bbMin(scaler->getScaledLonX(m_fXMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset, scaler->getScaledLatY(m_fYMin) - visualOffset);
+	glm::vec3 bbMax(scaler->getScaledLonX(m_fXMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset, scaler->getScaledLatY(m_fYMax) + visualOffset);
 
 	//DebugDrawer::getInstance().setTransformDefault();
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, glm::vec4(1.f, 0.f, 0.f, 1.f));
@@ -632,26 +626,26 @@ void FlowGrid::drawBBox()
 void FlowGrid::setCoordinateScaler(CoordinateScaler *Scaler)
 {
 	scaler = Scaler;
-	scaler->submitOriginCandidate(xMin, yMin);
+	scaler->submitOriginCandidate(m_fXMin, m_fYMin);
 }
 float FlowGrid::getScaledXMin()
 {
-	return scaler->getScaledLonX(xMin);
+	return scaler->getScaledLonX(m_fXMin);
 }
 
 float FlowGrid::getScaledXMax()
 {
-	return scaler->getScaledLonX(xMax);
+	return scaler->getScaledLonX(m_fXMax);
 }
 
 float FlowGrid::getScaledYMin()
 {
-	return scaler->getScaledLatY(yMin);
+	return scaler->getScaledLatY(m_fYMin);
 }
 
 float FlowGrid::getScaledYMax()
 {
-	return scaler->getScaledLatY(yMax);
+	return scaler->getScaledLatY(m_fYMax);
 }
 
 float FlowGrid::getScaledMinDepth()
@@ -668,13 +662,13 @@ float FlowGrid::getScaledMaxDepth()
 
 bool FlowGrid::contains(float x, float y)
 {
-	if (x < xMin)
+	if (x < m_fXMin)
 		return false;
-	else if (x > xMax)
+	else if (x > m_fXMax)
 		return false;
-	else if (y < yMin)
+	else if (y < m_fYMin)
 		return false;
-	else if (y > yMax)
+	else if (y > m_fYMax)
 		return false;
 	else
 		return true;
@@ -682,13 +676,13 @@ bool FlowGrid::contains(float x, float y)
 
 bool FlowGrid::contains(float x, float y, float z)
 {
-	if (x < xMin)
+	if (x < m_fXMin)
 		return false;
-	else if (x > xMax)
+	else if (x > m_fXMax)
 		return false;
-	else if (y < yMin)
+	else if (y < m_fYMin)
 		return false;
-	else if (y > yMax)
+	else if (y > m_fYMax)
 		return false;
 	else if (z < m_vDepthValues.front())
 		return false;
@@ -701,21 +695,21 @@ bool FlowGrid::contains(float x, float y, float z)
 
 int FlowGrid::getNumXYCells()
 {
-	return xyCells;
+	return m_nXYCells;
 }
 
 void FlowGrid::getXYZofCell(int cellIndex, float *lonX, float *latY, float *depth)
 {
-	int x = cellIndex%xCells;
-	int y = floor((float)cellIndex/(float)xCells);
+	int x = cellIndex%m_nXCells;
+	int y = floor((float)cellIndex/(float)m_nXCells);
 	
-	*lonX = xMin + (x * xCellSize);
-	*latY = yMin + (y * yCellSize);
+	*lonX = m_fXMin + (x * m_fXCellSize);
+	*latY = m_fYMin + (y * m_fYCellSize);
 
 	//*depth = bathyDepth2d[(y*xCells) + x];
 
 	int z = 0;
-	for (int i=0;i<zCells;i++)
+	for (int i=0;i<m_nZCells;i++)
 	{
 		if (*depth >= m_vDepthValues[i])
 			z = i;
@@ -728,43 +722,43 @@ void FlowGrid::getXYZofCell(int cellIndex, float *lonX, float *latY, float *dept
 
 float FlowGrid::getXMin()
 {
-	return xMin;
+	return m_fXMin;
 }
 
 float FlowGrid::getXMax()
 {
-	return xMax;
+	return m_fXMax;
 }
 
 float FlowGrid::getYMin()
 {
-	return yMin;
+	return m_fYMin;
 }
 
 float FlowGrid::getYMax()
 {
-	return yMax;
+	return m_fYMax;
 }
 
 float FlowGrid::getXCellSize()
 {
-	return xCellSize;
+	return m_fXCellSize;
 }
 
 float FlowGrid::getYCellSize()
 {
-	return yCellSize;
+	return m_fYCellSize;
 }
 
-bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int *xcellmin, int *xcellmax, int *ycellmin, int *ycellmax)
+bool FlowGrid::getCellBounds(float m_fXMin, float m_fXMax, float ymin, float ymax, int *xcellmin, int *xcellmax, int *ycellmin, int *ycellmax)
 {
 	//find min x cell
 	int minXCell;
-	if (xmin < xMin) //beyond and contains edge
+	if (m_fXMin < m_fXMin) //beyond and contains edge
 	{
 		minXCell = 0;
 	}
-	else if (xmin > xMax) //not in bounds, should not happen
+	else if (m_fXMin > m_fXMax) //not in bounds, should not happen
 	{
 		printf("ERROR 15151515 in getCellBounds\n");
 		return false;
@@ -773,10 +767,10 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 	{
 		minXCell = 0;
 		float xHere;
-		for (int i=0;i<xCells-1;i++)
+		for (int i=0;i<m_nXCells -1;i++)
 		{
-			xHere = xMin + (xCellSize*i);
-			if (xHere < xmin)
+			xHere = m_fXMin + (m_fXCellSize*i);
+			if (xHere < m_fXMin)
 				minXCell = i;
 			else
 				break;
@@ -786,23 +780,23 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 
 	//find max x cell
 	int maxXCell;
-	if (xmax > xMax) //beyond and contains edge
+	if (m_fXMax > m_fXMax) //beyond and contains edge
 	{
-		maxXCell = xCells-1;
+		maxXCell = m_nXCells -1;
 	}
-	else if (xmax < xMin) //not in bounds, should not happen
+	else if (m_fXMax < m_fXMin) //not in bounds, should not happen
 	{
 		printf("ERROR 377257 in getCellBounds\n");
 		return false;
 	}
 	else //within
 	{
-		maxXCell = xCells-1;
+		maxXCell = m_nXCells -1;
 		float xHere;
-		for (int i=xCells-1;i>-1;i--)
+		for (int i= m_nXCells -1;i>-1;i--)
 		{
-			xHere = xMin + xCellSize + (xCellSize*i); //extra xcellsize because want far edge
-			if (xHere > xmax)
+			xHere = m_fXMin + m_fXCellSize + (m_fXCellSize*i); //extra m_fXCellSize because want far edge
+			if (xHere > m_fXMax)
 				maxXCell = i;
 			else
 				break;
@@ -811,11 +805,11 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 
 	//find min y cell
 	int minYCell;
-	if (ymin < yMin) //beyond and contains edge
+	if (ymin < m_fYMin) //beyond and contains edge
 	{
 		minYCell = 0;
 	}
-	else if (ymin > yMax) //not in bounds, should not happen
+	else if (ymin > m_fYMax) //not in bounds, should not happen
 	{
 		printf("ERROR 254572 in getCellBounds\n");
 		return false;
@@ -824,10 +818,10 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 	{
 		minYCell = 0;
 		float yHere;
-		for (int i=0;i<yCells-1;i++)
+		for (int i=0;i<m_nYCells-1;i++)
 		{
-			yHere = yMin + (yCellSize*i);
-			if (yHere < xmin)
+			yHere = m_fYMin + (m_fYCellSize*i);
+			if (yHere < m_fXMin)
 				minYCell = i;
 			else
 				break;
@@ -837,22 +831,22 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 
 	//find max y cell
 	int maxYCell;
-	if (ymax > yMax) //beyond and contains edge
+	if (ymax > m_fYMax) //beyond and contains edge
 	{
-		maxYCell = yCells-1;
+		maxYCell = m_nYCells-1;
 	}
-	else if (ymax < yMin) //not in bounds, should not happen
+	else if (ymax < m_fYMin) //not in bounds, should not happen
 	{
 		printf("ERROR 546854683 in getCellBounds\n");
 		return false;
 	}
 	else //within
 	{
-		maxYCell = yCells-1;
+		maxYCell = m_nYCells-1;
 		float yHere;
-		for (int i=yCells-1;i>-1;i--)
+		for (int i=m_nYCells-1;i>-1;i--)
 		{
-			yHere = yMin + yCellSize + (yCellSize*i); //extra xcellsize because want far edge
+			yHere = m_fYMin + m_fYCellSize + (m_fYCellSize*i); //extra m_fXCellSize because want far edge
 			if (yHere > ymax)
 				maxYCell = i;
 			else
@@ -880,21 +874,21 @@ bool FlowGrid::getCellBounds(float xmin, float xmax, float ymin, float ymax, int
 
 float FlowGrid::getTimeAtTimestep(int timestep)
 {
-	return times[timestep];
+	return m_arrfTimes[timestep];
 }
 
 int FlowGrid::getNumTimeCells()
 {
-	return numTimesteps;
+	return m_nTimesteps;
 }
 
 char* FlowGrid::getName()
 {
-	return name;
+	return m_strName;
 }
 
-void FlowGrid::setName(char* Name)
+void FlowGrid::setName(char* name)
 {
-	strcpy(name, Name);
+	strcpy(m_strName, name);
 }
 

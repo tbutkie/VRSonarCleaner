@@ -37,7 +37,9 @@ public:
 	ViveController* getSecondaryController();
 	glm::mat4& getPrimaryControllerPose();
 	glm::mat4& getSecondaryControllerPose();
-
+	
+	glm::mat4 getHMDEyeProjection(vr::Hmd_Eye nEye, float nearClipPlane, float farClipPlane);
+	glm::mat4 getHMDEyeToHeadTransform(vr::Hmd_Eye nEye);
 
 private:
 	void TrackedDeviceManager::initDevices();

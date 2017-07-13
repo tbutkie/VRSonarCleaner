@@ -166,7 +166,7 @@ void IllustrativeParticleSystem::update(float time)
 			bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
 
 			//calc new position
-			prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->illustrativeParticleVelocityScale;
+			prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
 
 			newPos = currentPos + vel * prodTimeVelocity;
 
@@ -289,10 +289,10 @@ void IllustrativeParticleSystem::update(float time)
 	float minScaledZ, maxScaledZ, scaledZRange;
 	for (auto const &grid : m_vpFlowGridCollection)
 	{
-		if (grid->enableIllustrativeParticles)
+		if (grid->m_bIllustrativeParticlesEnabled)
 		{
 			//if more particles needed
-			int numNeeded = grid->numIllustrativeParticles - activeWithinGridMap[grid];
+			int numNeeded = grid->m_nIllustrativeParticles - activeWithinGridMap[grid];
 
 			if (numNeeded > 0)
 			{
@@ -308,8 +308,8 @@ void IllustrativeParticleSystem::update(float time)
 					chancesNotInWater = 10000;
 					while (!inWater && chancesNotInWater > 0)
 					{
-						randPos.x = grid->xMin + grid->xRange*(((float)(rand()%10000))/10000);
-						randPos.y = grid->yMin + grid->yRange*(((float)(rand()%10000))/10000);
+						randPos.x = grid->m_fXMin + grid->m_fXRange*(((float)(rand()%10000))/10000);
+						randPos.y = grid->m_fYMin + grid->m_fYRange*(((float)(rand()%10000))/10000);
 
 						if ( (rand()%100) < 20) //20% surface particles
 							randPos.z = 0;
@@ -329,14 +329,14 @@ void IllustrativeParticleSystem::update(float time)
 					else
 					{
 						//randomize the lifetimes by +\- 25f% so they dont all die simultaneously
-						float lifetime = grid->illustrativeParticleLifetime*((float)(rand()%25)/100) + grid->illustrativeParticleLifetime*0.75;
+						float lifetime = grid->m_fIllustrativeParticleLifetime*((float)(rand()%25)/100) + grid->m_fIllustrativeParticleLifetime*0.75;
 
 						IllustrativeParticle* particleToUse = deadParticles.back();
 						deadParticles.pop_back();
 
 						particleToUse->reset();
 
-						particleToUse->init(randPos, grid->colorIllustrativeParticles, 0, lifetime, grid->illustrativeParticleTrailTime, tick, false);
+						particleToUse->init(randPos, grid->m_vec3IllustrativeParticlesColor, 0, lifetime, grid->m_fIllustrativeParticleTrailTime, tick, false);
 
 						particleToUse->m_pFlowGrid = grid;
 

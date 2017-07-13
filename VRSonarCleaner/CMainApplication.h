@@ -68,8 +68,15 @@ private:
 
 private: // SDL bookkeeping
 	SDL_Window *m_pWindow;
+	int m_nCompanionWindowWidth;
+	int m_nCompanionWindowHeight;
 
 	SDL_GLContext m_pContext;
 
 private: // OpenGL bookkeeping
+	Renderer::SceneViewInfo m_sviLeftEyeInfo;
+	Renderer::SceneViewInfo m_sviRightEyeInfo;
+	Renderer::FramebufferDesc *m_pLeftEyeFramebuffer;
+	Renderer::FramebufferDesc *m_pRightEyeFramebuffer;
+
 };

@@ -13,9 +13,8 @@
 class FlowGrid
 {
 	public:
-
-		FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);
-		FlowGrid(char* filename);
+		//FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);
+		FlowGrid(char* filename, bool hasZRange);
 		virtual ~FlowGrid();
 
 		void init();
@@ -40,14 +39,12 @@ class FlowGrid
 		//float getBathyDepthAt(float lonX, float latY);
 		//void getInfoOnWaterCellsAt(float lonX, float latY, int *numCells, );
 
-
 		void drawBBox();
 
 		//void setScaleDepthMinMax(float min, float max);
 
 		bool contains(float x, float y);
 		bool contains(float x, float y, float z);
-
 		
 		//dynamic terrain mod:
 		int getNumXYCells();
@@ -64,57 +61,6 @@ class FlowGrid
 		float getScaledMinDepth();
 		float getScaledMaxDepth();
 
-		CoordinateScaler *scaler;
-
-		float xMin, xMax, xRange, xCellsFloat, xCellSize;
-		int xCells;
-		float yMin, yMax, yRange, yCellsFloat, yCellSize;
-		int yCells;
-		
-		float zCellsFloat;
-		int zCells;
-		std::vector<float> m_vDepthValues;
-
-		int gridSize2d, gridSize3d, gridSize4d;
-		int xyzCells, xyCells;
-
-		
-		float lastTimeRequested;
-		bool lastTimeOnTimestep;
-		int lastTime1, lastTime2;
-		float lastTimeFactor1, lastTimeFactor2;
-	
-		float maxVelocity;
-
-		float* uValues;
-		float* vValues;
-		float* wValues;
-		float* velocityValues;
-		//float* tValues;
-		//float* sValues;
-		float* times;
-		int numTimesteps;
-		
-		int activeTimestep;
-
-		bool *isWater;
-				
-		//float *bathyDepth2d;
-		//float minBathyDepth;
-		//float maxBathyDepth;
-		bool depthsSet;
-
-
-		//particle sys stuff:
-		bool enableIllustrativeParticles;
-		int numIllustrativeParticles;
-		glm::vec3 colorIllustrativeParticles;
-		float illustrativeParticleVelocityScale;
-
-		float illustrativeParticleLifetime;
-		float illustrativeParticleTrailTime;
-		float illustrativeParticleSize;
-
 		//bbox access:
 		float getXMin();
 		float getXMax();
@@ -127,14 +73,68 @@ class FlowGrid
 		float getYCellSize();
 		float getTimeAtTimestep(int timestep);
 		int getNumTimeCells();
-		
-		char* getName();
-		void setName(char* Name);
-		char name[512];
 
-		float currentTime;
-		float minTime;
-		float maxTime;		
+		char* getName();
+		void setName(char* name);
+		
+public:
+		CoordinateScaler *scaler;
+
+		float m_fXMin, m_fXMax, m_fXRange, m_fXCells, m_fXCellSize;
+		int m_nXCells;
+		float m_fYMin, m_fYMax, m_fYRange, m_fYCells, m_fYCellSize;
+		int m_nYCells;
+		
+		float m_fZCells;
+		int m_nZCells;
+		std::vector<float> m_vDepthValues;
+
+		int m_nGridSize2d, m_nGridSize3d, m_nGridSize4d;
+		int m_nXYZCells, m_nXYCells;
+
+		
+		float m_fLastTimeRequested;
+		bool m_bLastTimeOnTimestep;
+		int m_iLastTime1, m_iLastTime2;
+		float m_fLastTimeFactor1, m_fLastTimeFactor2;
+	
+		float m_fMaxVelocity;
+
+		float* m_arrfUValues;
+		float* m_arrfVValues;
+		float* m_arrfWValues;
+		float* m_arrfVelocityValues;
+		//float* tValues;
+		//float* sValues;
+		float* m_arrfTimes;
+		int m_nTimesteps;
+		
+		int m_nActiveTimestep;
+
+		bool* m_arrbIsWater;
+				
+		//float *bathyDepth2d;
+		//float minBathyDepth;
+		//float maxBathyDepth;
+		bool m_bDepthsSet;
+
+
+		//particle sys stuff:
+		bool m_bIllustrativeParticlesEnabled;
+		int m_nIllustrativeParticles;
+		glm::vec3 m_vec3IllustrativeParticlesColor;
+
+		float m_fIllustrativeParticleVelocityScale;
+		float m_fIllustrativeParticleLifetime;
+		float m_fIllustrativeParticleTrailTime;
+		float m_fIllustrativeParticleSize;
+
+
+		char m_strName[512];
+
+		float m_fCurrentTime;
+		float m_fMinTime;
+		float m_fMaxTime;
 };
 
 #endif
