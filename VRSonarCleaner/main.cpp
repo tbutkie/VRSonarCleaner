@@ -21,10 +21,7 @@ int main(int argc, char *argv[])
 	printf("Select Mode:\n\t0=VR Cleaner\n\t1=VR Flow\n\t2=Study-VR\n\t3=Study-Desktop\n");
 	char selectedMode;
 	selectedMode = getch();
-	//scanf("%d", &selectedMode);
 
-
-	//bool lassoMode = false;
 	if (selectedMode == '0' || selectedMode == '2' || selectedMode == '3') //VR Cleaner
 	{
 		colorScalerTPU = new ColorScaler();

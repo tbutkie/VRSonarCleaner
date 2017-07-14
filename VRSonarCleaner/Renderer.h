@@ -85,7 +85,6 @@ public:
 
 	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
-	void SetupFullscreenTexture(int width, int height);
 
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
@@ -102,7 +101,9 @@ private:
 	Renderer();
 	~Renderer();
 	
-	void SetupShaders();
+	void setupShaders();
+	
+	void setupFullscreenTexture();
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 

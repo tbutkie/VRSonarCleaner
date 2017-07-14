@@ -12,6 +12,8 @@
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
 #include "Renderer.h"
+#include "arcball.h"
+#include "LassoTool.h"
 
 #include <openvr.h>
 
@@ -44,24 +46,35 @@ public:
 	bool loadPoints(std::string fileName);
 	
 private:
-
-	int mode; //0=Cleaner, 1=Flow
-
 	unsigned int m_uiCurrentFPS;
 
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
 	bool m_bPerf;
 
+	bool m_bUseVR;
+	bool m_bUseDesktop;
+	bool m_bSonarCleaning;
+	bool m_bFlowVis;
+
 	vr::IVRSystem *m_pHMD;
 
 	TrackedDeviceManager *m_pTDM;
 
 	bool editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
-	//CleaningRoom* cleaningRoom;
+	
 	DataVolume* wallVolume;
 	DataVolume* tableVolume;
 	FlowVolume* flowVolume;
+
+	//ARCBALL STUFF
+	Arcball m_Arcball;
+	glm::vec3 m_vec3BallEye;
+	glm::vec3 m_vec3BallCenter;
+	glm::vec3 m_vec3BallUp;
+	float m_fBallRadius;
+
+	LassoTool* m_pLasso;
 
 	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fPtHighlightAmt;
@@ -70,16 +83,29 @@ private: // SDL bookkeeping
 	SDL_Window* createFullscreenWindow(int displayIndex);
 	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
 
-	SDL_Window *m_pWindow;
-	int m_nCompanionWindowWidth;
-	int m_nCompanionWindowHeight;
+	SDL_Window *m_pVRCompanionWindow;
+	int m_nVRCompanionWindowWidth;
+	int m_nVRCompanionWindowHeight;
+	SDL_GLContext m_pVRCompanionWindowContext;
 
-	SDL_GLContext m_pContext;
+	SDL_Window *m_pDesktopWindow;
+	int m_nDesktopWindowWidth;
+	int m_nDesktopWindowHeight;
+	SDL_GLContext m_pDesktopWindowContext;
+
+	bool leftMouseDown;
+	bool rightMouseDown;
 
 private: // OpenGL bookkeeping
+	void createVRViews();
+	void createDesktopView();
+
 	Renderer::SceneViewInfo m_sviLeftEyeInfo;
 	Renderer::SceneViewInfo m_sviRightEyeInfo;
 	Renderer::FramebufferDesc *m_pLeftEyeFramebuffer;
 	Renderer::FramebufferDesc *m_pRightEyeFramebuffer;
 
+	Renderer::SceneViewInfo m_sviDesktop2DOverlayViewInfo;
+	Renderer::SceneViewInfo m_sviDesktop3DViewInfo;
+	Renderer::FramebufferDesc *m_pDesktopFramebuffer;
 };

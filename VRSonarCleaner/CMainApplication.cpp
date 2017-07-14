@@ -95,22 +95,54 @@ void dprintf(const char *fmt, ...)
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
-	: m_pWindow(NULL)
-	, m_pContext(NULL)
+CMainApplication::CMainApplication(int argc, char *argv[], int mode)
+	: m_bUseVR(false)
+	, m_bUseDesktop(false)
+	, m_bSonarCleaning(false)
+	, m_bFlowVis(false)
+	, m_pVRCompanionWindow(NULL)
+	, m_pVRCompanionWindowContext(NULL)
+	, m_pDesktopWindow(NULL)
+	, m_pDesktopWindowContext(NULL)
 	, m_pHMD(NULL)
 	, m_bVerbose(false)
 	, m_bPerf(false)
 	, m_fPtHighlightAmt(1.f)
 	, m_LastTime(std::chrono::high_resolution_clock::now())
+	, m_Arcball(Arcball(false))
+	, m_vec3BallEye(glm::vec3(0.f, 0.f, 10.f))
+	, m_vec3BallCenter(glm::vec3(0.f))
+	, m_vec3BallUp(glm::vec3(0.f, -1.f, 0.f))
+	, m_fBallRadius(2.f)
+	, m_pLasso(NULL)
 {
 #if _DEBUG
 	m_bDebugOpenGL = true;
 #else
 	m_bDebugOpenGL = false;
 #endif
-
-	mode = Mode;
+	
+	switch (mode)
+	{
+	case 0:
+		m_bUseVR = true;
+		m_bSonarCleaning = true;
+		break;
+	case 1:
+		m_bUseVR = true;
+		m_bFlowVis = true;
+		break;
+	case 2:
+		m_bUseVR = true;
+		m_bSonarCleaning = true;
+		break;
+	case 3:
+		m_bUseDesktop = true;
+		m_bSonarCleaning = true;
+		break;
+	default:
+		break;
+	}
 };
 
 
@@ -150,12 +182,16 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-	SDL_GL_CreateContext(createWindow(50, 50));
+	m_pDesktopWindow = createWindow(50, 50);
+	SDL_GetWindowSize(m_pDesktopWindow, &m_nDesktopWindowWidth, &m_nDesktopWindowHeight);
+	m_pDesktopWindowContext = SDL_GL_CreateContext(m_pDesktopWindow); //TEST - DELETE ME
 
-	m_pWindow = createFullscreenWindow(1);
+	m_pVRCompanionWindow = createFullscreenWindow(1);
 
-	m_pContext = SDL_GL_CreateContext(m_pWindow);
-	if (m_pContext == NULL)
+	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
+
+	m_pVRCompanionWindowContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
+	if (m_pVRCompanionWindowContext == NULL)
 	{
 		printf("%s - OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
@@ -170,15 +206,15 @@ bool CMainApplication::BInit()
 	}
 	glGetError(); // to clear the error caused deep in GLEW
 
-	if (mode == 0)
+	if (m_bSonarCleaning)
 	{
 		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
 	}
-	else
+	else if (m_bFlowVis)
 	{
 		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
 	}
 
 	// 		m_MillisecondsTimer.start(1, this);
@@ -195,6 +231,8 @@ bool CMainApplication::BInit()
 		printf("%s - Failed to initialize VR Compositor!\n", __FUNCTION__);
 		return false;
 	}
+
+	m_pLasso = new LassoTool();
 
 	return true;
 }
@@ -223,34 +261,14 @@ bool CMainApplication::BInitGL()
 
 	if (!Renderer::getInstance().init())
 		return false;
-		
-	uint32_t renderWidth, renderHeight;
-	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+
+	createVRViews();
+
+
 	
-	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
-	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
-	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
-	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
-
-	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
-	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
-	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
-	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
-
-	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
-	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
-
-	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
-		dprintf("Could not create left eye framebuffer!\n");
-	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
-		dprintf("Could not create right eye framebuffer!\n");
-
-	SDL_GetWindowSize(m_pWindow, &m_nCompanionWindowWidth, &m_nCompanionWindowHeight);
-	Renderer::getInstance().SetupFullscreenTexture(m_nCompanionWindowWidth, m_nCompanionWindowHeight);
-
 	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
-	if (mode == 0)
+	if (m_bSonarCleaning)
 	{
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), 0.8f, (g_vec3RoomSize.y * 0.8f));
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
@@ -268,7 +286,7 @@ bool CMainApplication::BInitGL()
 		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
 
 	}
-	else if (mode == 1)
+	else if (m_bFlowVis)
 	{
 		FlowGrid *tempFG = new FlowGrid("test.fg", true);
 		//FlowGrid *tempFG = new FlowGrid("gb.fg", false);
@@ -315,7 +333,7 @@ void CMainApplication::Shutdown()
 	if (m_pTDM)
 		delete m_pTDM;
 
-	if (m_pContext)
+	if (m_pVRCompanionWindowContext)
 	{
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
 		glDebugMessageCallback(nullptr, nullptr);
@@ -325,10 +343,10 @@ void CMainApplication::Shutdown()
 	fclose(stdout);
 	FreeConsole();
 
-	if (m_pWindow)
+	if (m_pVRCompanionWindow)
 	{
-		SDL_DestroyWindow(m_pWindow);
-		m_pWindow = NULL;
+		SDL_DestroyWindow(m_pVRCompanionWindow);
+		m_pVRCompanionWindow = NULL;
 	}
 
 	SDL_Quit();
@@ -361,7 +379,7 @@ bool CMainApplication::HandleInput()
 				Renderer::getInstance().toggleWireframe();
 			}
 			
-			if (mode == 0) //cleaning
+			if (m_bSonarCleaning)
 			{
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
 				{
@@ -396,8 +414,8 @@ bool CMainApplication::HandleInput()
 					tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
 					wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
 				}
-			}//end if mode==0
-			else if (mode == 1) //flow
+			}
+			else if (m_bFlowVis) //flow
 			{
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
@@ -453,7 +471,7 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		if (mode == 1)
+		if (m_bFlowVis)
 		{
 			if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
 			{
@@ -471,7 +489,10 @@ void CMainApplication::RunMainLoop()
 		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
-			g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), (mode == 0 ? tableVolume : flowVolume));
+			if (m_bSonarCleaning)
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), tableVolume);
+			else if (m_bFlowVis)
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), flowVolume);
 			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
@@ -487,7 +508,7 @@ void CMainApplication::RunMainLoop()
 
 		InfoBoxManager::getInstance().draw();
 
-		if (mode == 0)
+		if (m_bSonarCleaning)
 		{
 			glm::mat4 currentCursorPose;
 			glm::mat4 lastCursorPose;
@@ -521,7 +542,7 @@ void CMainApplication::RunMainLoop()
 			clouds->drawAllClouds();
 		}
 
-		if (mode == 1)
+		if (m_bFlowVis)
 		{
 			flowVolume->preRenderUpdates();
 
@@ -543,9 +564,9 @@ void CMainApplication::RunMainLoop()
 		vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 
-		Renderer::getInstance().RenderFullscreenTexture(m_nCompanionWindowWidth, m_nCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
+		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
 
-		SDL_GL_SwapWindow(m_pWindow);
+		SDL_GL_SwapWindow(m_pVRCompanionWindow);
 
 		Renderer::getInstance().clearDynamicRenderQueue();
 		DebugDrawer::getInstance().flushLines();
@@ -888,4 +909,76 @@ SDL_Window * CMainApplication::createWindow(int width, int height, int displayIn
 	}
 
 	return win;
+}
+
+void CMainApplication::createVRViews()
+{
+	uint32_t renderWidth, renderHeight;
+	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+
+	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
+
+	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
+
+	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
+	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
+		dprintf("Could not create left eye framebuffer!\n");
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
+		dprintf("Could not create right eye framebuffer!\n");
+}
+
+void CMainApplication::createDesktopView()
+{
+	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = 1900u;
+	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = 980u;
+
+	m_sviDesktop2DOverlayViewInfo.view = glm::mat4();
+	m_sviDesktop2DOverlayViewInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderHeight), -1.f, 1.f);
+
+	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth, m_sviDesktop2DOverlayViewInfo.m_nRenderHeight, *m_pDesktopFramebuffer))
+		dprintf("Could not create desktop view framebuffer!\n");
+
+	//draw 2D interface elements
+	{
+		Renderer::RendererSubmission rs;
+		m_pLasso->prepareForRender(rs);
+	}
+
+	//draw 3D elements
+	{
+		//glm::mat4 projMat = glm::perspective(50.f, aspect_ratio, 1.f, 50.f);
+		//glm::mat4 viewMat = glm::lookAt(ballEye, ballCenter, ballUp);
+		//glm::vec4 vp(0.f, 0.f, static_cast<float>(m_nWindowWidth), static_cast<float>(m_nWindowHeight));
+		//
+		//arcball->setProjectionMatrix(projMat * viewMat);
+		//arcball->setViewport(vp);
+		//
+		//arcball->setZoom(ballRadius, ballEye, ballUp);
+		//// now render the regular scene under the arcball rotation about 0,0,0
+		//// (generally you would want to render everything here)
+		//glm::mat4 rot = arcball->getRotation();
+		//
+		////DebugDrawer::getInstance().setTransformDefault();
+		//dataVolume->setOrientation(glm::quat_cast(rot));
+		//dataVolume->drawBBox();
+		//
+		////draw table
+		////DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
+		//clouds->drawCloud(0);
+		//
+		////DebugDrawer::getInstance().render(projMat * viewMat);
+		//
+		//// flush out perspective-rendered lines
+		////DebugDrawer::getInstance().flushLines();
+	}
 }

@@ -23,6 +23,12 @@ Renderer::~Renderer()
 	Shutdown();
 }
 
+void Renderer::Shutdown()
+{
+	glDeleteBuffers(1, &m_glFullscreenTextureVBO);
+	glDeleteBuffers(1, &m_glFullscreenTextureEBO);
+}
+
 bool Renderer::init()
 {
 	m_pLighting = new LightingSystem();
@@ -39,7 +45,9 @@ bool Renderer::init()
 	glNamedBufferData(m_glFrameUBO, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
 	glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glFrameUBO, 0, sizeof(FrameUniforms));
 
-	SetupShaders();
+	setupShaders();
+
+	setupFullscreenTexture();
 
 	return true;
 }
@@ -68,7 +76,7 @@ void Renderer::toggleWireframe()
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
 //-----------------------------------------------------------------------------
-void Renderer::SetupShaders()
+void Renderer::setupShaders()
 {
 	m_Shaders.SetVersion("450");
 
@@ -120,53 +128,6 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 		return false;
 
 	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::SetupFullscreenTexture(int width, int height)
-{
-	glm::vec2 vVerts[4];
-
-	// left eye verts	
-	vVerts[0] = glm::vec2(-1, -1);
-	vVerts[1] = glm::vec2(1, -1);
-	vVerts[2] = glm::vec2(-1, 1);
-	vVerts[3] = glm::vec2(1, 1);	
-
-	// right eye verts
-	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(0, 1)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
-
-	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2 };//,   4, 5, 7,   4, 7, 6 };
-	m_uiCompanionWindowVertCount = _countof(vIndices);
-
-	// Generate/allocate and fill vertex buffer object
-	glCreateBuffers(1, &m_glFullscreenTextureVBO);
-	glNamedBufferData(m_glFullscreenTextureVBO, sizeof(vVerts) * sizeof(glm::vec2), &vVerts[0], GL_STATIC_DRAW);
-
-	// Generate/allocate and fill index buffer object
-	glCreateBuffers(1, &m_glFullscreenTextureEBO);
-	glNamedBufferData(m_glFullscreenTextureEBO, m_uiCompanionWindowVertCount * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
-	
-	// Define our Vertex Attribute Object
-	glGenVertexArrays(1, &m_glFullscreenTextureVAO);
-	glBindVertexArray(m_glFullscreenTextureVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
-
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
-
-	glBindVertexArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 
@@ -256,10 +217,58 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 	}
 }
 
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderCompanionWindow(int width, int height, GLuint textureID)
+void Renderer::setupFullscreenTexture()
+{
+	glm::vec2 vVerts[4];
+
+	// left eye verts	
+	vVerts[0] = glm::vec2(-1, -1);
+	vVerts[1] = glm::vec2(1, -1);
+	vVerts[2] = glm::vec2(-1, 1);
+	vVerts[3] = glm::vec2(1, 1);
+
+	// right eye verts
+	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(0, 1)));
+	//vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
+
+	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2 };//,   4, 5, 7,   4, 7, 6 };
+	m_uiCompanionWindowVertCount = _countof(vIndices);
+
+	// Generate/allocate and fill vertex buffer object
+	glCreateBuffers(1, &m_glFullscreenTextureVBO);
+	glNamedBufferData(m_glFullscreenTextureVBO, sizeof(vVerts) * sizeof(glm::vec2), &vVerts[0], GL_STATIC_DRAW);
+
+	// Generate/allocate and fill index buffer object
+	glCreateBuffers(1, &m_glFullscreenTextureEBO);
+	glNamedBufferData(m_glFullscreenTextureEBO, m_uiCompanionWindowVertCount * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
+
+	// Define our Vertex Attribute Object
+	glGenVertexArrays(1, &m_glFullscreenTextureVAO);
+	glBindVertexArray(m_glFullscreenTextureVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
+
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
+
+	glBindVertexArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID)
 {
 	if (m_mapShaders["fullscreenTexture"] == NULL)
 		return;
@@ -270,16 +279,10 @@ void Renderer::RenderCompanionWindow(int width, int height, GLuint textureID)
 	glUseProgram(*m_mapShaders["fullscreenTexture"]);
 	glBindVertexArray(m_glFullscreenTextureVAO);
 
-		// render left eye (first half of index array )
-		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
-		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+	// render left eye (first half of index array )
+	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
+	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-}
-
-void Renderer::Shutdown()
-{
-	glDeleteBuffers(1, &m_glFullscreenTextureVBO);
-	glDeleteBuffers(1, &m_glFullscreenTextureEBO);
 }
