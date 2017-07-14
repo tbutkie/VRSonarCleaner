@@ -66,30 +66,6 @@ CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
 #endif
 
 	mode = Mode;
-
-	for (int i = 1; i < argc; i++)
-	{
-		if (!stricmp(argv[i], "-gldebug"))
-		{
-			m_bDebugOpenGL = true;
-		}
-		else if (!stricmp(argv[i], "-verbose"))
-		{
-			m_bVerbose = true;
-		}
-		//else if (!stricmp(argv[i], "-novblank"))
-		//{
-		//	m_bVblank = false;
-		//}
-		//else if (!stricmp(argv[i], "-noglfinishhack"))
-		//{
-		//	m_bGlFinishHack = false;
-		//}
-		else if (!stricmp(argv[i], "-noprintf"))
-		{
-			g_bPrintf = false;
-		}
-	}
 };
 
 
@@ -129,40 +105,7 @@ bool CMainApplication::BInit()
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
-	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
-
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-	if (m_bDebugOpenGL)
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-
-	int numDisplays = SDL_GetNumVideoDisplays();
-
-	std::vector<SDL_Rect> vDisplayBounds(numDisplays);
-	int dispID = 0;
-
-	for (int i = 0; i < numDisplays; ++i)
-	{
-		SDL_GetDisplayBounds(i, &vDisplayBounds[i]);
-		std::cout << "Display " << i << ": " << vDisplayBounds[i].x << ", " << vDisplayBounds[i].y << " (" << vDisplayBounds[i].w << "x" << vDisplayBounds[i].h << ")" << std::endl;
-		if (vDisplayBounds[i].x > 0 || vDisplayBounds[i].y < vDisplayBounds[0].y)
-		{
-			dispID = i;
-			break;
-		}
-	}
-
-	m_pWindow = SDL_CreateWindow("hellovr_sdl", vDisplayBounds[dispID].x, vDisplayBounds[dispID].y, vDisplayBounds[dispID].w, vDisplayBounds[dispID].h, unWindowFlags);
-	if (m_pWindow == NULL)
-	{
-		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
+	m_pWindow = createFullscreenWindow(1);
 
 	m_pContext = SDL_GL_CreateContext(m_pWindow);
 	if (m_pContext == NULL)
@@ -888,4 +831,59 @@ bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, co
 		clouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;
+}
+
+SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
+{
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+	SDL_Rect displayBounds;
+
+	SDL_GetDisplayBounds(displayIndex, &displayBounds);
+
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
+
+	if (m_pWindow == NULL)
+	{
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	return win;
+}
+
+SDL_Window * CMainApplication::createWindow(int width, int height, int displayIndex)
+{
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, unWindowFlags);
+
+	if (m_pWindow == NULL)
+	{
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	return win;
 }

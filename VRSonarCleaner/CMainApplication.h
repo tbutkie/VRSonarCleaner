@@ -67,6 +67,9 @@ private:
 	float m_fPtHighlightAmt;
 
 private: // SDL bookkeeping
+	SDL_Window* createFullscreenWindow(int displayIndex);
+	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
+
 	SDL_Window *m_pWindow;
 	int m_nCompanionWindowWidth;
 	int m_nCompanionWindowHeight;
