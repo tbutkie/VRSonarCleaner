@@ -11,7 +11,7 @@
 Renderer::Renderer()
 	: m_pLighting(NULL)
 	, m_glFrameUBO(0)
-	, m_unCompanionWindowVAO(0)
+	, m_glFullscreenTextureVAO(0)
 	, m_bShowWireframe(false)
 	, m_fNearClip(0.1f)
 	, m_fFarClip(50.0f)
@@ -74,7 +74,7 @@ void Renderer::SetupShaders()
 
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
-	m_mapShaders["companionWindow"] = m_Shaders.AddProgramFromExts({ "shaders/companionWindow.vert", "shaders/companionWindow.frag" });
+	m_mapShaders["fullscreenTexture"] = m_Shaders.AddProgramFromExts({ "shaders/fullscreentexture.vert", "shaders/fullscreentexture.frag" });
 	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
@@ -126,27 +126,15 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::SetupCompanionWindow(int width, int height)
+void Renderer::SetupFullscreenTexture(int width, int height)
 {
-	struct VertexDataWindow
-	{
-		glm::vec2 position;
-		glm::vec2 texCoord;
-
-		VertexDataWindow(const glm::vec2 & pos, const glm::vec2 tex) : position(pos), texCoord(tex) {	}
-	};
-
-	std::vector<VertexDataWindow> vVerts;
-
-	// Calculate aspect ratio and use it to letterbox-clip the left eye texture coordinates
-	float ar = static_cast<float>(height) / static_cast<float>(width);
+	glm::vec2 vVerts[4];
 
 	// left eye verts	
-	vVerts.push_back(VertexDataWindow(glm::vec2(-1, -1), glm::vec2(0.f, 0.5f - 0.5f * ar)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1.f, 0.5f - 0.5f * ar)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(-1, 1), glm::vec2(0.f, 0.5f + 0.5f * ar)));
-	vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1.f, 0.5f + 0.5f * ar)));
-	
+	vVerts[0] = glm::vec2(-1, -1);
+	vVerts[1] = glm::vec2(1, -1);
+	vVerts[2] = glm::vec2(-1, 1);
+	vVerts[3] = glm::vec2(1, 1);	
 
 	// right eye verts
 	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
@@ -155,28 +143,25 @@ void Renderer::SetupCompanionWindow(int width, int height)
 	//vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
 
 	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2 };//,   4, 5, 7,   4, 7, 6 };
-	m_uiCompanionWindowIndexSize = _countof(vIndices);
+	m_uiCompanionWindowVertCount = _countof(vIndices);
 
 	// Generate/allocate and fill vertex buffer object
-	glCreateBuffers(1, &m_glCompanionWindowIDVertBuffer);
-	glNamedBufferData(m_glCompanionWindowIDVertBuffer, vVerts.size() * sizeof(VertexDataWindow), &vVerts[0], GL_STATIC_DRAW);
+	glCreateBuffers(1, &m_glFullscreenTextureVBO);
+	glNamedBufferData(m_glFullscreenTextureVBO, sizeof(vVerts) * sizeof(glm::vec2), &vVerts[0], GL_STATIC_DRAW);
 
 	// Generate/allocate and fill index buffer object
-	glCreateBuffers(1, &m_glCompanionWindowIDIndexBuffer);
-	glNamedBufferData(m_glCompanionWindowIDIndexBuffer, m_uiCompanionWindowIndexSize * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
+	glCreateBuffers(1, &m_glFullscreenTextureEBO);
+	glNamedBufferData(m_glFullscreenTextureEBO, m_uiCompanionWindowVertCount * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
 	
 	// Define our Vertex Attribute Object
-	glGenVertexArrays(1, &m_unCompanionWindowVAO);
-	glBindVertexArray(m_unCompanionWindowVAO);
+	glGenVertexArrays(1, &m_glFullscreenTextureVAO);
+	glBindVertexArray(m_glFullscreenTextureVAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, m_glCompanionWindowIDVertBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCompanionWindowIDIndexBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, position));
-
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataWindow), (void *)offsetof(VertexDataWindow, texCoord));
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
 
 	glBindVertexArray(0);
 
@@ -276,18 +261,18 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 //-----------------------------------------------------------------------------
 void Renderer::RenderCompanionWindow(int width, int height, GLuint textureID)
 {
-	if (m_mapShaders["companionWindow"] == NULL)
+	if (m_mapShaders["fullscreenTexture"] == NULL)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, width, height); glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
 
-	glUseProgram(*m_mapShaders["companionWindow"]);
-	glBindVertexArray(m_unCompanionWindowVAO);
+	glUseProgram(*m_mapShaders["fullscreenTexture"]);
+	glBindVertexArray(m_glFullscreenTextureVAO);
 
 		// render left eye (first half of index array )
 		glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
-		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowIndexSize, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -295,6 +280,6 @@ void Renderer::RenderCompanionWindow(int width, int height, GLuint textureID)
 
 void Renderer::Shutdown()
 {
-	glDeleteBuffers(1, &m_glCompanionWindowIDVertBuffer);
-	glDeleteBuffers(1, &m_glCompanionWindowIDIndexBuffer);
+	glDeleteBuffers(1, &m_glFullscreenTextureVBO);
+	glDeleteBuffers(1, &m_glFullscreenTextureEBO);
 }

@@ -28,8 +28,8 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 
 	m_pScaler = m_pFlowGrid->scaler;
 	
-	m_fFlowRoomMinTime = m_pFlowGrid->minTime;
-	m_fFlowRoomMaxTime = m_pFlowGrid->maxTime;
+	m_fFlowRoomMinTime = m_pFlowGrid->m_fMinTime;
+	m_fFlowRoomMaxTime = m_pFlowGrid->m_fMaxTime;
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_ullLastTimeUpdate = GetTickCount64();
 	

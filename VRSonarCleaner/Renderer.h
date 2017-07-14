@@ -85,7 +85,7 @@ public:
 
 	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
-	void SetupCompanionWindow(int width, int height);
+	void SetupFullscreenTexture(int width, int height);
 
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
@@ -94,7 +94,7 @@ public:
 	void toggleWireframe();
 
 	void RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
-	void RenderCompanionWindow(int width, int height, GLuint textureID);
+	void RenderFullscreenTexture(int width, int height, GLuint textureID);
 
 	void Shutdown();
 
@@ -120,10 +120,10 @@ private:
 
 	GLuint m_glFrameUBO;
 	
-	GLuint m_unCompanionWindowVAO;
-	GLuint m_glCompanionWindowIDVertBuffer;
-	GLuint m_glCompanionWindowIDIndexBuffer;
-	unsigned int m_uiCompanionWindowIndexSize;
+	GLuint m_glFullscreenTextureVAO;
+	GLuint m_glFullscreenTextureVBO;
+	GLuint m_glFullscreenTextureEBO;
+	unsigned int m_uiCompanionWindowVertCount;
 
 	float m_fNearClip;
 	float m_fFarClip;
