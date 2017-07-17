@@ -12,8 +12,6 @@
 
 #include <shared/glm/glm.hpp>
 
-extern ColorScaler *colorScalerTPU;
-
 class SonarPointCloud
 {
 	public:

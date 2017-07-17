@@ -14,8 +14,6 @@
 
 #include <ctime>
 
-extern CloudCollection *clouds;
-
 HolodeckBackground*				g_pHolodeck = NULL;
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
@@ -159,7 +157,7 @@ CMainApplication::~CMainApplication()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::BInit()
+bool CMainApplication::init()
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
@@ -167,120 +165,41 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	// Loading the SteamVR Runtime
-	vr::EVRInitError eError = vr::VRInitError_None;
-	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
-
-	if (eError != vr::VRInitError_None)
-	{
-		m_pHMD = NULL;
-		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", buf, NULL);
-		return false;
-	}
-
-	m_pTDM = new TrackedDeviceManager(m_pHMD);
-
-	m_pDesktopWindow = createWindow(50, 50);
-	SDL_GetWindowSize(m_pDesktopWindow, &m_nDesktopWindowWidth, &m_nDesktopWindowHeight);
-	m_pDesktopWindowContext = SDL_GL_CreateContext(m_pDesktopWindow); //TEST - DELETE ME
-
-	m_pVRCompanionWindow = createFullscreenWindow(1);
-
-	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
-
-	m_pVRCompanionWindowContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
-	if (m_pVRCompanionWindowContext == NULL)
-	{
-		printf("%s - OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
-
-	glewExperimental = GL_TRUE;
-	GLenum nGlewError = glewInit();
-	if (nGlewError != GLEW_OK)
-	{
-		printf("%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
-		return false;
-	}
-	glGetError(); // to clear the error caused deep in GLEW
-
-	if (m_bSonarCleaning)
-	{
-		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
-	}
-	else if (m_bFlowVis)
-	{
-		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
-	}
-
-	// 		m_MillisecondsTimer.start(1, this);
-	// 		m_SecondsTimer.start(1000, this);
-
-	if (!BInitGL())
+	if (!initGL())
 	{
 		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
-	if (!BInitCompositor())
-	{
-		printf("%s - Failed to initialize VR Compositor!\n", __FUNCTION__);
-		return false;
-	}
-
-	m_pLasso = new LassoTool();
-
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::BInitGL()
-{
-	if (m_bDebugOpenGL)
-	{
-		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	}
-
-	if (!m_pTDM->BInit())
-	{
-		dprintf("Error initializing TrackedDeviceManager\n");
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
-	}
-
-	InfoBoxManager::getInstance().BInit(m_pTDM);
-	m_pTDM->attach(&InfoBoxManager::getInstance());
-
-	if (!Renderer::getInstance().init())
-		return false;
-
-	createVRViews();
-
-
-	
 	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (m_bSonarCleaning)
 	{
+		m_pColorScalerTPU = new ColorScaler();
+		m_pColorScalerTPU->setColorScale(2);
+		m_pColorScalerTPU->setBiValueScale(1);
+
+		m_pClouds = new CloudCollection();
+		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt");
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt");
+		///	clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_XL_901_1458.txt");  //TO BIG AND LONG at 90 degree angle to others
+		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt");	
+		m_pClouds->calculateCloudBoundsAndAlign();
+
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), 0.8f, (g_vec3RoomSize.y * 0.8f));
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 
-		glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
-		glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getMinDepth(), m_pClouds->getYMin());
+		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getMaxDepth(), m_pClouds->getYMax());
 
 		glm::vec3 tablePosition(0.f, 1.1f, 0.f);
 		glm::vec3 tableSize(2.25f, 0.75f, 2.25f);
 
-		glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
-		glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
+		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
 
 		tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
 		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
@@ -294,6 +213,19 @@ bool CMainApplication::BInitGL()
 		flowVolume = new FlowVolume(tempFG);
 	}
 
+	if (m_bUseVR && !initVR())
+	{
+		printf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		return false;
+	}
+
+	if (m_bUseDesktop && !initDesktop())
+	{
+		printf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
+		return false;
+
+		m_pLasso = new LassoTool();
+	}
 
 	return true;
 }
@@ -302,15 +234,96 @@ bool CMainApplication::BInitGL()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::BInitCompositor()
+bool CMainApplication::initGL()
 {
-	vr::EVRInitError peError = vr::VRInitError_None;
+	glewExperimental = GL_TRUE;
+	GLenum nGlewError = glewInit();
+	if (nGlewError != GLEW_OK)
+	{
+		printf("%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
+		return false;
+	}
+
+	glGetError(); // to clear the error caused deep in GLEW
+
+#if _DEBUG
+		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+
+	if (!Renderer::getInstance().init())
+		return false;
+
+	return true;
+}
+
+bool CMainApplication::initVR()
+{
+	// Loading the SteamVR Runtime
+	vr::EVRInitError eError = vr::VRInitError_None;
+	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
+
+	if (eError != vr::VRInitError_None)
+	{
+		m_pHMD = NULL;
+		char buf[1024];
+		sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", buf, NULL);
+		return false;
+	}
 
 	if (!vr::VRCompositor())
 	{
 		printf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
+
+	m_pTDM = new TrackedDeviceManager(m_pHMD);
+
+	if (!m_pTDM->init())
+	{
+		dprintf("Error initializing TrackedDeviceManager\n");
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
+	}
+
+	InfoBoxManager::getInstance().BInit(m_pTDM);
+	m_pTDM->attach(&InfoBoxManager::getInstance());
+
+	createVRViews();
+
+	m_pVRCompanionWindow = createFullscreenWindow(1);
+
+	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
+
+	m_pVRCompanionWindowContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
+	if (m_pVRCompanionWindowContext == NULL)
+	{
+		printf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	if (m_bSonarCleaning)
+	{
+		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
+	}
+	else if (m_bFlowVis)
+	{
+		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
+	}
+
+	return true;
+}
+
+
+bool CMainApplication::initDesktop()
+{
+
+	m_pDesktopWindow = createWindow(50, 50);
+	SDL_GetWindowSize(m_pDesktopWindow, &m_nDesktopWindowWidth, &m_nDesktopWindowHeight);
+	m_pDesktopWindowContext = SDL_GL_CreateContext(m_pDesktopWindow); //TEST - DELETE ME
 
 	return true;
 }
@@ -392,7 +405,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting marks\n");
-					clouds->resetMarksInAllClouds();
+					m_pClouds->resetMarksInAllClouds();
 					//cleaningRoom->resetVolumes();
 					wallVolume->resetPositionAndOrientation();
 					tableVolume->resetPositionAndOrientation();
@@ -401,15 +414,15 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_g)
 				{
 					printf("Pressed g, generating fake test cloud\n");
-					clouds->clearAllClouds();
-					clouds->generateFakeTestCloud(150, 150, 25, 40000);
-					clouds->calculateCloudBoundsAndAlign();
+					m_pClouds->clearAllClouds();
+					m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
+					m_pClouds->calculateCloudBoundsAndAlign();
 					//cleaningRoom->recalcVolumeBounds();
-					glm::vec3 tableMinCoords(clouds->getCloud(0)->getXMin(), clouds->getCloud(0)->getMinDepth(), clouds->getCloud(0)->getYMin());
-					glm::vec3 tableMaxCoords(clouds->getCloud(0)->getXMax(), clouds->getCloud(0)->getMaxDepth(), clouds->getCloud(0)->getYMax());
+					glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
+					glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
 
-					glm::vec3 wallMinCoords(clouds->getXMin(), clouds->getMinDepth(), clouds->getYMin());
-					glm::vec3 wallMaxCoords(clouds->getXMax(), clouds->getMaxDepth(), clouds->getYMax());
+					glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getMinDepth(), m_pClouds->getYMin());
+					glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getMaxDepth(), m_pClouds->getYMax());
 
 					tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
 					wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
@@ -535,11 +548,11 @@ void CMainApplication::RunMainLoop()
 
 			//draw table
 			DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
-			clouds->getCloud(0)->draw();
+			m_pClouds->getCloud(0)->draw();
 
 			//draw wall
 			DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
-			clouds->drawAllClouds();
+			m_pClouds->drawAllClouds();
 		}
 
 		if (m_bFlowVis)
@@ -632,7 +645,7 @@ std::string getTimeString()
 
 void CMainApplication::savePoints()
 {	
-	std::vector<glm::vec3> points = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> points = m_pClouds->getCloud(0)->getPointPositions();
 
 	// construct filename
 	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
@@ -654,7 +667,7 @@ void CMainApplication::savePoints()
 
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
-		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (clouds->getCloud(0)->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (m_pClouds->getCloud(0)->getPointMark(i) == 1 ? "1" : "0") << std::endl;
 	}
 
 	outFile.close();
@@ -794,12 +807,12 @@ bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, co
 	bool anyHits = false;
 	bool pointsRefresh = false;
 
-	std::vector<glm::vec3> points = clouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> points = m_pClouds->getCloud(0)->getPointPositions();
 
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
 		//skip already marked points
-		if (clouds->getCloud(0)->getPointMark(i) == 1)
+		if (m_pClouds->getCloud(0)->getPointMark(i) == 1)
 			continue;
 
 		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
@@ -812,9 +825,9 @@ bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, co
 			thisPt.z < (std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
 			thisPt.z >(std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
 		{
-			if (clouds->getCloud(0)->getPointMark(i) != 0)
+			if (m_pClouds->getCloud(0)->getPointMark(i) != 0)
 			{
-				clouds->getCloud(0)->markPoint(i, 0);
+				m_pClouds->getCloud(0)->markPoint(i, 0);
 				pointsRefresh = true;
 			}
 			continue;
@@ -836,22 +849,22 @@ bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, co
 			if (clearPoints)
 			{
 				anyHits = true;
-				clouds->getCloud(0)->markPoint(i, 1);
+				m_pClouds->getCloud(0)->markPoint(i, 1);
 			}
 			else
-				clouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+				m_pClouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
 
 			pointsRefresh = true;
 		}
-		else if (clouds->getCloud(0)->getPointMark(i) != 0)
+		else if (m_pClouds->getCloud(0)->getPointMark(i) != 0)
 		{
-			clouds->getCloud(0)->markPoint(i, 0);
+			m_pClouds->getCloud(0)->markPoint(i, 0);
 			pointsRefresh = true;
 		}
 	}
 
 	if (pointsRefresh)
-		clouds->getCloud(0)->setRefreshNeeded();
+		m_pClouds->getCloud(0)->setRefreshNeeded();
 
 	return anyHits;
 }

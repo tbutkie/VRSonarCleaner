@@ -34,7 +34,7 @@ TrackedDeviceManager::~TrackedDeviceManager()
 			delete m_rpTrackedDevices[nDevice];
 }
 
-bool TrackedDeviceManager::BInit()
+bool TrackedDeviceManager::init()
 {
 	vr::EVRInitError eError = vr::VRInitError_None;
 

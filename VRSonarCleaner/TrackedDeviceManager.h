@@ -17,7 +17,7 @@ public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
 	~TrackedDeviceManager();
 
-	bool BInit();
+	bool init();
 
 	void handleEvents();
 

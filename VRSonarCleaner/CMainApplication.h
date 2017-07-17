@@ -14,6 +14,7 @@
 #include "Renderer.h"
 #include "arcball.h"
 #include "LassoTool.h"
+#include "CloudCollection.h"
 
 #include <openvr.h>
 
@@ -33,9 +34,10 @@ public:
 	CMainApplication(int argc, char *argv[], int Mode);
 	virtual ~CMainApplication();
 
-	bool BInit();
-	bool BInitGL();
-	bool BInitCompositor();
+	bool init();
+	bool initGL();
+	bool initVR();
+	bool initDesktop();
 
 	void Shutdown();
 
@@ -66,6 +68,9 @@ private:
 	DataVolume* wallVolume;
 	DataVolume* tableVolume;
 	FlowVolume* flowVolume;
+
+	CloudCollection* m_pClouds;
+	ColorScaler* m_pColorScalerTPU;
 
 	//ARCBALL STUFF
 	Arcball m_Arcball;
