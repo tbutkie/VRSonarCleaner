@@ -24,8 +24,8 @@ public:
 	SonarPointCloud* getCloud(int index);
 	int getNumClouds();
 
-	void drawCloud(int index);
-	void drawAllClouds();
+	void drawCloud(int index, ColorScaler * const colorScaler);
+	void drawAllClouds(ColorScaler * const colorScaler);
 
 	void resetMarksInAllClouds();
 

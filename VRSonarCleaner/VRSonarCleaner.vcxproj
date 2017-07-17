@@ -183,7 +183,6 @@
     <ClCompile Include="IllustrativeParticleEmitter.cpp" />
     <ClCompile Include="IllustrativeParticleSystem.cpp" />
     <ClCompile Include="LassoTool.cpp" />
-    <ClCompile Include="LassoWindow.cpp" />
     <ClCompile Include="LightingSystem.cpp" />
     <ClCompile Include="Node.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
@@ -228,7 +227,6 @@
     <ClInclude Include="IllustrativeParticleEmitter.h" />
     <ClInclude Include="IllustrativeParticleSystem.h" />
     <ClInclude Include="LassoTool.h" />
-    <ClInclude Include="LassoWindow.h" />
     <ClInclude Include="LightingSystem.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="ParticleSystem.h" />

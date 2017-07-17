@@ -39,8 +39,8 @@ class SonarPointCloud
 		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
 				
 		//VBOs
-		void drawPreview();
-		void draw();
+		void drawPreview(ColorScaler * const colorScaler);
+		void draw(ColorScaler * const colorScaler);
 
 		void drawAxes();
 

@@ -1,5 +1,4 @@
 #include "CMainApplication.h"
-#include "LassoWindow.h"
 #include <conio.h>
 #include <cstdio> // fclose
 
@@ -16,7 +15,7 @@ int main(int argc, char *argv[])
 	char selectedMode;
 	selectedMode = getch();
 
-	CMainApplication *pMainApplication = new CMainApplication(argc, argv, selectedMode);
+	CMainApplication *pMainApplication = new CMainApplication(argc, argv, (int)(selectedMode - '0'));
 
 	if (!pMainApplication->init())
 	{

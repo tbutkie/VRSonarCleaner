@@ -1,7 +1,5 @@
 #include "LassoWindow.h"
 
-extern CloudCollection *clouds;
-
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -480,7 +478,7 @@ void LassoWindow::display()
 
 		//draw table
 		//DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
-		clouds->drawCloud(0);
+		clouds->drawCloud(0, NULL);
 
 		//DebugDrawer::getInstance().render(projMat * viewMat);
 

@@ -114,8 +114,6 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	xRange = xMax - xMin;
 	yRange = yMax - yMin;
 	rangeDepth = maxDepth - minDepth;
-	colorScalerTPU->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
-
 }//end calculateCloudBoundsAndAlign()
 
 void CloudCollection::clearAllClouds()
@@ -194,15 +192,15 @@ double CloudCollection::getActualRemovedYMin()
 	return actualRemovedYmin;
 }
 
-void CloudCollection::drawCloud(int index) 
+void CloudCollection::drawCloud(int index, ColorScaler * const colorScaler) 
 {
-	clouds->at(index)->draw();
+	clouds->at(index)->draw(colorScaler);
 }
 
-void CloudCollection::drawAllClouds()
+void CloudCollection::drawAllClouds(ColorScaler * const colorScaler)
 {
 	for (int i=0;i<clouds->size();i++)
-		clouds->at(i)->drawPreview();
+		clouds->at(i)->drawPreview(colorScaler);
 }
 
 void CloudCollection::resetMarksInAllClouds()

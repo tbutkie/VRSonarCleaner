@@ -331,8 +331,6 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		yRange = yMax - yMin;
 		rangeDepth = maxDepth - minDepth;
 
-		colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
-
 		setRefreshNeeded();
 
 		printf("Trimmed Min/Maxes:\n");
@@ -422,14 +420,12 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 	yRange = yMax - yMin;
 	rangeDepth = maxDepth - minDepth;
 
-	colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
-
 	setRefreshNeeded();
 
 	return true;
 }
 
-void SonarPointCloud::draw()
+void SonarPointCloud::draw(ColorScaler * const colorScaler)
 {
 	if (numPoints > 0) //if we even have points
 	{
@@ -444,7 +440,7 @@ void SonarPointCloud::draw()
 				y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
 				z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
 
-				colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+				colorScaler->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
 
 				if (pointsMarks[i] == 2)
 				{
@@ -480,7 +476,7 @@ void SonarPointCloud::draw()
 	}
 }
 
-void SonarPointCloud::drawPreview()
+void SonarPointCloud::drawPreview(ColorScaler * const colorScaler)
 {
 	if (numPoints > 0) //if we even have points
 	{
@@ -497,7 +493,7 @@ void SonarPointCloud::drawPreview()
 				y = pointsPositions[(i * 3) + 1];
 				z = pointsPositions[(i * 3) + 2];
 
-				colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
+				colorScaler->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
 
 				glm::vec3 pt(static_cast<float>(x), static_cast<float>(z), static_cast<float>(y));
 
