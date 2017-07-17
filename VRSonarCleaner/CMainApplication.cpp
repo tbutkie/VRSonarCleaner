@@ -22,6 +22,8 @@ AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
+glm::ivec2						g_ivec2DesktopWindowSize(1000, 1000);
+float							g_fDesktopWindowFOV(50.f);
 
 
 std::vector<BehaviorBase*> g_vpBehaviors;
@@ -98,6 +100,8 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_bUseDesktop(false)
 	, m_bSonarCleaning(false)
 	, m_bFlowVis(false)
+	, m_bLeftMouseDown(false)
+	, m_bRightMouseDown(false)
 	, m_pVRCompanionWindow(NULL)
 	, m_pVRCompanionWindowContext(NULL)
 	, m_pDesktopWindow(NULL)
@@ -185,18 +189,18 @@ bool CMainApplication::init()
 			return false;
 		}
 
-
 		if (!initVR())
 		{
 			printf("%s - Unable to initialize VR!\n", __FUNCTION__);
 			return false;
 		}
+
+		g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 	}
 
 	if (m_bUseDesktop)
 	{
-		m_pDesktopWindow = createWindow(50, 50);
-		SDL_GetWindowSize(m_pDesktopWindow, &m_nDesktopWindowWidth, &m_nDesktopWindowHeight);
+		m_pDesktopWindow = createWindow(g_ivec2DesktopWindowSize.x, g_ivec2DesktopWindowSize.y);
 		m_pDesktopWindowContext = SDL_GL_CreateContext(m_pDesktopWindow); //TEST - DELETE ME
 
 		if (!initGL())
@@ -213,8 +217,6 @@ bool CMainApplication::init()
 
 		m_pLasso = new LassoTool();
 	}
-
-	g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (m_bSonarCleaning)
 	{
@@ -240,8 +242,18 @@ bool CMainApplication::init()
 		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getMinDepth(), m_pClouds->getYMin());
 		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getMaxDepth(), m_pClouds->getYMax());
 
-		glm::vec3 tablePosition(0.f, 1.1f, 0.f);
-		glm::vec3 tableSize(2.25f, 0.75f, 2.25f);
+		glm::vec3 tablePosition;
+		glm::vec3 tableSize;
+		if (m_bUseVR)
+		{
+			tablePosition = glm::vec3(0.f, 1.1f, 0.f);
+			tableSize = glm::vec3(2.25f, 0.75f, 2.25f);
+		}
+		else
+		{
+			tablePosition = glm::vec3(0.f);
+			tableSize = glm::vec3(2.f, 0.75f, 2.f);
+		}
 
 		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
 		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
@@ -340,6 +352,9 @@ bool CMainApplication::initVR()
 
 bool CMainApplication::initDesktop()
 {
+	SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR));
+	
+	createDesktopView();
 
 	return true;
 }
@@ -446,6 +461,15 @@ bool CMainApplication::HandleInput()
 					tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
 					wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
 				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
+				{
+					if (m_pLasso->readyToCheck())
+					{
+						editCleaningTableDesktop();
+						m_pLasso->reset();
+					}
+				}
 			}
 			else if (m_bFlowVis) //flow
 			{
@@ -457,19 +481,63 @@ bool CMainApplication::HandleInput()
 
 				if (sdlEvent.key.keysym.sym == SDLK_f)
 					printf("FPS: %u\n", m_uiCurrentFPS);
-			}
-			
-			if (sdlEvent.key.keysym.sym == SDLK_l)
+			}			
+		}
+
+		// MOUSE
+		if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+		{
+			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 			{
-				/*
-				printf("Controller Locations:\n");
-				// Process SteamVR controller state
-				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+				m_bLeftMouseDown = true;
+				m_Arcball.start(sdlEvent.button.x, g_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+				if (m_bRightMouseDown)
 				{
-					printf("Controller %d\n", unDevice);										
+					m_pLasso->end();
 				}
-				*/
+				m_pLasso->reset();
 			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				m_bRightMouseDown = true;
+				if (!m_bLeftMouseDown)
+					m_pLasso->start(sdlEvent.button.x, g_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+			}
+
+		}//end mouse down 
+		else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+		{
+			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+			{
+				m_bLeftMouseDown = false;
+				m_pLasso->reset();
+			}
+			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			{
+				m_bRightMouseDown = false;
+				m_pLasso->end();
+			}
+
+		}//end mouse up
+		if (sdlEvent.type == SDL_MOUSEMOTION)
+		{
+			if (m_bLeftMouseDown)
+			{
+				m_Arcball.move(sdlEvent.button.x, g_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+			}
+			if (m_bRightMouseDown && !m_bLeftMouseDown)
+			{
+				m_pLasso->move(sdlEvent.button.x, g_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+			}
+		}
+		if (sdlEvent.type == SDL_MOUSEWHEEL)
+		{
+			m_pLasso->reset();
+			m_vec3BallEye.z -= ((float)sdlEvent.wheel.y*0.5f);
+			if (m_vec3BallEye.z  < 0.5f)
+				m_vec3BallEye.z = 0.5f;
+			if (m_vec3BallEye.z  > 10.f)
+				m_vec3BallEye.z = 10.f;
 		}
 	}
 	
@@ -506,6 +574,8 @@ void CMainApplication::RunMainLoop()
 
 		if (m_bUseVR)
 		{
+			SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pVRCompanionWindowContext);
+
 			if (m_bFlowVis)
 			{
 				if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
@@ -555,7 +625,7 @@ void CMainApplication::RunMainLoop()
 				{
 					// check point cloud for hits
 					//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-					if (editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
+					if (editCleaningTableVR(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
 						m_pTDM->cleaningHit();
 				}
 
@@ -592,23 +662,60 @@ void CMainApplication::RunMainLoop()
 			m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getHMDPose();
 			m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getHMDPose();
 		
-			Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
-			Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+			Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
+			Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
+
+			Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
 		
 			vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 			vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 			vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 			vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-
-			Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
+			
+			//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 
 			SDL_GL_SwapWindow(m_pVRCompanionWindow);
-
-			Renderer::getInstance().clearDynamicRenderQueue();
-			DebugDrawer::getInstance().flushLines();
-
-			//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 		}
+
+		if (m_bUseDesktop)
+		{
+			SDL_GL_MakeCurrent(m_pDesktopWindow, m_pDesktopWindowContext);
+
+			//draw 2D interface elements
+			{
+				Renderer::RendererSubmission rs;
+				m_pLasso->prepareForRender(rs);
+				Renderer::getInstance().addToUIRenderQueue(rs);				
+			}	
+			
+			//draw 3D elements
+			{
+				m_sviDesktop3DViewInfo.view = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
+				glm::vec4 vp(0.f, 0.f, static_cast<float>(g_ivec2DesktopWindowSize.x), static_cast<float>(g_ivec2DesktopWindowSize.y));
+
+				m_Arcball.setProjectionMatrix(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
+				m_Arcball.setViewport(vp);
+
+				m_Arcball.setZoom(m_fBallRadius, m_vec3BallEye, m_vec3BallUp);
+
+				//DebugDrawer::getInstance().setTransformDefault();
+				tableVolume->setOrientation(glm::quat_cast(m_Arcball.getRotation()));
+				tableVolume->drawBBox();
+
+				//draw table
+				DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
+				m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
+
+				Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
+			}		
+			
+			Renderer::getInstance().RenderFullscreenTexture(g_ivec2DesktopWindowSize.x, g_ivec2DesktopWindowSize.y, m_pDesktopFramebuffer->m_nResolveTextureId);
+
+			SDL_GL_SwapWindow(m_pDesktopWindow);
+		}
+
+		Renderer::getInstance().clearDynamicRenderQueue();
+		DebugDrawer::getInstance().flushLines();
 
 		fps_frames++;
 		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
@@ -800,7 +907,7 @@ float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, floa
 }
 
 
-bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
+bool CMainApplication::editCleaningTableVR(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
 {
 	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentDataTransform();
 	glm::mat4 mat4LastVolumeXform = tableVolume->getLastDataTransform();
@@ -893,6 +1000,33 @@ bool CMainApplication::editCleaningTable(const glm::mat4 & currentCursorPose, co
 	return anyHits;
 }
 
+bool CMainApplication::editCleaningTableDesktop()
+{
+	bool hit = false;
+
+	std::vector<glm::vec3> inPts = m_pClouds->getCloud(0)->getPointPositions();
+
+	float aspect_ratio = static_cast<float>(g_ivec2DesktopWindowSize.x) / static_cast<float>(g_ivec2DesktopWindowSize.y);
+
+	glm::mat4 viewMat = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp) * m_Arcball.getRotation();
+	glm::vec4 vp(0.f, 0.f, static_cast<float>(g_ivec2DesktopWindowSize.x), static_cast<float>(g_ivec2DesktopWindowSize.y));
+
+	for (int i = 0; i < inPts.size(); ++i)
+	{
+		glm::vec3 in = tableVolume->convertToWorldCoords(inPts[i]);
+		glm::vec3 out = glm::project(in, viewMat, m_sviDesktop3DViewInfo.projection, vp);
+
+		if (m_pLasso->checkPoint(glm::vec2(out)))
+		{
+			m_pClouds->getCloud(0)->markPoint(i, 1);
+			hit = true;
+			m_pClouds->getCloud(0)->setRefreshNeeded();
+		}
+	}
+
+	return hit;
+}
+
 SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
 {
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
@@ -974,48 +1108,20 @@ void CMainApplication::createVRViews()
 
 void CMainApplication::createDesktopView()
 {
-	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = 1900u;
-	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = 980u;
+	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = g_ivec2DesktopWindowSize.x;
+	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = g_ivec2DesktopWindowSize.y;
 
 	m_sviDesktop2DOverlayViewInfo.view = glm::mat4();
 	m_sviDesktop2DOverlayViewInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderHeight), -1.f, 1.f);
 
+
+	m_sviDesktop3DViewInfo.m_nRenderWidth = g_ivec2DesktopWindowSize.x;
+	m_sviDesktop3DViewInfo.m_nRenderHeight = g_ivec2DesktopWindowSize.y;
+	m_sviDesktop3DViewInfo.projection = glm::perspective(g_fDesktopWindowFOV, (float)g_ivec2DesktopWindowSize.x / (float)g_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
+
+
 	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().CreateFrameBuffer(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth, m_sviDesktop2DOverlayViewInfo.m_nRenderHeight, *m_pDesktopFramebuffer))
-		dprintf("Could not create desktop view framebuffer!\n");
-
-	//draw 2D interface elements
-	{
-		Renderer::RendererSubmission rs;
-		m_pLasso->prepareForRender(rs);
-	}
-
-	//draw 3D elements
-	{
-		//glm::mat4 projMat = glm::perspective(50.f, aspect_ratio, 1.f, 50.f);
-		//glm::mat4 viewMat = glm::lookAt(ballEye, ballCenter, ballUp);
-		//glm::vec4 vp(0.f, 0.f, static_cast<float>(m_nWindowWidth), static_cast<float>(m_nWindowHeight));
-		//
-		//arcball->setProjectionMatrix(projMat * viewMat);
-		//arcball->setViewport(vp);
-		//
-		//arcball->setZoom(ballRadius, ballEye, ballUp);
-		//// now render the regular scene under the arcball rotation about 0,0,0
-		//// (generally you would want to render everything here)
-		//glm::mat4 rot = arcball->getRotation();
-		//
-		////DebugDrawer::getInstance().setTransformDefault();
-		//dataVolume->setOrientation(glm::quat_cast(rot));
-		//dataVolume->drawBBox();
-		//
-		////draw table
-		////DebugDrawer::getInstance().setTransform(rot * dataVolume->getCurrentDataTransform());
-		//clouds->drawCloud(0);
-		//
-		////DebugDrawer::getInstance().render(projMat * viewMat);
-		//
-		//// flush out perspective-rendered lines
-		////DebugDrawer::getInstance().flushLines();
-	}
+		dprintf("Could not create desktop view framebuffer!\n");	
 }

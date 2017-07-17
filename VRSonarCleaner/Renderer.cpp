@@ -67,6 +67,16 @@ void Renderer::clearDynamicRenderQueue()
 	m_vDynamicRenderQueue.clear();
 }
 
+void Renderer::addToUIRenderQueue(RendererSubmission & rs)
+{
+	m_vUIRenderQueue.push_back(rs);
+}
+
+void Renderer::clearUIRenderQueue()
+{
+	m_vUIRenderQueue.clear();
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -134,19 +144,19 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer)
+void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer)
 {
 	m_Shaders.UpdatePrograms();
 	
 	// Set viewport for and send it as a shader uniform
-	glViewport(0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight);
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight)));
+	glViewport(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight)));
 
 	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
 												//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
-	// Left Eye Render
+	// Render to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->m_nRenderFramebufferId);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
@@ -154,13 +164,13 @@ void Renderer::RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameB
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glm::mat4 thisEyesViewProjectionMatrix = sceneViewInfo->projection * sceneViewInfo->view;
+		glm::mat4 vpMat = sceneView3DInfo->projection * sceneView3DInfo->view;
 
-		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewInfo->view));
-		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
-		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(thisEyesViewProjectionMatrix));
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneView3DInfo->view));
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneView3DInfo->projection));
+		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
 
-		m_pLighting->update(sceneViewInfo->view);
+		m_pLighting->update(sceneView3DInfo->view);
 
 
 		if (*m_mapShaders["debug"])
@@ -176,6 +186,19 @@ void Renderer::RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameB
 		// DYNAMIC OBJECTS
 		processRenderQueue(m_vDynamicRenderQueue);
 
+		// UI ELEMENTS
+		if (sceneViewUIInfo)
+		{
+			vpMat = sceneViewUIInfo->projection * sceneViewUIInfo->view;
+
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewUIInfo->view));
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewUIInfo->projection));
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
+
+			glDisable(GL_DEPTH_TEST);
+			processRenderQueue(m_vUIRenderQueue);
+		}
+
 		glDisable(GL_BLEND);
 
 		glUseProgram(0);
@@ -187,10 +210,14 @@ void Renderer::RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameB
 	glBlitNamedFramebuffer(
 		frameBuffer->m_nRenderFramebufferId,
 		frameBuffer->m_nResolveFramebufferId,
-		0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight,
-		0, 0, sceneViewInfo->m_nRenderWidth, sceneViewInfo->m_nRenderHeight,
+		0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight,
+		0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight,
 		GL_COLOR_BUFFER_BIT,
 		GL_LINEAR);
+}
+
+void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBuffer)
+{
 }
 
 void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)

@@ -89,10 +89,13 @@ public:
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
 	void clearDynamicRenderQueue();
+	void addToUIRenderQueue(RendererSubmission &rs);
+	void clearUIRenderQueue();
 
 	void toggleWireframe();
 
-	void RenderFrame(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
+	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
+	void RenderUI(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
 	void RenderFullscreenTexture(int width, int height, GLuint textureID);
 
 	void Shutdown();
@@ -114,6 +117,7 @@ private:
 
 	std::vector<RendererSubmission> m_vStaticRenderQueue;
 	std::vector<RendererSubmission> m_vDynamicRenderQueue;
+	std::vector<RendererSubmission> m_vUIRenderQueue;
 
 	bool m_bShowWireframe;
 

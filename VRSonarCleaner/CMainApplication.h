@@ -63,7 +63,8 @@ private:
 
 	TrackedDeviceManager *m_pTDM;
 
-	bool editCleaningTable(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	bool editCleaningTableVR(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
+	bool editCleaningTableDesktop();
 	
 	DataVolume* wallVolume;
 	DataVolume* tableVolume;
@@ -94,12 +95,10 @@ private: // SDL bookkeeping
 	SDL_GLContext m_pVRCompanionWindowContext;
 
 	SDL_Window *m_pDesktopWindow;
-	int m_nDesktopWindowWidth;
-	int m_nDesktopWindowHeight;
 	SDL_GLContext m_pDesktopWindowContext;
 
-	bool leftMouseDown;
-	bool rightMouseDown;
+	bool m_bLeftMouseDown;
+	bool m_bRightMouseDown;
 
 private: // OpenGL bookkeeping
 	void createVRViews();
