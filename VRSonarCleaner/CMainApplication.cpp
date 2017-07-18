@@ -1008,7 +1008,7 @@ bool CMainApplication::editCleaningTableDesktop()
 
 	float aspect_ratio = static_cast<float>(g_ivec2DesktopWindowSize.x) / static_cast<float>(g_ivec2DesktopWindowSize.y);
 
-	glm::mat4 viewMat = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp) * m_Arcball.getRotation();
+	glm::mat4 viewMat = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
 	glm::vec4 vp(0.f, 0.f, static_cast<float>(g_ivec2DesktopWindowSize.x), static_cast<float>(g_ivec2DesktopWindowSize.y));
 
 	for (int i = 0; i < inPts.size(); ++i)
