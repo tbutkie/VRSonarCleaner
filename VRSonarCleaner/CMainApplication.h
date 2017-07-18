@@ -92,10 +92,12 @@ private: // SDL bookkeeping
 	SDL_Window *m_pVRCompanionWindow;
 	int m_nVRCompanionWindowWidth;
 	int m_nVRCompanionWindowHeight;
-	SDL_GLContext m_pVRCompanionWindowContext;
+	SDL_GLContext m_pGLContext;
 
 	SDL_Window *m_pDesktopWindow;
-	SDL_GLContext m_pDesktopWindowContext;
+	SDL_Cursor *m_pDesktopWindowCursor;
+	glm::ivec2 m_ivec2DesktopWindowSize;
+	//SDL_GLContext m_pDesktopWindowContext;
 
 	bool m_bLeftMouseDown;
 	bool m_bRightMouseDown;

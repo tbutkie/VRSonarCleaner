@@ -16,7 +16,7 @@ const float g_fBBoxPadding(2.f);
 LassoTool::LassoTool()
 	: m_bLassoActive(false)
 	, m_bShowBBox(false)
-	, m_bShowConnector(false)
+	, m_bShowConnector(true)
 	, m_bPrecalcsDone(false)
 	, m_vec2MinBB(glm::vec2(0.f))
 	, m_vec2MaxBB(glm::vec2(0.f))
@@ -98,10 +98,12 @@ void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 {	
 	int n = m_vvec3LassoPoints.size();
 
-	if (n == 0)
+	if (n < 3)
 		return;
 
 	glm::vec4 color;
+
+	int ptsToErase = 0;
 
 	if(m_bLassoActive)
 		color = g_vec4ActiveLineColor;
@@ -109,65 +111,62 @@ void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 		color = g_vec4LineColor;
 
 	// Lasso segments
+	m_vvec4Colors.push_back(color);
 	for (int i = 0; i < n - 1; ++i)
 	{
+		m_vvec4Colors.push_back(color);
 		m_vusLassoIndices.push_back((unsigned short)i);
-		m_vvec4Colors.push_back(color);
 		m_vusLassoIndices.push_back((unsigned short)i + 1);
-		m_vvec4Colors.push_back(color);
 	}
 
 	// connecting line from last to first points
-	if (m_bLassoActive)
-	{		
-		if (m_bShowConnector)
-		{
-			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-			m_vvec4Colors.push_back(g_vec4ConnectorColor);
-			m_vusLassoIndices.push_back((unsigned short)0);
-			m_vvec4Colors.push_back(g_vec4ConnectorColor);
-		}
-	}
+	if (m_bLassoActive && m_bShowConnector)
+	{
+		m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.back());
+		m_vvec4Colors.push_back(g_vec4ConnectorColor);
+		m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.front());
+		m_vvec4Colors.push_back(g_vec4ConnectorColor);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+
+		ptsToErase += 2;
+	}	
 	else
 	{
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vvec4Colors.push_back(color);
 		m_vusLassoIndices.push_back((unsigned short)0);
-		m_vvec4Colors.push_back(color);
 	}
 
-	glm::vec3 bboxPts[4];
-	glm::vec4 bboxColors[4];
 	// Lasso bounding box
 	if (m_bShowBBox)
 	{
 		// Push bbox points
 		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f));
-		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));		
-		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));		
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MaxBB.y + g_fBBoxPadding, 0.f));
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
 		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MaxBB.x + g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f));
+		m_vvec4Colors.push_back(g_vec4BBoxColor);
+
+		ptsToErase += 4;
 
 		// Push bbox indices
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
-		m_vvec4Colors.push_back(g_vec4BBoxColor);
 	}
+
+	assert(m_vvec3LassoPoints.size() == m_vvec4Colors.size());
 
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
 	// Buffer orphaning
@@ -189,6 +188,10 @@ void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 	rs.shaderName = "flat";
 	rs.VAO = m_glVAO;
 	rs.vertCount = m_vusLassoIndices.size();
+
+	m_vvec3LassoPoints.erase(m_vvec3LassoPoints.end() - ptsToErase, m_vvec3LassoPoints.end());
+	m_vusLassoIndices.erase(m_vusLassoIndices.end() - ptsToErase * 2, m_vusLassoIndices.end());
+	m_vvec4Colors.clear();
 }
 
 void LassoTool::reset()

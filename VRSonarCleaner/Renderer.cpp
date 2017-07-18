@@ -13,8 +13,6 @@ Renderer::Renderer()
 	, m_glFrameUBO(0)
 	, m_glFullscreenTextureVAO(0)
 	, m_bShowWireframe(false)
-	, m_fNearClip(0.1f)
-	, m_fFarClip(50.0f)
 {
 }
 

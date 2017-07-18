@@ -130,9 +130,6 @@ private:
 	GLuint m_glFullscreenTextureEBO;
 	unsigned int m_uiCompanionWindowVertCount;
 
-	float m_fNearClip;
-	float m_fFarClip;
-
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 	Renderer(Renderer const&) = delete;
