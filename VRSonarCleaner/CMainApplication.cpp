@@ -22,7 +22,7 @@ AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
-const glm::ivec2				g_ivec2DesktopInitialWindowSize(1500, 1000);
+const glm::ivec2				g_ivec2DesktopInitialWindowSize(800, 800);
 float							g_fDesktopWindowFOV(50.f);
 
 
@@ -143,6 +143,10 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 		m_bSonarCleaning = true;
 		break;
 	case 4:
+		m_bUseDesktop = true;
+		m_bFlowVis = true;
+		break;
+	case 5:
 		m_bUseDesktop = true;
 		m_bUseVR = true;
 		m_bSonarCleaning = true;
@@ -581,150 +585,11 @@ void CMainApplication::RunMainLoop()
 
 		bQuit = HandleInput();
 
-		if (m_bUseVR)
-		{
-			SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pGLContext);
+		update();
 
-			if (m_bFlowVis)
-			{
-				if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
-				{
-					g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
-					g_vpBehaviors.push_back(g_pFlowProbeBehavior);
-				}
+		drawScene();
 
-				if (m_pTDM->getSecondaryController() && !g_pAdvectionProbeBehavior)
-				{
-					g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), flowVolume);
-					g_vpBehaviors.push_back(g_pAdvectionProbeBehavior);
-				}
-			}
-
-			// Attach grip & scale behavior when both controllers available
-			if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
-			{
-				if (m_bSonarCleaning)
-					g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), tableVolume);
-				else if (m_bFlowVis)
-					g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), flowVolume);
-				g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
-			}
-
-			m_pTDM->update();
-
-			for (auto const &b : g_vpBehaviors)
-				b->update();
-
-			for (auto const &b : g_vpBehaviors)
-				b->draw();
-
-			if (m_bUseVR)
-				m_pTDM->draw();
-
-			InfoBoxManager::getInstance().draw();
-
-			if (m_bSonarCleaning)
-			{
-				glm::mat4 currentCursorPose;
-				glm::mat4 lastCursorPose;
-				float cursorRadius;
-
-				// if editing controller not available or pose isn't valid, abort
-				if (m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
-				{
-					// check point cloud for hits
-					//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-					if (editCleaningTableVR(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
-						m_pTDM->cleaningHit();
-				}
-
-				//cleaningRoom->draw(); // currently draws to debug buffer
-				//draw debug
-				wallVolume->drawBBox();
-				wallVolume->drawBacking();
-				wallVolume->drawAxes();
-				tableVolume->drawBBox();
-				tableVolume->drawBacking();
-				tableVolume->drawAxes();
-
-
-				//draw table
-				DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
-				m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
-
-				//draw wall
-				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
-				m_pClouds->drawAllClouds(m_pColorScalerTPU);
-			}
-
-			if (m_bFlowVis)
-			{
-				flowVolume->preRenderUpdates();
-
-				flowVolume->draw(); // currently draws to debug buffer
-			}
-		
-			//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-			//start = std::clock();		
-
-			// Update eye positions using current HMD position
-			m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getHMDPose();
-			m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getHMDPose();
-		
-			Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
-			Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
-
-			Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
-		
-			vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-			vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-			vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-			vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-			
-			//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-
-			SDL_GL_SwapWindow(m_pVRCompanionWindow);
-		}
-
-		if (m_bUseDesktop)
-		{
-			SDL_GL_MakeCurrent(m_pDesktopWindow, m_pGLContext);
-
-			//draw 2D interface elements
-			{
-				Renderer::RendererSubmission rs;
-				m_pLasso->prepareForRender(rs);
-				Renderer::getInstance().addToUIRenderQueue(rs);				
-			}	
-			
-			//draw 3D elements
-			{
-				m_sviDesktop3DViewInfo.view = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
-				glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
-
-				m_Arcball.setProjectionMatrix(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
-				m_Arcball.setViewport(vp);
-
-				m_Arcball.setZoom(m_fBallRadius, m_vec3BallEye, m_vec3BallUp);
-
-				tableVolume->setOrientation(glm::quat_cast(m_Arcball.getRotation()));
-				tableVolume->drawBBox();
-
-				//draw table
-				DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
-				m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
-
-				Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
-			}		
-			
-			Renderer::getInstance().RenderFullscreenTexture(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, m_pDesktopFramebuffer->m_nResolveTextureId);
-
-			SDL_GL_SwapWindow(m_pDesktopWindow);
-		}
-
-		Renderer::getInstance().clearDynamicRenderQueue();
-		Renderer::getInstance().clearUIRenderQueue();
-		DebugDrawer::getInstance().flushLines();
+		render();
 
 		fps_frames++;
 		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
@@ -744,6 +609,170 @@ void CMainApplication::RunMainLoop()
 	
 	SDL_StopTextInput();
 }
+
+
+void CMainApplication::update()
+{
+	if (m_bUseVR)
+	{
+		if (m_bFlowVis)
+		{
+			if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
+			{
+				g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
+				g_vpBehaviors.push_back(g_pFlowProbeBehavior);
+			}
+
+			if (m_pTDM->getSecondaryController() && !g_pAdvectionProbeBehavior)
+			{
+				g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), flowVolume);
+				g_vpBehaviors.push_back(g_pAdvectionProbeBehavior);
+			}
+		}
+
+		// Attach grip & scale behavior when both controllers available
+		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
+		{
+			if (m_bSonarCleaning)
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), tableVolume);
+			else if (m_bFlowVis)
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), flowVolume);
+			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
+		}
+
+		m_pTDM->update();
+
+		for (auto const &b : g_vpBehaviors)
+			b->update();
+	}
+
+	if (m_bUseDesktop)
+	{
+		m_sviDesktop3DViewInfo.view = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
+
+		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
+
+		m_Arcball.setProjectionMatrix(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
+		m_Arcball.setViewport(vp);
+
+		m_Arcball.setZoom(m_fBallRadius, m_vec3BallEye, m_vec3BallUp);
+	}
+
+	if (m_bSonarCleaning)
+	{
+		if (m_bUseVR)
+		{
+			glm::mat4 currentCursorPose;
+			glm::mat4 lastCursorPose;
+			float cursorRadius;
+
+			// if editing controller not available or pose isn't valid, abort
+			if (m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
+			{
+				// check point cloud for hits
+				//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
+				if (editCleaningTableVR(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
+					m_pTDM->cleaningHit();
+			}
+		}
+
+		if (m_bUseDesktop)
+			tableVolume->setOrientation(glm::quat_cast(m_Arcball.getRotation()));
+	}
+
+	if (m_bFlowVis)
+	{
+		flowVolume->preRenderUpdates();
+	}
+}
+
+void CMainApplication::drawScene()
+{
+	for (auto const &b : g_vpBehaviors)
+		b->draw();
+
+	if (m_bUseVR)
+	{
+		m_pTDM->draw();
+
+		InfoBoxManager::getInstance().draw();
+	}
+
+	if (m_bUseDesktop)
+	{
+		//draw 2D interface elements
+		{
+			Renderer::RendererSubmission rs;
+			m_pLasso->prepareForRender(rs);
+			Renderer::getInstance().addToUIRenderQueue(rs);
+		}
+	}
+
+	if (m_bSonarCleaning)
+	{
+		wallVolume->drawBBox();
+		wallVolume->drawBacking();
+		wallVolume->drawAxes();
+		tableVolume->drawBBox();
+		tableVolume->drawBacking();
+		tableVolume->drawAxes();
+
+		//draw table
+		DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
+		m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
+
+		//draw wall
+		DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
+		m_pClouds->drawAllClouds(m_pColorScalerTPU);
+	}
+
+	if (m_bFlowVis)
+	{
+		flowVolume->draw(); // currently draws to debug buffer
+	}
+}
+
+void CMainApplication::render()
+{
+	if (m_bUseVR)
+	{
+		SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pGLContext);
+
+		// Update eye positions using current HMD position
+		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getHMDPose();
+		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getHMDPose();
+
+		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
+
+		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
+
+		vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+		vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+
+		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+
+		SDL_GL_SwapWindow(m_pVRCompanionWindow);
+	}
+
+	if (m_bUseDesktop)
+	{
+		SDL_GL_MakeCurrent(m_pDesktopWindow, m_pGLContext);
+
+		Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
+
+		Renderer::getInstance().RenderFullscreenTexture(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, m_pDesktopFramebuffer->m_nResolveTextureId);
+
+		SDL_GL_SwapWindow(m_pDesktopWindow);
+	}
+
+	Renderer::getInstance().clearDynamicRenderQueue();
+	Renderer::getInstance().clearUIRenderQueue();
+	DebugDrawer::getInstance().flushLines();
+}
+
 
 bool fileExists(const std::string &fname)
 {
@@ -914,7 +943,6 @@ float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, floa
 			return(dsq);		// return distance squared to axis
 	}
 }
-
 
 bool CMainApplication::editCleaningTableVR(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
 {

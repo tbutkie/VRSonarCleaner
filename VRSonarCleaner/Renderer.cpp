@@ -299,7 +299,8 @@ void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, width, height); glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
+	glViewport(0, 0, width, height); 
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
 
 	glUseProgram(*m_mapShaders["fullscreenTexture"]);
 	glBindVertexArray(m_glFullscreenTextureVAO);
