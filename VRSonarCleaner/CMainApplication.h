@@ -54,10 +54,13 @@ private:
 	bool m_bVerbose;
 	bool m_bPerf;
 
+	bool m_bGLInitialized;
 	bool m_bUseVR;
 	bool m_bUseDesktop;
 	bool m_bSonarCleaning;
 	bool m_bFlowVis;
+	bool m_bStudyMode;
+	bool m_bGreatBayModel;
 
 	vr::IVRSystem *m_pHMD;
 

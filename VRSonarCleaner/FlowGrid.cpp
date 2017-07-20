@@ -3,6 +3,8 @@
 #include "DebugDrawer.h"
 
 FlowGrid::FlowGrid(char* filename, bool hasZRange)
+	: m_fMinTime(-1.f)
+	, m_fMaxTime(-1.f)
 {
 	FILE *inputFile;
 	printf("opening: %s\n", filename);
@@ -28,8 +30,8 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 	}
 	else
 	{
-		zMin = 0.f;
-		zMax = 1.f;
+		zMin = 1.f;
+		zMax = 0.f;
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
@@ -69,7 +71,7 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 						fread(&tempW, sizeof(float), 1, inputFile);
 					else
 						tempW = 0.f;
-					setIsWaterValue(x, y, z, t, tempIsWater);
+					setIsWaterValue(x, y, z, t, tempIsWater == 0 ? false : true);
 					setCellValue(x, y, z, t, tempU, tempV, tempW);
 				}//end for z
 			}//end for z
@@ -124,13 +126,13 @@ void FlowGrid::init()
 	m_fLastTimeRequested = -1.f;
 
 	m_bIllustrativeParticlesEnabled = true;
-	m_nIllustrativeParticles = 1000;
-	m_fIllustrativeParticleTrailTime = 500;
-	m_fIllustrativeParticleLifetime = 2500;
+	m_nIllustrativeParticles = 10000;
+	m_fIllustrativeParticleTrailTime = 1000;
+	m_fIllustrativeParticleLifetime = 5000;
 	m_fIllustrativeParticleSize = 1;
 
 	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
-	m_fIllustrativeParticleVelocityScale = .01;//0.000001;
+	m_fIllustrativeParticleVelocityScale = 0.5f;//0.000001;
 }
 
 void FlowGrid::deleteSelf()
@@ -166,9 +168,9 @@ float FlowGrid::getMaxDepth()
 void FlowGrid::setTimeValue(int timeIndex, float timeValue)
 {
 	m_arrfTimes[timeIndex] = timeValue;
-	if (timeValue < m_fMinTime)
+	if (timeValue < m_fMinTime || m_fMinTime == -1.f)
 		m_fMinTime = timeValue;
-	if (timeValue > m_fMaxTime)
+	if (timeValue > m_fMaxTime || m_fMaxTime == -1.f)
 		m_fMaxTime = timeValue;
 }
 

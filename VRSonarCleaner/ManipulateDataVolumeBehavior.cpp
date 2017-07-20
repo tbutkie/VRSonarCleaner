@@ -130,7 +130,7 @@ void ManipulateDataVolumeBehavior::startRotation()
 	m_mat4DataVolumePoseAtRotationStart = m_pDataVolume->getCurrentVolumeTransform();
 
 	//save volume pose in controller space
-	m_mat4ControllerToVolumePose = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;
+	m_mat4ControllerToVolumeTransform = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;
 
 	m_bRotationInProgress = true;
 }
@@ -142,8 +142,8 @@ void ManipulateDataVolumeBehavior::continueRotation()
 
 	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
 
-	m_pDataVolume->setPosition(glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose)[3]));
-	m_pDataVolume->setOrientation(glm::quat_cast(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose));
+	m_pDataVolume->setPosition(glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform)[3]));
+	m_pDataVolume->setOrientation(glm::quat_cast(mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform));
 
 	DebugDrawer::getInstance().setTransformDefault();
 	DebugDrawer::getInstance().drawLine(

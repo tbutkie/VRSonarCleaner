@@ -22,7 +22,7 @@ AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
-const glm::ivec2				g_ivec2DesktopInitialWindowSize(800, 800);
+const glm::ivec2				g_ivec2DesktopInitialWindowSize(1000, 1000);
 float							g_fDesktopWindowFOV(50.f);
 
 
@@ -100,6 +100,8 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_bUseDesktop(false)
 	, m_bSonarCleaning(false)
 	, m_bFlowVis(false)
+	, m_bStudyMode(false)
+	, m_bGLInitialized(false)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
 	, m_pVRCompanionWindow(NULL)
@@ -112,7 +114,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_fPtHighlightAmt(1.f)
 	, m_LastTime(std::chrono::high_resolution_clock::now())
 	, m_Arcball(Arcball(false))
-	, m_vec3BallEye(glm::vec3(0.f, 0.f, 10.f))
+	, m_vec3BallEye(glm::vec3(0.f, 0.f, -10.f))
 	, m_vec3BallCenter(glm::vec3(0.f))
 	, m_vec3BallUp(glm::vec3(0.f, -1.f, 0.f))
 	, m_fBallRadius(2.f)
@@ -126,32 +128,50 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	
 	switch (mode)
 	{
-	case 0:
-		m_bUseVR = true;
-		m_bSonarCleaning = true;
-		break;
 	case 1:
 		m_bUseVR = true;
-		m_bFlowVis = true;
+		m_bSonarCleaning = true;
 		break;
 	case 2:
 		m_bUseVR = true;
 		m_bSonarCleaning = true;
+		m_bStudyMode = true;
 		break;
 	case 3:
-		m_bUseDesktop = true;
-		m_bSonarCleaning = true;
+		m_bUseVR = true;
+		m_bFlowVis = true;
 		break;
 	case 4:
 		m_bUseDesktop = true;
 		m_bFlowVis = true;
+		m_bGreatBayModel = true;
 		break;
 	case 5:
-		m_bUseDesktop = true;
 		m_bUseVR = true;
+		m_bFlowVis = true;
+		m_bStudyMode = true;
+		break;
+	case 6:
+		m_bUseDesktop = true;
 		m_bSonarCleaning = true;
 		break;
+	case 7:
+		m_bUseDesktop = true;
+		m_bSonarCleaning = true;
+		m_bStudyMode = true;
+		break;
+	case 8:
+		m_bUseDesktop = true;
+		m_bFlowVis = true;
+		break;
+	case 9:
+		m_bUseDesktop = true;
+		m_bFlowVis = true;
+		m_bGreatBayModel = true;
+		break;
 	default:
+		dprintf("Invalid Selection, shutting down...");
+		Shutdown();
 		break;
 	}
 };
@@ -178,56 +198,16 @@ bool CMainApplication::init()
 		return false;
 	}
 
-	if (m_bUseVR)
+	if (m_bUseVR && !initVR())
 	{
-		m_pVRCompanionWindow = createFullscreenWindow(1);
-
-		SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
-
-		m_pGLContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
-		if (m_pGLContext == NULL)
-		{
-			printf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-			return false;
-		}
-
-
-		if (!initGL())
-		{
-			printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
-			return false;
-		}
-
-		if (!initVR())
-		{
-			printf("%s - Unable to initialize VR!\n", __FUNCTION__);
-			return false;
-		}
-
-		g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
+		printf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		return false;
 	}
 
-	if (m_bUseDesktop)
+	if (m_bUseDesktop && !initDesktop())
 	{
-		m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
-		if (!m_pGLContext)
-			m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow); //TEST - DELETE ME
-
-		SDL_GetWindowSize(m_pDesktopWindow, &m_ivec2DesktopWindowSize.x, &m_ivec2DesktopWindowSize.y);
-
-		if (!initGL())
-		{
-			printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
-			return false;
-		}
-
-		if (!initDesktop())
-		{
-			printf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
-			return false;
-		}
-
-		m_pLasso = new LassoTool();
+		printf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
+		return false;
 	}
 
 	if (m_bSonarCleaning)
@@ -277,10 +257,25 @@ bool CMainApplication::init()
 	}
 	else if (m_bFlowVis)
 	{
-		FlowGrid *tempFG = new FlowGrid("test.fg", true);
-		//FlowGrid *tempFG = new FlowGrid("gb.fg", false);
+		FlowGrid *tempFG;
+
+		if (m_bGreatBayModel)
+		{
+			tempFG = new FlowGrid("gb.fg", false);
+			tempFG->m_fIllustrativeParticleVelocityScale = 0.5f;
+		}
+		else
+		{
+			tempFG = new FlowGrid("test.fg", true);
+			m_vec3BallEye.y = m_vec3BallCenter.y = 1.f;
+			tempFG->m_fIllustrativeParticleVelocityScale = 0.01f;
+		}
+
 		tempFG->setCoordinateScaler(new CoordinateScaler());
 		flowVolume = new FlowVolume(tempFG);
+
+		if (m_bGreatBayModel)
+			flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f));
 	}
 
 	return true;
@@ -292,6 +287,9 @@ bool CMainApplication::init()
 //-----------------------------------------------------------------------------
 bool CMainApplication::initGL()
 {
+	if (m_bGLInitialized)
+		return true;
+
 	glewExperimental = GL_TRUE;
 	GLenum nGlewError = glewInit();
 	if (nGlewError != GLEW_OK)
@@ -311,11 +309,33 @@ bool CMainApplication::initGL()
 	if (!Renderer::getInstance().init())
 		return false;
 
+	m_bGLInitialized = true;
+
 	return true;
 }
 
 bool CMainApplication::initVR()
 {
+	m_pVRCompanionWindow = createFullscreenWindow(1);
+
+	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
+
+	if (!m_pGLContext)
+		m_pGLContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
+
+	if (m_pGLContext == NULL)
+	{
+		printf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+
+	if (!initGL())
+	{
+		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		return false;
+	}
+
 	// Loading the SteamVR Runtime
 	vr::EVRInitError eError = vr::VRInitError_None;
 	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
@@ -359,16 +379,33 @@ bool CMainApplication::initVR()
 		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
 	}
 
+	if (!m_bUseDesktop)
+		g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
+
 	return true;
 }
 
 
 bool CMainApplication::initDesktop()
 {
+	m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
+	if (!m_pGLContext)
+		m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow);
+
+	SDL_GetWindowSize(m_pDesktopWindow, &m_ivec2DesktopWindowSize.x, &m_ivec2DesktopWindowSize.y);
+
+	if (!initGL())
+	{
+		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		return false;
+	}
+
 	m_pDesktopWindowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
 	SDL_SetCursor(m_pDesktopWindowCursor);
 	
 	createDesktopView();
+
+	m_pLasso = new LassoTool();
 
 	return true;
 }
@@ -432,6 +469,24 @@ bool CMainApplication::HandleInput()
 				|| sdlEvent.key.keysym.sym == SDLK_q)
 			{
 				bRet = true;
+			}
+
+			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
+			{
+				if (!m_bUseVR)
+				{
+					m_bUseVR = true;
+					initVR();
+				}
+			}
+
+			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_d)
+			{
+				if (!m_bUseDesktop)
+				{
+					m_bUseDesktop = true;
+					initDesktop();
+				}
 			}
 
 			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
@@ -710,20 +765,23 @@ void CMainApplication::drawScene()
 
 	if (m_bSonarCleaning)
 	{
-		wallVolume->drawBBox();
-		wallVolume->drawBacking();
-		wallVolume->drawAxes();
+		if (m_bUseVR && !m_bUseDesktop)
+		{
+			wallVolume->drawBBox();
+			wallVolume->drawBacking();
+			//tableVolume->drawBacking();
+			
+			//draw wall
+			DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
+			m_pClouds->drawAllClouds(m_pColorScalerTPU);
+		}
+
 		tableVolume->drawBBox();
-		tableVolume->drawBacking();
-		tableVolume->drawAxes();
 
 		//draw table
 		DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
 		m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
 
-		//draw wall
-		DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
-		m_pClouds->drawAllClouds(m_pColorScalerTPU);
 	}
 
 	if (m_bFlowVis)

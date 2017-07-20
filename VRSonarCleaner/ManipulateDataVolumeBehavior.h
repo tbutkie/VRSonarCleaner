@@ -28,7 +28,7 @@ private:
 	bool m_bRotationInProgress; // Data Volume Rotating
 	glm::mat4 m_mat4DataVolumePoseAtRotationStart; // Data Volume Initial Position and Orientation when Rotating
 	glm::mat4 m_mat4ControllerPoseAtRotationStart; // Controller's Initial Position and Orientation when Rotating
-	glm::mat4 m_mat4ControllerToVolumePose; // Transformation from Controller Space to Data Volume Space
+	glm::mat4 m_mat4ControllerToVolumeTransform; // Transformation from Controller Space to Data Volume Space
 
 private:
 	void receiveEvent(const int event, void* payloadData);
