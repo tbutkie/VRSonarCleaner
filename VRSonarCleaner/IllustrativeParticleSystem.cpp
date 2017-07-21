@@ -371,11 +371,11 @@ void IllustrativeParticleSystem::drawStreakVBOs()
 
 				pos1.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex1].x);
 				pos1.y = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex1].z);  //SWAPPED
-				pos1.z = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex1].y); //SWAPPED
+				pos1.z = -m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex1].y); //SWAPPED
 
 				pos2.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex2].x);
 				pos2.y = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex2].z); //SWAPPED
-				pos2.z = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex2].y);  //SWAPPED
+				pos2.z = -m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex2].y);  //SWAPPED
 
 				//printf("line at: %f, %f, %f - %f, %f, %f\n", positions[(index*6)], positions[(index*6)+1], positions[(index*6)+2], positions[(index*6)+3], positions[(index*6)+4], positions[(index*6)+5]);
 

@@ -30,8 +30,8 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 	}
 	else
 	{
-		zMin = 0.f;
-		zMax = 1.f;
+		zMin = 1.f;
+		zMax = 0.f;
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
