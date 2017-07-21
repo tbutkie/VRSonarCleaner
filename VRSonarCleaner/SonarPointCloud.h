@@ -57,7 +57,7 @@ class SonarPointCloud
 		void resetAllMarks();
 
 		//cleaning
-		std::vector<glm::vec3> getPointPositions(); // with Y and Z swapped
+		std::vector<glm::vec3> getPointPositions();
 
 		int getPointMark(int index);
 

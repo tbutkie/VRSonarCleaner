@@ -468,7 +468,7 @@ void SonarPointCloud::draw(ColorScaler * const colorScaler)
 					b = (1.f / b) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
 				}
 
-				glm::vec3 pt(static_cast<float>(x), static_cast<float>(z), static_cast<float>(y));
+				glm::vec3 pt(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 
 				DebugDrawer::getInstance().drawPoint(pt, glm::vec4(r, g, b, 1.f));
 			}//end if not marked
@@ -495,7 +495,7 @@ void SonarPointCloud::drawPreview(ColorScaler * const colorScaler)
 
 				colorScaler->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
 
-				glm::vec3 pt(static_cast<float>(x), static_cast<float>(z), static_cast<float>(y));
+				glm::vec3 pt(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 
 				DebugDrawer::getInstance().drawPoint(pt, glm::vec4(r, g, b, 1.f));
 			}//end if point not marked
@@ -551,10 +551,10 @@ std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 	std::vector<glm::vec3> ret;
 	for (int i = 0; i < numPoints * 3; i += 3)
 	{
-		glm::vec3 thisVert = { // SWAP Y AND Z
+		glm::vec3 thisVert = {
 			  (float)pointsPositions[i + 0]
-			, (float)pointsPositions[i + 2]
 			, (float)pointsPositions[i + 1]
+			, (float)pointsPositions[i + 2]
 		};
 
 		ret.push_back(thisVert);

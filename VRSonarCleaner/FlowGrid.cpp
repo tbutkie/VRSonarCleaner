@@ -617,9 +617,8 @@ void FlowGrid::drawBBox()
 	float BBox[6];
 	float visualOffset = 0.f;
 
-	//HAD TO SWAP ZY again for VR coord system
-	glm::vec3 bbMin(scaler->getScaledLonX(m_fXMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset, scaler->getScaledLatY(m_fYMin) - visualOffset);
-	glm::vec3 bbMax(scaler->getScaledLonX(m_fXMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset, scaler->getScaledLatY(m_fYMax) + visualOffset);
+	glm::vec3 bbMin(scaler->getScaledLonX(m_fXMin) - visualOffset, scaler->getScaledLatY(m_fYMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset);
+	glm::vec3 bbMax(scaler->getScaledLonX(m_fXMax) + visualOffset, scaler->getScaledLatY(m_fYMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset);
 
 	//DebugDrawer::getInstance().setTransformDefault();
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, glm::vec4(1.f, 0.f, 0.f, 1.f));

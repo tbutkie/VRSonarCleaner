@@ -228,28 +228,28 @@ bool CMainApplication::init()
 
 		m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
 
-		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), 0.8f, (g_vec3RoomSize.y * 0.8f));
+		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 
-		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getMinDepth(), m_pClouds->getYMin());
-		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getMaxDepth(), m_pClouds->getYMax());
+		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), m_pClouds->getMinDepth());
+		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), m_pClouds->getMaxDepth());
 
 		glm::vec3 tablePosition;
 		glm::vec3 tableSize;
 		if (m_bUseVR)
 		{
 			tablePosition = glm::vec3(0.f, 1.1f, 0.f);
-			tableSize = glm::vec3(2.25f, 0.75f, 2.25f);
+			tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
 			m_vec3BallEye.y = m_vec3BallCenter.y = 1.1f;
 		}
 		else
 		{
 			tablePosition = glm::vec3(0.f);
-			tableSize = glm::vec3(2.f, 0.75f, 2.f);
+			tableSize = glm::vec3(2.f, 2.f, 0.75f);
 		}
 
-		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
-		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
+		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), m_pClouds->getCloud(0)->getMinDepth());
+		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), m_pClouds->getCloud(0)->getMaxDepth());
 
 		tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
 		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
@@ -275,7 +275,7 @@ bool CMainApplication::init()
 		flowVolume = new FlowVolume(tempFG);
 
 		if (m_bGreatBayModel)
-			flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f));
+			flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
 	}
 
 	return true;
@@ -553,16 +553,14 @@ bool CMainApplication::HandleInput()
 					if (m_bUseVR)
 					{
 						glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
-						flowVolume->setDimensions(glm::vec3(1.f, 0.1f, 1.f));
+						flowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
 						flowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
 
 						glm::mat3 matOrientation;
 						matOrientation[0] = matHMD[0];
 						matOrientation[1] = matHMD[2];
 						matOrientation[2] = -matHMD[1];
-						flowVolume->setOrientation(glm::quat_cast(matHMD) * 
-							glm::angleAxis(glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * 
-							glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
+						flowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
 					}
 				}
 
@@ -631,8 +629,6 @@ bool CMainApplication::HandleInput()
 		}
 	}
 	
-	if (m_bUseVR)
-		m_pTDM->handleEvents();
 		
 	return bRet;
 }
@@ -666,6 +662,9 @@ void CMainApplication::RunMainLoop()
 		drawScene();
 
 		render();
+
+		if (m_bUseVR)
+			m_pTDM->handleEvents();
 
 		fps_frames++;
 		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
@@ -753,7 +752,7 @@ void CMainApplication::update()
 		}
 
 		if (m_bUseDesktop)
-			tableVolume->setOrientation(glm::quat_cast(m_Arcball.getRotation()));
+			tableVolume->setOrientation(tableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
 	}
 
 	if (m_bFlowVis)
@@ -790,7 +789,7 @@ void CMainApplication::drawScene()
 		{
 			wallVolume->drawBBox();
 			wallVolume->drawBacking();
-			//tableVolume->drawBacking();
+			tableVolume->drawBacking();
 			
 			//draw wall
 			DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
@@ -1122,8 +1121,6 @@ bool CMainApplication::editCleaningTableDesktop()
 	bool hit = false;
 
 	std::vector<glm::vec3> inPts = m_pClouds->getCloud(0)->getPointPositions();
-
-	float aspect_ratio = static_cast<float>(m_ivec2DesktopWindowSize.x) / static_cast<float>(m_ivec2DesktopWindowSize.y);
 
 	glm::mat4 viewMat = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
 	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));

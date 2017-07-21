@@ -12,13 +12,13 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 		glm::vec3(1.f), 
 		glm::vec3(
 			flowGrid->getScaledXMin(),
-			flowGrid->getScaledMinDepth(),
-			flowGrid->getScaledYMin()
+			flowGrid->getScaledYMin(),
+			flowGrid->getScaledMinDepth()
 		),
 		glm::vec3(
 			flowGrid->getScaledXMax(),
-			flowGrid->getScaledMaxDepth(),
-			flowGrid->getScaledYMax()
+			flowGrid->getScaledYMax(),
+			flowGrid->getScaledMaxDepth()
 		))
 	, m_pFlowGrid(flowGrid)
 {
@@ -47,13 +47,13 @@ void FlowVolume::recalcVolumeBounds()
 {
 	glm::vec3 minCoords(
 		m_pFlowGrid->getScaledXMin(),
-		m_pFlowGrid->getScaledMinDepth(),
-		m_pFlowGrid->getScaledYMin()
+		m_pFlowGrid->getScaledYMin(),
+		m_pFlowGrid->getScaledMinDepth()
 	);
 	glm::vec3 maxCoords(
 		m_pFlowGrid->getScaledXMax(),
-		m_pFlowGrid->getScaledMaxDepth(),
-		m_pFlowGrid->getScaledYMax()
+		m_pFlowGrid->getScaledYMax(),
+		m_pFlowGrid->getScaledMaxDepth()
 	);
 
 	setInnerCoords(minCoords, maxCoords);
@@ -65,7 +65,7 @@ IllustrativeParticleEmitter* FlowVolume::placeDyeEmitterWorldCoords(glm::vec3 po
 
 	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
-	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.z, innerPos.y, m_pScaler);
+	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.y, innerPos.z, m_pScaler);
 	tmp->setRate(10.f);
 	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
 	m_pParticleSystem->m_vpDyePots.push_back(tmp);
@@ -79,7 +79,7 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 	printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
-	IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.z, innerPos.y);
+	IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.y, innerPos.z);
 	if (tmp)
 	{
 		m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());

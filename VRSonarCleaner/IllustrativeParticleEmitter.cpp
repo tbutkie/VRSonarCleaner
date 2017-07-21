@@ -192,10 +192,10 @@ glm::vec3 IllustrativeParticleEmitter::getMutedColor()
 		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B) - 0.35f;
 }
 
-void IllustrativeParticleEmitter::drawSmall3D() ///need to swap zy before using in vr
+void IllustrativeParticleEmitter::drawSmall3D()
 {
 	DebugDrawer::getInstance().drawPoint(
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledDepth(z), scaler->getScaledLatY(y)),
+		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(z)),
 		glm::vec4(getColor(), 1.f)
 	);
 	glEnd();

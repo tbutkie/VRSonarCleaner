@@ -24,6 +24,9 @@ public:
 	void setDimensions(glm::vec3 dimensions);
 	glm::vec3 getDimensions();
 	void setInnerCoords(glm::vec3 minCoords, glm::vec3 maxCoords);
+
+	glm::vec3 getOriginalPosition();
+	glm::quat getOriginalOrientation();
 	
 	void recalcScaling();
 

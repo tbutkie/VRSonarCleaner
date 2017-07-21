@@ -13,9 +13,9 @@ DataVolume::DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 dimensi
 	, m_bFirstRun(true)
 {
 	if (startingOrientation == 0)
-		setOrientation(glm::angleAxis(0.f, glm::vec3(0, 0, 0)));
+		setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
 	else
-		setOrientation(glm::angleAxis(-90.f, glm::vec3(1, 0, 0)));
+		setOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 
 	m_qOriginalOrientation = getOrientation();			
 	
@@ -58,12 +58,22 @@ void DataVolume::setInnerCoords(glm::vec3 minCoords, glm::vec3  maxCoords)
 	recalcScaling();
 }
 
+glm::vec3 DataVolume::getOriginalPosition()
+{
+	return m_vec3OriginalPosition;
+}
+
+glm::quat DataVolume::getOriginalOrientation()
+{
+	return m_qOriginalOrientation;
+}
+
 void DataVolume::recalcScaling()
 {
-	float XZscale = std::min(m_vec3Dimensions.x / m_vec3InnerRange.x, m_vec3Dimensions.z / m_vec3InnerRange.z);
-	float depthScale = m_vec3Dimensions.y / m_vec3InnerRange.y;
+	float XYscale = std::min(m_vec3Dimensions.x / m_vec3InnerRange.x, m_vec3Dimensions.y / m_vec3InnerRange.y);
+	float depthScale = m_vec3Dimensions.z / m_vec3InnerRange.z;
 
-	setScale(glm::vec3(XZscale, depthScale, XZscale));
+	setScale(glm::vec3(XYscale, XYscale, depthScale));
 
 	updateTransforms();
 }
@@ -106,14 +116,14 @@ void DataVolume::drawBacking()
 	DebugDrawer::getInstance().drawSolidTriangle(
 		glm::vec3(bbMin.x, bbMin.y, bbMin.z),
 		glm::vec3(bbMax.x, bbMin.y, bbMin.z),
-		glm::vec3(bbMax.x, bbMin.y, bbMax.z),
+		glm::vec3(bbMax.x, bbMax.y, bbMin.z),
 		color
 	);
 
 	DebugDrawer::getInstance().drawSolidTriangle(
 		glm::vec3(bbMin.x, bbMin.y, bbMin.z),
-		glm::vec3(bbMax.x, bbMin.y, bbMax.z),
-		glm::vec3(bbMin.x, bbMin.y, bbMax.z),
+		glm::vec3(bbMax.x, bbMax.y, bbMin.z),
+		glm::vec3(bbMin.x, bbMax.y, bbMin.z),
 		color
 	);	
 }
