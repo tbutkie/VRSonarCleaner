@@ -561,8 +561,8 @@ bool CMainApplication::HandleInput()
 						matOrientation[1] = matHMD[2];
 						matOrientation[2] = -matHMD[1];
 						flowVolume->setOrientation(glm::quat_cast(matHMD) * 
-							glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * 
-							glm::angleAxis(glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)));
+							glm::angleAxis(glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * 
+							glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
 					}
 				}
 
