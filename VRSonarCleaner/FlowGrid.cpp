@@ -30,8 +30,8 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 	}
 	else
 	{
-		zMin = 1.f;
-		zMax = 0.f;
+		zMin = 0.f;
+		zMax = 1.f;
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
@@ -126,13 +126,13 @@ void FlowGrid::init()
 	m_fLastTimeRequested = -1.f;
 
 	m_bIllustrativeParticlesEnabled = true;
-	m_nIllustrativeParticles = 10000;
-	m_fIllustrativeParticleTrailTime = 1000;
-	m_fIllustrativeParticleLifetime = 5000;
+	m_nIllustrativeParticles = 20000;
+	m_fIllustrativeParticleTrailTime = 500;
+	m_fIllustrativeParticleLifetime = 2500;
 	m_fIllustrativeParticleSize = 1;
 
 	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
-	m_fIllustrativeParticleVelocityScale = 0.5f;//0.000001;
+	m_fIllustrativeParticleVelocityScale = 0.33f;//0.000001;
 }
 
 void FlowGrid::deleteSelf()

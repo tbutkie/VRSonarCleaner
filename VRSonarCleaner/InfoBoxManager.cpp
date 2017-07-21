@@ -86,7 +86,7 @@ void InfoBoxManager::receiveEvent(const int event, void* data)
 
 void InfoBoxManager::draw()
 {
-	glm::mat4 HMDXform = glm::inverse(m_pTDM->getHMDPose());
+	glm::mat4 HMDXform = m_pTDM->getHMDToWorldTransform();
 
 	//glBindVertexArray(m_unVAO);
 	for (auto const& ib : m_mapInfoBoxes)

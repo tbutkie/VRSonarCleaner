@@ -247,7 +247,8 @@ void TrackedDeviceManager::update()
 
 	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
-		m_mat4HMDView = glm::inverse(m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform());
+		m_mat4HMDToWorldTransform = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
+		m_mat4WorldToHMDTransform = glm::inverse(m_mat4HMDToWorldTransform);
 
 		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
@@ -340,9 +341,14 @@ void TrackedDeviceManager::draw()
 	}
 }
 
-glm::mat4 & TrackedDeviceManager::getHMDPose()
+glm::mat4 & TrackedDeviceManager::getWorldToHMDTransform()
 {
-	return m_mat4HMDView;
+	return m_mat4WorldToHMDTransform;
+}
+
+glm::mat4 & TrackedDeviceManager::getHMDToWorldTransform()
+{
+	return m_mat4HMDToWorldTransform;
 }
 
 // Returns vr::k_unTrackedDeviceIndexInvalid if not found

@@ -142,7 +142,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 		m_bFlowVis = true;
 		break;
 	case 4:
-		m_bUseDesktop = true;
+		m_bUseVR = true;
 		m_bFlowVis = true;
 		m_bGreatBayModel = true;
 		break;
@@ -548,65 +548,86 @@ bool CMainApplication::HandleInput()
 					flowVolume->resetPositionAndOrientation();
 				}
 
+				if (sdlEvent.key.keysym.sym == SDLK_1)
+				{
+					if (m_bUseVR)
+					{
+						glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
+						flowVolume->setDimensions(glm::vec3(1.f, 0.1f, 1.f));
+						flowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
+
+						glm::mat3 matOrientation;
+						matOrientation[0] = matHMD[0];
+						matOrientation[1] = matHMD[2];
+						matOrientation[2] = -matHMD[1];
+						flowVolume->setOrientation(glm::quat_cast(matHMD) * 
+							glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * 
+							glm::angleAxis(glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)));
+					}
+				}
+
 				if (sdlEvent.key.keysym.sym == SDLK_f)
 					printf("FPS: %u\n", m_uiCurrentFPS);
 			}			
 		}
 
 		// MOUSE
-		if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+		if (m_bUseDesktop)
 		{
-			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+			if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
 			{
-				m_bLeftMouseDown = true;
-				m_Arcball.start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
-				if (m_bRightMouseDown)
+				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
+					m_bLeftMouseDown = true;
+					m_Arcball.start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					if (m_bRightMouseDown)
+					{
+						m_pLasso->end();
+					}
+					m_pLasso->reset();
+				}
+				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+				{
+					m_bRightMouseDown = true;
+					if (!m_bLeftMouseDown)
+						m_pLasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+				}
+
+			}//end mouse down 
+			else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+			{
+				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+				{
+					m_bLeftMouseDown = false;
+					m_pLasso->reset();
+				}
+				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+				{
+					m_bRightMouseDown = false;
 					m_pLasso->end();
 				}
-				m_pLasso->reset();
-			}
-			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-			{
-				m_bRightMouseDown = true;
-				if (!m_bLeftMouseDown)
-					m_pLasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
-			}
 
-		}//end mouse down 
-		else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
-		{
-			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+			}//end mouse up
+			if (sdlEvent.type == SDL_MOUSEMOTION)
 			{
-				m_bLeftMouseDown = false;
+				if (m_bLeftMouseDown)
+				{
+					m_Arcball.move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+				}
+				if (m_bRightMouseDown && !m_bLeftMouseDown)
+				{
+					m_pLasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+				}
+			}
+			if (sdlEvent.type == SDL_MOUSEWHEEL)
+			{
 				m_pLasso->reset();
+				m_vec3BallEye.z -= ((float)sdlEvent.wheel.y*0.5f);
+				if (m_vec3BallEye.z < 0.5f)
+					m_vec3BallEye.z = 0.5f;
+				if (m_vec3BallEye.z > 10.f)
+					m_vec3BallEye.z = 10.f;
 			}
-			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-			{
-				m_bRightMouseDown = false;
-				m_pLasso->end();
-			}
-
-		}//end mouse up
-		if (sdlEvent.type == SDL_MOUSEMOTION)
-		{
-			if (m_bLeftMouseDown)
-			{
-				m_Arcball.move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
-			}
-			if (m_bRightMouseDown && !m_bLeftMouseDown)
-			{
-				m_pLasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
-			}
-		}
-		if (sdlEvent.type == SDL_MOUSEWHEEL)
-		{
-			m_pLasso->reset();
-			m_vec3BallEye.z -= ((float)sdlEvent.wheel.y*0.5f);
-			if (m_vec3BallEye.z  < 0.5f)
-				m_vec3BallEye.z = 0.5f;
-			if (m_vec3BallEye.z  > 10.f)
-				m_vec3BallEye.z = 10.f;
 		}
 	}
 	
@@ -787,6 +808,7 @@ void CMainApplication::drawScene()
 	if (m_bFlowVis)
 	{
 		flowVolume->draw(); // currently draws to debug buffer
+		flowVolume->drawBacking();
 	}
 }
 
@@ -797,8 +819,8 @@ void CMainApplication::render()
 		SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pGLContext);
 
 		// Update eye positions using current HMD position
-		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getHMDPose();
-		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getHMDPose();
+		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
+		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
 
 		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
 		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);

@@ -30,7 +30,8 @@ public:
 	bool getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius);
 	void cleaningHit();
 
-	glm::mat4& getHMDPose();
+	glm::mat4& getWorldToHMDTransform();
+	glm::mat4& getHMDToWorldTransform();
 	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);
 	glm::mat4 getDeviceComponentPose(uint32_t deviceID, uint32_t componentID);
 	ViveController* getPrimaryController();
@@ -60,9 +61,10 @@ private:
 	int m_iTrackedControllerCount;
 	int m_iTrackedControllerCount_Last;
 
-	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
+	std::string m_strPoseClasses;
 
-	glm::mat4 m_mat4HMDView;
+	glm::mat4 m_mat4WorldToHMDTransform;
+	glm::mat4 m_mat4HMDToWorldTransform;
 	
 	float m_fCursorRadius;
 	float m_fCursorRadiusMin;
