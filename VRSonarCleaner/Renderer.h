@@ -47,6 +47,7 @@ public:
 		GLenum			primitiveType;
 		GLuint			VAO;
 		int				vertCount;
+		GLenum			indexType;
 		std::string		shaderName;
 		GLuint			diffuseTex;
 		GLuint			specularTex;
@@ -57,6 +58,7 @@ public:
 			: primitiveType(GL_NONE)
 			, VAO(0)
 			, vertCount(0)
+			, indexType(GL_UNSIGNED_SHORT)
 			, shaderName("")
 			, diffuseTex(0)
 			, specularTex(0)

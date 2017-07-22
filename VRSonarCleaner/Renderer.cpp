@@ -236,7 +236,7 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
 
 			glBindVertexArray(i.VAO);
-			glDrawElements(i.primitiveType, i.vertCount, GL_UNSIGNED_SHORT, 0);
+			glDrawElements(i.primitiveType, i.vertCount, i.indexType, 0);
 			glBindVertexArray(0);
 		}
 	}

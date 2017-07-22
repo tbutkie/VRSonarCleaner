@@ -3,7 +3,7 @@
 
 #include "ParticleManager.h"
 
-#include "ViveController.h"
+#include "Renderer.h"
 
 FlowVolume::FlowVolume(FlowGrid* flowGrid)
 	: DataVolume(
@@ -96,10 +96,16 @@ void FlowVolume::draw()
 	//drawAxes();
 	
 	//draw model
-	DebugDrawer::getInstance().setTransform(getCurrentDataTransform());
+	//DebugDrawer::getInstance().setTransform(getCurrentDataTransform());
 	//m_pParticleSystem->drawDyePots();                
-	m_pParticleSystem->drawStreakVBOs();
 	//m_pParticleSystem->drawParticleVBOs();
+	Renderer::RendererSubmission rs;
+
+	rs.shaderName = "flat";
+	rs.modelToWorldTransform = getCurrentDataTransform();
+
+	if (m_pParticleSystem->prepareForRender(rs))
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
 		
 }
 

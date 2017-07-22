@@ -22,6 +22,9 @@
     <Filter Include="Interactions &amp; Behaviors">
       <UniqueIdentifier>{a648110f-33f3-41d8-9287-a6d1c45ee366}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{9f399a18-8975-4a7b-b4a4-60e740fc18d5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -263,5 +266,43 @@
     <ClInclude Include="RenderModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\flat.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\flat.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\fullscreentexture.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\fullscreentexture.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\infoBox.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\infoBox.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\lighting.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\lighting.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\lightingWF.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\lightingWF.geom">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\renderModels.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\renderModels.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

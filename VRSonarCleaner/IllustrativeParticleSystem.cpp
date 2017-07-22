@@ -23,6 +23,9 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 	{
 		particle = new IllustrativeParticle();
 	}
+
+	initGL();
+
 	printf("Done!\n");
 }
 
@@ -354,44 +357,100 @@ void IllustrativeParticleSystem::update(float time)
 	m_nLastCountLiveSeeds = activeParticles.size();
 }
 
-void IllustrativeParticleSystem::drawStreakVBOs()
-{	
-	for (auto particle : m_vpParticles)
+bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &rs)
+{
+	m_vvec3PositionsBuffer.clear();
+	m_vvec4ColorBuffer.clear();
+	m_vuiIndices.clear(); 
+
+	for (int i = 0; i < m_vpParticles.size(); ++i)
 	{
-		int numPositions = particle->getNumLivePositions();
+		int numPositions = m_vpParticles[i]->getNumLivePositions();
 		if (numPositions > 1)
 		{
-			float timeElapsed = particle ->m_ullLiveTimeElapsed;
-			for (int j=1;j<numPositions;j++)
+			float timeElapsed = m_vpParticles[i]->m_ullLiveTimeElapsed;
+
+			for (int j = 0; j < numPositions - 1; j++)
 			{
-				int posIndex1 = particle->getLivePosition(j-1);
-				int posIndex2 = particle->getLivePosition(j);
+				int posIndex1 = m_vpParticles[i]->getLivePosition(j);
+				int posIndex2 = m_vpParticles[i]->getLivePosition(j + 1);
 
 				glm::vec3 pos1, pos2;
 
-				pos1.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex1].x);
-				pos1.y = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex1].y);
-				pos1.z = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex1].z);
+				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
+				pos1.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y);
+				pos1.z = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);
 
-				pos2.x = m_pScaler->getScaledLonX(particle->m_vvec3Positions[posIndex2].x);
-				pos2.y = m_pScaler->getScaledLatY(particle->m_vvec3Positions[posIndex2].y);
-				pos2.z = m_pScaler->getScaledDepth(particle->m_vvec3Positions[posIndex2].z);
+				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
+				pos2.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);
+				pos2.z = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
 
-				//printf("line at: %f, %f, %f - %f, %f, %f\n", positions[(index*6)], positions[(index*6)+1], positions[(index*6)+2], positions[(index*6)+3], positions[(index*6)+4], positions[(index*6)+5]);
+				float opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1]) / timeElapsed;
+				float opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2]) / timeElapsed;
 
-				float opacity1 = 1 - (particle->m_ullLastUpdateTimestamp - particle->m_vullTimes[posIndex1])/timeElapsed;
-				float opacity2 = 1 - (particle->m_ullLastUpdateTimestamp - particle->m_vullTimes[posIndex2])/timeElapsed;
+				glm::vec4 col1(m_vpParticles[i]->m_vec3Color, opacity1);
+				glm::vec4 col2(m_vpParticles[i]->m_vec3Color, opacity2);
 
-				//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
-					
-				glm::vec4 col1(particle->m_vec3Color, opacity1);
-				glm::vec4 col2(particle->m_vec3Color, opacity2);
-
-				DebugDrawer::getInstance().drawLine(pos1, pos2, col1, col2);
+				m_vvec3PositionsBuffer.push_back(pos1);
+				m_vvec3PositionsBuffer.push_back(pos2);
+				m_vvec4ColorBuffer.push_back(col1);
+				m_vvec4ColorBuffer.push_back(col2);
+				m_vuiIndices.push_back(m_vvec3PositionsBuffer.size() - 2);
+				m_vuiIndices.push_back(m_vvec3PositionsBuffer.size() - 1);
 			}//end for each position
 		}//end if two live positions (enough to draw 1 line segment)
 	}//end for each particle	
-}//end drawStreakVBOs()
+
+	GLsizei numPositions = m_vvec3PositionsBuffer.size();
+	GLsizei numColors = m_vvec4ColorBuffer.size();
+	GLsizei numIndices = m_vuiIndices.size();
+
+	if (numPositions < 2)
+		return false;
+
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3) + numColors * sizeof(glm::vec4), 0, GL_STREAM_DRAW);
+	// Sub buffer data for points, then colors
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), &m_vvec3PositionsBuffer[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), &m_vvec4ColorBuffer[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), 0, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), &m_vuiIndices[0], GL_STREAM_DRAW);
+	
+	// Set color attribute pointer now that point array size is known
+	glBindVertexArray(this->m_glVAO);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPositions * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	rs.primitiveType = GL_LINES;
+	rs.VAO = m_glVAO;
+	rs.vertCount = numIndices;
+	rs.indexType = GL_UNSIGNED_INT;
+
+	return true;
+}
+void IllustrativeParticleSystem::initGL()
+{
+	glGenVertexArrays(1, &m_glVAO);
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
+
+	glBindVertexArray(this->m_glVAO);
+	// Bind the array and element buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+
+	// Enable attribute arrays (with layouts to be defined later)
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	// color attribute pointer will be set once position array size is known for attrib pointer offset
+
+	glBindVertexArray(0);
+}
+//end drawStreakVBOs()
 
 int IllustrativeParticleSystem::getNumLiveParticles()
 {

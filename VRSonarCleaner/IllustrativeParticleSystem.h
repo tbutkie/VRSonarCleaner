@@ -9,10 +9,11 @@
 #include "IllustrativeDyePole.h"
 #include "IllustrativeParticleEmitter.h"
 #include "CoordinateScaler.h"
+#include "Renderer.h"
 
 #define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20
 
-#define MAX_PARTICLES 10000
+#define MAX_PARTICLES 20000
 
 class IllustrativeParticleSystem
 {
@@ -62,14 +63,16 @@ public:
 	int m_nLastCountLiveSeeds;
 
 	int m_nStreakSegments;
-	void drawStreakVBOs();
+	bool prepareForRender(Renderer::RendererSubmission &rs);
 
 private:
-	// Holds all particles and their trails as moving coordinate frames
-	// with the forward vector (mat4()[2]) of the frame scaled to match the
-	// magnitude of the velocity at that particle position
-	glm::mat4 m_rmat4ParticleBuffer[MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS];
-	glm::vec3 m_rvec34ColorBuffer[MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS];
+	// Holds all particle positions and their trails in one array and colors in another
+	std::vector<glm::vec3> m_vvec3PositionsBuffer;
+	std::vector<glm::vec4> m_vvec4ColorBuffer;
+	std::vector<GLuint> m_vuiIndices;
+
+	GLuint m_glVAO, m_glVBO, m_glEBO;
+	void initGL();
 };
 
 #endif
