@@ -98,7 +98,7 @@ public:
 
 	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
 	void RenderUI(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
-	void RenderFullscreenTexture(int width, int height, GLuint textureID);
+	void RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait = false);
 
 	void Shutdown();
 

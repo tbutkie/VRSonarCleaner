@@ -22,8 +22,8 @@ AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
-const glm::ivec2				g_ivec2DesktopInitialWindowSize(1000, 1000);
-float							g_fDesktopWindowFOV(50.f);
+const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
+float							g_fDesktopWindowFOV(45.f);
 
 
 std::vector<BehaviorBase*> g_vpBehaviors;
@@ -115,9 +115,9 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_fPtHighlightAmt(1.f)
 	, m_LastTime(std::chrono::high_resolution_clock::now())
 	, m_Arcball(Arcball(false))
-	, m_vec3BallEye(glm::vec3(0.f, 0.f, -10.f))
+	, m_vec3BallEye(glm::vec3(0.f, 0.f, 1.f))
 	, m_vec3BallCenter(glm::vec3(0.f))
-	, m_vec3BallUp(glm::vec3(0.f, -1.f, 0.f))
+	, m_vec3BallUp(glm::vec3(0.f, 1.f, 0.f))
 	, m_fBallRadius(2.f)
 	, m_pLasso(NULL)
 {
@@ -389,7 +389,8 @@ bool CMainApplication::initVR()
 
 bool CMainApplication::initDesktop()
 {
-	m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
+	//m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
+	m_pDesktopWindow = createFullscreenWindow(0);
 	if (!m_pGLContext)
 		m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow);
 
@@ -578,7 +579,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = true;
-					m_Arcball.start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					m_Arcball.start(sdlEvent.button.x, sdlEvent.button.y);
 					if (m_bRightMouseDown)
 					{
 						m_pLasso->end();
@@ -611,7 +612,7 @@ bool CMainApplication::HandleInput()
 			{
 				if (m_bLeftMouseDown)
 				{
-					m_Arcball.move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					m_Arcball.move(sdlEvent.button.x, sdlEvent.button.y);
 				}
 				if (m_bRightMouseDown && !m_bLeftMouseDown)
 				{
@@ -650,22 +651,47 @@ void CMainApplication::RunMainLoop()
 
 	std::clock_t start;
 
+	ULONGLONG lastTime = GetTickCount64();
+
 	while (!bQuit)
 	{
+		ULONGLONG currentTime = GetTickCount64();
+		ULONGLONG elapsedTime = currentTime - lastTime;
+		ULONGLONG timeBefore, timeAfter;;
+
 		start = std::clock();
 
-		//std::cout << "--------------------------------------------------" << std::endl;
+		//std::cout << "\tElapsed: " << elapsedTime << "ms\n";
+		//std::cout << "+++++++++++++++++++++++++++++++++\n";
 
+		//timeBefore = GetTickCount64();
 		bQuit = HandleInput();
+		//timeAfter = GetTickCount64();
+		//std::cout << "\tHandleInput(): " << timeAfter - timeBefore << "ms\n";
 
+		//timeBefore = GetTickCount64();
 		update();
+		//timeAfter = GetTickCount64();
+		//std::cout << "\tupdate(): " << timeAfter - timeBefore << "ms\n";
 
+		//timeBefore = GetTickCount64();
 		drawScene();
+		//timeAfter = GetTickCount64();
+		//std::cout << "\tdrawScene(): " << timeAfter - timeBefore << "ms\n";
 
+		//timeBefore = GetTickCount64();
 		render();
+		//timeAfter = GetTickCount64();
+		//std::cout << "\trender(): " << timeAfter - timeBefore << "ms\n";
 
+		// Calls WaitGetPoses(), which should occur first thing after rendering
+		//timeBefore = GetTickCount64();
 		if (m_bUseVR)
-			m_pTDM->handleEvents();
+			m_pTDM->update();
+		//timeAfter = GetTickCount64();
+		//std::cout << "\tTrackedDeviceManager::update(): " << timeAfter - timeBefore << "ms\n";
+
+		lastTime = currentTime;
 
 		fps_frames++;
 		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
@@ -716,8 +742,6 @@ void CMainApplication::update()
 			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
-		m_pTDM->update();
-
 		for (auto const &b : g_vpBehaviors)
 			b->update();
 	}
@@ -764,6 +788,7 @@ void CMainApplication::update()
 
 void CMainApplication::drawScene()
 {
+
 	for (auto const &b : g_vpBehaviors)
 		b->draw();
 
@@ -776,25 +801,73 @@ void CMainApplication::drawScene()
 
 	if (m_bUseDesktop)
 	{
-		//draw 2D interface elements
-		{
-			Renderer::RendererSubmission rs;
-			m_pLasso->prepareForRender(rs);
-			Renderer::getInstance().addToUIRenderQueue(rs);
-		}
 	}
 
 	if (m_bSonarCleaning)
 	{
-		if (m_bUseVR && !m_bUseDesktop)
+		if (m_bUseVR)
 		{
-			wallVolume->drawBBox();
-			wallVolume->drawBacking();
-			tableVolume->drawBacking();
-			
-			//draw wall
-			DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
-			m_pClouds->drawAllClouds(m_pColorScalerTPU);
+			if (!m_bUseDesktop)
+			{
+				wallVolume->drawBBox();
+				wallVolume->drawBacking();
+				tableVolume->drawBacking();
+
+				//draw wall
+				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
+				m_pClouds->drawAllClouds(m_pColorScalerTPU);
+			}
+			else
+			{
+				// get lasso and render it here
+				//glm::mat4 vpXform;
+				//vpXform[0] = glm::vec4((m_ivec2DesktopWindowSize.x - 0.f) / 2.f, 0.f, 0.f, 0.f); // 1eft - right
+				//vpXform[1] = glm::vec4((m_ivec2DesktopWindowSize.y - 0.f) / 2.f, 0.f, 0.f, 0.f); // top - bottom
+				//vpXform[2] = glm::vec4((g_fFarClip - g_fNearClip) / 2.f, 0.f, 0.f, 0.f); // far - near
+				//vpXform[3] = glm::vec4((m_ivec2DesktopWindowSize.x + 0.f) / 2.f, (m_ivec2DesktopWindowSize.y + 0.f) / 2.f, (g_fFarClip + g_fNearClip) / 2.f, 1.f); // 1eft - right
+				//glm::mat4 lassoViewProjVP = glm::inverse(vpXform * m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
+				//rs.modelToWorldTransform = lassoViewProjVP;
+				//Renderer::getInstance().addToDynamicRenderQueue(rs);
+
+				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, 1.f, g_fFarClip);
+
+				glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x1y0 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, 0.f, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x1y1 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				DebugDrawer::getInstance().setTransformDefault();
+				DebugDrawer::getInstance().drawLine(x0y0, x1y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x1y0, x1y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x1y1, x0y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x0y1, x0y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
+
+				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+
+				std::vector<glm::vec3> pts = m_pLasso->getPoints();
+				for (int i = 0; i < pts.size(); ++i)
+				{
+					glm::vec3 pt1 = pts[i];
+					glm::vec3 pt2 = pts[(i + 1) % pts.size()];
+					DebugDrawer::getInstance().drawLine
+					(
+						glm::unProject(pt1, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)), 
+						glm::unProject(pt2, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)),
+						glm::vec4(0.f, 1.f, 0.f, 1.f)
+					);
+				}
+			}
+		}
+
+		if (m_bUseDesktop)
+		{
+			//draw 2D interface elements
+			Renderer::RendererSubmission rs;
+			rs.modelToWorldTransform = glm::mat4();
+			m_pLasso->prepareForRender(rs);
+			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
 		tableVolume->drawBBox();
@@ -825,7 +898,7 @@ void CMainApplication::render()
 		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
 		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
 
-		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId);
+		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId, true);
 
 		vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
@@ -1123,13 +1196,12 @@ bool CMainApplication::editCleaningTableDesktop()
 
 	std::vector<glm::vec3> inPts = m_pClouds->getCloud(0)->getPointPositions();
 
-	glm::mat4 viewMat = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
 	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
 
 	for (int i = 0; i < inPts.size(); ++i)
 	{
 		glm::vec3 in = tableVolume->convertToWorldCoords(inPts[i]);
-		glm::vec3 out = glm::project(in, viewMat, m_sviDesktop3DViewInfo.projection, vp);
+		glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 
 		if (m_pLasso->checkPoint(glm::vec2(out)))
 		{
@@ -1232,7 +1304,7 @@ void CMainApplication::createDesktopView()
 
 	m_sviDesktop3DViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
 	m_sviDesktop3DViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
-	m_sviDesktop3DViewInfo.projection = glm::perspective(g_fDesktopWindowFOV, (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
+	m_sviDesktop3DViewInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
 	//m_sviDesktop3DViewInfo.projection = glm::frustum(-(float)g_ivec2DesktopWindowSize.x * 0.5f, (float)g_ivec2DesktopWindowSize.x * 0.5f, -(float)g_ivec2DesktopWindowSize.y * 0.5f, (float)g_ivec2DesktopWindowSize.y * 0.5f, g_fNearClip, g_fFarClip);
 
 

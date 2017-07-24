@@ -274,12 +274,6 @@
     <None Include="shaders\flat.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\fullscreentexture.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="shaders\fullscreentexture.vert">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="shaders\infoBox.frag">
       <Filter>Shaders</Filter>
     </None>
@@ -302,6 +296,15 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="shaders\renderModels.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\vrwindow.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\desktopwindow.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\windowtexture.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

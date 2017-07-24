@@ -244,10 +244,10 @@
     <ClInclude Include="ViveController.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\windowtexture.frag" />
+    <None Include="shaders\desktopwindow.vert" />
     <None Include="shaders\flat.frag" />
     <None Include="shaders\flat.vert" />
-    <None Include="shaders\fullscreentexture.frag" />
-    <None Include="shaders\fullscreentexture.vert" />
     <None Include="shaders\infoBox.frag" />
     <None Include="shaders\infoBox.vert" />
     <None Include="shaders\lighting.frag" />
@@ -256,6 +256,7 @@
     <None Include="shaders\lightingWF.geom" />
     <None Include="shaders\renderModels.frag" />
     <None Include="shaders\renderModels.vert" />
+    <None Include="shaders\vrwindow.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

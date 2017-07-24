@@ -10,6 +10,7 @@ const glm::vec4 g_vec4ActiveLineColor(0.25f, 0.65f, 0.25f, 1.f);
 const glm::vec4 g_vec4LineColor(0.65f, 0.25f, 0.25f, 1.f);
 const glm::vec4 g_vec4ConnectorColor(0.75f, 0.75f, 0.75f, 1.f);
 const glm::vec4 g_vec4BBoxColor(1.f, 1.f, 1.f, 1.f);
+const glm::vec4 g_vec4WindowFrameColor(1.f, 0.f, 1.f, 1.f);
 
 const float g_fBBoxPadding(2.f);
 
@@ -94,6 +95,11 @@ bool LassoTool::readyToCheck()
 	return true;
 }
 
+std::vector<glm::vec3> LassoTool::getPoints()
+{
+	return m_vvec3LassoPoints;
+}
+
 void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 {	
 	int n = m_vvec3LassoPoints.size();
@@ -101,44 +107,40 @@ void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 	if (n < 3)
 		return;
 
-	glm::vec4 color;
-
 	int ptsToErase = 0;
 
-	if(m_bLassoActive)
-		color = g_vec4ActiveLineColor;
-	else
-		color = g_vec4LineColor;
+	m_vvec4Colors = std::vector<glm::vec4>(m_vvec3LassoPoints.size(), m_bLassoActive ? g_vec4ActiveLineColor : g_vec4LineColor);
 
 	// Lasso segments
-	m_vvec4Colors.push_back(color);
 	for (int i = 0; i < n - 1; ++i)
 	{
-		m_vvec4Colors.push_back(color);
 		m_vusLassoIndices.push_back((unsigned short)i);
 		m_vusLassoIndices.push_back((unsigned short)i + 1);
 	}
 
 	// connecting line from last to first points
-	if (m_bLassoActive && m_bShowConnector)
+	if (m_bLassoActive)
 	{
-		m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.back());
-		m_vvec4Colors.push_back(g_vec4ConnectorColor);
-		m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.front());
-		m_vvec4Colors.push_back(g_vec4ConnectorColor);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+		if (m_bShowConnector)
+		{
+			m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.back());
+			m_vvec4Colors.push_back(g_vec4ConnectorColor);
+			m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.front());
+			m_vvec4Colors.push_back(g_vec4ConnectorColor);
+			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
 
-		ptsToErase += 2;
+			ptsToErase += 2;
+		}
 	}	
-	else
+	else if (n > 2)
 	{
 		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
 		m_vusLassoIndices.push_back((unsigned short)0);
 	}
 
 	// Lasso bounding box
-	if (m_bShowBBox)
+	if (m_bShowBBox && m_bLassoActive)
 	{
 		// Push bbox points
 		m_vvec3LassoPoints.push_back(glm::vec3(m_vec2MinBB.x - g_fBBoxPadding, m_vec2MinBB.y - g_fBBoxPadding, 0.f));

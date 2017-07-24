@@ -19,6 +19,8 @@ public:
 
 	bool readyToCheck();
 
+	std::vector<glm::vec3> getPoints();
+
 	bool checkPoint(glm::vec2 testPt);
 
 	void prepareForRender(Renderer::RendererSubmission &rs);

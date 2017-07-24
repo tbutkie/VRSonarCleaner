@@ -90,7 +90,8 @@ void Renderer::setupShaders()
 
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
-	m_mapShaders["fullscreenTexture"] = m_Shaders.AddProgramFromExts({ "shaders/fullscreentexture.vert", "shaders/fullscreentexture.frag" });
+	m_mapShaders["vrwindow"] = m_Shaders.AddProgramFromExts({ "shaders/vrwindow.vert", "shaders/windowtexture.frag" });
+	m_mapShaders["desktopwindow"] = m_Shaders.AddProgramFromExts({ "shaders/desktopwindow.vert", "shaders/windowtexture.frag" });
 	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
@@ -294,16 +295,23 @@ void Renderer::setupFullscreenTexture()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID)
+void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
 {
-	if (m_mapShaders["fullscreenTexture"] == NULL)
+	GLuint* shader;
+
+	if (textureAspectPortrait)
+		shader = m_mapShaders["vrwindow"];
+	else
+		shader = m_mapShaders["desktopwindow"];
+
+	if (shader == NULL)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, width, height); 
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
 
-	glUseProgram(*m_mapShaders["fullscreenTexture"]);
+	glUseProgram(*shader);
 	glBindVertexArray(m_glFullscreenTextureVAO);
 
 	// render left eye (first half of index array )
