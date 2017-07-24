@@ -70,7 +70,6 @@ private:
 	void drawScene();
 	void render();
 
-	bool editCleaningTableVR(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints);
 	bool editCleaningTableDesktop();
 	
 	DataVolume* wallVolume;

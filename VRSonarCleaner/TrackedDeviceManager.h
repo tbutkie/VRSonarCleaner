@@ -26,10 +26,6 @@ public:
 
 	void hideBaseStations(bool hidden);
 
-	bool cleaningModeActive();
-	bool getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius);
-	void cleaningHit();
-
 	glm::mat4& getWorldToHMDTransform();
 	glm::mat4& getHMDToWorldTransform();
 	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);

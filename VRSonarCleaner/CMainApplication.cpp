@@ -6,6 +6,7 @@
 #include "ManipulateDataVolumeBehavior.h"
 #include "FlowProbe.h"
 #include "AdvectionProbe.h"
+#include "PointCleanProbe.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -19,6 +20,7 @@ glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
 FlowProbe*						g_pFlowProbeBehavior = NULL;
 AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
+PointCleanProbe*				g_pPointCleanProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
@@ -732,6 +734,15 @@ void CMainApplication::update()
 			}
 		}
 
+		if (m_bSonarCleaning)
+		{
+			if (m_pTDM->getPrimaryController() && !g_pPointCleanProbeBehavior)
+			{
+				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), tableVolume, m_pClouds->getCloud(0), m_pHMD);
+				g_vpBehaviors.push_back(g_pPointCleanProbeBehavior);
+			}
+		}
+
 		// Attach grip & scale behavior when both controllers available
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
@@ -762,18 +773,7 @@ void CMainApplication::update()
 	{
 		if (m_bUseVR)
 		{
-			glm::mat4 currentCursorPose;
-			glm::mat4 lastCursorPose;
-			float cursorRadius;
 
-			// if editing controller not available or pose isn't valid, abort
-			if (m_pTDM->getCleaningCursorData(currentCursorPose, lastCursorPose, cursorRadius))
-			{
-				// check point cloud for hits
-				//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-				if (editCleaningTableVR(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
-					m_pTDM->cleaningHit();
-			}
 		}
 
 		if (m_bUseDesktop)
@@ -1056,138 +1056,6 @@ bool CMainApplication::loadPoints(std::string fileName)
 	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
 
 	return true;
-}
-
-
-// This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
-// with credit to Greg James @ Nvidia
-float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, float radius_sq, const glm::vec3 & testpt)
-{
-	float dx, dy, dz;	// vector d  from line segment point 1 to point 2
-	float pdx, pdy, pdz;	// vector pd from point 1 to test point
-	float dot, dsq;
-
-	dx = pt2.x - pt1.x;	// translate so pt1 is origin.  Make vector from
-	dy = pt2.y - pt1.y;     // pt1 to pt2.  Need for this is easily eliminated
-	dz = pt2.z - pt1.z;
-
-	pdx = testpt.x - pt1.x;		// vector from pt1 to test point.
-	pdy = testpt.y - pt1.y;
-	pdz = testpt.z - pt1.z;
-
-	// Dot the d and pd vectors to see if point lies behind the 
-	// cylinder cap at pt1.x, pt1.y, pt1.z
-
-	dot = pdx * dx + pdy * dy + pdz * dz;
-
-	// If dot is less than zero the point is behind the pt1 cap.
-	// If greater than the cylinder axis line segment length squared
-	// then the point is outside the other end cap at pt2.
-
-	if (dot < 0.f || dot > lengthsq)
-		return(-1.f);
-	else
-	{
-		dsq = (pdx*pdx + pdy*pdy + pdz*pdz) - dot*dot / lengthsq;
-
-		if (dsq > radius_sq)
-			return(-1.f);
-		else
-			return(dsq);		// return distance squared to axis
-	}
-}
-
-bool CMainApplication::editCleaningTableVR(const glm::mat4 & currentCursorPose, const glm::mat4 & lastCursorPose, float radius, bool clearPoints)
-{
-	glm::mat4 mat4CurrentVolumeXform = tableVolume->getCurrentDataTransform();
-	glm::mat4 mat4LastVolumeXform = tableVolume->getLastDataTransform();
-
-	if (mat4LastVolumeXform == glm::mat4())
-		mat4LastVolumeXform = mat4CurrentVolumeXform;
-
-	glm::vec3 vec3CurrentCursorPos = glm::vec3(currentCursorPose[3]);
-	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * lastCursorPose)[3]);
-
-	bool performCylTest = true;
-	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
-
-	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
-		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
-		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
-
-	// CLOCK UPDATE
-	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-	m_LastTime = std::chrono::high_resolution_clock::now();
-
-	float blink_rate_ms = 250.f;
-
-	float delta = static_cast<float>(elapsed_ms.count()) / blink_rate_ms;
-	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
-
-	// POINTS CHECK
-	bool anyHits = false;
-	bool pointsRefresh = false;
-
-	std::vector<glm::vec3> points = m_pClouds->getCloud(0)->getPointPositions();
-
-	for (size_t i = 0ull; i < points.size(); ++i)
-	{
-		//skip already marked points
-		if (m_pClouds->getCloud(0)->getPointMark(i) == 1)
-			continue;
-
-		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
-
-		// fast point-in-AABB failure test
-		if (thisPt.x < (std::min)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - radius ||
-			thisPt.x >(std::max)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + radius ||
-			thisPt.y < (std::min)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - radius ||
-			thisPt.y >(std::max)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + radius ||
-			thisPt.z < (std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - radius ||
-			thisPt.z >(std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + radius)
-		{
-			if (m_pClouds->getCloud(0)->getPointMark(i) != 0)
-			{
-				m_pClouds->getCloud(0)->markPoint(i, 0);
-				pointsRefresh = true;
-			}
-			continue;
-		}
-
-		float radius_sq = radius * radius;
-		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
-			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
-			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
-
-		if (current_dist_sq <= radius_sq ||
-			(performCylTest && cylTest(glm::vec4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
-				glm::vec4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
-				cyl_len_sq,
-				radius_sq,
-				glm::vec3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
-			)
-		{
-			if (clearPoints)
-			{
-				anyHits = true;
-				m_pClouds->getCloud(0)->markPoint(i, 1);
-			}
-			else
-				m_pClouds->getCloud(0)->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
-
-			pointsRefresh = true;
-		}
-		else if (m_pClouds->getCloud(0)->getPointMark(i) != 0)
-		{
-			m_pClouds->getCloud(0)->markPoint(i, 0);
-			pointsRefresh = true;
-		}
-	}
-
-	if (pointsRefresh)
-		m_pClouds->getCloud(0)->setRefreshNeeded();
-
-	return anyHits;
 }
 
 bool CMainApplication::editCleaningTableDesktop()

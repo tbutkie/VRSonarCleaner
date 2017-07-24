@@ -138,6 +138,9 @@
     <ClCompile Include="RenderModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PointCleanProbe.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -265,6 +268,9 @@
     </ClInclude>
     <ClInclude Include="RenderModel.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PointCleanProbe.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

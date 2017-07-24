@@ -88,29 +88,6 @@ void TrackedDeviceManager::hideBaseStations(bool hidden)
 			m_rpTrackedDevices[nDevice]->m_bHidden = hidden;
 }
 
-bool TrackedDeviceManager::cleaningModeActive()
-{
-	return m_pPrimaryController && m_pPrimaryController->isTriggerClicked();
-}
-
-bool TrackedDeviceManager::getCleaningCursorData(glm::mat4 &thisCursorPose, glm::mat4 &lastCursorPose, float &radius)
-{
-	if (!m_pPrimaryController || !m_pPrimaryController->poseValid()) return false;
-	
-	thisCursorPose = m_pPrimaryController->getPose() * glm::translate(glm::mat4(), m_vec3CursorOffsetDirection * m_fCursorOffsetAmount);
-	
-	lastCursorPose = m_pPrimaryController->getLastPose() * glm::translate(glm::mat4(), m_vec3CursorOffsetDirection * m_fCursorOffsetAmount);
-
-	radius = m_fCursorRadius;
-
-	return true;
-}
-
-void TrackedDeviceManager::cleaningHit()
-{
-	m_pHMD->TriggerHapticPulse(m_pPrimaryController->getIndex(), 0, 2000);
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models
 //-----------------------------------------------------------------------------
@@ -228,10 +205,9 @@ void TrackedDeviceManager::update()
 		{
 			m_iValidPoseCount++;
 
-			if (m_rpTrackedDevices[nDevice]->getClassChar() == 0)
-			{
-
-			}
+			if (m_rpTrackedDevices[nDevice]->getClassChar() == 'C')
+				m_iTrackedControllerCount++;
+			
 			m_strPoseClasses += m_rpTrackedDevices[nDevice]->getClassChar();
 		}
 	}
@@ -250,24 +226,24 @@ void TrackedDeviceManager::update()
 		m_mat4HMDToWorldTransform = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		m_mat4WorldToHMDTransform = glm::inverse(m_mat4HMDToWorldTransform);
 
-		glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
-		glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
-		float widthX, widthZ;
-		vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
-
-		BroadcastSystem::Payload::HMD payload = {
-			m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
-			HMDtoWorldMat
-		};
-
-		if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
-		{
-			notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
-		}
-		else
-		{
-			notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
-		}
+		//glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
+		//glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
+		//float widthX, widthZ;
+		//vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
+		//
+		//BroadcastSystem::Payload::HMD payload = {
+		//	m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
+		//	HMDtoWorldMat
+		//};
+		//
+		//if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
+		//{
+		//	notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
+		//}
+		//else
+		//{
+		//	notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
+		//}
 	}
 }
 
@@ -422,7 +398,7 @@ RenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderMo
 		if (error != vr::VRRenderModelError_Loading)
 			break;
 
-		::Sleep(1);
+		Sleep(1);
 	}
 
 	if (error != vr::VRRenderModelError_None)
