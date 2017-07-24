@@ -187,14 +187,7 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		// UI ELEMENTS
 		if (sceneViewUIInfo)
 		{
-			vpMat = sceneViewUIInfo->projection * sceneViewUIInfo->view;
-
-			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewUIInfo->view));
-			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewUIInfo->projection));
-			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
-
-			glDisable(GL_DEPTH_TEST);
-			processRenderQueue(m_vUIRenderQueue);
+			RenderUI(sceneViewUIInfo, frameBuffer);
 		}
 
 		glDisable(GL_BLEND);
@@ -216,6 +209,14 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 
 void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBuffer)
 {
+	glm::mat4 vpMat = sceneViewInfo->projection * sceneViewInfo->view;
+
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewInfo->view));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
+
+	glDisable(GL_DEPTH_TEST);
+	processRenderQueue(m_vUIRenderQueue);
 }
 
 void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
