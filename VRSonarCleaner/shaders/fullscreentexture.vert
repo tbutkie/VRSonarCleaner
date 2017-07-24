@@ -16,21 +16,34 @@ noperspective out vec2 v2UV;
 
 void main()
 {
-	float aspect = v4Viewport[3] / v4Viewport[2];
+	bool landscape = v4Viewport[2] > v4Viewport[3] ? true : false;
+	float aspect = landscape ? v4Viewport[2] / v4Viewport[3] : v4Viewport[3] / v4Viewport[2];
 		
 	switch(gl_VertexID)
 	{
 	case 0:
-		v2UV = vec2(0.f, 0.5f - 0.5f * aspect);
+		if (landscape)
+			v2UV = vec2(0.f, 0.f);
+		else
+			v2UV = vec2(0.f, 0.5f - 0.5f * aspect);
 		break;
 	case 1:
-		v2UV = vec2(1.f, 0.5f - 0.5f * aspect);
+		if (landscape)
+			v2UV = vec2(1.f, 0.f);
+		else
+			v2UV = vec2(1.f, 0.5f - 0.5f * aspect);
 		break;
 	case 2:
-		v2UV = vec2(0.f, 0.5f + 0.5f * aspect);
+		if (landscape)
+			v2UV = vec2(0.f, 1.f);
+		else
+			v2UV = vec2(0.f, 0.5f + 0.5f * aspect);
 		break;
 	case 3:
-		v2UV = vec2(1.f, 0.5f + 0.5f * aspect);	
+		if (landscape)
+			v2UV = vec2(1.f, 1.f);	
+		else
+			v2UV = vec2(1.f, 0.5f + 0.5f * aspect);	
 		break;
 	};
 	
