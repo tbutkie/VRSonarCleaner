@@ -105,6 +105,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_bGreatBayModel(false)
 	, m_bShowDesktopFrustum(false)
 	, m_bStudyMode(false)
+	, m_bDemoMode(false)
 	, m_bGLInitialized(false)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
@@ -240,17 +241,11 @@ bool CMainApplication::init()
 
 		glm::vec3 tablePosition;
 		glm::vec3 tableSize;
-		if (m_bUseVR)
-		{
-			tablePosition = glm::vec3(0.f, 1.1f, 0.f);
-			tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
-			m_vec3BallEye.y = m_vec3BallCenter.y = 1.1f;
-		}
-		else
-		{
-			tablePosition = glm::vec3(0.f);
-			tableSize = glm::vec3(2.f, 2.f, 0.75f);
-		}
+
+		tablePosition = glm::vec3(0.f, 1.1f, 0.f);
+		tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
+		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_vec3BallCenter = tablePosition;
 
 		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), m_pClouds->getCloud(0)->getMinDepth());
 		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), m_pClouds->getCloud(0)->getMaxDepth());
@@ -271,7 +266,6 @@ bool CMainApplication::init()
 		else
 		{
 			tempFG = new FlowGrid("test.fg", true);
-			m_vec3BallEye.y = m_vec3BallCenter.y = 1.f;
 			tempFG->m_fIllustrativeParticleVelocityScale = 0.01f;
 		}
 
@@ -280,6 +274,9 @@ bool CMainApplication::init()
 
 		if (m_bGreatBayModel)
 			flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
+
+		m_vec3BallEye = flowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_vec3BallCenter = flowVolume->getPosition();
 	}
 
 	return true;
@@ -412,6 +409,12 @@ bool CMainApplication::initDesktop()
 
 	m_pLasso = new LassoTool();
 
+	if (m_bFlowVis)
+	{
+		m_vec3BallEye = flowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_vec3BallCenter = flowVolume->getPosition();
+	}
+
 	return true;
 }
 
@@ -488,12 +491,28 @@ bool CMainApplication::HandleInput()
 				}
 			}
 
-			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_d)
+			if (sdlEvent.key.keysym.sym == SDLK_d)
 			{
-				if (!m_bUseDesktop)
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
 				{
-					m_bUseDesktop = true;
-					initDesktop();
+					if (!m_bUseDesktop)
+					{
+						m_bUseDesktop = true;
+						initDesktop();
+					}
+				}
+				else
+				{
+					m_bDemoMode = !m_bDemoMode;
+
+					if (g_pAdvectionProbeBehavior)					
+						m_bDemoMode ? g_pAdvectionProbeBehavior->activateDemoMode() : g_pAdvectionProbeBehavior->deactivateDemoMode();
+
+					if (g_pFlowProbeBehavior)
+						m_bDemoMode ? g_pFlowProbeBehavior->activateDemoMode() : g_pFlowProbeBehavior->deactivateDemoMode();
+
+					if (g_pPointCleanProbeBehavior)
+						m_bDemoMode ? g_pPointCleanProbeBehavior->activateDemoMode() : g_pPointCleanProbeBehavior->deactivateDemoMode();					
 				}
 			}
 
@@ -502,7 +521,7 @@ bool CMainApplication::HandleInput()
 				Renderer::getInstance().toggleWireframe();
 			}
 
-			if (sdlEvent.key.keysym.sym == SDLK_f)
+			if (!(sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
 			{
 				m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
 			}

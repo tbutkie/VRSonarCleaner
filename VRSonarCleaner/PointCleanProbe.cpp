@@ -43,8 +43,16 @@ PointCleanProbe::~PointCleanProbe()
 void PointCleanProbe::update()
 {
 	checkPoints();
+}
 
-	long long rate_ms_per_rev = 1000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
+void PointCleanProbe::draw()
+{
+	if (!m_pController->readyToRender())
+		return;
+
+	drawProbe(m_fProbeOffset - m_fProbeRadius);	
+
+	long long rate_ms_per_rev = 100ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
 
 	// Update time vars
 	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
@@ -53,11 +61,6 @@ void PointCleanProbe::update()
 	// Update rotation angle
 	float angleNeeded = glm::two_pi<float>() * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
 	m_fCursorHoopAngle += angleNeeded;
-}
-
-void PointCleanProbe::draw()
-{
-	drawProbe(m_fProbeOffset - m_fProbeRadius);	
 
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
 	glm::mat4 rot;

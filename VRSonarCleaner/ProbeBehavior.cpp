@@ -50,6 +50,22 @@ ProbeBehavior::~ProbeBehavior()
 {
 }
 
+void ProbeBehavior::activateDemoMode()
+{
+	m_fProbeOffset = m_fProbeOffsetMin = m_fProbeOffsetMax = 0.1f;
+	m_fProbeRadius = m_fProbeRadiusMin = m_fProbeRadiusMax = 0.05f;
+}
+
+void ProbeBehavior::deactivateDemoMode()
+{
+	m_fProbeOffset = 0.1f;
+	m_fProbeOffsetMin = 0.1f;
+	m_fProbeOffsetMax = 2.f;
+	m_fProbeRadius = 0.05f;
+	m_fProbeRadiusMin = 0.001f;
+	m_fProbeRadiusMax = 0.5f;
+}
+
 glm::vec3 ProbeBehavior::getPosition()
 {
 	return glm::vec3((m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);

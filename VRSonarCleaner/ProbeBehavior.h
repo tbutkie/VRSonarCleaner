@@ -12,6 +12,9 @@ public:
 	ProbeBehavior(ViveController* controller, DataVolume* dataVolume);
 	virtual ~ProbeBehavior();
 
+	void activateDemoMode();
+	void deactivateDemoMode();
+
 	glm::vec3 getPosition();
 	glm::vec3 getLastPosition();
 	glm::mat4 getProbeToWorldTransform();

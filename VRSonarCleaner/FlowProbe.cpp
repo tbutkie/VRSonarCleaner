@@ -8,7 +8,7 @@ FlowProbe::FlowProbe(ViveController* controller, FlowVolume* flowVolume)
 	, m_pFlowVolume(flowVolume)
 {
 	m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(getPosition());
-	m_pEmitter->setRate(10.f);
+	m_pEmitter->setRate(100.f);
 	m_pEmitter->incrementColor();
 }
 
@@ -36,8 +36,8 @@ void FlowProbe::draw()
 void FlowProbe::activateProbe()
 {
 	m_bProbeActive = true;
-	m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(getPosition());
-	m_pEmitter->setRate(10.f);
+	//m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(getPosition());
+	m_pEmitter->incrementColor();
 }
 
 void FlowProbe::deactivateProbe()
