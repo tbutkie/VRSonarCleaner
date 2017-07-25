@@ -103,6 +103,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_bSonarCleaning(false)
 	, m_bFlowVis(false)
 	, m_bGreatBayModel(false)
+	, m_bShowDesktopFrustum(false)
 	, m_bStudyMode(false)
 	, m_bGLInitialized(false)
 	, m_bLeftMouseDown(false)
@@ -461,7 +462,8 @@ bool CMainApplication::HandleInput()
 	SDL_Event sdlEvent;
 	bool bRet = false;
 
-	m_pTDM->handleEvents();
+	if (m_bUseVR)
+		m_pTDM->handleEvents();
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
@@ -498,6 +500,11 @@ bool CMainApplication::HandleInput()
 			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
 			{
 				Renderer::getInstance().toggleWireframe();
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_f)
+			{
+				m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
 			}
 			
 			if (m_bSonarCleaning)
@@ -570,7 +577,17 @@ bool CMainApplication::HandleInput()
 					}
 				}
 
-				if (sdlEvent.key.keysym.sym == SDLK_f)
+				if (sdlEvent.key.keysym.sym == SDLK_2)
+				{
+					if (m_bUseVR)
+					{
+						flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
+						flowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
+						flowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+					}
+				}
+
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
 					printf("FPS: %u\n", m_uiCurrentFPS);
 			}			
 		}
@@ -819,7 +836,7 @@ void CMainApplication::drawScene()
 				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
 				m_pClouds->drawAllClouds(m_pColorScalerTPU);
 			}
-			else
+			else if (m_bShowDesktopFrustum)
 			{
 				// get lasso and render it here
 				//glm::mat4 vpXform;
