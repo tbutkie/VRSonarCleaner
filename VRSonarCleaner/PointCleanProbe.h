@@ -24,9 +24,9 @@ private:
 
 	vr::IVRSystem *m_pHMD;
 
-	unsigned int m_glProbeVAO, m_glProbeVBO, m_glProbeEBO, m_glProbeDiffTex, m_glProbeSpecTex;
+	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO, m_glTorusDiffTex, m_glTorusSpecTex;
 
-	GLsizei m_nProbeVertices;
+	GLsizei m_nTorusVertices;
 
 private:
 	void activateProbe();
@@ -36,7 +36,6 @@ private:
 
 	void generateGeometry();
 
-	void generateCylinder(int numSegments);
 	void generateTorus();
 };
 

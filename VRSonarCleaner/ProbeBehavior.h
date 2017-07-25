@@ -12,8 +12,10 @@ public:
 	ProbeBehavior(ViveController* controller, DataVolume* dataVolume);
 	virtual ~ProbeBehavior();
 
-	glm::mat4 getPose();
-	glm::mat4 getLastPose();
+	glm::vec3 getPosition();
+	glm::vec3 getLastPosition();
+	glm::mat4 getProbeToWorldTransform();
+	glm::mat4 getLastProbeToWorldTransform();
 
 	virtual void update();
 
@@ -44,12 +46,18 @@ protected:
 	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fCursorHoopAngle;
 
+	unsigned int m_glProbeVAO, m_glProbeVBO, m_glProbeEBO, m_glProbeDiffTex, m_glProbeSpecTex;
+
+	GLsizei m_nProbeVertices;
+
 protected:
 	virtual void receiveEvent(const int event, void* payloadData);
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;
 
-	virtual void drawProbe();
+	virtual void drawProbe(float length);
+	
+	void generateCylinder(int numSegments);
 
 	std::vector<glm::vec3> makeCircle(int numSegments);
 	std::vector<glm::vec3> m_vvec3Circle;

@@ -2,7 +2,7 @@
 
 #include "shared/glm/gtc/matrix_transform.hpp" // for translate()
 
-#include "DebugDrawer.h"
+#include "Renderer.h"
 
 ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	: SingleControllerBehavior(controller)
@@ -21,6 +21,28 @@ ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	, m_LastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
 {
+	generateCylinder(16);
+
+	GLubyte gray[4] = { 0x20, 0x20, 0x20, 0xFF };
+	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+	glGenTextures(1, &m_glProbeDiffTex);
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glProbeDiffTex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenTextures(1, &m_glProbeSpecTex);
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	glBindTexture(GL_TEXTURE_2D, m_glProbeSpecTex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 
@@ -28,12 +50,22 @@ ProbeBehavior::~ProbeBehavior()
 {
 }
 
-glm::mat4 ProbeBehavior::getPose()
+glm::vec3 ProbeBehavior::getPosition()
+{
+	return glm::vec3((m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
+}
+
+glm::vec3 ProbeBehavior::getLastPosition()
+{
+	return glm::vec3((m_pController->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
+}
+
+glm::mat4 ProbeBehavior::getProbeToWorldTransform()
 {
 	return m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
-glm::mat4 ProbeBehavior::getLastPose()
+glm::mat4 ProbeBehavior::getLastProbeToWorldTransform()
 {
 	return m_pController->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
@@ -42,81 +74,33 @@ void ProbeBehavior::update()
 {
 }
 
-void ProbeBehavior::drawProbe()
+void ProbeBehavior::drawProbe(float length)
 {
 	if (!m_pController->readyToRender())
 		return;
 
 	if (m_bShowProbe)
-	{
-		// Update time vars
-		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-		m_LastTime = std::chrono::high_resolution_clock::now();
-
-		long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
-	
+	{	
 		// Set color
 		glm::vec4 color;
 		if (m_pController->isTriggerClicked())
 			color = glm::vec4(1.f, 0.f, 0.f, 1.f);
 		else
 			color = glm::vec4(1.f, 1.f, 1.f - m_pController->getTriggerPullAmount(), 0.75f);
-
-		// Update rotation angle
-		//float angleNeeded = 360.f * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
-		//m_fCursorHoopAngle += angleNeeded;
-
-		// Draw wireframe sphere
-		//DebugDrawer::getInstance().setTransform(getPose() * glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)));
-		//DebugDrawer::getInstance().drawSphere(m_fProbeRadius, 3, color);
-
-		// Draw cursor hoop
-		//GLuint num_segments = 64;
-		//if (m_vvec3Circle.size() == 0u)
-		//	m_vvec3Circle = makeCircle(num_segments);
-
-		//glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
-		//glm::mat4 rot;
-
-		//for (int n = 0; n < 3; ++n)
-		//{
-		//	if (n == 0)
-		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(1.f, 0.f, 0.f));
-		//	if (n == 1)
-		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-		//	if (n == 2)
-		//		rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-
-		//	DebugDrawer::getInstance().setTransform(getPose() * rot * scl);
-
-		//	glm::vec3 prevVert = m_vvec3Circle.back();
-		//	for (size_t i = 0; i < m_vvec3Circle.size(); ++i)
-		//	{
-		//		glm::vec3 thisVert = m_vvec3Circle[i];
-
-		//		DebugDrawer::getInstance().drawLine(prevVert, thisVert, color);
-
-		//		prevVert = thisVert;
-		//	}
-		//}
-
-		// DISPLAY CURSOR DOT
-		glm::vec4 colorTo = color;
-		colorTo.a = 0.25f;
-
-		DebugDrawer::getInstance().setTransformDefault();
-		DebugDrawer::getInstance().drawPoint(glm::vec3(getPose()[3]), color);
-		DebugDrawer::getInstance().drawLine(glm::vec3(getPose()[3]), glm::vec3(getLastPose()[3]), color, colorTo);
 		
-		// DISPLAY CONNECTING LINE TO CURSOR
-		color = glm::vec4(1.f, 1.f, 1.f, 0.8f);
+		Renderer::RendererSubmission rsProbe;
 
-		glm::vec3 controllerCtr = glm::vec3(m_pController->getDeviceToWorldTransform() * glm::vec4(0.f, 0.f, 0.f, 1.f));
-		//glm::vec3 cursorEdge = glm::vec3(getPose() * glm::vec4(0.f, 0.f, m_fProbeRadius, 1.f));
-		glm::vec3 cursorEdge = glm::vec3(getPose()[3]);
+		rsProbe.primitiveType = GL_TRIANGLES;
+		rsProbe.shaderName = "lighting";
+		rsProbe.VAO = m_glProbeVAO;
+		rsProbe.diffuseTex = m_glProbeDiffTex;
+		rsProbe.specularTex = m_glProbeSpecTex;
+		rsProbe.specularExponent = 30.f;
+		rsProbe.vertCount = m_nProbeVertices;
+		rsProbe.modelToWorldTransform = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
+		rsProbe.indexType = GL_UNSIGNED_SHORT;
 
-		DebugDrawer::getInstance().setTransformDefault();
-		DebugDrawer::getInstance().drawLine(controllerCtr, cursorEdge, color);
+		Renderer::getInstance().addToDynamicRenderQueue(rsProbe);
 	}
 }
 
@@ -229,19 +213,119 @@ void ProbeBehavior::receiveEvent(const int event, void * payloadData)
 	}
 }
 
-std::vector<glm::vec3> ProbeBehavior::makeCircle(int numSegments)
+void ProbeBehavior::generateCylinder(int numSegments)
 {
-	std::vector<glm::vec3> ret;
-	for (GLuint i = 0; i < numSegments; i++)
+	std::vector<glm::vec3> pts;
+	std::vector<glm::vec3> norms;
+	std::vector<glm::vec2> texUVs;
+	std::vector<unsigned short> inds;
+
+	// Front endcap
+	pts.push_back(glm::vec3(0.f));
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	for (float i = 0; i < numSegments; ++i)
 	{
-		GLfloat theta = glm::two_pi<float>() * static_cast<GLfloat>(i) / static_cast<GLfloat>(numSegments - 1);
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
 
-		glm::vec3 circlePt;
-		circlePt.x = cosf(theta);
-		circlePt.y = sinf(theta);
-		circlePt.z = 0.f;
-
-		ret.push_back(circlePt);
+		if (i > 0)
+		{
+			inds.push_back(0);
+			inds.push_back(pts.size() - 2);
+			inds.push_back(pts.size() - 1);
+		}
 	}
-	return ret;
+	inds.push_back(0);
+	inds.push_back(pts.size() - 1);
+	inds.push_back(1);
+
+	// Back endcap
+	pts.push_back(glm::vec3(0.f, 0.f, 1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
+		norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
+
+		if (i > 0)
+		{
+			inds.push_back(pts.size() - (i + 2)); // ctr pt of endcap
+			inds.push_back(pts.size() - 1);
+			inds.push_back(pts.size() - 2);
+		}
+	}
+	inds.push_back(pts.size() - (numSegments + 1));
+	inds.push_back(pts.size() - (numSegments));
+	inds.push_back(pts.size() - 1);
+
+	// Shaft
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 0.f));
+
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
+		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 1.f));
+
+		if (i > 0)
+		{
+			inds.push_back(pts.size() - 4);
+			inds.push_back(pts.size() - 3);
+			inds.push_back(pts.size() - 2);
+
+			inds.push_back(pts.size() - 2);
+			inds.push_back(pts.size() - 3);
+			inds.push_back(pts.size() - 1);
+		}
+	}
+	inds.push_back(pts.size() - 2);
+	inds.push_back(pts.size() - numSegments * 2);
+	inds.push_back(pts.size() - 1);
+
+	inds.push_back(pts.size() - numSegments * 2);
+	inds.push_back(pts.size() - numSegments * 2 + 1);
+	inds.push_back(pts.size() - 1);
+
+	m_nProbeVertices = inds.size();
+
+	glGenVertexArrays(1, &m_glProbeVAO);
+	glGenBuffers(1, &m_glProbeVBO);
+	glGenBuffers(1, &m_glProbeEBO);
+
+	// Setup VAO
+	glBindVertexArray(this->m_glProbeVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glProbeVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glProbeEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	// Fill buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glProbeVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STREAM_DRAW);
+	// Sub buffer data for points, normals, textures...
+	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glProbeEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STREAM_DRAW);
 }

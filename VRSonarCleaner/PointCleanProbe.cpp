@@ -11,45 +11,28 @@ PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCl
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
 {
-	glGenVertexArrays(1, &m_glProbeVAO);
-	glGenBuffers(1, &m_glProbeVBO);
-	glGenBuffers(1, &m_glProbeEBO);
+	GLubyte dkred[4] = { 0x80, 0x20, 0x20, 0xFF };
+	GLubyte yellow[4] = { 0xFF, 0xFF, 0x00, 0xFF };
 
-	glBindVertexArray(this->m_glProbeVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glProbeVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glProbeEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glBindVertexArray(0);
-
-
-	GLubyte gray[4] = { 0x20, 0x20, 0x20, 0xFF };
-	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-	glGenTextures(1, &m_glProbeDiffTex);
+	glGenTextures(1, &m_glTorusDiffTex);
 	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glProbeDiffTex);
+	glBindTexture(GL_TEXTURE_2D, m_glTorusDiffTex);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &dkred);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glGenTextures(1, &m_glProbeSpecTex);
+	glGenTextures(1, &m_glTorusSpecTex);
 	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glProbeSpecTex);
+	glBindTexture(GL_TEXTURE_2D, m_glTorusSpecTex);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
+		0, GL_RGBA, GL_UNSIGNED_BYTE, &yellow);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-
-	generateCylinder(16);
+	
+	generateTorus();
 }
 
 
@@ -60,24 +43,49 @@ PointCleanProbe::~PointCleanProbe()
 void PointCleanProbe::update()
 {
 	checkPoints();
+
+	long long rate_ms_per_rev = 1000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
+
+	// Update time vars
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
+	m_LastTime = std::chrono::high_resolution_clock::now();
+
+	// Update rotation angle
+	float angleNeeded = glm::two_pi<float>() * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+	m_fCursorHoopAngle += angleNeeded;
 }
 
 void PointCleanProbe::draw()
 {
-	Renderer::RendererSubmission rs;
+	drawProbe(m_fProbeOffset - m_fProbeRadius);	
 
-	rs.primitiveType = GL_TRIANGLES;
-	rs.shaderName = "lighting";
-	rs.VAO = m_glProbeVAO;
-	rs.diffuseTex = m_glProbeDiffTex;
-	rs.specularTex = m_glProbeSpecTex;
-	rs.specularExponent = 30.f;
-	rs.vertCount = m_nProbeVertices;
-	rs.modelToWorldTransform = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, m_fProbeOffset));
-	rs.indexType = GL_UNSIGNED_SHORT;
+	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
+	glm::mat4 rot;
 
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
+	Renderer::RendererSubmission rsTorus;
 
+	rsTorus.primitiveType = GL_TRIANGLES;
+	rsTorus.shaderName = "lighting";
+	rsTorus.VAO = m_glTorusVAO;
+	rsTorus.diffuseTex = m_bProbeActive ? m_glTorusDiffTex : m_glProbeDiffTex;
+	rsTorus.specularTex = m_bProbeActive ? m_glTorusSpecTex : m_glProbeSpecTex;
+	rsTorus.specularExponent = 30.f;
+	rsTorus.vertCount = m_nTorusVertices;
+	rsTorus.indexType = GL_UNSIGNED_SHORT;
+
+	for (int n = 0; n < 3; ++n)
+	{
+		if (n == 0)
+			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(1.f, 0.f, 0.f));
+		if (n == 1)
+			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+		if (n == 2)
+			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+		
+		rsTorus.modelToWorldTransform = getProbeToWorldTransform() * rot * scl;
+
+		Renderer::getInstance().addToDynamicRenderQueue(rsTorus);
+	}
 }
 
 void PointCleanProbe::activateProbe()
@@ -133,8 +141,8 @@ void PointCleanProbe::checkPoints()
 	if (!m_pController || !m_pController->poseValid()) 
 		return;
 
-	glm::mat4 currentCursorPose = m_pController->getPose() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
-	glm::mat4 lastCursorPose = m_pController->getLastPose() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
+	glm::mat4 currentCursorPose = getProbeToWorldTransform();
+	glm::mat4 lastCursorPose = getLastProbeToWorldTransform();
 
 	float cursorRadius = m_fProbeRadius;
 
@@ -148,8 +156,8 @@ void PointCleanProbe::checkPoints()
 	if (mat4LastVolumeXform == glm::mat4())
 		mat4LastVolumeXform = mat4CurrentVolumeXform;
 
-	glm::vec3 vec3CurrentCursorPos = glm::vec3(currentCursorPose[3]);
-	glm::vec3 vec3LastCursorPos = glm::vec3((mat4CurrentVolumeXform * glm::inverse(mat4LastVolumeXform) * lastCursorPose)[3]);
+	glm::vec3 vec3CurrentCursorPos = getPosition();
+	glm::vec3 vec3LastCursorPos = getLastPosition();
 
 	bool performCylTest = true;
 	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
@@ -238,132 +246,30 @@ void PointCleanProbe::generateGeometry()
 {
 }
 
-void PointCleanProbe::generateCylinder(int numSegments)
-{
-	std::vector<glm::vec3> pts;
-	std::vector<glm::vec3> norms;
-	std::vector<glm::vec2> texUVs;
-	std::vector<unsigned short> inds;
-
-	// Front endcap
-	pts.push_back(glm::vec3(0.f));
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-	texUVs.push_back(glm::vec2(0.5f, 0.5f));
-	for (float i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
-
-		if (i > 0)
-		{
-			inds.push_back(0);
-			inds.push_back(pts.size() - 2);
-			inds.push_back(pts.size() - 1);
-		}
-	}
-	inds.push_back(0);
-	inds.push_back(pts.size() - 1);
-	inds.push_back(1);
-
-	// Back endcap
-	pts.push_back(glm::vec3(0.f, 0.f, 1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-	texUVs.push_back(glm::vec2(0.5f, 0.5f));
-	for (float i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
-		norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
-
-		if (i > 0)
-		{
-			inds.push_back(pts.size() - (i + 2)); // ctr pt of endcap
-			inds.push_back(pts.size() - 1);
-			inds.push_back(pts.size() - 2);
-		}
-	}
-	inds.push_back(pts.size() - (numSegments + 1));
-	inds.push_back(pts.size() - (numSegments));
-	inds.push_back(pts.size() - 1);
-
-	// Shaft
-	for (float i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 0.f));
-
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
-		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 1.f));
-
-		if (i > 0)
-		{
-			inds.push_back(pts.size() - 4);
-			inds.push_back(pts.size() - 3);
-			inds.push_back(pts.size() - 2);
-
-			inds.push_back(pts.size() - 2);
-			inds.push_back(pts.size() - 3);
-			inds.push_back(pts.size() - 1);
-		}
-	}
-	inds.push_back(pts.size() - 2);
-	inds.push_back(pts.size() - numSegments * 2);
-	inds.push_back(pts.size() - 1);
-
-	inds.push_back(pts.size() - numSegments * 2);
-	inds.push_back(pts.size() - numSegments * 2 + 1);
-	inds.push_back(pts.size() - 1);
-
-	m_nProbeVertices = inds.size();
-
-	glBindBuffer(GL_ARRAY_BUFFER, this->m_glProbeVBO);
-	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STREAM_DRAW);
-	// Sub buffer data for points, then colors
-	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glProbeEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STREAM_DRAW);
-
-	// Set attribute pointers now that point array sizes are known
-	glBindVertexArray(this->m_glProbeVAO);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
-	glBindVertexArray(0);
-}
-
 void PointCleanProbe::generateTorus()
 {
-	float core_radius = 0.1f;
-	float meridian_radius = 1.f;
+	float core_radius = 1.f;
+	float meridian_radius = 0.025f;
 
-	int nSegs = 8;
+	int nCoreSegs = 32;
+	int nMeriSegs = 8;
 
+	int nVerts = nCoreSegs * nMeriSegs;
 
 	std::vector<glm::vec3> pts;
 	std::vector<glm::vec3> norms;
 	std::vector<glm::vec2> texUVs;
 	std::vector<unsigned short> inds;
 
-	for (int j = 0; j < nSegs; j++)
-		for (int i = 0; i < nSegs; i++)
+	for (int i = 0; i < nCoreSegs; i++)
+		for (int j = 0; j < nMeriSegs; j++)
 		{
-			float u = i / (nSegs - 1.f);
-			float v = j / (nSegs - 1.f);
+			float u = i / (nCoreSegs - 1.f);
+			float v = j / (nMeriSegs - 1.f);
 			float theta = u * 2.f * M_PI;
 			float rho = v * 2.f * M_PI;
-			float x = core_radius*cos(theta) + meridian_radius*cos(theta)*cos(rho);
-			float y = core_radius*sin(theta) + meridian_radius*sin(theta)*cos(rho);
+			float x = cos(theta) * (core_radius + meridian_radius*cos(rho));
+			float y = sin(theta) * (core_radius + meridian_radius*cos(rho));
 			float z = meridian_radius*sin(rho);
 			float nx = cos(theta)*cos(rho);
 			float ny = sin(theta)*cos(rho);
@@ -375,12 +281,49 @@ void PointCleanProbe::generateTorus()
 			norms.push_back(glm::vec3(nx, ny, nz));
 			texUVs.push_back(glm::vec2(s, t));
 
-			//inds.push_back();
-			//inds.push_back();
-			//inds.push_back();
-			//
-			//inds.push_back();
-			//inds.push_back();
-			//inds.push_back();
-		}
+			unsigned short uvInd = i * nMeriSegs + j;
+			unsigned short uvpInd = i * nMeriSegs + (j + 1) % nMeriSegs;
+			unsigned short umvInd = (((i - 1) % nCoreSegs + nCoreSegs) % nCoreSegs) * nMeriSegs + j; // true modulo (not C++ remainder operand %) for negative wraparound
+			unsigned short umvpInd = (((i - 1) % nCoreSegs + nCoreSegs) % nCoreSegs) * nMeriSegs + (j + 1) % nMeriSegs;
+
+			inds.push_back(uvInd);   // (u    , v)
+			inds.push_back(uvpInd);  // (u    , v + 1)
+			inds.push_back(umvInd);  // (u - 1, v)
+			
+			inds.push_back(umvInd);  // (u - 1, v)
+			inds.push_back(uvpInd);  // (u    , v + 1)
+			inds.push_back(umvpInd); // (u - 1, v + 1)
+		}	
+
+	m_nTorusVertices = inds.size();
+
+	glGenVertexArrays(1, &m_glTorusVAO);
+	glGenBuffers(1, &m_glTorusVBO);
+	glGenBuffers(1, &m_glTorusEBO);
+
+	glBindVertexArray(this->m_glTorusVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STREAM_DRAW);
+	// Sub buffer data for points, normals, textures...
+	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STREAM_DRAW);
 }

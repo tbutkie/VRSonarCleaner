@@ -68,7 +68,7 @@ void AdvectionProbe::update()
 	if (!m_pController->readyToRender())
 		return;
 
-	glm::vec3 cursorPos(getPose()[3]);
+	glm::vec3 cursorPos(getPosition());
 	glm::vec3 spherePos(m_pDataVolume->getPosition());
 	glm::vec3 vecCursorSphere(spherePos - cursorPos);
 	float connectorLength = glm::length(vecCursorSphere) - sphereRad;
@@ -93,7 +93,7 @@ void AdvectionProbe::draw()
 	if (!m_pController->readyToRender())
 		return;
 
-	drawProbe();
+	drawProbe(m_fProbeOffset);
 
 	//glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 	//glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
