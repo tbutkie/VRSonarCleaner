@@ -24,9 +24,9 @@ private:
 
 	vr::IVRSystem *m_pHMD;
 
-	unsigned int m_glVAO, m_glVBO, m_glEBO;
+	unsigned int m_glProbeVAO, m_glProbeVBO, m_glProbeEBO, m_glProbeDiffTex, m_glProbeSpecTex;
 
-	GLsizei m_nCylVertices;
+	GLsizei m_nProbeVertices;
 
 private:
 	void activateProbe();

@@ -110,26 +110,6 @@ void RenderModel::Cleanup()
 	}
 }
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Draws the render model
-//-----------------------------------------------------------------------------
-void RenderModel::Draw()
-{
-
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glDiffuseTexture);
-
-	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glSpecularTexture);
-
-	glUniform1fv(MATERIAL_SHININESS_UNIFORM_LOCATION, 1, &m_fShininess);
-
-	glBindVertexArray(m_glVAO);
-	glDrawElements(GL_TRIANGLES, m_unVertexCount, GL_UNSIGNED_SHORT, 0);
-	glBindVertexArray(0);
-}
-
 GLuint RenderModel::getVAO()
 {
 	return m_glVAO;

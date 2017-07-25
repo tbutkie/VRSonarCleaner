@@ -232,10 +232,19 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			if (i.specularExponent > 0.f)
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
 
+			// Handle diffuse texture, if any
+			glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 			if (i.diffuseTex > 0u)
 				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
-			if (i.specularTex > 0u)
+			else
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, 0);
+			
+			// Handle specular texture, if any
+			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
+			if (i.specularTex > 0u)			
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
+			else
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, 0);
 
 			glBindVertexArray(i.VAO);
 			glDrawElements(i.primitiveType, i.vertCount, i.indexType, 0);
