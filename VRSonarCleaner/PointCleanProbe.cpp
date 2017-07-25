@@ -26,7 +26,7 @@ PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCl
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 	glBindVertexArray(0);
 
-	generateCylinder(8);
+	generateCylinder(16);
 }
 
 
@@ -50,7 +50,7 @@ void PointCleanProbe::draw()
 	rs.specularTex;
 	rs.specularExponent = 30.f;
 	rs.vertCount = m_nCylVertices;
-	rs.modelToWorldTransform = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.05f, 0.05f, m_fProbeOffset));
+	rs.modelToWorldTransform = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.01f, 0.01f, m_fProbeOffset));
 	rs.indexType = GL_UNSIGNED_SHORT;
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
@@ -311,10 +311,14 @@ void PointCleanProbe::generateCylinder(int numSegments)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STREAM_DRAW);
 
-	// Set color sttribute pointer now that point array size is known
+	// Set attribute pointers now that point array sizes are known
 	glBindVertexArray(this->m_glVAO);
 	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
 	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
 	glBindVertexArray(0);
+}
+
+void PointCleanProbe::generateTorus()
+{
 }

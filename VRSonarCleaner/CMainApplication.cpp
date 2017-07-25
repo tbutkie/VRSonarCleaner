@@ -461,6 +461,8 @@ bool CMainApplication::HandleInput()
 	SDL_Event sdlEvent;
 	bool bRet = false;
 
+	m_pTDM->handleEvents();
+
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
 		if (sdlEvent.type == SDL_QUIT)
