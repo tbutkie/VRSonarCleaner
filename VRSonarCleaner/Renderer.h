@@ -94,6 +94,8 @@ public:
 	void addToUIRenderQueue(RendererSubmission &rs);
 	void clearUIRenderQueue();
 
+	bool drawPrimitive(std::string primName, glm::mat4 *modelTransform, GLuint *diffuseTextureID, GLuint *specularTextureID, float *specularExponent, glm::vec4 *flatColor);
+
 	void toggleWireframe();
 
 	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
@@ -110,6 +112,11 @@ private:
 	
 	void setupFullscreenTexture();
 
+	void setupPrimitives();
+	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
+	void generateCylinder(int numSegments);
+	void generatePlane();
+
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
 private:
@@ -124,6 +131,11 @@ private:
 	bool m_bShowWireframe;
 
 	std::map<std::string, GLuint*> m_mapShaders;
+
+	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
+
+	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
+	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
 
 	GLuint m_glFrameUBO;
 	

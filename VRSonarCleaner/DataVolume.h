@@ -19,7 +19,7 @@ public:
 	virtual ~DataVolume();
 
 	void drawBBox();
-	void drawBacking();
+	void drawBacking(glm::vec3 viewDirection);
 
 	void setDimensions(glm::vec3 dimensions);
 	glm::vec3 getDimensions();

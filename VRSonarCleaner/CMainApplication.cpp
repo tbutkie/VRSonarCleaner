@@ -857,33 +857,29 @@ void CMainApplication::drawScene()
 			}
 			else if (m_bShowDesktopFrustum)
 			{
-				// get lasso and render it here
-				//glm::mat4 vpXform;
-				//vpXform[0] = glm::vec4((m_ivec2DesktopWindowSize.x - 0.f) / 2.f, 0.f, 0.f, 0.f); // 1eft - right
-				//vpXform[1] = glm::vec4((m_ivec2DesktopWindowSize.y - 0.f) / 2.f, 0.f, 0.f, 0.f); // top - bottom
-				//vpXform[2] = glm::vec4((g_fFarClip - g_fNearClip) / 2.f, 0.f, 0.f, 0.f); // far - near
-				//vpXform[3] = glm::vec4((m_ivec2DesktopWindowSize.x + 0.f) / 2.f, (m_ivec2DesktopWindowSize.y + 0.f) / 2.f, (g_fFarClip + g_fNearClip) / 2.f, 1.f); // 1eft - right
-				//glm::mat4 lassoViewProjVP = glm::inverse(vpXform * m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
-				//rs.modelToWorldTransform = lassoViewProjVP;
-				//Renderer::getInstance().addToDynamicRenderQueue(rs);
-
+				// get frustum with near plane 1m out from view pos
 				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, 1.f, g_fFarClip);
 
+				// get world-space points for the viewing plane
 				glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
 				glm::vec3 x1y0 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, 0.f, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
 				glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
 				glm::vec3 x1y1 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				
+				// draw the viewing plane
 				DebugDrawer::getInstance().setTransformDefault();
 				DebugDrawer::getInstance().drawLine(x0y0, x1y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(x1y0, x1y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(x1y1, x0y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(x0y1, x0y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
 
+				// connect the viewing plane corners to view pos
 				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 
+				// draw the lasso points, if any
 				std::vector<glm::vec3> pts = m_pLasso->getPoints();
 				for (int i = 0; i < pts.size(); ++i)
 				{
@@ -939,10 +935,11 @@ void CMainApplication::render()
 		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId, true);
 
 		vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 		vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 
+		vr::VRCompositor()->PostPresentHandoff();
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
 
 		SDL_GL_SwapWindow(m_pVRCompanionWindow);
@@ -1136,7 +1133,8 @@ SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
 #endif
 	SDL_Rect displayBounds;
 
-	SDL_GetDisplayBounds(displayIndex, &displayBounds);
+	if (SDL_GetDisplayBounds(displayIndex, &displayBounds) < 0)
+		SDL_GetDisplayBounds(0, &displayBounds);
 
 	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
 
@@ -1211,8 +1209,6 @@ void CMainApplication::createDesktopView()
 	m_sviDesktop3DViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
 	m_sviDesktop3DViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
 	m_sviDesktop3DViewInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
-	//m_sviDesktop3DViewInfo.projection = glm::frustum(-(float)g_ivec2DesktopWindowSize.x * 0.5f, (float)g_ivec2DesktopWindowSize.x * 0.5f, -(float)g_ivec2DesktopWindowSize.y * 0.5f, (float)g_ivec2DesktopWindowSize.y * 0.5f, g_fNearClip, g_fFarClip);
-
 
 	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
 

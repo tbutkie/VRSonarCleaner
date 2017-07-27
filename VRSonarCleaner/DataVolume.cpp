@@ -103,7 +103,7 @@ void DataVolume::drawBBox()
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
 }
 
-void DataVolume::drawBacking()
+void DataVolume::drawBacking(glm::vec3 viewDirection)
 {
 	glm::vec3 bbMin(-1.f);
 	glm::vec3 bbMax(1.f);

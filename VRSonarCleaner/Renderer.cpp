@@ -75,6 +75,25 @@ void Renderer::clearUIRenderQueue()
 	m_vUIRenderQueue.clear();
 }
 
+bool Renderer::drawPrimitive(std::string primName, glm::mat4 *modelTransform, GLuint *diffuseTextureID, GLuint *specularTextureID, float *specularExponent, glm::vec4 *flatColor)
+{
+	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+		return false;
+
+	RendererSubmission rs;
+	rs.primitiveType = GL_TRIANGLES;
+	rs.shaderName = "lighting";
+	rs.modelToWorldTransform = *modelTransform;
+	rs.VAO = m_mapPrimitives[primName].first;
+	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.diffuseTex = diffuseTextureID ? *diffuseTextureID : 0;
+	rs.specularExponent = specularTextureID ? *specularTextureID : 0;
+	rs.specularExponent = specularExponent ? *specularExponent : 0;
+
+	return true;
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -97,6 +116,7 @@ void Renderer::setupShaders()
 	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
 	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
 	m_mapShaders["infoBox"] = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
+	m_mapShaders["solid"] = m_Shaders.AddProgramFromExts({ "shaders/solid.vert", "shaders/flat.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
@@ -298,6 +318,215 @@ void Renderer::setupFullscreenTexture()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void Renderer::setupPrimitives()
+{
+}
+
+
+
+void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments)
+{
+	//float coreRadius = 1.f;
+	//float meridianRadius = 0.025f;
+	//
+	//int numCoreSegments = 32;
+	//int numMeridianSegments = 8;
+
+	int nVerts = numCoreSegments * numMeridianSegments;
+
+	std::vector<glm::vec3> pts;
+	std::vector<glm::vec3> norms;
+	std::vector<glm::vec2> texUVs;
+	std::vector<unsigned short> inds;
+
+	for (int i = 0; i < numCoreSegments; i++)
+		for (int j = 0; j < numMeridianSegments; j++)
+		{
+			float u = i / (numCoreSegments - 1.f);
+			float v = j / (numMeridianSegments - 1.f);
+			float theta = u * 2.f * M_PI;
+			float rho = v * 2.f * M_PI;
+			float x = cos(theta) * (coreRadius + meridianRadius*cos(rho));
+			float y = sin(theta) * (coreRadius + meridianRadius*cos(rho));
+			float z = meridianRadius*sin(rho);
+			float nx = cos(theta)*cos(rho);
+			float ny = sin(theta)*cos(rho);
+			float nz = sin(rho);
+			float s = u;
+			float t = v;
+
+			pts.push_back(glm::vec3(x, y, z));
+			norms.push_back(glm::vec3(nx, ny, nz));
+			texUVs.push_back(glm::vec2(s, t));
+
+			unsigned short uvInd = i * numMeridianSegments + j;
+			unsigned short uvpInd = i * numMeridianSegments + (j + 1) % numMeridianSegments;
+			unsigned short umvInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + j; // true modulo (not C++ remainder operand %) for negative wraparound
+			unsigned short umvpInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + (j + 1) % numMeridianSegments;
+
+			inds.push_back(uvInd);   // (u    , v)
+			inds.push_back(uvpInd);  // (u    , v + 1)
+			inds.push_back(umvInd);  // (u - 1, v)
+
+			inds.push_back(umvInd);  // (u - 1, v)
+			inds.push_back(uvpInd);  // (u    , v + 1)
+			inds.push_back(umvpInd); // (u - 1, v + 1)
+		}
+
+	glGenVertexArrays(1, &m_glTorusVAO);
+	glGenBuffers(1, &m_glTorusVBO);
+	glGenBuffers(1, &m_glTorusEBO);
+
+	glBindVertexArray(this->m_glTorusVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	// Sub buffer data for points, normals, textures...
+	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STATIC_DRAW);
+
+	m_mapPrimitives["torus"] = std::make_pair(m_glTorusVAO, inds.size());
+}
+
+void Renderer::generateCylinder(int numSegments)
+{
+	std::vector<glm::vec3> pts;
+	std::vector<glm::vec3> norms;
+	std::vector<glm::vec2> texUVs;
+	std::vector<unsigned short> inds;
+
+	// Front endcap
+	pts.push_back(glm::vec3(0.f));
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
+
+		if (i > 0)
+		{
+			inds.push_back(0);
+			inds.push_back(pts.size() - 2);
+			inds.push_back(pts.size() - 1);
+		}
+	}
+	inds.push_back(0);
+	inds.push_back(pts.size() - 1);
+	inds.push_back(1);
+
+	// Back endcap
+	pts.push_back(glm::vec3(0.f, 0.f, 1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
+		norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
+
+		if (i > 0)
+		{
+			inds.push_back(pts.size() - (i + 2)); // ctr pt of endcap
+			inds.push_back(pts.size() - 1);
+			inds.push_back(pts.size() - 2);
+		}
+	}
+	inds.push_back(pts.size() - (numSegments + 1));
+	inds.push_back(pts.size() - (numSegments));
+	inds.push_back(pts.size() - 1);
+
+	// Shaft
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 0.f));
+
+		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
+		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 1.f));
+
+		if (i > 0)
+		{
+			inds.push_back(pts.size() - 4);
+			inds.push_back(pts.size() - 3);
+			inds.push_back(pts.size() - 2);
+
+			inds.push_back(pts.size() - 2);
+			inds.push_back(pts.size() - 3);
+			inds.push_back(pts.size() - 1);
+		}
+	}
+	inds.push_back(pts.size() - 2);
+	inds.push_back(pts.size() - numSegments * 2);
+	inds.push_back(pts.size() - 1);
+
+	inds.push_back(pts.size() - numSegments * 2);
+	inds.push_back(pts.size() - numSegments * 2 + 1);
+	inds.push_back(pts.size() - 1);
+
+	glGenVertexArrays(1, &m_glCylinderVAO);
+	glGenBuffers(1, &m_glCylinderVBO);
+	glGenBuffers(1, &m_glCylinderEBO);
+
+	// Setup VAO
+	glBindVertexArray(this->m_glCylinderVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glCylinderVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glCylinderEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	// Fill buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glCylinderVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	// Sub buffer data for points, normals, textures...
+	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glCylinderEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STATIC_DRAW);
+
+	m_mapPrimitives["cylinder"] = std::make_pair(m_glCylinderVAO, inds.size());
+}
+
+void Renderer::generatePlane()
+{
 }
 
 
