@@ -65,16 +65,9 @@ void PointCleanProbe::draw()
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
 	glm::mat4 rot;
 
-	Renderer::RendererSubmission rsTorus;
-
-	rsTorus.primitiveType = GL_TRIANGLES;
-	rsTorus.shaderName = "lighting";
-	rsTorus.VAO = m_glTorusVAO;
-	rsTorus.diffuseTex = m_bProbeActive ? m_glTorusDiffTex : m_glProbeDiffTex;
-	rsTorus.specularTex = m_bProbeActive ? m_glTorusSpecTex : m_glProbeSpecTex;
-	rsTorus.specularExponent = 30.f;
-	rsTorus.vertCount = m_nTorusVertices;
-	rsTorus.indexType = GL_UNSIGNED_SHORT;
+	glm::vec4 diffCol = m_bProbeActive ? glm::vec4(0.502f, 0.125f, 0.125f, 1.f) : glm::vec4(0.125f, 0.125f, 0.125f, 1.f);
+	glm::vec4 specColor = m_bProbeActive ? glm::vec4(0.f, 0.f, 1.f, 1.f) : glm::vec4(1.f);
+	float specExp = 130.f;
 
 	for (int n = 0; n < 3; ++n)
 	{
@@ -85,9 +78,9 @@ void PointCleanProbe::draw()
 		if (n == 2)
 			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
 		
-		rsTorus.modelToWorldTransform = getProbeToWorldTransform() * rot * scl;
+		glm::mat4 torusToWorldTransform = getProbeToWorldTransform() * rot * scl;
 
-		Renderer::getInstance().addToDynamicRenderQueue(rsTorus);
+		Renderer::getInstance().drawPrimitive("torus", torusToWorldTransform, diffCol, specColor, specExp);
 	}
 }
 

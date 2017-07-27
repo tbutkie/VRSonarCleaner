@@ -848,8 +848,8 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				wallVolume->drawBBox();
-				wallVolume->drawBacking();
-				tableVolume->drawBacking();
+				wallVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+				tableVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 
 				//draw wall
 				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
@@ -914,8 +914,8 @@ void CMainApplication::drawScene()
 
 	if (m_bFlowVis)
 	{
-		flowVolume->draw(); // currently draws to debug buffer
-		flowVolume->drawBacking();
+		flowVolume->draw();
+		flowVolume->drawBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye);
 	}
 }
 

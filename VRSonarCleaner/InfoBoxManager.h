@@ -52,8 +52,6 @@ private:
 	InfoBoxManager();
 	~InfoBoxManager();
 
-	void createGeometry();
-
 	void createTutorial();
 
 	typedef std::tuple<Texture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
@@ -61,11 +59,6 @@ private:
 
 	IBMapT m_mapInfoBoxes;
 	std::map<std::string, Texture*> m_mapTextureBank;
-
-	GLuint m_glVertBuffer;
-	GLuint m_glIndexBuffer;
-	GLuint m_uiIndexSize;
-	GLuint m_unVAO;
 
 	TrackedDeviceManager* m_pTDM;
 

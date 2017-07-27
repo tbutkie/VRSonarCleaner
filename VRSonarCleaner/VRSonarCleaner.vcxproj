@@ -250,8 +250,6 @@
     <None Include="shaders\desktopwindow.vert" />
     <None Include="shaders\flat.frag" />
     <None Include="shaders\flat.vert" />
-    <None Include="shaders\infoBox.frag" />
-    <None Include="shaders\infoBox.vert" />
     <None Include="shaders\lighting.frag" />
     <None Include="shaders\lighting.vert" />
     <None Include="shaders\lightingWF.frag" />

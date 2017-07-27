@@ -8,6 +8,10 @@ layout(location = MATERIAL_SHININESS_UNIFORM_LOCATION)
 	uniform float shininess;
 layout(location = LIGHT_COUNT_UNIFORM_LOCATION)
 	uniform int numLights;
+layout(location = DIFFUSE_COLOR_UNIFORM_LOCATION)
+	uniform vec4 diffColor;
+layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
+	uniform vec4 specColor;
 
 in vec3 v3Normal;
 in vec3 v3FragPos;
@@ -52,8 +56,8 @@ void main()
 {
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
-	vec4 surfaceDiffColor = texture(diffuseTex, v2TexCoords);
-	vec4 surfaceSpecColor = texture(specularTex, v2TexCoords);
+	vec4 surfaceDiffColor = texture(diffuseTex, v2TexCoords) * diffColor;
+	vec4 surfaceSpecColor = texture(specularTex, v2TexCoords) * specColor;
 	vec4 surfaceEmisColor = texture(emissiveTex, v2TexCoords);
 	
     vec3 result = vec3(0.f);

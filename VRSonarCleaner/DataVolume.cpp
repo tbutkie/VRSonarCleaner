@@ -1,5 +1,6 @@
 #include "DataVolume.h"
 #include "DebugDrawer.h"
+#include "Renderer.h"
 
 #include "shared/glm/gtx/transform.hpp"
 
@@ -103,29 +104,64 @@ void DataVolume::drawBBox()
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
 }
 
-void DataVolume::drawBacking(glm::vec3 viewDirection)
+void DataVolume::drawBacking(glm::vec3 viewPos)
 {
 	glm::vec3 bbMin(-1.f);
 	glm::vec3 bbMax(1.f);
 	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
 
-	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * 0.5f)
-	);
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions);
 	
-	DebugDrawer::getInstance().drawSolidTriangle(
-		glm::vec3(bbMin.x, bbMin.y, bbMin.z),
-		glm::vec3(bbMax.x, bbMin.y, bbMin.z),
-		glm::vec3(bbMax.x, bbMax.y, bbMin.z),
-		color
-	);
+	std::vector<glm::vec4> vv4cubeSideCtrs;
+	
+	vv4cubeSideCtrs.push_back(glm::vec4(bbMin.x, (bbMax.y - bbMin.y) / 2.f, (bbMax.z - bbMin.z) / 2.f, 1.f)); // left
+	vv4cubeSideCtrs.push_back(glm::vec4(bbMax.x, (bbMax.y - bbMin.y) / 2.f, (bbMax.z - bbMin.z) / 2.f, 1.f)); // right
+	
+	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, bbMax.y, (bbMax.z - bbMin.z) / 2.f, 1.f)); // top
+	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, bbMin.y, (bbMax.z - bbMin.z) / 2.f, 1.f)); // bottom
+	
+	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, (bbMax.y - bbMin.y) / 2.f, bbMax.z, 1.f)); // front
+	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, (bbMax.y - bbMin.y) / 2.f, bbMin.z, 1.f)); // back
+	
+	glm::vec4 volumeCtr = volTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
+	
+	for (auto const &midPt : vv4cubeSideCtrs)
+	{
+		glm::vec3 norm(glm::normalize(volumeCtr - midPt));
+	
+		glm::vec3 viewPosXformed(glm::vec3(glm::inverse(volTransform) * glm::vec4(viewPos, 1.f)));
+		glm::vec3 midPtToViewPos(glm::normalize(viewPos - glm::vec3(midPt)));
+	
+		float dotProd = glm::dot(midPtToViewPos, norm);
+	
+		float angleCutoff = 70.f; // degrees viewing angle to plane normal
+		
+		if (dotProd > cos(glm::radians(angleCutoff)))
+		{
+			glm::quat rotNeeded = glm::rotation(glm::normalize(glm::vec3(volTransform[2])), norm);
+	
+			Renderer::getInstance().drawPrimitive("plane", volTransform, color, glm::vec4(-1.f), 0);
+		}
+	}
 
-	DebugDrawer::getInstance().drawSolidTriangle(
-		glm::vec3(bbMin.x, bbMin.y, bbMin.z),
-		glm::vec3(bbMax.x, bbMax.y, bbMin.z),
-		glm::vec3(bbMin.x, bbMax.y, bbMin.z),
-		color
-	);	
+
+	//DebugDrawer::getInstance().setTransform(
+	//	glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * 0.5f)
+	//);
+	//
+	//DebugDrawer::getInstance().drawSolidTriangle(
+	//	glm::vec3(bbMin.x, bbMin.y, bbMin.z),
+	//	glm::vec3(bbMax.x, bbMin.y, bbMin.z),
+	//	glm::vec3(bbMax.x, bbMax.y, bbMin.z),
+	//	color
+	//);
+	//
+	//DebugDrawer::getInstance().drawSolidTriangle(
+	//	glm::vec3(bbMin.x, bbMin.y, bbMin.z),
+	//	glm::vec3(bbMax.x, bbMax.y, bbMin.z),
+	//	glm::vec3(bbMin.x, bbMax.y, bbMin.z),
+	//	color
+	//);	
 }
 
 glm::mat4 DataVolume::getCurrentDataTransform()

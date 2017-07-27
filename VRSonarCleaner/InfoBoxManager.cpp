@@ -36,12 +36,8 @@ bool InfoBoxManager::removeInfoBox(std::string name)
 }
 
 InfoBoxManager::InfoBoxManager()
-	: m_glVertBuffer(0)
-	, m_unVAO(0)
-	, m_pTDM(NULL)
+	: m_pTDM(NULL)
 {
-	createGeometry();
-
 	createTutorial();
 	
 	addInfoBox(
@@ -133,15 +129,8 @@ void InfoBoxManager::draw()
 			infoBoxMat[2] = HMDXform[2];
 		}
 
-		Renderer::RendererSubmission rs;
-		rs.shaderName = "infoBox";
-		rs.VAO = m_unVAO;
-		rs.diffuseTex = std::get<IBIndex::TEXTURE>(ib.second)->getTexture();
-		rs.primitiveType = GL_TRIANGLES;
-		rs.vertCount = m_uiIndexSize;
-		rs.modelToWorldTransform = relXform * infoBoxMat * scaleMat;
-
-		Renderer::getInstance().addToDynamicRenderQueue(rs);
+		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;
+		Renderer::getInstance().drawPrimitive("quad", modelTransform, std::get<IBIndex::TEXTURE>(ib.second)->getTexture(), 0, 0);
 	}
 }
 
@@ -159,64 +148,6 @@ bool InfoBoxManager::updateInfoBoxSize(std::string infoBoxName, float size)
 
 	std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) = size;
 	return true;
-}
-
-void InfoBoxManager::createGeometry()
-{
-	std::vector<float> vertdataarray;
-		
-	vertdataarray.push_back(-0.5f);
-	vertdataarray.push_back(-0.5f);
-	vertdataarray.push_back(0.f);
-	vertdataarray.push_back(0.f);
-
-	vertdataarray.push_back(0.5f);
-	vertdataarray.push_back(-0.5f);
-	vertdataarray.push_back(1.f);
-	vertdataarray.push_back(0.f);
-
-	vertdataarray.push_back(0.5f);
-	vertdataarray.push_back(0.5f);
-	vertdataarray.push_back(1.f);
-	vertdataarray.push_back(1.f);
-
-	vertdataarray.push_back(-0.5f);
-	vertdataarray.push_back(0.5f);
-	vertdataarray.push_back(0.f);
-	vertdataarray.push_back(1.f);
-
-	GLushort vIndices[] = { 0, 1, 2,   2, 3, 0 };
-	m_uiIndexSize = 6;
-
-
-	// Setup the VAO the first time through.
-	if (m_unVAO == 0)
-	{
-
-		glCreateBuffers(1, &m_glVertBuffer);
-		glNamedBufferData(m_glVertBuffer, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STATIC_DRAW);	
-	
-		glCreateBuffers(1, &m_glIndexBuffer);
-		glNamedBufferData(m_glIndexBuffer, m_uiIndexSize * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);	
-
-		glGenVertexArrays(1, &m_unVAO);
-		glBindVertexArray(m_unVAO);
-
-			glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
-
-			GLuint stride = 2 * sizeof(float) + 2 * sizeof(float);
-			GLuint offset = 0;
-
-			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-			offset += 2 * sizeof(float);
-			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-		glBindVertexArray(0);
-	}
 }
 
 void InfoBoxManager::createTutorial()

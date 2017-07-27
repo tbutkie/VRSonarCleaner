@@ -45,7 +45,11 @@ bool Renderer::init()
 
 	setupShaders();
 
-	setupFullscreenTexture();
+	setupTextures();
+
+	setupPrimitives();
+
+	setupFullscreenQuad();
 
 	return true;
 }
@@ -75,7 +79,7 @@ void Renderer::clearUIRenderQueue()
 	m_vUIRenderQueue.clear();
 }
 
-bool Renderer::drawPrimitive(std::string primName, glm::mat4 *modelTransform, GLuint *diffuseTextureID, GLuint *specularTextureID, float *specularExponent, glm::vec4 *flatColor)
+bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, GLuint diffuseTextureID, GLuint specularTextureID, float specularExponent)
 {
 	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
 		return false;
@@ -83,13 +87,37 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 *modelTransform, GL
 	RendererSubmission rs;
 	rs.primitiveType = GL_TRIANGLES;
 	rs.shaderName = "lighting";
-	rs.modelToWorldTransform = *modelTransform;
+	rs.modelToWorldTransform = modelTransform;
 	rs.VAO = m_mapPrimitives[primName].first;
 	rs.vertCount = m_mapPrimitives[primName].second;
 	rs.indexType = GL_UNSIGNED_SHORT;
-	rs.diffuseTex = diffuseTextureID ? *diffuseTextureID : 0;
-	rs.specularExponent = specularTextureID ? *specularTextureID : 0;
-	rs.specularExponent = specularExponent ? *specularExponent : 0;
+	rs.diffuseTex = diffuseTextureID;
+	rs.specularTex = specularTextureID;
+	rs.specularExponent = specularExponent;
+
+	addToDynamicRenderQueue(rs);
+
+	return true;
+}
+
+
+bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent)
+{
+	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+		return false;
+
+	RendererSubmission rs;
+	rs.primitiveType = GL_TRIANGLES;
+	rs.shaderName = "lighting";
+	rs.modelToWorldTransform = modelTransform;
+	rs.VAO = m_mapPrimitives[primName].first;
+	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.diffuseColor = diffuseColor;
+	rs.specularColor = specularColor;
+	rs.specularExponent = specularExponent;
+
+	addToDynamicRenderQueue(rs);
 
 	return true;
 }
@@ -115,11 +143,30 @@ void Renderer::setupShaders()
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
 	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
-	m_mapShaders["infoBox"] = m_Shaders.AddProgramFromExts({ "shaders/infoBox.vert", "shaders/infoBox.frag" });
 	m_mapShaders["solid"] = m_Shaders.AddProgramFromExts({ "shaders/solid.vert", "shaders/flat.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
+}
+
+void Renderer::setupTextures()
+{
+	std::vector < std::pair<std::string, GLubyte*> > textureList;
+
+	textureList.push_back(std::make_pair("white", new GLubyte[4]{ 0xFF, 0xFF, 0xFF, 0xFF }));
+	textureList.push_back(std::make_pair("black", new GLubyte[4]{ 0x00, 0x00, 0x00, 0xFF }));
+
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
+	for (auto &t : textureList)
+	{
+		GLuint glTexID;
+		glGenTextures(1, &glTexID);
+		glBindTexture(GL_TEXTURE_2D, glTexID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, t.second);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		m_mapTextures[t.first] = glTexID;
+	}
 }
 
 
@@ -183,6 +230,8 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		glEnable(GL_CULL_FACE);
+
 		glm::mat4 vpMat = sceneView3DInfo->projection * sceneView3DInfo->view;
 
 		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneView3DInfo->view));
@@ -218,7 +267,7 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 	
 	glDisable(GL_MULTISAMPLE);
 
-	// Blit Framebuffer to screen
+	// Blit Framebuffer to resolve framebuffer
 	glBlitNamedFramebuffer(
 		frameBuffer->m_nRenderFramebufferId,
 		frameBuffer->m_nResolveFramebufferId,
@@ -249,22 +298,39 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glUseProgram(*m_mapShaders[i.shaderName]);
 			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(i.modelToWorldTransform));
 
-			if (i.specularExponent > 0.f)
-				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
+			// handle diffuse solid color, if any
+			if (i.diffuseColor != glm::vec4(-1.f))
+				glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.diffuseColor));
+			else
+				glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
+
+			// handle specular solid color, if any
+			if (i.specularColor != glm::vec4(-1.f))
+				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.specularColor));
+			else if (i.diffuseColor != glm::vec4(-1.f))
+				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(0.f)));
+			else
+				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
+	
 
 			// Handle diffuse texture, if any
 			glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 			if (i.diffuseTex > 0u)
 				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
 			else
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, 0);
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"]);
 			
 			// Handle specular texture, if any
 			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
 			if (i.specularTex > 0u)			
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
-			else
+			else if (i.diffuseTex > 0u)
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, 0);
+			else
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"]);
+
+			if (i.specularExponent > 0.f)
+				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
 
 			glBindVertexArray(i.VAO);
 			glDrawElements(i.primitiveType, i.vertCount, i.indexType, 0);
@@ -274,10 +340,18 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 }
 
 
+void Renderer::setupPrimitives()
+{
+	generateCylinder(32);
+	generateTorus(1.f, 0.025f, 32, 8);
+	generatePlane();
+}
+
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::setupFullscreenTexture()
+void Renderer::setupFullscreenQuad()
 {
 	glm::vec2 vVerts[4];
 
@@ -318,10 +392,6 @@ void Renderer::setupFullscreenTexture()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-void Renderer::setupPrimitives()
-{
 }
 
 
@@ -527,6 +597,92 @@ void Renderer::generateCylinder(int numSegments)
 
 void Renderer::generatePlane()
 {
+	std::vector<glm::vec3> pts;
+	std::vector<glm::vec3> norms;
+	std::vector<glm::vec2> texUVs;
+	std::vector<unsigned short> inds;
+
+	// Front face
+	pts.push_back(glm::vec3(-0.5f, -0.5f, 0.f));
+	pts.push_back(glm::vec3(0.5f, -0.5f, 0.f));
+	pts.push_back(glm::vec3(0.5f, 0.5f, 0.f));
+	pts.push_back(glm::vec3(-0.5f, 0.5f, 0.f));
+
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+
+	texUVs.push_back(glm::vec2(0.f, 1.f));
+	texUVs.push_back(glm::vec2(1.f, 1.f));
+	texUVs.push_back(glm::vec2(1.f, 0.f));
+	texUVs.push_back(glm::vec2(0.f, 0.f));
+
+	inds.push_back(0);
+	inds.push_back(1);
+	inds.push_back(2);
+
+	inds.push_back(2);
+	inds.push_back(3);
+	inds.push_back(0);
+
+	// Back face
+	pts.push_back(glm::vec3(0.5f, -0.5f, 0.f));
+	pts.push_back(glm::vec3(-0.5f, -0.5f, 0.f));
+	pts.push_back(glm::vec3(-0.5f, 0.5f, 0.f));
+	pts.push_back(glm::vec3(0.5f, 0.5f, 0.f));
+
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+
+	texUVs.push_back(glm::vec2(1.f, 1.f));
+	texUVs.push_back(glm::vec2(0.f, 1.f));
+	texUVs.push_back(glm::vec2(0.f, 0.f));
+	texUVs.push_back(glm::vec2(1.f, 0.f));
+
+	inds.push_back(4);
+	inds.push_back(5);
+	inds.push_back(6);
+
+	inds.push_back(6);
+	inds.push_back(7);
+	inds.push_back(4);
+
+	glGenVertexArrays(1, &m_glPlaneVAO);
+	glGenBuffers(1, &m_glPlaneVBO);
+	glGenBuffers(1, &m_glPlaneEBO);
+
+	// Setup VAO
+	glBindVertexArray(this->m_glPlaneVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glPlaneVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPlaneEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	// Fill buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glPlaneVBO);
+	// Buffer orphaning
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	// Sub buffer data for points, normals, textures...
+	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPlaneEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STATIC_DRAW);
+
+	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 12);
 }
 
 

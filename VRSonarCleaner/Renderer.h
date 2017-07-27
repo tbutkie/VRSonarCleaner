@@ -49,6 +49,8 @@ public:
 		int				vertCount;
 		GLenum			indexType;
 		std::string		shaderName;
+		glm::vec4		diffuseColor;
+		glm::vec4		specularColor;
 		GLuint			diffuseTex;
 		GLuint			specularTex;
 		float			specularExponent;
@@ -60,6 +62,8 @@ public:
 			, vertCount(0)
 			, indexType(GL_UNSIGNED_SHORT)
 			, shaderName("")
+			, diffuseColor(glm::vec4(-1.f))
+			, specularColor(glm::vec4(-1.f))
 			, diffuseTex(0)
 			, specularTex(0)
 			, specularExponent(0.f)
@@ -94,7 +98,8 @@ public:
 	void addToUIRenderQueue(RendererSubmission &rs);
 	void clearUIRenderQueue();
 
-	bool drawPrimitive(std::string primName, glm::mat4 *modelTransform, GLuint *diffuseTextureID, GLuint *specularTextureID, float *specularExponent, glm::vec4 *flatColor);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, GLuint diffuseTextureID, GLuint specularTextureID, float specularExponent);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 
 	void toggleWireframe();
 
@@ -109,8 +114,10 @@ private:
 	~Renderer();
 	
 	void setupShaders();
+
+	void setupTextures();
 	
-	void setupFullscreenTexture();
+	void setupFullscreenQuad();
 
 	void setupPrimitives();
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
@@ -134,8 +141,11 @@ private:
 
 	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
 
+	std::map<std::string, GLuint> m_mapTextures;
+
 	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
+	unsigned int m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;
 
 	GLuint m_glFrameUBO;
 	

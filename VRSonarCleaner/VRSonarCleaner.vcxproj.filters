@@ -280,12 +280,6 @@
     <None Include="shaders\flat.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\infoBox.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="shaders\infoBox.vert">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="shaders\lighting.frag">
       <Filter>Shaders</Filter>
     </None>

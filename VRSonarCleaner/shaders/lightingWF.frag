@@ -8,6 +8,10 @@ layout(location = MATERIAL_SHININESS_UNIFORM_LOCATION)
 	uniform float shininess;
 layout(location = LIGHT_COUNT_UNIFORM_LOCATION)
 	uniform int numLights;
+layout(location = DIFFUSE_COLOR_UNIFORM_LOCATION)
+	uniform vec4 diffColor;
+layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
+	uniform vec4 specColor;
 
 float lineWidth = 1.f;
 vec4 lineColor = vec4(0.f, 0.f, 0.f, 1.f);
@@ -58,8 +62,8 @@ void main()
     vec3 norm = normalize(GNorm);
 	norm = float(gl_FrontFacing) * norm + (1.f - float(gl_FrontFacing)) * -norm;
     vec3 fragToViewDir = normalize(-GPos);
-	vec4 surfaceDiffColor = texture(diffuseTex, GTex);
-	vec4 surfaceSpecColor = texture(specularTex, GTex);
+	vec4 surfaceDiffColor = texture(diffuseTex, GTex) * diffColor;
+	vec4 surfaceSpecColor = texture(specularTex, GTex) * specColor;
 	vec4 surfaceEmisColor = texture(emissiveTex, GTex);
 	
     vec3 result = vec3(0.f);
