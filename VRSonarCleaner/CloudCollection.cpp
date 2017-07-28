@@ -13,10 +13,8 @@ CloudCollection::~CloudCollection()
 
 void CloudCollection::loadCloud(char* filename)
 {
-	SonarPointCloud* cloud;
-	cloud = new SonarPointCloud();
-	cloud->loadFromSonarTxt(filename);
-	clouds->push_back(cloud);
+	clouds->push_back(new SonarPointCloud());
+	clouds->back()->loadFromSonarTxt(filename);
 }
 
 void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints)

@@ -850,6 +850,7 @@ void CMainApplication::drawScene()
 				wallVolume->drawBBox();
 				wallVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 				tableVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+				tableVolume->drawAxes();
 
 				//draw wall
 				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
@@ -939,10 +940,18 @@ void CMainApplication::render()
 		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 
-		vr::VRCompositor()->PostPresentHandoff();
+		//vr::VRCompositor()->PostPresentHandoff();
 		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-
+		
+		//glFinish();
+		
 		SDL_GL_SwapWindow(m_pVRCompanionWindow);
+
+		//glClearColor(0, 0, 0, 1);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//glFlush();
+		//glFinish();
 	}
 
 	if (m_bUseDesktop)

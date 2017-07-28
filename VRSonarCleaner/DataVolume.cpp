@@ -30,6 +30,16 @@ DataVolume::~DataVolume()
 
 }
 
+glm::vec3 DataVolume::getOriginalPosition()
+{
+	return m_vec3OriginalPosition;
+}
+
+glm::quat DataVolume::getOriginalOrientation()
+{
+	return m_qOriginalOrientation;
+}
+
 void DataVolume::resetPositionAndOrientation()
 {
 	setPosition(m_vec3OriginalPosition);
@@ -57,16 +67,6 @@ void DataVolume::setInnerCoords(glm::vec3 minCoords, glm::vec3  maxCoords)
 	m_vec3DataCenteringOffset = (-m_vec3InnerRange * 0.5f) - m_vec3InnerMin;
 
 	recalcScaling();
-}
-
-glm::vec3 DataVolume::getOriginalPosition()
-{
-	return m_vec3OriginalPosition;
-}
-
-glm::quat DataVolume::getOriginalOrientation()
-{
-	return m_qOriginalOrientation;
 }
 
 void DataVolume::recalcScaling()
