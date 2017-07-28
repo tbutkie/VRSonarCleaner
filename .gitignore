@@ -322,3 +322,4 @@ VRSonarCleaner/vcomp140.dll
 VRSonarCleaner/vcruntime140.dll
 
 VRSonarCleaner/saved_points*.csv
+*.fg
