@@ -1,6 +1,6 @@
 #include "Node.h"
 
-#include "DebugDrawer.h"
+#include "Renderer.h"
 
 Node::Node(glm::vec3 initialPosition, glm::quat initialOrientation, glm::vec3 initialScale)
 	: m_vec3Position(initialPosition)
@@ -99,10 +99,11 @@ glm::mat4 Node::getModelToWorldTransform()
 	return m_mat4ModelToWorld;
 }
 
-void Node::drawAxes()
+void Node::drawAxes(float size)
 {
-	DebugDrawer::getInstance().setTransform(getModelToWorldTransform());
-	DebugDrawer::getInstance().drawTransform(0.1f); // 10 cm at scale = unity
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(getModelToWorldTransform(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(getModelToWorldTransform(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(getModelToWorldTransform(), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f), 1.f);
 }
 
 bool Node::isDirty()

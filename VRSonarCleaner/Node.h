@@ -28,7 +28,7 @@ public:
 
 	glm::mat4 getModelToWorldTransform();
 
-	void drawAxes();
+	void drawAxes(float size = 1.f);
 
 	bool isDirty();
 
