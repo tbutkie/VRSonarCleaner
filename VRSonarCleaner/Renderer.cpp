@@ -122,6 +122,25 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm
 	return true;
 }
 
+bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color)
+{
+	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+		return false;
+
+	RendererSubmission rs;
+	rs.primitiveType = GL_TRIANGLES;
+	rs.shaderName = "flat";
+	rs.modelToWorldTransform = modelTransform;
+	rs.VAO = m_mapPrimitives[primName].first;
+	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.diffuseColor = color;
+
+	addToDynamicRenderQueue(rs);
+
+	return true;
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -408,6 +427,7 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 
 	std::vector<glm::vec3> pts;
 	std::vector<glm::vec3> norms;
+	std::vector<glm::vec4> colors;
 	std::vector<glm::vec2> texUVs;
 	std::vector<unsigned short> inds;
 
@@ -429,6 +449,7 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 
 			pts.push_back(glm::vec3(x, y, z));
 			norms.push_back(glm::vec3(nx, ny, nz));
+			colors.push_back(glm::vec4(1.f));
 			texUVs.push_back(glm::vec2(s, t));
 
 			unsigned short uvInd = i * numMeridianSegments + j;
@@ -459,17 +480,20 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
 	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
 	glBindVertexArray(0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
 	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
 	// Sub buffer data for points, normals, textures...
 	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
@@ -482,18 +506,21 @@ void Renderer::generateCylinder(int numSegments)
 {
 	std::vector<glm::vec3> pts;
 	std::vector<glm::vec3> norms;
+	std::vector<glm::vec4> colors;
 	std::vector<glm::vec2> texUVs;
 	std::vector<unsigned short> inds;
 
 	// Front endcap
 	pts.push_back(glm::vec3(0.f));
 	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+	colors.push_back(glm::vec4(1.f));
 	texUVs.push_back(glm::vec2(0.5f, 0.5f));
 	for (float i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
 		norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+		colors.push_back(glm::vec4(1.f));
 		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
 
 		if (i > 0)
@@ -510,12 +537,14 @@ void Renderer::generateCylinder(int numSegments)
 	// Back endcap
 	pts.push_back(glm::vec3(0.f, 0.f, 1.f));
 	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+	colors.push_back(glm::vec4(1.f));
 	texUVs.push_back(glm::vec2(0.5f, 0.5f));
 	for (float i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
 		norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+		colors.push_back(glm::vec4(1.f));
 		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
 
 		if (i > 0)
@@ -535,10 +564,12 @@ void Renderer::generateCylinder(int numSegments)
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
 		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		colors.push_back(glm::vec4(1.f));
 		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 0.f));
 
 		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
 		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+		colors.push_back(glm::vec4(1.f));
 		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 1.f));
 
 		if (i > 0)
@@ -575,18 +606,21 @@ void Renderer::generateCylinder(int numSegments)
 	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
 	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
 	glBindVertexArray(0);
 
 	// Fill buffers
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glCylinderVBO);
 	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
 	// Sub buffer data for points, normals, textures...
 	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glCylinderEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
@@ -599,6 +633,7 @@ void Renderer::generatePlane()
 {
 	std::vector<glm::vec3> pts;
 	std::vector<glm::vec3> norms;
+	std::vector<glm::vec4> colors;
 	std::vector<glm::vec2> texUVs;
 	std::vector<unsigned short> inds;
 
@@ -612,6 +647,11 @@ void Renderer::generatePlane()
 	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
 	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
 	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
+
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
 
 	texUVs.push_back(glm::vec2(0.f, 1.f));
 	texUVs.push_back(glm::vec2(1.f, 1.f));
@@ -636,6 +676,11 @@ void Renderer::generatePlane()
 	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
 	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
 	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
+
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
+	colors.push_back(glm::vec4(1.f));
 
 	texUVs.push_back(glm::vec2(1.f, 1.f));
 	texUVs.push_back(glm::vec2(0.f, 1.f));
@@ -665,18 +710,21 @@ void Renderer::generatePlane()
 	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
 	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
 	glBindVertexArray(0);
 
 	// Fill buffers
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glPlaneVBO);
 	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
-	// Sub buffer data for points, normals, textures...
+	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), 0, GL_STATIC_DRAW);
+	// Sub buffer data for points, normals, colors, textures...
 	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPlaneEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);

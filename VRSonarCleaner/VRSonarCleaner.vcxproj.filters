@@ -141,6 +141,9 @@
     <ClCompile Include="PointCleanProbe.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
+    <ClCompile Include="ResourceManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -271,6 +274,9 @@
     </ClInclude>
     <ClInclude Include="PointCleanProbe.h">
       <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceManager.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

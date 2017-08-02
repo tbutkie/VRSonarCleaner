@@ -15,6 +15,8 @@
 
 #include <ctime>
 
+#include <thread>
+
 HolodeckBackground*				g_pHolodeck = NULL;
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
@@ -848,8 +850,8 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				wallVolume->drawBBox();
-				wallVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
-				tableVolume->drawBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+				tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 				tableVolume->drawAxes();
 
 				//draw wall
@@ -916,7 +918,7 @@ void CMainApplication::drawScene()
 	if (m_bFlowVis)
 	{
 		flowVolume->draw();
-		flowVolume->drawBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye);
+		flowVolume->drawAdaptiveBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye);
 	}
 }
 

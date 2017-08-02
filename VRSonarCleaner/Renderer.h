@@ -100,6 +100,7 @@ public:
 
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, GLuint diffuseTextureID, GLuint specularTextureID, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
+	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
 
 	void toggleWireframe();
 

@@ -190,6 +190,7 @@
     <ClCompile Include="ParticleManager.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="shaderset.cpp" />
     <ClCompile Include="SingleControllerBehavior.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
@@ -235,6 +236,7 @@
     <ClInclude Include="ParticleManager.h" />
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SingleControllerBehavior.h" />

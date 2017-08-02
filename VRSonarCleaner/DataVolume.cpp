@@ -104,64 +104,97 @@ void DataVolume::drawBBox()
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
 }
 
-void DataVolume::drawBacking(glm::vec3 viewPos)
+void DataVolume::drawAdaptiveBacking(glm::vec3 viewPos)
 {
-	glm::vec3 bbMin(-1.f);
-	glm::vec3 bbMax(1.f);
+	glm::vec3 bbMin(-0.5f);
+	glm::vec3 bbMax(0.5f);
 	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
 
 	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions);
 	
 	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
-	vv4cubeSideCtrs.push_back(glm::vec4(bbMin.x, (bbMax.y - bbMin.y) / 2.f, (bbMax.z - bbMin.z) / 2.f, 1.f)); // left
-	vv4cubeSideCtrs.push_back(glm::vec4(bbMax.x, (bbMax.y - bbMin.y) / 2.f, (bbMax.z - bbMin.z) / 2.f, 1.f)); // right
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMin.x, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // left
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // right
 	
-	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, bbMax.y, (bbMax.z - bbMin.z) / 2.f, 1.f)); // top
-	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, bbMin.y, (bbMax.z - bbMin.z) / 2.f, 1.f)); // bottom
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMin.y, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // bottom
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // top
 	
-	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, (bbMax.y - bbMin.y) / 2.f, bbMax.z, 1.f)); // front
-	vv4cubeSideCtrs.push_back(glm::vec4((bbMax.x - bbMin.x) / 2.f, (bbMax.y - bbMin.y) / 2.f, bbMin.z, 1.f)); // back
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z, 1.f)); // front
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMin.z, 1.f)); // back
 	
-	glm::vec4 volumeCtr = volTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
+	glm::vec4 volumeCtr = volTransform[3];
 	
 	for (auto const &midPt : vv4cubeSideCtrs)
 	{
 		glm::vec3 norm(glm::normalize(volumeCtr - midPt));
 	
-		glm::vec3 viewPosXformed(glm::vec3(glm::inverse(volTransform) * glm::vec4(viewPos, 1.f)));
 		glm::vec3 midPtToViewPos(glm::normalize(viewPos - glm::vec3(midPt)));
 	
 		float dotProd = glm::dot(midPtToViewPos, norm);
 	
-		float angleCutoff = 70.f; // degrees viewing angle to plane normal
+		float angleCutoff = 80.f;
+		float cosCutoff = cos(glm::radians(angleCutoff));
+		float angleFade = 70.f; // degrees viewing angle to plane normal
+		float cosFade = cos(glm::radians(angleFade));
 		
-		if (dotProd > cos(glm::radians(angleCutoff)))
+		if (dotProd > cosCutoff)
 		{
-			glm::quat rotNeeded = glm::rotation(glm::normalize(glm::vec3(volTransform[2])), norm);
-	
-			Renderer::getInstance().drawPrimitive("plane", volTransform, color, glm::vec4(-1.f), 0);
+			// calculate transparency fade
+			float range = cosFade - cosCutoff;
+			color.a = (dotProd - cosCutoff) / range;
+
+			// now position the planes
+			float eps = 0.001f;
+			glm::mat4 planeTransform;
+			glm::vec4 u, v, w;
+
+			if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[0]))) - (-1.f)) < eps)
+			{ // right
+				planeTransform[0] = volTransform[2];
+				planeTransform[1] = volTransform[1];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+			else if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[0]))) - 1.f) < eps)
+			{ // left
+				planeTransform[0] = -volTransform[2];
+				planeTransform[1] = volTransform[1];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+			else if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[1]))) - (-1.f)) < eps)
+			{ // top
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = volTransform[2];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+			else if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[1]))) - 1.f) < eps)
+			{ // bottom
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = -volTransform[2];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+			else if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[2]))) - (-1.f)) < eps)
+			{ // front
+				planeTransform[0] = -volTransform[0];
+				planeTransform[1] = volTransform[1];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+			else if (abs(glm::dot(norm, glm::normalize(glm::vec3(volTransform[2]))) - 1.f) < eps)
+			{ // back
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = volTransform[1];
+				planeTransform[2] = volumeCtr - midPt;
+				planeTransform[3] = midPt;
+			}
+
+			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, color);
 		}
 	}
-
-
-	//DebugDrawer::getInstance().setTransform(
-	//	glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * 0.5f)
-	//);
-	//
-	//DebugDrawer::getInstance().drawSolidTriangle(
-	//	glm::vec3(bbMin.x, bbMin.y, bbMin.z),
-	//	glm::vec3(bbMax.x, bbMin.y, bbMin.z),
-	//	glm::vec3(bbMax.x, bbMax.y, bbMin.z),
-	//	color
-	//);
-	//
-	//DebugDrawer::getInstance().drawSolidTriangle(
-	//	glm::vec3(bbMin.x, bbMin.y, bbMin.z),
-	//	glm::vec3(bbMax.x, bbMax.y, bbMin.z),
-	//	glm::vec3(bbMin.x, bbMax.y, bbMin.z),
-	//	color
-	//);	
 }
 
 glm::mat4 DataVolume::getCurrentDataTransform()
