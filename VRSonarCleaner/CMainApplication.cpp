@@ -828,35 +828,17 @@ void CMainApplication::update()
 
 void CMainApplication::drawScene()
 {
-
-	for (auto const &b : g_vpBehaviors)
-		b->draw();
-
-	if (m_bUseVR)
-	{
-		m_pTDM->draw();
-
-		InfoBoxManager::getInstance().draw();
-	}
-
-	if (m_bUseDesktop)
-	{
-	}
-
 	if (m_bSonarCleaning)
 	{
 		if (m_bUseVR)
 		{
 			if (!m_bUseDesktop)
 			{
-				wallVolume->drawBBox();
-				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
-				tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
-				tableVolume->drawAxes();
-
 				//draw wall
 				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
 				m_pClouds->drawAllClouds(m_pColorScalerTPU);
+				wallVolume->drawBBox();
+				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 			}
 			else if (m_bShowDesktopFrustum)
 			{
@@ -907,18 +889,32 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
+		tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 		tableVolume->drawBBox();
 
 		//draw table
 		DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
 		m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
-
 	}
 
 	if (m_bFlowVis)
 	{
-		flowVolume->draw();
 		flowVolume->drawAdaptiveBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye);
+		flowVolume->draw();
+	}
+
+	for (auto const &b : g_vpBehaviors)
+		b->draw();
+
+	if (m_bUseVR)
+	{
+		m_pTDM->draw();
+
+		InfoBoxManager::getInstance().draw();
+	}
+
+	if (m_bUseDesktop)
+	{
 	}
 }
 

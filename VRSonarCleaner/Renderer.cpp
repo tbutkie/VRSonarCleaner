@@ -730,7 +730,8 @@ void Renderer::generatePlane()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STATIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STATIC_DRAW);
 
-	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 12);
+	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 6); // one sided
+	m_mapPrimitives["planedouble"] = m_mapPrimitives["quaddouble"] = std::make_pair(m_glPlaneVAO, 12); // two sided
 }
 
 
