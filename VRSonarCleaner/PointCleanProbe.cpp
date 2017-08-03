@@ -52,14 +52,14 @@ void PointCleanProbe::draw()
 
 	drawProbe(m_fProbeOffset - m_fProbeRadius);	
 
-	long long rate_ms_per_rev = 100ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
+	long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
 
 	// Update time vars
 	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
 	m_LastTime = std::chrono::high_resolution_clock::now();
 
 	// Update rotation angle
-	float angleNeeded = glm::two_pi<float>() * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+	float angleNeeded = (360.f) * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
 	m_fCursorHoopAngle += angleNeeded;
 
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
@@ -72,11 +72,11 @@ void PointCleanProbe::draw()
 	for (int n = 0; n < 3; ++n)
 	{
 		if (n == 0)
-			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(1.f, 0.f, 0.f));
+			rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(1.f, 0.f, 0.f));
 		if (n == 1)
-			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+			rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
 		if (n == 2)
-			rot = glm::rotate(glm::mat4(), m_fCursorHoopAngle, glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+			rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
 		
 		glm::mat4 torusToWorldTransform = getProbeToWorldTransform() * rot * scl;
 

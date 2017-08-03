@@ -91,26 +91,24 @@ glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 innerPos)
 	return glm::vec3(getCurrentDataTransform() * glm::vec4(innerPos, 1.f));
 }
 
-void DataVolume::drawBBox()
+void DataVolume::drawBBox(glm::vec4 color, float padPct)
 {	
-	glm::vec3 bbMin(-1.f);
-	glm::vec3 bbMax(1.f);
-	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
+	glm::vec3 bbMin(-0.5f);
+	glm::vec3 bbMax(0.5f);
 
 	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * 0.5f)
+		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct))
 	);
 
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
 }
 
-void DataVolume::drawAdaptiveBacking(glm::vec3 viewPos)
+void DataVolume::drawAdaptiveBacking(glm::vec3 viewPos, glm::vec4 color, float padPct)
 {
 	glm::vec3 bbMin(-0.5f);
 	glm::vec3 bbMax(0.5f);
-	glm::vec4 color(0.22f, 0.25f, 0.34f, 1.f);
 
-	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions);
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
 	
 	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
@@ -142,7 +140,7 @@ void DataVolume::drawAdaptiveBacking(glm::vec3 viewPos)
 		{
 			// calculate transparency fade
 			float range = cosFade - cosCutoff;
-			color.a = (dotProd - cosCutoff) / range;
+			color.a *= (dotProd - cosCutoff) / range;
 
 			// now position the planes
 			float eps = 0.001f;
@@ -192,7 +190,7 @@ void DataVolume::drawAdaptiveBacking(glm::vec3 viewPos)
 				planeTransform[3] = midPt;
 			}
 
-			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, color);
+			Renderer::getInstance().drawPrimitive("plane", planeTransform, color, color, 10.f);
 		}
 	}
 }

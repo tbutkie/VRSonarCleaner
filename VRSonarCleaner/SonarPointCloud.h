@@ -15,7 +15,7 @@
 class SonarPointCloud
 {
 	public:
-		SonarPointCloud();
+		SonarPointCloud(ColorScaler * const colorScaler);
 		~SonarPointCloud();
 
 		void markForDeletion();
@@ -24,7 +24,12 @@ class SonarPointCloud
 		
 		bool getRefreshNeeded();
 		void setRefreshNeeded();
-		bool refreshNeeded;
+		void update();
+
+		GLuint getVAO();
+		GLsizei getPointCount();
+		GLuint getPreviewVAO();
+		GLsizei getPreviewPointCount();
 
 		//methods:
 		void deleteSelf();
@@ -37,12 +42,6 @@ class SonarPointCloud
 		bool loadFromSonarTxt(char* filename);
 
 		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
-				
-		//VBOs
-		void drawPreview(ColorScaler * const colorScaler);
-		void draw(ColorScaler * const colorScaler);
-
-		void drawAxes();
 
 		int colorScale;
 
@@ -79,18 +78,18 @@ class SonarPointCloud
 
 		char* getName();
 		void setName(char* Name);
-		char name[512];
 
 	private:
 		//variables
+		char name[512];
 		double xMin, xMax, xRange;
 		double yMin, yMax, yRange;
 		double minDepth, maxDepth, rangeDepth;
 		double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
 		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 
-		double *pointsPositions;
-		float *pointsColors;
+		std::vector<glm::vec3> m_vvec3PointsPositions;
+		std::vector<glm::vec4> m_vvec4PointsColors;
 		int *pointsMarks;
 		float *pointsDepthTPU;
 		float *pointsPositionTPU;
@@ -100,15 +99,20 @@ class SonarPointCloud
 
 		int colorMode;
 		int colorScope;
+
+		ColorScaler *m_pColorScaler;
 		
-		//VBOs
-		bool glewInited;
-		
-		int numPointsInVBO;
+		int m_iPreviewReductionFactor;
 
 		//preview
-		int previewNumPointsInVBO;
+		bool refreshNeeded;
 		bool previewRefreshNeeded;
+
+		//OpenGL
+		GLuint m_glVAO, m_glVBO, m_glEBO;
+		GLuint m_glPreviewVAO, m_glPreviewEBO;
+
+
 };
 
 #endif

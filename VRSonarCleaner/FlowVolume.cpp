@@ -91,7 +91,7 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 void FlowVolume::draw()
 {
 	//draw debug
-	drawBBox();
+	drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 5.f);
 	//drawBacking();
 	//drawAxes();
 	

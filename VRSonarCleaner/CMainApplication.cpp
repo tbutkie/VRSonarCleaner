@@ -223,7 +223,7 @@ bool CMainApplication::init()
 		m_pColorScalerTPU->setColorScale(2);
 		m_pColorScalerTPU->setBiValueScale(1);
 
-		m_pClouds = new CloudCollection();
+		m_pClouds = new CloudCollection(m_pColorScalerTPU);
 		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
 		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
 		//clouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
@@ -811,6 +811,8 @@ void CMainApplication::update()
 
 	if (m_bSonarCleaning)
 	{
+		m_pClouds->updateClouds();
+
 		if (m_bUseVR)
 		{
 
@@ -835,10 +837,23 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				DebugDrawer::getInstance().setTransform(wallVolume->getCurrentDataTransform());
-				m_pClouds->drawAllClouds(m_pColorScalerTPU);
-				wallVolume->drawBBox();
-				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]),	glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
+
+				Renderer::RendererSubmission rs;
+				rs.primitiveType = GL_POINTS;
+				rs.indexType = GL_UNSIGNED_SHORT;
+				rs.modelToWorldTransform = wallVolume->getCurrentDataTransform();
+				rs.diffuseColor = rs.specularColor = glm::vec4(1.f);
+				rs.specularExponent = 0.f;
+				rs.shaderName = "flat";
+
+				for (int i = 0; i < m_pClouds->getNumClouds(); ++i)
+				{
+					 rs.VAO = m_pClouds->getCloud(i)->getPreviewVAO();
+					 rs.vertCount = m_pClouds->getCloud(i)->getPreviewPointCount();
+					 Renderer::getInstance().addToDynamicRenderQueue(rs);
+				}
 			}
 			else if (m_bShowDesktopFrustum)
 			{
@@ -889,17 +904,26 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
-		tableVolume->drawBBox();
+		tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]), glm::vec4(0.1f, 0.1f, 0.4f, 1.f), 2.f);
+		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
 
 		//draw table
-		DebugDrawer::getInstance().setTransform(tableVolume->getCurrentDataTransform());
-		m_pClouds->getCloud(0)->draw(m_pColorScalerTPU);
+		Renderer::RendererSubmission rs;
+		rs.primitiveType = GL_POINTS;
+		rs.shaderName = "flat";
+		rs.modelToWorldTransform = tableVolume->getCurrentDataTransform();
+		rs.diffuseColor = rs.specularColor = glm::vec4(1.f);
+		rs.specularExponent = 0.f;
+		rs.VAO = m_pClouds->getCloud(0)->getVAO();
+		rs.vertCount = m_pClouds->getCloud(0)->getPointCount();
+		rs.indexType = GL_UNSIGNED_SHORT;
+		
+		Renderer::getInstance().addToDynamicRenderQueue(rs);		
 	}
 
 	if (m_bFlowVis)
 	{
-		flowVolume->drawAdaptiveBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye);
+		flowVolume->drawAdaptiveBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye, glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
 		flowVolume->draw();
 	}
 

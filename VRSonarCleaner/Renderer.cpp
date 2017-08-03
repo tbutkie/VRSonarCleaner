@@ -264,6 +264,7 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		{
 			glUseProgram(*m_mapShaders["debug"]);
 			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
+			glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
 			DebugDrawer::getInstance().render();
 		}
 

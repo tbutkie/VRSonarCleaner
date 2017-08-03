@@ -13,7 +13,7 @@
 class CloudCollection
 {
 public:
-	CloudCollection();
+	CloudCollection(ColorScaler *colorScaler);
 	~CloudCollection();
 
 	void loadCloud(char* filename);
@@ -24,8 +24,7 @@ public:
 	SonarPointCloud* getCloud(int index);
 	int getNumClouds();
 
-	void drawCloud(int index, ColorScaler * const colorScaler);
-	void drawAllClouds(ColorScaler * const colorScaler);
+	void updateClouds();
 
 	void resetMarksInAllClouds();
 
@@ -44,8 +43,8 @@ public:
 	double getMaxPositionalTPU();
 	
 private:
-	
-	std::vector <SonarPointCloud*> *clouds;
+	ColorScaler *m_pColorScaler;
+	std::vector <SonarPointCloud*> clouds;
 
 	double xMin, xMax, xRange;
 	double yMin, yMax, yRange;

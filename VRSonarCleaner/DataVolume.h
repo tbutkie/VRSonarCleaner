@@ -18,8 +18,8 @@ public:
 	DataVolume(glm::vec3 pos, int startingOrientation, glm::vec3 dimensions, glm::vec3 innerCoordsMin, glm::vec3 innerCoordsMax);
 	virtual ~DataVolume();
 
-	void drawBBox();
-	void drawAdaptiveBacking(glm::vec3 viewPos = glm::vec3(0.f));
+	void drawBBox(glm::vec4 color, float padPct);
+	void drawAdaptiveBacking(glm::vec3 viewPos, glm::vec4 color, float padPct);
 
 	void setDimensions(glm::vec3 dimensions);
 	glm::vec3 getDimensions();

@@ -1,46 +1,46 @@
 #include "CloudCollection.h"
 
-CloudCollection::CloudCollection()
+CloudCollection::CloudCollection(ColorScaler *colorScaler)
+	: m_pColorScaler(colorScaler)
 {
-	clouds = new std::vector <SonarPointCloud*>;
 }
 
 CloudCollection::~CloudCollection()
 {
 	clearAllClouds();
-	delete clouds;
+	clouds.clear();
 }
 
 void CloudCollection::loadCloud(char* filename)
 {
-	clouds->push_back(new SonarPointCloud());
-	clouds->back()->loadFromSonarTxt(filename);
+	clouds.push_back(new SonarPointCloud(m_pColorScaler));
+	clouds.back()->loadFromSonarTxt(filename);
 }
 
 void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints)
 {
 	SonarPointCloud* cloud;
-	cloud = new SonarPointCloud();
+	cloud = new SonarPointCloud(m_pColorScaler);
 	cloud->generateFakeCloud(sizeX, sizeY, sizeZ, numPoints);
-	clouds->push_back(cloud);
+	clouds.push_back(cloud);
 }
 
 void CloudCollection::calculateCloudBoundsAndAlign()
 {
 	//find absolute minimum actual removed min values (the min bounds of the whole dataset)
-	for (int i = 0; i < clouds->size(); i++)
+	for (int i = 0; i < clouds.size(); i++)
 	{
 		if (i == 0)//if first cloud use its values
 		{
-			actualRemovedXmin = clouds->at(i)->getActualRemovedXMin();
-			actualRemovedYmin = clouds->at(i)->getActualRemovedYMin();
+			actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
+			actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
 		}
 		else
 		{
-			if (clouds->at(i)->getActualRemovedXMin() < actualRemovedXmin)
-				actualRemovedXmin = clouds->at(i)->getActualRemovedXMin();
-			if (clouds->at(i)->getActualRemovedYMin() < actualRemovedYmin)
-				actualRemovedYmin = clouds->at(i)->getActualRemovedYMin();
+			if (clouds.at(i)->getActualRemovedXMin() < actualRemovedXmin)
+				actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
+			if (clouds.at(i)->getActualRemovedYMin() < actualRemovedYmin)
+				actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
 		}
 	}//end for
 
@@ -48,56 +48,56 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
 	
 	//now we have the actual min bounds, refactor the others with those as their new removed mins
-	if (clouds->size() > 1)
+	if (clouds.size() > 1)
 	{
-		for (int i = 0; i < clouds->size(); i++)
+		for (int i = 0; i < clouds.size(); i++)
 		{
-			clouds->at(i)->useNewActualRemovedMinValues(actualRemovedXmin, actualRemovedYmin);
+			clouds.at(i)->useNewActualRemovedMinValues(actualRemovedXmin, actualRemovedYmin);
 		}
 	}//end if
 
-	for (int i = 0; i < clouds->size(); i++)
+	for (int i = 0; i < clouds.size(); i++)
 	{
 		if (i == 0)//for the first cloud, just use its bounds
 		{
-			xMin = clouds->at(i)->getXMin();
-			xMax = clouds->at(i)->getXMax();
-			yMin = clouds->at(i)->getYMin();
-			yMax = clouds->at(i)->getYMax();
-			minDepth = clouds->at(i)->getMinDepth();
-			maxDepth = clouds->at(i)->getMaxDepth();
-			minDepthTPU = clouds->at(i)->getMinDepthTPU();
-			maxDepthTPU = clouds->at(i)->getMaxDepthTPU();
-			minPositionalTPU = clouds->at(i)->getMinPositionalTPU();
-			maxPositionalTPU = clouds->at(i)->getMaxPositionalTPU();
+			xMin = clouds.at(i)->getXMin();
+			xMax = clouds.at(i)->getXMax();
+			yMin = clouds.at(i)->getYMin();
+			yMax = clouds.at(i)->getYMax();
+			minDepth = clouds.at(i)->getMinDepth();
+			maxDepth = clouds.at(i)->getMaxDepth();
+			minDepthTPU = clouds.at(i)->getMinDepthTPU();
+			maxDepthTPU = clouds.at(i)->getMaxDepthTPU();
+			minPositionalTPU = clouds.at(i)->getMinPositionalTPU();
+			maxPositionalTPU = clouds.at(i)->getMaxPositionalTPU();
 		}
 		else //for each additonal cloud being added
 		{
 			//first check the min removed values and update other clouds as needed
-			if (clouds->at(i)->getXMin() < xMin)
-				xMin = clouds->at(i)->getXMin();
-			if (clouds->at(i)->getXMax() > xMax)
-				xMax = clouds->at(i)->getXMax();
+			if (clouds.at(i)->getXMin() < xMin)
+				xMin = clouds.at(i)->getXMin();
+			if (clouds.at(i)->getXMax() > xMax)
+				xMax = clouds.at(i)->getXMax();
 
-			if (clouds->at(i)->getYMin() < yMin)
-				yMin = clouds->at(i)->getYMin();
-			if (clouds->at(i)->getYMax() > yMax)
-				yMax = clouds->at(i)->getYMax();
+			if (clouds.at(i)->getYMin() < yMin)
+				yMin = clouds.at(i)->getYMin();
+			if (clouds.at(i)->getYMax() > yMax)
+				yMax = clouds.at(i)->getYMax();
 
-			if (clouds->at(i)->getMinDepth() < minDepth)
-				minDepth = clouds->at(i)->getMinDepth();
-			if (clouds->at(i)->getMaxDepth() > maxDepth)
-				maxDepth = clouds->at(i)->getMaxDepth();
+			if (clouds.at(i)->getMinDepth() < minDepth)
+				minDepth = clouds.at(i)->getMinDepth();
+			if (clouds.at(i)->getMaxDepth() > maxDepth)
+				maxDepth = clouds.at(i)->getMaxDepth();
 
-			if (clouds->at(i)->getMinDepthTPU() < minDepthTPU)
-				minDepthTPU = clouds->at(i)->getMinDepthTPU();
-			if (clouds->at(i)->getMaxDepthTPU() > maxDepthTPU)
-				maxDepthTPU = clouds->at(i)->getMaxDepthTPU();
+			if (clouds.at(i)->getMinDepthTPU() < minDepthTPU)
+				minDepthTPU = clouds.at(i)->getMinDepthTPU();
+			if (clouds.at(i)->getMaxDepthTPU() > maxDepthTPU)
+				maxDepthTPU = clouds.at(i)->getMaxDepthTPU();
 
-			if (clouds->at(i)->getMinPositionalTPU() < minPositionalTPU)
-				minPositionalTPU = clouds->at(i)->getMinPositionalTPU();
-			if (clouds->at(i)->getMaxPositionalTPU() > maxPositionalTPU)
-				maxPositionalTPU = clouds->at(i)->getMaxPositionalTPU();
+			if (clouds.at(i)->getMinPositionalTPU() < minPositionalTPU)
+				minPositionalTPU = clouds.at(i)->getMinPositionalTPU();
+			if (clouds.at(i)->getMaxPositionalTPU() > maxPositionalTPU)
+				maxPositionalTPU = clouds.at(i)->getMaxPositionalTPU();
 			
 		}//end else additonal cloud being added
 	}//end for i
@@ -116,22 +116,22 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 
 void CloudCollection::clearAllClouds()
 {
-	for (int i = 0; i < clouds->size(); i++)
+	for (auto &cloud : clouds)
 	{
-		clouds->at(i)->deleteSelf();
-		delete clouds->at(i);
+		cloud->deleteSelf();
+		delete cloud;
 	}
-	clouds->clear();
+	clouds.clear();
 }
 
 int CloudCollection::getNumClouds()
 {
-	return clouds->size();
+	return clouds.size();
 }
 
 SonarPointCloud* CloudCollection::getCloud(int index)
 {
-	return clouds->at(index);
+	return clouds.at(index);
 }
 
 double CloudCollection::getXMin()
@@ -190,19 +190,14 @@ double CloudCollection::getActualRemovedYMin()
 	return actualRemovedYmin;
 }
 
-void CloudCollection::drawCloud(int index, ColorScaler * const colorScaler) 
+void CloudCollection::updateClouds()
 {
-	clouds->at(index)->draw(colorScaler);
-}
-
-void CloudCollection::drawAllClouds(ColorScaler * const colorScaler)
-{
-	for (int i=0;i<clouds->size();i++)
-		clouds->at(i)->drawPreview(colorScaler);
+	for (auto const &cloud : clouds)
+		cloud->update();
 }
 
 void CloudCollection::resetMarksInAllClouds()
 {
-	for (int i = 0; i < clouds->size(); i++)
-		clouds->at(i)->resetAllMarks();
+	for (int i = 0; i < clouds.size(); i++)
+		clouds.at(i)->resetAllMarks();
 }
