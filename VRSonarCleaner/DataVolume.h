@@ -19,7 +19,7 @@ public:
 	virtual ~DataVolume();
 
 	void drawBBox(glm::vec4 color, float padPct);
-	void drawAdaptiveBacking(glm::vec3 viewPos, glm::vec4 color, float padPct);
+	void drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct);
 
 	void setDimensions(glm::vec3 dimensions);
 	glm::vec3 getDimensions();

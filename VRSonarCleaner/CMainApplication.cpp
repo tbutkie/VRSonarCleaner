@@ -116,23 +116,14 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pDesktopWindow(NULL)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
-	, m_bVerbose(false)
-	, m_bPerf(false)
 	, m_fPtHighlightAmt(1.f)
-	, m_LastTime(std::chrono::high_resolution_clock::now())
 	, m_Arcball(Arcball(false))
 	, m_vec3BallEye(glm::vec3(0.f, 0.f, 1.f))
 	, m_vec3BallCenter(glm::vec3(0.f))
 	, m_vec3BallUp(glm::vec3(0.f, 1.f, 0.f))
 	, m_fBallRadius(2.f)
 	, m_pLasso(NULL)
-{
-#if _DEBUG
-	m_bDebugOpenGL = true;
-#else
-	m_bDebugOpenGL = false;
-#endif
-	
+{	
 	switch (mode)
 	{
 	case 1:
@@ -837,7 +828,7 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				wallVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]),	glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+				wallVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(),	glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
 				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
 
 				Renderer::RendererSubmission rs;
@@ -904,7 +895,7 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		tableVolume->drawAdaptiveBacking(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]), glm::vec4(0.1f, 0.1f, 0.4f, 1.f), 2.f);
+		tableVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.1f, 0.1f, 0.4f, 1.f), 2.f);
 		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
 
 		//draw table
@@ -923,7 +914,11 @@ void CMainApplication::drawScene()
 
 	if (m_bFlowVis)
 	{
-		flowVolume->drawAdaptiveBacking(m_bUseVR ? glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) : m_vec3BallEye, glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+		if (m_bUseVR)
+			flowVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+		else if (m_bUseDesktop)
+			flowVolume->drawAdaptiveBacking(glm::inverse(glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp)), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+
 		flowVolume->draw();
 	}
 

@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string>
 #include <cstdlib>
-#include <chrono>
 
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
@@ -50,10 +49,6 @@ public:
 private:
 	unsigned int m_uiCurrentFPS;
 
-	bool m_bDebugOpenGL;
-	bool m_bVerbose;
-	bool m_bPerf;
-
 	bool m_bGLInitialized;
 	bool m_bUseVR;
 	bool m_bUseDesktop;
@@ -90,7 +85,6 @@ private:
 
 	LassoTool* m_pLasso;
 
-	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
 	float m_fPtHighlightAmt;
 
 private: // SDL bookkeeping
