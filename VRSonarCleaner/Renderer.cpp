@@ -184,7 +184,7 @@ void Renderer::setupTextures()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, t.second);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		m_mapTextures[t.first] = glTexID;
+		m_mapTextures[t.first] = std::make_pair(glTexID, false);
 	}
 }
 
@@ -318,27 +318,18 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glUseProgram(*m_mapShaders[i.shaderName]);
 			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(i.modelToWorldTransform));
 
-			// handle diffuse solid color, if any
-			if (i.diffuseColor != glm::vec4(-1.f))
-				glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.diffuseColor));
-			else
-				glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
+			// handle diffuse solid color
+			glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.diffuseColor));
 
-			// handle specular solid color, if any
-			if (i.specularColor != glm::vec4(-1.f))
-				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.specularColor));
-			else if (i.diffuseColor != glm::vec4(-1.f))
-				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(0.f)));
-			else
-				glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
+			// handle specular solid color
+			glUniform4fv(SPECULAR_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(i.specularColor));
 	
-
 			// Handle diffuse texture, if any
 			glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 			if (i.diffuseTex > 0u)
 				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
 			else
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"]);
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"].first);
 			
 			// Handle specular texture, if any
 			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
@@ -347,7 +338,7 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			else if (i.diffuseTex > 0u)
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, 0);
 			else
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"]);
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"].first);
 
 			if (i.specularExponent > 0.f)
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);

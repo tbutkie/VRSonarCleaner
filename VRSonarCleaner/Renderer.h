@@ -62,8 +62,8 @@ public:
 			, vertCount(0)
 			, indexType(GL_UNSIGNED_SHORT)
 			, shaderName("")
-			, diffuseColor(glm::vec4(-1.f))
-			, specularColor(glm::vec4(-1.f))
+			, diffuseColor(glm::vec4(1.f))
+			, specularColor(glm::vec4(1.f))
 			, diffuseTex(0)
 			, specularTex(0)
 			, specularExponent(0.f)
@@ -142,7 +142,7 @@ private:
 
 	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
 
-	std::map<std::string, GLuint> m_mapTextures;
+	std::map<std::string, std::pair<GLuint, bool>> m_mapTextures; // holds a flag for texture with transparency
 
 	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
