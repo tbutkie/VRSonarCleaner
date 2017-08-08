@@ -148,6 +148,7 @@ void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 co
 			// calculate transparency fade
 			float range = cosFade - cosCutoff;
 			//color.a *= (dpPlaneView - cosCutoff) / range;
+			color.a = 0.5f;
 
 			// now position the planes
 			float eps = 0.001f;

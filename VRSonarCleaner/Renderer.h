@@ -42,6 +42,15 @@ public:
 		}
 	};
 
+	struct RendererTexture
+	{
+		GLuint id;
+		bool transparency;
+
+		RendererTexture() : id(0), transparency(false) {}
+		RendererTexture(GLuint texID, bool hasTransparency) : id(texID), transparency(hasTransparency) {}
+	};
+
 	struct RendererSubmission
 	{
 		GLenum			primitiveType;
@@ -51,8 +60,8 @@ public:
 		std::string		shaderName;
 		glm::vec4		diffuseColor;
 		glm::vec4		specularColor;
-		GLuint			diffuseTex;
-		GLuint			specularTex;
+		RendererTexture	diffuseTex;
+		RendererTexture	specularTex;
 		float			specularExponent;
 		glm::mat4		modelToWorldTransform;
 
@@ -64,11 +73,18 @@ public:
 			, shaderName("")
 			, diffuseColor(glm::vec4(1.f))
 			, specularColor(glm::vec4(1.f))
-			, diffuseTex(0)
-			, specularTex(0)
 			, specularExponent(0.f)
 			, modelToWorldTransform(glm::mat4())
 		{}
+	};
+
+	class ObjectSorter {
+		glm::vec3 _HMDPos;
+	public:
+		ObjectSorter(glm::vec3 HMDPos) : _HMDPos(HMDPos) {}
+		bool operator()(RendererSubmission lhs, RendererSubmission rhs) const {
+			return sortByViewDistance(lhs, rhs, _HMDPos);
+		}
 	};
 
 	struct SceneViewInfo {
@@ -98,11 +114,13 @@ public:
 	void addToUIRenderQueue(RendererSubmission &rs);
 	void clearUIRenderQueue();
 
-	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, GLuint diffuseTextureID, GLuint specularTextureID, float specularExponent);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, RendererTexture diffuseTextureID, RendererTexture specularTextureID, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
 
 	void toggleWireframe();
+
+	void sortTransparentObjects(glm::vec3 HMDPos);
 
 	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
 	void RenderUI(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
@@ -127,13 +145,18 @@ private:
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
+	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
+
 private:
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;
 
-	std::vector<RendererSubmission> m_vStaticRenderQueue;
-	std::vector<RendererSubmission> m_vDynamicRenderQueue;
+	std::vector<RendererSubmission> m_vStaticRenderQueue_Opaque;
+	std::vector<RendererSubmission> m_vStaticRenderQueue_Transparency;
+	std::vector<RendererSubmission> m_vDynamicRenderQueue_Opaque;
+	std::vector<RendererSubmission> m_vDynamicRenderQueue_Transparency;
+	std::vector<RendererSubmission> m_vTransparentRenderQueue;
 	std::vector<RendererSubmission> m_vUIRenderQueue;
 
 	bool m_bShowWireframe;
@@ -142,7 +165,7 @@ private:
 
 	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
 
-	std::map<std::string, std::pair<GLuint, bool>> m_mapTextures; // holds a flag for texture with transparency
+	std::map<std::string, RendererTexture> m_mapTextures; // holds a flag for texture with transparency
 
 	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;

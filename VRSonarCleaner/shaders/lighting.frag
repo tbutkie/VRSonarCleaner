@@ -57,6 +57,10 @@ void main()
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
 	vec4 surfaceDiffColor = texture(diffuseTex, v2TexCoords) * diffColor;
+
+	if (surfaceDiffColor.a == 0.f)
+	    discard;
+
 	vec4 surfaceSpecColor = texture(specularTex, v2TexCoords) * specColor;
 	vec4 surfaceEmisColor = texture(emissiveTex, v2TexCoords);
 	

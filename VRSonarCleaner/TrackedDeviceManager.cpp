@@ -290,8 +290,8 @@ void TrackedDeviceManager::draw()
 					rs.VAO = rm->getVAO();
 					rs.vertCount = rm->getVertexCount();
 					rs.primitiveType = GL_TRIANGLES;
-					rs.diffuseTex = rm->getDiffuseTexture();
-					rs.specularTex = rm->getSpecularTexture();
+					rs.diffuseTex = Renderer::RendererTexture(rm->getDiffuseTexture(), false);
+					rs.specularTex = Renderer::RendererTexture(rm->getSpecularTexture(), false);
 					rs.specularExponent = rm->getMaterialShininess();
 					rs.modelToWorldTransform = matModel;
 					Renderer::getInstance().addToDynamicRenderQueue(rs);
@@ -308,8 +308,8 @@ void TrackedDeviceManager::draw()
 			rs.VAO = rm->getVAO();
 			rs.vertCount = rm->getVertexCount();
 			rs.primitiveType = GL_TRIANGLES;
-			rs.diffuseTex = rm->getDiffuseTexture();
-			rs.specularTex = rm->getSpecularTexture();
+			rs.diffuseTex = Renderer::RendererTexture(rm->getDiffuseTexture(), false);
+			rs.specularTex = Renderer::RendererTexture(rm->getSpecularTexture(), false);
 			rs.specularExponent = rm->getMaterialShininess();
 			rs.modelToWorldTransform = matModel;
 			Renderer::getInstance().addToDynamicRenderQueue(rs);

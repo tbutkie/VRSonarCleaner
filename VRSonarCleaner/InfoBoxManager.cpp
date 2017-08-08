@@ -130,7 +130,7 @@ void InfoBoxManager::draw()
 		}
 
 		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;
-		Renderer::getInstance().drawPrimitive("quad", modelTransform, std::get<IBIndex::TEXTURE>(ib.second)->getTexture(), 0, 0);
+		Renderer::getInstance().drawPrimitive("quad", modelTransform, Renderer::RendererTexture(std::get<IBIndex::TEXTURE>(ib.second)->getTexture(), true), Renderer::RendererTexture(), 0);
 	}
 }
 

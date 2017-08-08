@@ -13,6 +13,7 @@
 #include <iterator>
 
 #include "GLSLpreamble.h"
+#include "Renderer.h"
 
 class DebugDrawer
 {
@@ -56,7 +57,8 @@ public:
 	{
 		glm::vec3 pos_xformed = glm::vec3(m_mat4Transform * glm::vec4(pos, 1.f));
 
-		m_vPointsVertices.push_back(DebugVertex(pos_xformed, col));
+		m_vusPointIndices.push_back(m_vPointVertices.size());
+		m_vPointVertices.push_back(DebugVertex(pos_xformed, col));
 	}
 
 	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
@@ -65,8 +67,10 @@ public:
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vLinesVertices.push_back(DebugVertex(from_xformed, col));
-		m_vLinesVertices.push_back(DebugVertex(to_xformed, col));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(from_xformed, col));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(to_xformed, col));
 	}
 
 	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
@@ -75,8 +79,10 @@ public:
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vLinesVertices.push_back(DebugVertex(from_xformed, colFrom));
-		m_vLinesVertices.push_back(DebugVertex(to_xformed, colTo));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(from_xformed, colFrom));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(to_xformed, colTo));
 	}
 
 	void drawTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec4 &color)
@@ -92,9 +98,12 @@ public:
 		glm::vec3 v1_xformed = glm::vec3(m_mat4Transform * glm::vec4(v1, 1.f));
 		glm::vec3 v2_xformed = glm::vec3(m_mat4Transform * glm::vec4(v2, 1.f));
 
-		m_vTrianglesVertices.push_back(DebugVertex(v0_xformed, color));
-		m_vTrianglesVertices.push_back(DebugVertex(v1_xformed, color));
-		m_vTrianglesVertices.push_back(DebugVertex(v2_xformed, color));
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v0_xformed, color));
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v1_xformed, color));
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v2_xformed, color));
 	}
 
 	void drawTransform(float orthoLen)
@@ -162,35 +171,70 @@ public:
 	}
 
 	// Render the mesh
-	void render()
+	void draw()
 	{
-		size_t nPointsVerts = m_vPointsVertices.size();
-		size_t nLinesVerts = m_vLinesVertices.size();
-		size_t nTrisVerts = m_vTrianglesVertices.size();
+		Renderer::RendererSubmission rsPoints, rsLines, rsTriangles;
 
-		std::vector<DebugVertex> buffer;
+		rsPoints.shaderName = rsLines.shaderName = rsTriangles.shaderName = "debug";
 
-		std::copy(m_vPointsVertices.begin(), m_vPointsVertices.end(), std::back_inserter(buffer));
-		std::copy(m_vLinesVertices.begin(), m_vLinesVertices.end(),	std::back_inserter(buffer));
-		std::copy(m_vTrianglesVertices.begin(), m_vTrianglesVertices.end(), std::back_inserter(buffer));
-		
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
-		glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(DebugVertex), buffer.data(), GL_STREAM_DRAW);
-				
-		// Draw mesh
-		glBindVertexArray(this->m_glVAO);
-		glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(nPointsVerts));
-		glDrawArrays(GL_LINES, static_cast<GLint>(nPointsVerts), static_cast<GLsizei>(nLinesVerts));
-		glDrawArrays(GL_TRIANGLES, static_cast<GLint>(nPointsVerts + nLinesVerts), static_cast<GLsizei>(nTrisVerts));
-		glBindVertexArray(0);
+		rsPoints.indexType = rsLines.indexType = rsTriangles.indexType = GL_UNSIGNED_SHORT;
+
+		rsPoints.modelToWorldTransform = rsLines.modelToWorldTransform = rsTriangles.modelToWorldTransform = glm::mat4();
+
+		if (m_vPointVertices.size() > 0u)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glPointVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vPointVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
+			glBufferData(GL_ARRAY_BUFFER, m_vPointVertices.size() * sizeof(DebugVertex), m_vPointVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glPointEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), &m_vusPointIndices[0], GL_STREAM_DRAW);
+
+			rsPoints.primitiveType = GL_POINTS;
+			rsPoints.VAO = m_glPointVAO;
+			rsPoints.vertCount = m_vPointVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsPoints);
+		}
+
+		if (m_vLineVertices.size() > 0u)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glLineVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vLineVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
+			glBufferData(GL_ARRAY_BUFFER, m_vLineVertices.size() * sizeof(DebugVertex), m_vLineVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glLineEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), &m_vusLineIndices[0], GL_STREAM_DRAW);
+
+			rsLines.primitiveType = GL_LINES;
+			rsLines.VAO = m_glLineVAO;
+			rsLines.vertCount = m_vLineVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsLines);
+		}
+
+		if (m_vTriangleVertices.size() > 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glTriangleVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vTriangleVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
+			glBufferData(GL_ARRAY_BUFFER, m_vTriangleVertices.size() * sizeof(DebugVertex), m_vTriangleVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glTriangleEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), &m_vusTriangleIndices[0], GL_STREAM_DRAW);
+
+			rsTriangles.primitiveType = GL_TRIANGLES;
+			rsTriangles.VAO = m_glTriangleVAO;
+			rsTriangles.vertCount = m_vTriangleVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsTriangles);
+		}
 	}
 
 	void flushLines()
 	{
-		m_vPointsVertices.clear();
-		m_vLinesVertices.clear();
-		m_vTrianglesVertices.clear();
+		m_vPointVertices.clear();
+		m_vusPointIndices.clear();
+		m_vLineVertices.clear();
+		m_vusLineIndices.clear();
+		m_vTriangleVertices.clear();
+		m_vusTriangleIndices.clear();
 	}
 
 private:
@@ -204,8 +248,11 @@ private:
 		{}
 	};
 
-	GLuint m_glVAO, m_glVBO;
-	std::vector<DebugVertex> m_vPointsVertices, m_vLinesVertices, m_vTrianglesVertices;
+	GLuint m_glPointVAO, m_glLineVAO, m_glTriangleVAO;
+	GLuint m_glPointVBO, m_glLineVBO, m_glTriangleVBO;
+	GLuint m_glPointEBO, m_glLineEBO, m_glTriangleEBO;
+	std::vector<DebugVertex> m_vPointVertices, m_vLineVertices, m_vTriangleVertices;
+	std::vector<GLushort> m_vusPointIndices, m_vusLineIndices, m_vusTriangleIndices;
 	glm::mat4 m_mat4Transform;
 
 	// CTOR
@@ -323,12 +370,21 @@ private:
 	void _initGL()
 	{
 		// Create buffers/arrays
-		glGenVertexArrays(1, &this->m_glVAO);
-		glGenBuffers(1, &this->m_glVBO);
+		_initGLBuffer(&m_glPointVAO, &m_glPointVBO, &m_glPointEBO);
+		_initGLBuffer(&m_glLineVAO, &m_glLineVBO, &m_glLineEBO);
+		_initGLBuffer(&m_glTriangleVAO, &m_glTriangleVBO, &m_glTriangleEBO);
+	}
 
-		glBindVertexArray(this->m_glVAO);
+	void _initGLBuffer(GLuint* VAO, GLuint* VBO, GLuint* EBO)
+	{
+		glGenVertexArrays(1, VAO);
+		glGenBuffers(1, VBO);
+		glGenBuffers(1, EBO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBindVertexArray(*VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
 
 		// Set the vertex attribute pointers
 		// Vertex Positions

@@ -63,6 +63,10 @@ void main()
 	norm = float(gl_FrontFacing) * norm + (1.f - float(gl_FrontFacing)) * -norm;
     vec3 fragToViewDir = normalize(-GPos);
 	vec4 surfaceDiffColor = texture(diffuseTex, GTex) * diffColor;
+
+	if (surfaceDiffColor.a == 0.f)
+	    discard;
+
 	vec4 surfaceSpecColor = texture(specularTex, GTex) * specColor;
 	vec4 surfaceEmisColor = texture(emissiveTex, GTex);
 	

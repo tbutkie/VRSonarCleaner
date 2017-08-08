@@ -57,8 +57,8 @@ void AdvectionProbe::update()
 	rs.primitiveType = GL_TRIANGLES;
 	rs.VAO = m_glIcoSphereVAO;
 	rs.vertCount = m_glIcoSphereVertCount;
-	rs.diffuseTex = m_glIcoSphereDiffuse;
-	rs.specularTex = m_glIcoSphereSpecular;
+	rs.diffuseTex = Renderer::RendererTexture(m_glIcoSphereDiffuse, false);
+	rs.specularTex = Renderer::RendererTexture(m_glIcoSphereSpecular, false);
 	rs.specularExponent = 32.f;
 	rs.shaderName = "lightingWireframe";
 	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));

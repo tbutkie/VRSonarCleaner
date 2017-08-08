@@ -8,5 +8,8 @@ out vec4 outputColor;
 
 void main()
 {
+   if (v4Color.a * diffColor.a == 0.f)
+      discard;
+
    outputColor = v4Color * diffColor;
 }

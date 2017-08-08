@@ -3,6 +3,7 @@
 #include <vector>
 #include <shared/glm/glm.hpp>
 #include <shared/glm/gtc/type_ptr.hpp>
+#include <shared/glm/gtx/norm.hpp>
 
 #include "DebugDrawer.h"
 
@@ -56,17 +57,32 @@ bool Renderer::init()
 
 void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 {
-	m_vStaticRenderQueue.push_back(rs);
+	if (rs.diffuseTex.transparency || rs.specularTex.transparency || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	{
+		m_vStaticRenderQueue_Transparency.push_back(rs);
+		m_vTransparentRenderQueue.push_back(rs);
+	}
+	else
+		m_vStaticRenderQueue_Opaque.push_back(rs);
 }
 
 void Renderer::addToDynamicRenderQueue(RendererSubmission &rs)
 {
-	m_vDynamicRenderQueue.push_back(rs);
+	if (rs.diffuseTex.transparency || rs.specularTex.transparency || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	{
+		m_vDynamicRenderQueue_Transparency.push_back(rs);
+		m_vTransparentRenderQueue.push_back(rs);
+	}
+	else
+		m_vDynamicRenderQueue_Opaque.push_back(rs);
 }
 
 void Renderer::clearDynamicRenderQueue()
 {
-	m_vDynamicRenderQueue.clear();
+	m_vDynamicRenderQueue_Opaque.clear();
+	m_vDynamicRenderQueue_Transparency.clear();
+	m_vTransparentRenderQueue.clear();
+	m_vTransparentRenderQueue = m_vStaticRenderQueue_Transparency;
 }
 
 void Renderer::addToUIRenderQueue(RendererSubmission & rs)
@@ -79,7 +95,7 @@ void Renderer::clearUIRenderQueue()
 	m_vUIRenderQueue.clear();
 }
 
-bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, GLuint diffuseTextureID, GLuint specularTextureID, float specularExponent)
+bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, RendererTexture diffuseTexture, RendererTexture specularTexture, float specularExponent)
 {
 	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
 		return false;
@@ -91,8 +107,8 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, GLu
 	rs.VAO = m_mapPrimitives[primName].first;
 	rs.vertCount = m_mapPrimitives[primName].second;
 	rs.indexType = GL_UNSIGNED_SHORT;
-	rs.diffuseTex = diffuseTextureID;
-	rs.specularTex = specularTextureID;
+	rs.diffuseTex = diffuseTexture;
+	rs.specularTex = specularTexture;
 	rs.specularExponent = specularExponent;
 
 	addToDynamicRenderQueue(rs);
@@ -146,6 +162,13 @@ void Renderer::toggleWireframe()
 	m_bShowWireframe = !m_bShowWireframe;
 }
 
+void Renderer::sortTransparentObjects(glm::vec3 HMDPos)
+{
+	std::sort(m_vStaticRenderQueue_Transparency.begin(), m_vStaticRenderQueue_Transparency.end(), ObjectSorter(HMDPos));
+	std::sort(m_vDynamicRenderQueue_Transparency.begin(), m_vDynamicRenderQueue_Transparency.end(), ObjectSorter(HMDPos));
+	std::sort(m_vTransparentRenderQueue.begin(), m_vTransparentRenderQueue.end(), ObjectSorter(HMDPos));
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Creates all the shaders used by HelloVR SDL
@@ -184,7 +207,7 @@ void Renderer::setupTextures()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, t.second);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		m_mapTextures[t.first] = std::make_pair(glTexID, false);
+		m_mapTextures[t.first] = RendererTexture(glTexID, false);
 	}
 }
 
@@ -246,9 +269,6 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 		glEnable(GL_CULL_FACE);
 
 		glm::mat4 vpMat = sceneView3DInfo->projection * sceneView3DInfo->view;
@@ -259,25 +279,21 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 
 		m_pLighting->update(sceneView3DInfo->view);
 
+		// Opaque objects first while depth buffer writing enabled
+		processRenderQueue(m_vStaticRenderQueue_Opaque);
+		processRenderQueue(m_vDynamicRenderQueue_Opaque);
 
-		if (*m_mapShaders["debug"])
-		{
-			glUseProgram(*m_mapShaders["debug"]);
-			glUniformMatrix4fv(MODEL_MAT_UNIFORM_LOCATION, 1, GL_FALSE, glm::value_ptr(glm::mat4()));
-			glUniform4fv(DIFFUSE_COLOR_UNIFORM_LOCATION, 1, glm::value_ptr(glm::vec4(1.f)));
-			DebugDrawer::getInstance().render();
-		}
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		// STATIC OBJECTS
-		processRenderQueue(m_vStaticRenderQueue);
-
-		// DYNAMIC OBJECTS
-		processRenderQueue(m_vDynamicRenderQueue);
+		processRenderQueue(m_vTransparentRenderQueue);
 
 		// UI ELEMENTS
 		if (sceneViewUIInfo)
 		{
+			glDisable(GL_DEPTH_TEST);
 			RenderUI(sceneViewUIInfo, frameBuffer);
+			glEnable(GL_DEPTH_TEST);
 		}
 
 		glDisable(GL_BLEND);
@@ -305,7 +321,6 @@ void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBu
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
 
-	glDisable(GL_DEPTH_TEST);
 	processRenderQueue(m_vUIRenderQueue);
 }
 
@@ -326,19 +341,19 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 	
 			// Handle diffuse texture, if any
 			glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-			if (i.diffuseTex > 0u)
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex);
+			if (i.diffuseTex.id > 0u)
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex.id);
 			else
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"].first);
+				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"].id);
 			
 			// Handle specular texture, if any
 			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-			if (i.specularTex > 0u)			
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex);
-			else if (i.diffuseTex > 0u)
+			if (i.specularTex.id > 0u)			
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex.id);
+			else if (i.diffuseTex.id > 0u)
 				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, 0);
 			else
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"].first);
+				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"].id);
 
 			if (i.specularExponent > 0.f)
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
@@ -348,6 +363,11 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glBindVertexArray(0);
 		}
 	}
+}
+
+bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubmission const & rsRHS, glm::vec3 const & HMDPos)
+{
+	return glm::length2(glm::vec3(rsLHS.modelToWorldTransform[3]) - HMDPos) > glm::length2(glm::vec3(rsRHS.modelToWorldTransform[3]) - HMDPos);
 }
 
 

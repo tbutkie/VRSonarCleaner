@@ -38,7 +38,7 @@ std::vector<BehaviorBase*> g_vpBehaviors;
 void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
 {
 	// ignore non-significant error/warning codes
-	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+	if (id == 131169 || id == 131184 || id == 131185 || id == 131218 || id == 131204) return;
 
 	std::cout << "---------------" << std::endl;
 	std::cout << "Debug message (" << id << "): " << message << std::endl;
@@ -828,16 +828,14 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				wallVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(),	glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+				wallVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
 				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
 
 				Renderer::RendererSubmission rs;
 				rs.primitiveType = GL_POINTS;
+				rs.shaderName = "flat";
 				rs.indexType = GL_UNSIGNED_SHORT;
 				rs.modelToWorldTransform = wallVolume->getCurrentDataTransform();
-				rs.diffuseColor = rs.specularColor = glm::vec4(1.f);
-				rs.specularExponent = 0.f;
-				rs.shaderName = "flat";
 
 				for (int i = 0; i < m_pClouds->getNumClouds(); ++i)
 				{
@@ -903,8 +901,6 @@ void CMainApplication::drawScene()
 		rs.primitiveType = GL_POINTS;
 		rs.shaderName = "flat";
 		rs.modelToWorldTransform = tableVolume->getCurrentDataTransform();
-		rs.diffuseColor = rs.specularColor = glm::vec4(1.f);
-		rs.specularExponent = 0.f;
 		rs.VAO = m_pClouds->getCloud(0)->getVAO();
 		rs.vertCount = m_pClouds->getCloud(0)->getPointCount();
 		rs.indexType = GL_UNSIGNED_SHORT;
@@ -935,6 +931,9 @@ void CMainApplication::drawScene()
 	if (m_bUseDesktop)
 	{
 	}
+
+	// MUST be run last to xfer previous debug draw calls to opengl buffers
+	DebugDrawer::getInstance().draw();
 }
 
 void CMainApplication::render()
@@ -946,6 +945,8 @@ void CMainApplication::render()
 		// Update eye positions using current HMD position
 		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
 		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
+
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(m_pTDM->getWorldToHMDTransform()[3]));
 
 		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
 		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
@@ -974,6 +975,8 @@ void CMainApplication::render()
 	if (m_bUseDesktop)
 	{
 		SDL_GL_MakeCurrent(m_pDesktopWindow, m_pGLContext);
+
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviDesktop3DViewInfo.view)[3]));
 
 		Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
 
