@@ -144,6 +144,7 @@ void IllustrativeParticleSystem::update(float time)
 		activeWithinGridMap[grid] = 0;
 	
 
+	std::vector<IllustrativeParticle*> removedParticles;
 	//Update all current particles
 	for (auto const &particle : activeParticles)
 	{
@@ -187,7 +188,7 @@ void IllustrativeParticleSystem::update(float time)
 			if (m_vpFlowGridCollection.size() > 0)
 			{
 				particle->reset();
-				activeParticles.erase(std::remove(activeParticles.begin(), activeParticles.end(), particle), activeParticles.end());
+				removedParticles.push_back(particle);
 				deadParticles.push_back(particle);
 				continue;
 			}
@@ -203,7 +204,11 @@ void IllustrativeParticleSystem::update(float time)
 		
 		
 	}//end for all active particles
-	
+
+	// Now remove non-active particles
+	for (auto const &p : removedParticles)
+		activeParticles.erase(std::remove(activeParticles.begin(), activeParticles.end(), p), activeParticles.end());
+
 	//handle dyepoles/emitters
 
 	// DYE POTS
