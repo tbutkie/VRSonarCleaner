@@ -24,18 +24,10 @@ private:
 
 	vr::IVRSystem *m_pHMD;
 
-	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO, m_glTorusDiffTex, m_glTorusSpecTex;
-
-	GLsizei m_nTorusVertices;
-
 private:
 	void activateProbe();
 	void deactivateProbe();
 
 	void checkPoints();
-
-	void generateGeometry();
-
-	void generateTorus();
 };
 

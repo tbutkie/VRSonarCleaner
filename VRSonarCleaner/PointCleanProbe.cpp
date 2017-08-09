@@ -11,28 +11,6 @@ PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCl
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
 {
-	GLubyte dkred[4] = { 0x80, 0x20, 0x20, 0xFF };
-	GLubyte yellow[4] = { 0xFF, 0xFF, 0x00, 0xFF };
-
-	glGenTextures(1, &m_glTorusDiffTex);
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glTorusDiffTex);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &dkred);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenTextures(1, &m_glTorusSpecTex);
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glTorusSpecTex);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &yellow);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	generateTorus();
 }
 
 
@@ -236,90 +214,4 @@ void PointCleanProbe::checkPoints()
 
 	if (anyHits)
 		m_pHMD->TriggerHapticPulse(m_pController->getIndex(), 0, 2000);
-}
-
-void PointCleanProbe::generateGeometry()
-{
-}
-
-void PointCleanProbe::generateTorus()
-{
-	float core_radius = 1.f;
-	float meridian_radius = 0.025f;
-
-	int nCoreSegs = 32;
-	int nMeriSegs = 8;
-
-	int nVerts = nCoreSegs * nMeriSegs;
-
-	std::vector<glm::vec3> pts;
-	std::vector<glm::vec3> norms;
-	std::vector<glm::vec2> texUVs;
-	std::vector<unsigned short> inds;
-
-	for (int i = 0; i < nCoreSegs; i++)
-		for (int j = 0; j < nMeriSegs; j++)
-		{
-			float u = i / (nCoreSegs - 1.f);
-			float v = j / (nMeriSegs - 1.f);
-			float theta = u * 2.f * M_PI;
-			float rho = v * 2.f * M_PI;
-			float x = cos(theta) * (core_radius + meridian_radius*cos(rho));
-			float y = sin(theta) * (core_radius + meridian_radius*cos(rho));
-			float z = meridian_radius*sin(rho);
-			float nx = cos(theta)*cos(rho);
-			float ny = sin(theta)*cos(rho);
-			float nz = sin(rho);
-			float s = u;
-			float t = v;
-
-			pts.push_back(glm::vec3(x, y, z));
-			norms.push_back(glm::vec3(nx, ny, nz));
-			texUVs.push_back(glm::vec2(s, t));
-
-			unsigned short uvInd = i * nMeriSegs + j;
-			unsigned short uvpInd = i * nMeriSegs + (j + 1) % nMeriSegs;
-			unsigned short umvInd = (((i - 1) % nCoreSegs + nCoreSegs) % nCoreSegs) * nMeriSegs + j; // true modulo (not C++ remainder operand %) for negative wraparound
-			unsigned short umvpInd = (((i - 1) % nCoreSegs + nCoreSegs) % nCoreSegs) * nMeriSegs + (j + 1) % nMeriSegs;
-
-			inds.push_back(uvInd);   // (u    , v)
-			inds.push_back(uvpInd);  // (u    , v + 1)
-			inds.push_back(umvInd);  // (u - 1, v)
-			
-			inds.push_back(umvInd);  // (u - 1, v)
-			inds.push_back(uvpInd);  // (u    , v + 1)
-			inds.push_back(umvpInd); // (u - 1, v + 1)
-		}	
-
-	m_nTorusVertices = inds.size();
-
-	glGenVertexArrays(1, &m_glTorusVAO);
-	glGenBuffers(1, &m_glTorusVBO);
-	glGenBuffers(1, &m_glTorusEBO);
-
-	glBindVertexArray(this->m_glTorusVAO);
-	// Load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
-
-	// Set the vertex attribute pointers
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
-	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
-	glBindVertexArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
-	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + texUVs.size() * sizeof(glm::vec2), 0, GL_STREAM_DRAW);
-	// Sub buffer data for points, normals, textures...
-	glBufferSubData(GL_ARRAY_BUFFER, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(unsigned short), &inds[0], GL_STREAM_DRAW);
 }
