@@ -135,14 +135,11 @@ void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 co
 		float dpPlaneHMD = glm::dot(v3PlaneToHMD, v3PlaneNorm);
 		float dpPlaneView = glm::dot(viewDir, v3PlaneNorm);
 	
-		float angleCutoff = 90.f;
+		float angleCutoff = 0.f;
 		float cosCutoff = glm::cos(glm::radians(angleCutoff));
 		float angleFade = 70.f; // degrees viewing angle to plane normal
 		float cosFade = glm::cos(glm::radians(angleFade));
 
-		//if (glm::dot(norm, viewDir) < 0.f)
-		//	continue;
-		
 		if (dpPlaneView < cosCutoff)
 		{
 			// calculate transparency fade

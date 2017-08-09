@@ -1,8 +1,10 @@
 #include "RenderModel.h"
 
-#include "GLSLpreamble.h"
-
 #include <algorithm>
+#include <windows.h>
+
+#include "GLSLpreamble.h"
+#include "Renderer.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: Create/destroy GL Render Models
@@ -12,8 +14,6 @@ RenderModel::RenderModel(const std::string & sRenderModelName)
 	, m_glVBO(0)
 	, m_glIBO(0)
 	, m_glVAO(0)
-	, m_glDiffuseTexture(0)
-	, m_glSpecularTexture(0)
 	, m_fShininess(20.f)
 {
 }
@@ -28,8 +28,49 @@ RenderModel::~RenderModel()
 //-----------------------------------------------------------------------------
 // Purpose: Allocates and populates the GL resources for a render model
 //-----------------------------------------------------------------------------
-bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel_TextureMap_t & vrDiffuseTexture)
+bool RenderModel::BInit()
 {
+	vr::RenderModel_t *pModel;
+	vr::EVRRenderModelError error;
+	while (1)
+	{
+		error = vr::VRRenderModels()->LoadRenderModel_Async(m_sModelName.c_str(), &pModel);
+		if (error != vr::VRRenderModelError_Loading)
+			break;
+
+		Sleep(1);
+	}
+
+	if (error != vr::VRRenderModelError_None)
+	{
+		printf("Unable to load render model %s - %s\n", m_sModelName.c_str(), vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
+		return NULL; // move on to the next tracked device
+	}
+
+	if (Renderer::getInstance().getTexture(m_sModelName) == NULL)
+	{
+		vr::RenderModel_TextureMap_t *pTexture;
+		while (1)
+		{
+			error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
+			if (error != vr::VRRenderModelError_Loading)
+				break;
+
+			Sleep(1);
+		}
+
+		if (error != vr::VRRenderModelError_None)
+		{
+			printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, m_sModelName.c_str());
+			vr::VRRenderModels()->FreeRenderModel(pModel);
+			return NULL; // move on to the next tracked device
+		}
+
+		Renderer::getInstance().addTexture(new GLTexture(m_sModelName, pTexture->unWidth, pTexture->unHeight, pTexture->rubTextureMapData, false));
+
+		vr::VRRenderModels()->FreeTexture(pTexture);
+	}
+
 	// create and bind a VAO to hold state for this model
 	glGenVertexArrays(1, &m_glVAO);
 	glBindVertexArray(m_glVAO);
@@ -37,7 +78,7 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 	// Populate a vertex buffer
 	glGenBuffers(1, &m_glVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vr::RenderModel_Vertex_t) * vrModel.unVertexCount, vrModel.rVertexData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vr::RenderModel_Vertex_t) * pModel->unVertexCount, pModel->rVertexData, GL_STATIC_DRAW);
 
 	// Identify the components in the vertex buffer
 	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
@@ -50,45 +91,13 @@ bool RenderModel::BInit(const vr::RenderModel_t & vrModel, const vr::RenderModel
 	// Create and populate the index buffer
 	glGenBuffers(1, &m_glIBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * vrModel.unTriangleCount * 3, vrModel.rIndexData, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * pModel->unTriangleCount * 3, pModel->rIndexData, GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
+	
+	m_unVertexCount = pModel->unTriangleCount * 3;
 
-	// Calculate number of mipmap levels for diffuse texture
-	// this is taken straight from the spec for glTexStorage2D
-	int diffuseMipMapLevels = floor(log2(std::max(vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight))) + 1;
-
-	// create and populate the texture
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_glDiffuseTexture);
-	glTextureStorage2D(m_glDiffuseTexture, diffuseMipMapLevels, GL_RGBA8, vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight);
-	glTextureSubImage2D(m_glDiffuseTexture, 0, 0, 0, vrDiffuseTexture.unWidth, vrDiffuseTexture.unHeight, GL_RGBA, GL_UNSIGNED_BYTE, vrDiffuseTexture.rubTextureMapData);
-
-	glGenerateTextureMipmap(m_glDiffuseTexture);
-
-	glTextureParameteri(m_glDiffuseTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glDiffuseTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glDiffuseTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTextureParameteri(m_glDiffuseTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	GLfloat fLargest;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
-	glTextureParameterf(m_glDiffuseTexture, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
-
-	GLsizei width = 1, height = 1;
-	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
-
-	// Specular map
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_glSpecularTexture);
-
-	glTextureStorage2D(m_glSpecularTexture, 1, GL_RGBA8, width, height);
-	glTextureSubImage2D(m_glSpecularTexture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
-
-	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTextureParameteri(m_glSpecularTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	m_unVertexCount = vrModel.unTriangleCount * 3;
+	vr::VRRenderModels()->FreeRenderModel(pModel);
 
 	return true;
 }
@@ -123,14 +132,4 @@ int RenderModel::getVertexCount()
 float RenderModel::getMaterialShininess()
 {
 	return m_fShininess;
-}
-
-GLuint RenderModel::getDiffuseTexture()
-{
-	return m_glDiffuseTexture;
-}
-
-GLuint RenderModel::getSpecularTexture()
-{
-	return m_glSpecularTexture;
 }

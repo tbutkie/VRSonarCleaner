@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <SDL.h>
+#include <shared/GLTexture.h>
 #include "LightingSystem.h"
 #include "shaderset.h"
 
@@ -42,15 +43,6 @@ public:
 		}
 	};
 
-	struct RendererTexture
-	{
-		GLuint id;
-		bool transparency;
-
-		RendererTexture() : id(0), transparency(false) {}
-		RendererTexture(GLuint texID, bool hasTransparency) : id(texID), transparency(hasTransparency) {}
-	};
-
 	struct RendererSubmission
 	{
 		GLenum			primitiveType;
@@ -60,9 +52,10 @@ public:
 		std::string		shaderName;
 		glm::vec4		diffuseColor;
 		glm::vec4		specularColor;
-		RendererTexture	diffuseTex;
-		RendererTexture	specularTex;
+		std::string		diffuseTexName;
+		std::string		specularTexName;
 		float			specularExponent;
+		bool			hasTransparency;
 		glm::mat4		modelToWorldTransform;
 
 		RendererSubmission()
@@ -73,7 +66,10 @@ public:
 			, shaderName("")
 			, diffuseColor(glm::vec4(1.f))
 			, specularColor(glm::vec4(1.f))
+			, diffuseTexName("white")
+			, specularTexName("white")
 			, specularExponent(0.f)
+			, hasTransparency(false)
 			, modelToWorldTransform(glm::mat4())
 		{}
 	};
@@ -107,18 +103,20 @@ public:
 
 	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 
-
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
 	void clearDynamicRenderQueue();
 	void addToUIRenderQueue(RendererSubmission &rs);
 	void clearUIRenderQueue();
 
-	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, RendererTexture diffuseTextureID, RendererTexture specularTextureID, float specularExponent);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
 
 	void toggleWireframe();
+
+	GLTexture* getTexture(std::string texName);
+	bool addTexture(GLTexture* tex);
 
 	void sortTransparentObjects(glm::vec3 HMDPos);
 
@@ -165,7 +163,7 @@ private:
 
 	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
 
-	std::map<std::string, RendererTexture> m_mapTextures; // holds a flag for texture with transparency
+	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
 
 	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;

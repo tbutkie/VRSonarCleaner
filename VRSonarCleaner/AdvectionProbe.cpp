@@ -12,35 +12,6 @@ AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolum
 	Icosphere s(1);
 	m_glIcoSphereVAO = s.getVAO();
 	m_glIcoSphereVertCount = s.getIndices().size();
-
-	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
-	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-	glGenTextures(1, &m_glIcoSphereDiffuse);
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &gray);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenTextures(1, &m_glIcoSphereSpecular);
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	//glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereDiffuse);
-	//glTextureStorage2D(m_glIcoSphereDiffuse, 1, GL_RGBA8, 1, 1);
-	//glTextureSubImage2D(m_glIcoSphereDiffuse, 0, 0, 0, 1, 1, GL_RGBA8, GL_UNSIGNED_BYTE, &gray);
-	//
-	//glCreateTextures(GL_TEXTURE_2D, 1, &m_glIcoSphereSpecular);
-	//glTextureStorage2D(m_glIcoSphereSpecular, 1, GL_RGBA8, 1, 1);
-	//glTextureSubImage2D(m_glIcoSphereSpecular, 0, 0, 0, 1, 1, GL_RGBA8, GL_UNSIGNED_BYTE, &white);
 }
 
 
@@ -57,8 +28,8 @@ void AdvectionProbe::update()
 	rs.primitiveType = GL_TRIANGLES;
 	rs.VAO = m_glIcoSphereVAO;
 	rs.vertCount = m_glIcoSphereVertCount;
-	rs.diffuseTex = Renderer::RendererTexture(m_glIcoSphereDiffuse, false);
-	rs.specularTex = Renderer::RendererTexture(m_glIcoSphereSpecular, false);
+	rs.diffuseTexName = "gray";
+	rs.specularTexName = "white";
 	rs.specularExponent = 32.f;
 	rs.shaderName = "lightingWireframe";
 	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));

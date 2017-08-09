@@ -290,8 +290,8 @@ void TrackedDeviceManager::draw()
 					rs.VAO = rm->getVAO();
 					rs.vertCount = rm->getVertexCount();
 					rs.primitiveType = GL_TRIANGLES;
-					rs.diffuseTex = Renderer::RendererTexture(rm->getDiffuseTexture(), false);
-					rs.specularTex = Renderer::RendererTexture(rm->getSpecularTexture(), false);
+					rs.diffuseTexName = rm->GetName();
+					rs.specularTexName = "white";
 					rs.specularExponent = rm->getMaterialShininess();
 					rs.modelToWorldTransform = matModel;
 					Renderer::getInstance().addToDynamicRenderQueue(rs);
@@ -308,8 +308,8 @@ void TrackedDeviceManager::draw()
 			rs.VAO = rm->getVAO();
 			rs.vertCount = rm->getVertexCount();
 			rs.primitiveType = GL_TRIANGLES;
-			rs.diffuseTex = Renderer::RendererTexture(rm->getDiffuseTexture(), false);
-			rs.specularTex = Renderer::RendererTexture(rm->getSpecularTexture(), false);
+			rs.diffuseTexName = rm->GetName();
+			rs.specularTexName = "white";
 			rs.specularExponent = rm->getMaterialShininess();
 			rs.modelToWorldTransform = matModel;
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
@@ -389,51 +389,14 @@ RenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderMo
 		//printf("Found existing render model for %s\n", pchRenderModelName);
 		return pRenderModel;
 	}
-
-	vr::RenderModel_t *pModel;
-	vr::EVRRenderModelError error;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadRenderModel_Async(pchRenderModelName, &pModel);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render model %s - %s\n", pchRenderModelName, vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error));
-		return NULL; // move on to the next tracked device
-	}
-
-	vr::RenderModel_TextureMap_t *pTexture;
-	while (1)
-	{
-		error = vr::VRRenderModels()->LoadTexture_Async(pModel->diffuseTextureId, &pTexture);
-		if (error != vr::VRRenderModelError_Loading)
-			break;
-
-		::Sleep(1);
-	}
-
-	if (error != vr::VRRenderModelError_None)
-	{
-		printf("Unable to load render texture id:%d for render model %s\n", pModel->diffuseTextureId, pchRenderModelName);
-		vr::VRRenderModels()->FreeRenderModel(pModel);
-		return NULL; // move on to the next tracked device
-	}
-
+	
 	pRenderModel = new RenderModel(pchRenderModelName);
-	if (!pRenderModel->BInit(*pModel, *pTexture))
+	if (!pRenderModel->BInit())
 	{
 		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
 		delete pRenderModel;
 		pRenderModel = NULL;
 	}
-
-	vr::VRRenderModels()->FreeRenderModel(pModel);
-	vr::VRRenderModels()->FreeTexture(pTexture);
 
 	m_mapModelCache[std::string(pchRenderModelName)] = pRenderModel;
 

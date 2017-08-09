@@ -6,7 +6,7 @@
 #include <openvr.h>
 
 #include <shared/glm/glm.hpp>
-#include <shared/Texture.h>
+#include <shared/GLTexture.h>
 
 #include "BroadcastSystem.h"
 #include "TrackedDeviceManager.h"
@@ -54,11 +54,10 @@ private:
 
 	void createTutorial();
 
-	typedef std::tuple<Texture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
+	typedef std::tuple<GLTexture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
 	typedef std::map<std::string, InfoBoxT> IBMapT;
 
 	IBMapT m_mapInfoBoxes;
-	std::map<std::string, Texture*> m_mapTextureBank;
 
 	TrackedDeviceManager* m_pTDM;
 

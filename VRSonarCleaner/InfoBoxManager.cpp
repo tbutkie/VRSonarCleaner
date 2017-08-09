@@ -20,11 +20,11 @@ bool InfoBoxManager::BInit(TrackedDeviceManager * tdm)
 
 void InfoBoxManager::addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what, bool billboarded)
 {
-	Texture* tex = m_mapTextureBank[pngFileName];
-	if (!tex)
+	GLTexture* tex = Renderer::getInstance().getTexture(pngFileName);
+	if (tex == NULL)
 	{
-		tex = new Texture(pngFileName);
-		m_mapTextureBank[pngFileName] = tex;
+		tex = new GLTexture(pngFileName, true);
+		Renderer::getInstance().addTexture(tex);
 	}
 
 	m_mapInfoBoxes[name] = InfoBoxT(tex, width, pose, what, billboarded);
@@ -68,6 +68,28 @@ InfoBoxManager::InfoBoxManager()
 		glm::translate(glm::mat4(), glm::vec3(0.04f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
+
+	//addInfoBox(
+	//	"Test 1",
+	//	"cube_texture.png",
+	//	1.f,
+	//	glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
+	//	RELATIVE_TO::HMD,
+	//	false);
+	//addInfoBox(
+	//	"Test 2",
+	//	"test.png",
+	//	1.f,
+	//	glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)),
+	//	RELATIVE_TO::WORLD,
+	//	true);
+	//addInfoBox(
+	//	"Test 3",
+	//	"test.png",
+	//	2.f,
+	//	glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f)),
+	//	RELATIVE_TO::HMD,
+	//	false);
 }
 
 InfoBoxManager::~InfoBoxManager()
@@ -83,10 +105,10 @@ void InfoBoxManager::receiveEvent(const int event, void* data)
 	//	removeInfoBox("Test 2");
 	//	break;
 	case BroadcastSystem::EVENT::EXIT_PLAY_AREA:
-		updateInfoBoxSize("Test 3", 1.0f);
+		updateInfoBoxSize("Test 3", 10.0f);
 		break;
 	case BroadcastSystem::EVENT::ENTER_PLAY_AREA:
-		updateInfoBoxSize("Test 3", 0.5f);
+		updateInfoBoxSize("Test 3", 10.f);
 		break;
 	default:
 		break;
@@ -130,7 +152,7 @@ void InfoBoxManager::draw()
 		}
 
 		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;
-		Renderer::getInstance().drawPrimitive("quad", modelTransform, Renderer::RendererTexture(std::get<IBIndex::TEXTURE>(ib.second)->getTexture(), true), Renderer::RendererTexture(), 0);
+		Renderer::getInstance().drawPrimitive("quad", modelTransform, std::get<IBIndex::TEXTURE>(ib.second)->getName(), "black", 0.f);
 	}
 }
 

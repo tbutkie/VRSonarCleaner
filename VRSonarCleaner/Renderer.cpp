@@ -57,7 +57,22 @@ bool Renderer::init()
 
 void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 {
-	if (rs.diffuseTex.transparency || rs.specularTex.transparency || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	if (m_mapTextures[rs.diffuseTexName] == NULL)
+	{
+		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName);
+		return;
+	}
+
+	if (m_mapTextures[rs.specularTexName] == NULL)
+	{
+		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName);
+		return;
+	}
+
+	GLTexture* diff = m_mapTextures[rs.diffuseTexName];
+	GLTexture* spec = m_mapTextures[rs.diffuseTexName];
+
+	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
 	{
 		m_vStaticRenderQueue_Transparency.push_back(rs);
 		m_vTransparentRenderQueue.push_back(rs);
@@ -68,7 +83,22 @@ void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 
 void Renderer::addToDynamicRenderQueue(RendererSubmission &rs)
 {
-	if (rs.diffuseTex.transparency || rs.specularTex.transparency || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	if (m_mapTextures[rs.diffuseTexName] == NULL)
+	{
+		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName);
+		return;
+	}
+
+	if (m_mapTextures[rs.specularTexName] == NULL)
+	{
+		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName);
+		return;
+	}
+
+	GLTexture* diff = m_mapTextures[rs.diffuseTexName];
+	GLTexture* spec = m_mapTextures[rs.diffuseTexName];
+
+	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
 	{
 		m_vDynamicRenderQueue_Transparency.push_back(rs);
 		m_vTransparentRenderQueue.push_back(rs);
@@ -95,7 +125,7 @@ void Renderer::clearUIRenderQueue()
 	m_vUIRenderQueue.clear();
 }
 
-bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, RendererTexture diffuseTexture, RendererTexture specularTexture, float specularExponent)
+bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
 {
 	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
 		return false;
@@ -107,8 +137,8 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, Ren
 	rs.VAO = m_mapPrimitives[primName].first;
 	rs.vertCount = m_mapPrimitives[primName].second;
 	rs.indexType = GL_UNSIGNED_SHORT;
-	rs.diffuseTex = diffuseTexture;
-	rs.specularTex = specularTexture;
+	rs.diffuseTexName = diffuseTextureName;
+	rs.specularTexName = specularTextureName;
 	rs.specularExponent = specularExponent;
 
 	addToDynamicRenderQueue(rs);
@@ -162,6 +192,25 @@ void Renderer::toggleWireframe()
 	m_bShowWireframe = !m_bShowWireframe;
 }
 
+GLTexture * Renderer::getTexture(std::string texName)
+{
+	return m_mapTextures[texName];
+}
+
+bool Renderer::addTexture(GLTexture * tex)
+{
+	if (m_mapTextures[tex->getName()] == NULL)
+	{
+		m_mapTextures[tex->getName()] = tex;
+		return true;
+	}
+	else
+	{
+		printf("Error: Adding texture \"%s\" which already exists\n", tex->getName());
+		return false;
+	}
+}
+
 void Renderer::sortTransparentObjects(glm::vec3 HMDPos)
 {
 	std::sort(m_vStaticRenderQueue_Transparency.begin(), m_vStaticRenderQueue_Transparency.end(), ObjectSorter(HMDPos));
@@ -193,22 +242,15 @@ void Renderer::setupShaders()
 
 void Renderer::setupTextures()
 {
-	std::vector < std::pair<std::string, GLubyte*> > textureList;
+	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+	GLubyte black[4] = { 0x00, 0x00, 0x00, 0xFF };
+	GLubyte gray[4] = { 0x80, 0x80, 0x80, 0xFF };
 
-	textureList.push_back(std::make_pair("white", new GLubyte[4]{ 0xFF, 0xFF, 0xFF, 0xFF }));
-	textureList.push_back(std::make_pair("black", new GLubyte[4]{ 0x00, 0x00, 0x00, 0xFF }));
+	//glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
 
-	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	for (auto &t : textureList)
-	{
-		GLuint glTexID;
-		glGenTextures(1, &glTexID);
-		glBindTexture(GL_TEXTURE_2D, glTexID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, t.second);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		m_mapTextures[t.first] = RendererTexture(glTexID, false);
-	}
+	m_mapTextures["white"] = new GLTexture("white", white);
+	m_mapTextures["black"] = new GLTexture("black", black);
+	m_mapTextures["gray"] = new GLTexture("gray", gray);
 }
 
 
@@ -341,19 +383,11 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 	
 			// Handle diffuse texture, if any
 			glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-			if (i.diffuseTex.id > 0u)
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, i.diffuseTex.id);
-			else
-				glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures["white"].id);
+			glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, m_mapTextures[i.diffuseTexName]->getTexture());
 			
 			// Handle specular texture, if any
 			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-			if (i.specularTex.id > 0u)			
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, i.specularTex.id);
-			else if (i.diffuseTex.id > 0u)
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, 0);
-			else
-				glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures["white"].id);
+			glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures[i.specularTexName]->getTexture());
 
 			if (i.specularExponent > 0.f)
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);

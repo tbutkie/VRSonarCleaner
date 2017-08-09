@@ -428,6 +428,7 @@ bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &
 	rs.VAO = m_glVAO;
 	rs.vertCount = numIndices;
 	rs.indexType = GL_UNSIGNED_INT;
+	rs.hasTransparency = true;
 
 	return true;
 }
