@@ -39,8 +39,6 @@ class FlowGrid
 		//float getBathyDepthAt(float lonX, float latY);
 		//void getInfoOnWaterCellsAt(float lonX, float latY, int *numCells, );
 
-		void drawBBox();
-
 		//void setScaleDepthMinMax(float min, float max);
 
 		bool contains(float x, float y);

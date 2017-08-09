@@ -130,7 +130,7 @@ std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int numbe
 	std::vector<glm::vec3> verts;
 	for (int i = 0; i < number; ++i)
 	{
-		verts.push_back(glm::vec3(x, y, -z));
+		verts.push_back(glm::vec3(x, y, z));
 
 		if (i > 0)
 		{

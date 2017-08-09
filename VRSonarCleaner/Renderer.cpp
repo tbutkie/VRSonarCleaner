@@ -401,7 +401,10 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 
 bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubmission const & rsRHS, glm::vec3 const & HMDPos)
 {
-	return glm::length2(glm::vec3(rsLHS.modelToWorldTransform[3]) - HMDPos) > glm::length2(glm::vec3(rsRHS.modelToWorldTransform[3]) - HMDPos);
+	glm::vec3 lhsPos = rsLHS.transparencySortPosition.w == -1.f ? glm::vec3(rsLHS.modelToWorldTransform[3]) : glm::vec3(rsLHS.transparencySortPosition);
+	glm::vec3 rhsPos = rsRHS.transparencySortPosition.w == -1.f ? glm::vec3(rsRHS.modelToWorldTransform[3]) : glm::vec3(rsRHS.transparencySortPosition);
+
+	return glm::length2(lhsPos - HMDPos) > glm::length2(rhsPos - HMDPos);
 }
 
 

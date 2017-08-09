@@ -77,8 +77,8 @@ FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 					else
 					{
 						tempW = 0.f;
-						setIsWaterValue(x, y, -z, t, tempIsWater == 0 ? false : true);
-						setCellValue(x, y, -z, t, tempU, tempV, tempW);
+						setIsWaterValue(x, y, z, t, tempIsWater == 0 ? false : true);
+						setCellValue(x, y, z, t, tempU, tempV, tempW);
 					}
 
 
@@ -619,19 +619,6 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 	}
 
 }//end getVelocityAt()
-
-
-void FlowGrid::drawBBox()
-{
-	float BBox[6];
-	float visualOffset = 0.f;
-
-	glm::vec3 bbMin(scaler->getScaledLonX(m_fXMin) - visualOffset, scaler->getScaledLatY(m_fYMin) - visualOffset, scaler->getScaledDepth(m_vDepthValues.front()) + visualOffset);
-	glm::vec3 bbMax(scaler->getScaledLonX(m_fXMax) + visualOffset, scaler->getScaledLatY(m_fYMax) + visualOffset, scaler->getScaledDepth(m_vDepthValues.back()) - visualOffset);
-
-	//DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawBox(bbMin, bbMax, glm::vec4(1.f, 0.f, 0.f, 1.f));
-}//end drawBBox()
 
 void FlowGrid::setCoordinateScaler(CoordinateScaler *Scaler)
 {

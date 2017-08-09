@@ -56,6 +56,7 @@ public:
 		std::string		specularTexName;
 		float			specularExponent;
 		bool			hasTransparency;
+		glm::vec4		transparencySortPosition;
 		glm::mat4		modelToWorldTransform;
 
 		RendererSubmission()
@@ -70,6 +71,7 @@ public:
 			, specularTexName("white")
 			, specularExponent(0.f)
 			, hasTransparency(false)
+			, transparencySortPosition(glm::vec4(0.f, 0.f, 0.f, -1.f))
 			, modelToWorldTransform(glm::mat4())
 		{}
 	};

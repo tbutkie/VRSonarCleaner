@@ -38,7 +38,7 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 {
 	double thisX = m_pScaler->getUnscaledLonX(x);
 	double thisY = m_pScaler->getUnscaledLatY(y);
-	double thisZ = m_pScaler->getUnscaledDepth(z);
+	double thisZ = -m_pScaler->getUnscaledDepth(z);
 
 	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
 	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
@@ -379,11 +379,11 @@ bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &
 
 				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
 				pos1.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y);
-				pos1.z = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);
+				pos1.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);
 
 				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
 				pos2.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);
-				pos2.z = m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
+				pos2.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
 
 				float opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1]) / timeElapsed;
 				float opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2]) / timeElapsed;

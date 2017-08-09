@@ -93,6 +93,7 @@ void FlowVolume::draw()
 	Renderer::RendererSubmission rs;
 
 	rs.shaderName = "flat";
+	rs.transparencySortPosition = getCurrentVolumeTransform()[3];
 	rs.modelToWorldTransform = getCurrentDataTransform();
 
 	if (m_pParticleSystem->prepareForRender(rs))
