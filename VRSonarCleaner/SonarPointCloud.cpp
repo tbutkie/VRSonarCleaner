@@ -130,7 +130,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, depth);
+	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth);
 	
 	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
@@ -171,7 +171,7 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 
 void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, depth); 
+	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth); 
 
 	float r, g, b;
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
@@ -229,7 +229,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, depth);
+	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth);
 
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
@@ -251,7 +251,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 	file = fopen(filename, "r");
 	if (file == NULL)
 	{
-		printf("ERROR reading file in loadFromASCII!\n");
+		printf("ERROR reading file in %s\n", __FUNCTION__);
 	}
 	else
 	{
@@ -273,11 +273,11 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Skipped %d characters\n", skipped);
 
 		//now count lines of points
-		double x, y, z;
+		double x, y, depth;
 		int profnum, beamnum;
 		float depthTPU, positionTPU, alongAngle, acrossAngle;
 		int numPointsInFile = 0;
-		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &z, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
+		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
 			numPointsInFile++;
 		}
@@ -306,16 +306,16 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		GLushort *inds = new GLushort[numPoints];
 		GLushort *previewInds = new GLushort[numPoints / m_iPreviewReductionFactor];
 		double averageDepth =  0;
-		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &z, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
+		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
-			setUncertaintyPoint(index, x, y, z, depthTPU, positionTPU);
+			setUncertaintyPoint(index, x, y, depth, depthTPU, positionTPU);
 			inds[index] = index;
 			if (index % m_iPreviewReductionFactor == 0)
 			{
 				previewInds[index / m_iPreviewReductionFactor] = index;
 			}
 			index++;
-			averageDepth += z;
+			averageDepth += depth;
 		}
 		averageDepth /= numPoints;
 
@@ -324,8 +324,9 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Original Min/Maxes:\n");
 		printf("X Min: %f Max: %f\n", xMin, xMax);
 		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
-		printf("ZDepth Avg: %f\n", averageDepth);
+		printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
+		printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
+		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
 
@@ -334,30 +335,30 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		{
 			m_vvec3PointsPositions[i].x -= xMin;
 			m_vvec3PointsPositions[i].y -= yMin;
-			m_vvec3PointsPositions[i].z = -m_vvec3PointsPositions[i].z;
+			m_vvec3PointsPositions[i].z -= -minDepth;
 		}
 		actualRemovedXmin = xMin;
 		actualRemovedYmin = yMin;
 		xMin = xMax = m_vvec3PointsPositions.front().x;
 		yMin = yMax = m_vvec3PointsPositions.front().y;
-		minDepth = maxDepth = m_vvec3PointsPositions.front().y;
+		minDepth = maxDepth = -m_vvec3PointsPositions.front().z;
 
-		for (int i = 0; i < numPoints; i++)
+		for (auto const & pos : m_vvec3PointsPositions)
 		{
-			if (m_vvec3PointsPositions[i].x < xMin)
-				xMin = m_vvec3PointsPositions[i].x;
-			if (m_vvec3PointsPositions[i].x > xMax)
-				xMax = m_vvec3PointsPositions[i].x;
+			if (pos.x < xMin)
+				xMin = pos.x;
+			if (pos.x > xMax)
+				xMax = pos.x;
 
-			if (m_vvec3PointsPositions[i].y < yMin)
-				yMin = m_vvec3PointsPositions[i].y;
-			if (m_vvec3PointsPositions[i].y > yMax)
-				yMax = m_vvec3PointsPositions[i].y;
+			if (pos.y < yMin)
+				yMin = pos.y;
+			if (pos.y > yMax)
+				yMax = pos.y;
 
-			if (m_vvec3PointsPositions[i].z < minDepth)
-				minDepth = m_vvec3PointsPositions[i].z;
-			if (m_vvec3PointsPositions[i].z > maxDepth)
-				maxDepth = m_vvec3PointsPositions[i].z;
+			if (-pos.z < minDepth)
+				minDepth = -pos.z;
+			if (-pos.z > maxDepth)
+				maxDepth = -pos.z;
 		}
 
 		xRange = xMax - xMin;
@@ -370,7 +371,8 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
 		printf("X Min: %f Max: %f\n", xMin, xMax);
 		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
+		printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
+		printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 			// Sub buffer data for points and colors...
@@ -399,7 +401,7 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 	initPoints(numPoints);
 
 	int index = 0;
-	float randX, randY, randZ;
+	float randX, randY, randDepth;
 	srand(149124);
 	for (int i = 0; i < numPoints; i++)
 	{
@@ -407,58 +409,58 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 		{
 			randX = 0;
 			randY = 0;
-			randZ = 0;
+			randDepth = 0;
 		}
 		else if (i == 1)
 		{
 			randX = xSize;
 			randY = ySize;
-			randZ = zSize;
+			randDepth = zSize;
 		}
 		else if (i < numPoints*0.40)
 		{
-			randZ = zSize*(((float)(rand() % 1000)) / 1000);
 			randX = xSize*((((float)(rand() % 100)) + 450) / 1000);
 			randY = ySize*(((float)(rand() % 1000)) / 1000);
+			randDepth = zSize*(((float)(rand() % 1000)) / 1000);
 		}
 		else
 		{
-			randZ = zSize*((((float)(rand() % 100)) + 450) / 1000);
 			randX = xSize*(((float)(rand() % 1000)) / 1000);
 			randY = ySize*(((float)(rand() % 1000)) / 1000);
+			randDepth = zSize*((((float)(rand() % 100)) + 450) / 1000);
 		}
-		setUncertaintyPoint(i, randX, randY, randZ, 0.0, 0.0);
+		setUncertaintyPoint(i, randX, randY, randDepth, 0.0, 0.0);
 	}
 
 	//scaling hack
-	for (int i = 0; i<numPoints; i++)
+	for (int i = 0; i < numPoints; i++)
 	{
 		m_vvec3PointsPositions[i].x -= xMin;
 		m_vvec3PointsPositions[i].y -= yMin;
-		m_vvec3PointsPositions[i].z = -m_vvec3PointsPositions[i].z;
+		m_vvec3PointsPositions[i].z -= -minDepth;
 	}
 	actualRemovedXmin = xMin;
 	actualRemovedYmin = yMin;
 	xMin = xMax = m_vvec3PointsPositions.front().x;
 	yMin = yMax = m_vvec3PointsPositions.front().y;
-	minDepth = maxDepth = m_vvec3PointsPositions.front().z;
+	minDepth = maxDepth = -m_vvec3PointsPositions.front().z;
 
-	for (int i = 0; i<numPoints; i++)
+	for (auto const & pos : m_vvec3PointsPositions)
 	{
-		if (m_vvec3PointsPositions[i].x < xMin)
-			xMin = m_vvec3PointsPositions[i].x;
-		if (m_vvec3PointsPositions[i].x > xMax)
-			xMax = m_vvec3PointsPositions[i].x;
+		if (pos.x < xMin)
+			xMin = pos.x;
+		if (pos.x > xMax)
+			xMax = pos.x;
 
-		if (m_vvec3PointsPositions[i].y < yMin)
-			yMin = m_vvec3PointsPositions[i].y;
-		if (m_vvec3PointsPositions[i].y > yMax)
-			yMax = m_vvec3PointsPositions[i].y;
+		if (pos.y < yMin)
+			yMin = pos.y;
+		if (pos.y > yMax)
+			yMax = pos.y;
 
-		if (m_vvec3PointsPositions[i].z < minDepth)
-			minDepth = m_vvec3PointsPositions[i].z;
-		if (m_vvec3PointsPositions[i].z > maxDepth)
-			maxDepth = m_vvec3PointsPositions[i].z;
+		if (-pos.z < minDepth)
+			minDepth = -pos.z;
+		if (-pos.z > maxDepth)
+			maxDepth = -pos.z;
 	}
 
 	xRange = xMax - xMin;

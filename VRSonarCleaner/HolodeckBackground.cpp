@@ -22,7 +22,7 @@ HolodeckBackground::HolodeckBackground(glm::vec3 roomSizeMeters, float spacingMe
 	Renderer::RendererSubmission rs;
 	rs.primitiveType = GL_LINES;
 	rs.modelToWorldTransform = glm::mat4();
-	rs.shaderName = "debug";
+	rs.shaderName = "flat";
 	rs.VAO = m_glVAO;
 	rs.vertCount = static_cast<GLuint>(m_vHolodeckGeometry.size());
 

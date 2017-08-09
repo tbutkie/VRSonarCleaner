@@ -229,8 +229,8 @@ bool CMainApplication::init()
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 
-		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), m_pClouds->getMinDepth());
-		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), m_pClouds->getMaxDepth());
+		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), -m_pClouds->getMaxDepth());
+		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), -m_pClouds->getMinDepth());
 
 		glm::vec3 tablePosition;
 		glm::vec3 tableSize;
@@ -240,8 +240,8 @@ bool CMainApplication::init()
 		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = tablePosition;
 
-		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), m_pClouds->getCloud(0)->getMinDepth());
-		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), m_pClouds->getCloud(0)->getMaxDepth());
+		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), -m_pClouds->getCloud(0)->getMaxDepth());
+		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), -m_pClouds->getCloud(0)->getMinDepth());
 
 		tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
 		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
@@ -558,7 +558,7 @@ bool CMainApplication::HandleInput()
 
 				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 				{
-					if (m_pLasso->readyToCheck())
+					if (m_pLasso && m_pLasso->readyToCheck())
 					{
 						editCleaningTableDesktop();
 						m_pLasso->reset();
@@ -915,7 +915,12 @@ void CMainApplication::drawScene()
 		else if (m_bUseDesktop)
 			flowVolume->drawAdaptiveBacking(glm::inverse(glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp)), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
 
+		flowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
+
 		flowVolume->draw();
+
+		DebugDrawer::getInstance().setTransform(flowVolume->getCurrentDataTransform());
+		DebugDrawer::getInstance().drawTransform(0.5f);
 	}
 
 	for (auto const &b : g_vpBehaviors)
