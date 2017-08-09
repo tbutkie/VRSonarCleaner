@@ -2,9 +2,10 @@
 
 #include "DebugDrawer.h"
 
-FlowGrid::FlowGrid(char* filename, bool hasZRange)
+FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 	: m_fMinTime(-1.f)
 	, m_fMaxTime(-1.f)
+	, m_bUsesZInsteadOfDepth(useZInsteadOfDepth)
 {
 	FILE *inputFile;
 	printf("opening: %s\n", filename);
@@ -23,15 +24,15 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 	fread(&m_fYMin, sizeof(float), 1, inputFile);
 	fread(&m_fYMax, sizeof(float), 1, inputFile);
 	fread(&m_nYCells, sizeof(int), 1, inputFile);
-	if (hasZRange)
+	if (m_bUsesZInsteadOfDepth)
 	{
 		fread(&zMin, sizeof(float), 1, inputFile);
 		fread(&zMax, sizeof(float), 1, inputFile);
 	}
 	else
 	{
-		zMin = 0.f;
-		zMax = 1.f;
+		zMin = -1.f;
+		zMax = 0.f;
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
@@ -67,12 +68,20 @@ FlowGrid::FlowGrid(char* filename, bool hasZRange)
 					fread(&tempIsWater, sizeof(int), 1, inputFile);
 					fread(&tempU, sizeof(float), 1, inputFile);
 					fread(&tempV, sizeof(float), 1, inputFile);
-					if (hasZRange)
+					if (m_bUsesZInsteadOfDepth)
+					{
 						fread(&tempW, sizeof(float), 1, inputFile);
+						setIsWaterValue(x, y, z, t, tempIsWater == 0 ? false : true);
+						setCellValue(x, y, z, t, tempU, tempV, tempW);
+					}
 					else
+					{
 						tempW = 0.f;
-					setIsWaterValue(x, y, z, t, tempIsWater == 0 ? false : true);
-					setCellValue(x, y, z, t, tempU, tempV, tempW);
+						setIsWaterValue(x, y, -z, t, tempIsWater == 0 ? false : true);
+						setCellValue(x, y, -z, t, tempU, tempV, tempW);
+					}
+
+
 				}//end for z
 			}//end for z
 		}//end for y

@@ -13,12 +13,12 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 		glm::vec3(
 			flowGrid->getScaledXMin(),
 			flowGrid->getScaledYMin(),
-			flowGrid->getScaledMinDepth()
+			-flowGrid->getScaledMaxDepth()
 		),
 		glm::vec3(
 			flowGrid->getScaledXMax(),
 			flowGrid->getScaledYMax(),
-			flowGrid->getScaledMaxDepth()
+			-flowGrid->getScaledMinDepth()
 		))
 	, m_pFlowGrid(flowGrid)
 {
@@ -48,12 +48,12 @@ void FlowVolume::recalcVolumeBounds()
 	glm::vec3 minCoords(
 		m_pFlowGrid->getScaledXMin(),
 		m_pFlowGrid->getScaledYMin(),
-		m_pFlowGrid->getScaledMinDepth()
+		-m_pFlowGrid->getScaledMaxDepth()
 	);
 	glm::vec3 maxCoords(
 		m_pFlowGrid->getScaledXMax(),
 		m_pFlowGrid->getScaledYMax(),
-		m_pFlowGrid->getScaledMaxDepth()
+		-m_pFlowGrid->getScaledMinDepth()
 	);
 
 	setInnerCoords(minCoords, maxCoords);
@@ -90,23 +90,13 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 void FlowVolume::draw()
 {
-	//draw debug
-	drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 5.f);
-	//drawBacking();
-	//drawAxes();
-	
-	//draw model
-	//DebugDrawer::getInstance().setTransform(getCurrentDataTransform());
-	//m_pParticleSystem->drawDyePots();                
-	//m_pParticleSystem->drawParticleVBOs();
 	Renderer::RendererSubmission rs;
 
 	rs.shaderName = "flat";
 	rs.modelToWorldTransform = getCurrentDataTransform();
 
 	if (m_pParticleSystem->prepareForRender(rs))
-		Renderer::getInstance().addToDynamicRenderQueue(rs);
-		
+		Renderer::getInstance().addToDynamicRenderQueue(rs);		
 }
 
 void FlowVolume::preRenderUpdates()

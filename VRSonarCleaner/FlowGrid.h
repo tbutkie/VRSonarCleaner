@@ -14,7 +14,7 @@ class FlowGrid
 {
 	public:
 		//FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);
-		FlowGrid(char* filename, bool hasZRange);
+		FlowGrid(char* filename, bool useZInsteadOfDepth);
 		virtual ~FlowGrid();
 
 		void init();
@@ -117,7 +117,7 @@ public:
 		//float minBathyDepth;
 		//float maxBathyDepth;
 		bool m_bDepthsSet;
-
+		bool m_bUsesZInsteadOfDepth;
 
 		//particle sys stuff:
 		bool m_bIllustrativeParticlesEnabled;
