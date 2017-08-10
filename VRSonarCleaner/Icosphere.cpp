@@ -117,6 +117,7 @@ GLuint Icosphere::getVAO()
 		IcoVert iv;
 		iv.v = vertices[i];
 		iv.n = vertices[i];
+		iv.c = glm::vec4(1.f);
 		iv.t = glm::vec2(0.5f);
 	
 		buff[i] = iv;
@@ -147,6 +148,8 @@ GLuint Icosphere::getVAO()
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, v));
 		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
 		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*)offsetof(IcoVert, c));
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, t));
 

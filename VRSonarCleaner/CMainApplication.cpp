@@ -828,8 +828,8 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				wallVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
-				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
+				wallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 1.f);
+				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 				Renderer::RendererSubmission rs;
 				rs.primitiveType = GL_POINTS;
@@ -893,8 +893,8 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		tableVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.1f, 0.1f, 0.4f, 1.f), 2.f);
-		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
+		tableVolume->drawEllipsoidBacking(glm::vec4(0.1f, 0.1f, 0.4f, 1.f), -10.f);
+		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 		//draw table
 		Renderer::RendererSubmission rs;
@@ -911,11 +911,11 @@ void CMainApplication::drawScene()
 	if (m_bFlowVis)
 	{
 		if (m_bUseVR)
-			flowVolume->drawAdaptiveBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+			flowVolume->drawEllipsoidBacking(glm::vec4(0.22f, 0.25f, 0.34f, 1.f), -10.f);
 		else if (m_bUseDesktop)
-			flowVolume->drawAdaptiveBacking(glm::inverse(glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp)), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 2.f);
+			flowVolume->drawEllipsoidBacking(glm::vec4(0.22f, 0.25f, 0.34f, 1.f), -10.f);
 
-		flowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 1.f);
+		flowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 		flowVolume->draw();
 

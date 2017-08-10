@@ -39,6 +39,7 @@ private:
 	{
 		glm::vec3 v;
 		glm::vec3 n;
+		glm::vec4 c;
 		glm::vec2 t;
 	};
 

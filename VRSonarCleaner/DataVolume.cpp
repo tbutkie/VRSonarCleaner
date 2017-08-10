@@ -103,7 +103,14 @@ void DataVolume::drawBBox(glm::vec4 color, float padPct)
 	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
 }
 
-void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct)
+void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
+{
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
+
+	Renderer::getInstance().drawFlatPrimitive("inverse_icosphere", volTransform, color);
+}
+
+void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct)
 {
 	glm::vec3 bbMin(-0.5f);
 	glm::vec3 bbMax(0.5f);
@@ -112,7 +119,7 @@ void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 co
 	glm::vec3 viewDir = -glm::normalize(glm::vec3(worldToHMDTransform[2]));
 
 	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
-	
+
 	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
 	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMin.x, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // left
@@ -137,25 +144,25 @@ void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 co
 	
 		if (dpPlaneHMD < 0.f)
 			continue;
-
+	
 		float angleCutoff = 0.f;
 		float cosCutoff = glm::cos(glm::radians(angleCutoff));
 		float angleFade = 70.f; // degrees viewing angle to plane normal
 		float cosFade = glm::cos(glm::radians(angleFade));
-
+	
 		if (dpPlaneView < cosCutoff)
 		{
 			// calculate transparency fade
 			float range = cosFade - cosCutoff;
 			//color.a *= (dpPlaneView - cosCutoff) / range;
 			color.a = 0.5f;
-
+	
 			// now position the planes
 			float eps = 0.001f;
 			glm::mat4 planeTransform;
 			planeTransform[2] = glm::normalize(volumeCtr - midPt); // z
 			planeTransform[3] = midPt; // pos
-
+	
 			if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[0]))) - (-1.f)) < eps)
 			{ // right
 				planeTransform[0] = volTransform[2];
@@ -192,7 +199,7 @@ void DataVolume::drawAdaptiveBacking(glm::mat4 worldToHMDTransform, glm::vec4 co
 				planeTransform[1] = volTransform[1];
 				color = glm::vec4(glm::vec3(1.f, 0.f, 1.f), color.a);
 			}
-
+	
 			Renderer::getInstance().drawPrimitive("plane", planeTransform, color, color, 10.f);
 		}
 	}

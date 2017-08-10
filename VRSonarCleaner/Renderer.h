@@ -50,6 +50,7 @@ public:
 		int				vertCount;
 		GLenum			indexType;
 		std::string		shaderName;
+		GLenum			vertWindingOrder;
 		glm::vec4		diffuseColor;
 		glm::vec4		specularColor;
 		std::string		diffuseTexName;
@@ -65,6 +66,7 @@ public:
 			, vertCount(0)
 			, indexType(GL_UNSIGNED_SHORT)
 			, shaderName("")
+			, vertWindingOrder(GL_CCW)
 			, diffuseColor(glm::vec4(1.f))
 			, specularColor(glm::vec4(1.f))
 			, diffuseTexName("white")
@@ -139,6 +141,7 @@ private:
 	void setupFullscreenQuad();
 
 	void setupPrimitives();
+	void generateIcosphere(int recursionLevel);
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
 	void generateCylinder(int numSegments);
 	void generatePlane();
@@ -167,6 +170,7 @@ private:
 
 	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
 
+	unsigned int m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
 	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
 	unsigned int m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;

@@ -89,9 +89,13 @@ void ProbeBehavior::drawProbe(float length)
 		}
 		float specExp(30.f);
 
-		glm::mat4 matModel = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
+		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
 
-		Renderer::getInstance().drawPrimitive("cylinder", matModel, diffColor, specColor, specExp);
+		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
+
+		glm::mat4 matSphere = getProbeToWorldTransform() * glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
+
+		Renderer::getInstance().drawPrimitive("inverse_icosphere", matSphere, diffColor, diffColor, 0.f);
 	}
 }
 

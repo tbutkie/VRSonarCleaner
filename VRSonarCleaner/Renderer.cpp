@@ -6,7 +6,7 @@
 #include <shared/glm/gtx/norm.hpp>
 
 #include "DebugDrawer.h"
-
+#include "Icosphere.h"
 #include "GLSLpreamble.h"
 
 Renderer::Renderer()
@@ -141,6 +141,9 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std
 	rs.specularTexName = specularTextureName;
 	rs.specularExponent = specularExponent;
 
+	if (primName.find("inverse") != std::string::npos)
+		rs.vertWindingOrder = GL_CW;
+
 	addToDynamicRenderQueue(rs);
 
 	return true;
@@ -163,6 +166,9 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm
 	rs.specularColor = specularColor;
 	rs.specularExponent = specularExponent;
 
+	if (primName.find("inverse") != std::string::npos)
+		rs.vertWindingOrder = GL_CW;
+
 	addToDynamicRenderQueue(rs);
 
 	return true;
@@ -173,6 +179,7 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
 		return false;
 
+
 	RendererSubmission rs;
 	rs.primitiveType = GL_TRIANGLES;
 	rs.shaderName = "flat";
@@ -181,6 +188,9 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 	rs.vertCount = m_mapPrimitives[primName].second;
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = color;
+
+	if (primName.find("inverse") != std::string::npos)
+		rs.vertWindingOrder = GL_CW;
 
 	addToDynamicRenderQueue(rs);
 
@@ -392,6 +402,8 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			if (i.specularExponent > 0.f)
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
 
+			glFrontFace(i.vertWindingOrder);
+
 			glBindVertexArray(i.VAO);
 			glDrawElements(i.primitiveType, i.vertCount, i.indexType, 0);
 			glBindVertexArray(0);
@@ -410,6 +422,7 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 
 void Renderer::setupPrimitives()
 {
+	generateIcosphere(4);
 	generateCylinder(32);
 	generateTorus(1.f, 0.025f, 32, 8);
 	generatePlane();
@@ -462,6 +475,15 @@ void Renderer::setupFullscreenQuad()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+
+void Renderer::generateIcosphere(int recursionLevel)
+{
+	Icosphere ico(recursionLevel);
+
+	m_glIcosphereVAO = ico.getVAO();
+
+	m_mapPrimitives["icosphere"] = m_mapPrimitives["inverse_icosphere"] = std::make_pair(m_glIcosphereVAO, ico.getIndices().size());
+}
 
 
 void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments)
