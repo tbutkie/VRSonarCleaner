@@ -15,7 +15,13 @@ int main(int argc, char *argv[])
 	printf("\tVirtual Reality\n\t\t1: Sonar Data Cleaner\n\t\t2: Sonar Data Cleaner (Study Mode)\n\t\t3: Flow Vis 4D (Random Flow Field)\n\t\t4: Flow Vis 4D (Great Bay Flow Model)\n\t\t5: Flow Vis 4D (Study Mode)\n");
 	printf("\tStandard Desktop Window\n\t\t6: Sonar Data Cleaner\n\t\t7: Sonar Data Cleaner (Study Mode)\n\t\t8: Flow Vis 4D (Random Flow Field)\n\t\t9: Flow Vis 4D (Great Bay Flow Model)\n");
 	char selectedMode;
-	selectedMode = getch();
+
+	do {
+		selectedMode = getch();
+	} while (((selectedMode - '0') < 1 || (selectedMode - '0') > 9) && selectedMode != 27);
+
+	if (selectedMode == 27)
+		return 0;
 
 	CMainApplication *pMainApplication = new CMainApplication(argc, argv, (int)(selectedMode - '0'));
 
