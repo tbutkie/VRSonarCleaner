@@ -53,21 +53,21 @@ protected:
 			, m_bHasRenderModel				(false)
 		{}
 
-		bool isPressed()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed; }
-		bool wasPressed()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed; }
+		bool isPressed()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed) > 0; }
+		bool wasPressed()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed) > 0; }
 		bool justPressed()		{ return !wasPressed() && isPressed(); }
 		bool justUnpressed()	{ return wasPressed() && !isPressed(); }
 		bool continuePress()	{ return wasPressed() && isPressed(); }
-		bool isTouched()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched; }
-		bool wasTouched()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched; }
+		bool isTouched()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched) > 0; }
+		bool wasTouched()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched) > 0; }
 		bool justTouched()		{ return !wasTouched() && isTouched(); }
 		bool justUntouched()	{ return wasTouched() && !isTouched(); }
 		bool continueTouch()	{ return wasTouched() && isTouched(); }
-		bool isScrolled()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled; }
-		bool wasScrolled()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled; }
-		bool isVisible()		{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible; }
-		bool wasVisible()		{ return m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible; }
-		bool isStatic()			{ return m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic; }
+		bool isScrolled()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled) > 0; }
+		bool wasScrolled()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled) > 0; }
+		bool isVisible()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible) > 0; }
+		bool wasVisible()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible) > 0; }
+		bool isStatic()			{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic) > 0; }
 	};
 
 	std::vector<TrackedDeviceComponent> m_vComponents;
