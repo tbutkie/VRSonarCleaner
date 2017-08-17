@@ -11,6 +11,8 @@
 
 #include <map>
 
+#include <future>
+
 class TrackedDeviceManager : public BroadcastSystem::Broadcaster
 {
 public:
@@ -47,6 +49,7 @@ private:
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
 	std::map<std::string, RenderModel*> m_mapModelCache;
+	std::future<RenderModel*> m_futRenderModel;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	ViveController* m_pPrimaryController;

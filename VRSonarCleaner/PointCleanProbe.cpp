@@ -60,6 +60,10 @@ void PointCleanProbe::draw()
 
 		Renderer::getInstance().drawPrimitive("torus", torusToWorldTransform, diffCol, specColor, specExp);
 	}
+
+	//glm::mat4 matSphere = getProbeToWorldTransform() * glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
+	//
+	//Renderer::getInstance().drawPrimitive("inverse_icosphere", matSphere, diffCol, diffCol, 0.f);
 }
 
 void PointCleanProbe::activateProbe()

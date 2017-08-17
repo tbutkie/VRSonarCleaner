@@ -16,7 +16,7 @@ ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	, m_fProbeOffsetMin(0.1f)
 	, m_fProbeOffsetMax(2.f)
 	, m_fProbeRadius(0.05f)
-	, m_fProbeRadiusMin(0.001f)
+	, m_fProbeRadiusMin(0.01f)
 	, m_fProbeRadiusMax(0.5f)
 	, m_LastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
@@ -40,7 +40,7 @@ void ProbeBehavior::deactivateDemoMode()
 	m_fProbeOffsetMin = 0.1f;
 	m_fProbeOffsetMax = 2.f;
 	m_fProbeRadius = 0.05f;
-	m_fProbeRadiusMin = 0.001f;
+	m_fProbeRadiusMin = 0.01f;
 	m_fProbeRadiusMax = 0.5f;
 }
 
@@ -92,10 +92,6 @@ void ProbeBehavior::drawProbe(float length)
 		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
-
-		glm::mat4 matSphere = getProbeToWorldTransform() * glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
-
-		Renderer::getInstance().drawPrimitive("inverse_icosphere", matSphere, diffColor, diffColor, 0.f);
 	}
 }
 

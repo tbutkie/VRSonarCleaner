@@ -17,7 +17,6 @@
 
 #include <thread>
 
-HolodeckBackground*				g_pHolodeck = NULL;
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
 FlowProbe*						g_pFlowProbeBehavior = NULL;
@@ -208,6 +207,8 @@ bool CMainApplication::init()
 		return false;
 	}
 
+	HolodeckBackground(g_vec3RoomSize, 0.25f);
+
 	if (m_bSonarCleaning)
 	{
 		m_pColorScalerTPU = new ColorScaler();
@@ -372,9 +373,6 @@ bool CMainApplication::initVR()
 		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
 		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
 	}
-
-	if (!m_bUseDesktop)
-		g_pHolodeck = new HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	return true;
 }
@@ -828,7 +826,7 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				wallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.22f, 0.25f, 0.34f, 1.f), 1.f);
+				wallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
 				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 				Renderer::RendererSubmission rs;
@@ -893,7 +891,7 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		tableVolume->drawEllipsoidBacking(glm::vec4(0.1f, 0.1f, 0.4f, 1.f), -10.f);
+		tableVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 		//draw table
@@ -910,17 +908,10 @@ void CMainApplication::drawScene()
 
 	if (m_bFlowVis)
 	{
-		if (m_bUseVR)
-			flowVolume->drawEllipsoidBacking(glm::vec4(0.22f, 0.25f, 0.34f, 1.f), -10.f);
-		else if (m_bUseDesktop)
-			flowVolume->drawEllipsoidBacking(glm::vec4(0.22f, 0.25f, 0.34f, 1.f), -10.f);
-
+		flowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 		flowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 		flowVolume->draw();
-
-		DebugDrawer::getInstance().setTransform(flowVolume->getCurrentDataTransform());
-		DebugDrawer::getInstance().drawTransform(0.5f);
 	}
 
 	for (auto const &b : g_vpBehaviors)

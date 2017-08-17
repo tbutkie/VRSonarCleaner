@@ -107,7 +107,7 @@ void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
 {
 	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
 
-	Renderer::getInstance().drawFlatPrimitive("inverse_icosphere", volTransform, color);
+	Renderer::getInstance().drawPrimitive("inverse_icosphere", volTransform, color, color, 0.f);
 }
 
 void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct)
@@ -155,7 +155,7 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 			// calculate transparency fade
 			float range = cosFade - cosCutoff;
 			//color.a *= (dpPlaneView - cosCutoff) / range;
-			color.a = 0.5f;
+			//color.a = 0.5f;
 	
 			// now position the planes
 			float eps = 0.001f;
@@ -167,40 +167,40 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 			{ // right
 				planeTransform[0] = volTransform[2];
 				planeTransform[1] = volTransform[1];
-				color = glm::vec4(glm::vec3(1.f, 0.f, 0.f), color.a);
+				//color = glm::vec4(glm::vec3(1.f, 0.f, 0.f), color.a);
 			}
 			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[0]))) - 1.f) < eps)
 			{ // left
 				planeTransform[0] = -volTransform[2];
 				planeTransform[1] = volTransform[1];
-				color = glm::vec4(glm::vec3(0.f, 1.f, 0.f), color.a);
+				//color = glm::vec4(glm::vec3(0.f, 1.f, 0.f), color.a);
 			}
 			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[1]))) - (-1.f)) < eps)
 			{ // top
 				planeTransform[0] = volTransform[0];
 				planeTransform[1] = volTransform[2];
-				color = glm::vec4(glm::vec3(0.f, 0.f, 1.f), color.a);
+				//color = glm::vec4(glm::vec3(0.f, 0.f, 1.f), color.a);
 			}
 			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[1]))) - 1.f) < eps)
 			{ // bottom
 				planeTransform[0] = volTransform[0];
 				planeTransform[1] = -volTransform[2];
-				color = glm::vec4(glm::vec3(1.f, 1.f, 0.f), color.a);
+				//color = glm::vec4(glm::vec3(1.f, 1.f, 0.f), color.a);
 			}
 			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[2]))) - (-1.f)) < eps)
 			{ // front
 				planeTransform[0] = -volTransform[0];
 				planeTransform[1] = volTransform[1];
-				color = glm::vec4(glm::vec3(0.f, 1.f, 1.f), color.a);
+				//color = glm::vec4(glm::vec3(0.f, 1.f, 1.f), color.a);
 			}
 			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[2]))) - 1.f) < eps)
 			{ // back
 				planeTransform[0] = volTransform[0];
 				planeTransform[1] = volTransform[1];
-				color = glm::vec4(glm::vec3(1.f, 0.f, 1.f), color.a);
+				//color = glm::vec4(glm::vec3(1.f, 0.f, 1.f), color.a);
 			}
 	
-			Renderer::getInstance().drawPrimitive("plane", planeTransform, color, color, 10.f);
+			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, color);
 		}
 	}
 }

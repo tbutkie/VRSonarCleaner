@@ -285,16 +285,19 @@ void TrackedDeviceManager::draw()
 
 					RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str());
 					
-					Renderer::RendererSubmission rs;
-					rs.shaderName = "lighting";
-					rs.VAO = rm->getVAO();
-					rs.vertCount = rm->getVertexCount();
-					rs.primitiveType = GL_TRIANGLES;
-					rs.diffuseTexName = rm->GetName();
-					rs.specularTexName = "white";
-					rs.specularExponent = rm->getMaterialShininess();
-					rs.modelToWorldTransform = matModel;
-					Renderer::getInstance().addToDynamicRenderQueue(rs);
+					if (rm->ready())
+					{
+						Renderer::RendererSubmission rs;
+						rs.shaderName = "lighting";
+						rs.VAO = rm->getVAO();
+						rs.vertCount = rm->getVertexCount();
+						rs.primitiveType = GL_TRIANGLES;
+						rs.diffuseTexName = rm->getName();
+						rs.specularTexName = "white";
+						rs.specularExponent = rm->getMaterialShininess();
+						rs.modelToWorldTransform = matModel;
+						Renderer::getInstance().addToDynamicRenderQueue(rs);
+					}
 				}
 		}
 		else // render model without components
@@ -303,16 +306,19 @@ void TrackedDeviceManager::draw()
 
 			RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_strRenderModelName.c_str());
 
-			Renderer::RendererSubmission rs;
-			rs.shaderName = "lighting";
-			rs.VAO = rm->getVAO();
-			rs.vertCount = rm->getVertexCount();
-			rs.primitiveType = GL_TRIANGLES;
-			rs.diffuseTexName = rm->GetName();
-			rs.specularTexName = "white";
-			rs.specularExponent = rm->getMaterialShininess();
-			rs.modelToWorldTransform = matModel;
-			Renderer::getInstance().addToDynamicRenderQueue(rs);
+			if (rm->ready())
+			{
+				Renderer::RendererSubmission rs;
+				rs.shaderName = "lighting";
+				rs.VAO = rm->getVAO();
+				rs.vertCount = rm->getVertexCount();
+				rs.primitiveType = GL_TRIANGLES;
+				rs.diffuseTexName = rm->getName();
+				rs.specularTexName = "white";
+				rs.specularExponent = rm->getMaterialShininess();
+				rs.modelToWorldTransform = matModel;
+				Renderer::getInstance().addToDynamicRenderQueue(rs);
+			}
 		}
 	}
 }
@@ -391,12 +397,6 @@ RenderModel* TrackedDeviceManager::findOrLoadRenderModel(const char *pchRenderMo
 	}
 	
 	pRenderModel = new RenderModel(pchRenderModelName);
-	if (!pRenderModel->BInit())
-	{
-		printf("Unable to create GL model from render model %s\n", pchRenderModelName);
-		delete pRenderModel;
-		pRenderModel = NULL;
-	}
 
 	m_mapModelCache[std::string(pchRenderModelName)] = pRenderModel;
 
