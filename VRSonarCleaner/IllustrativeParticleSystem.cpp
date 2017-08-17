@@ -360,9 +360,11 @@ void IllustrativeParticleSystem::update(float time)
 
 	m_nLastCountLiveParticles = m_nMaxParticles - deadParticles.size();
 	m_nLastCountLiveSeeds = activeParticles.size();
+
+	prepareForRender();
 }
 
-bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &rs)
+bool IllustrativeParticleSystem::prepareForRender()
 {
 	m_vvec3PositionsBuffer.clear();
 	m_vvec4ColorBuffer.clear();
@@ -408,7 +410,7 @@ bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &
 
 	GLsizei numPositions = m_vvec3PositionsBuffer.size();
 	GLsizei numColors = m_vvec4ColorBuffer.size();
-	GLsizei numIndices = m_vuiIndices.size();
+	m_nIndexCount = m_vuiIndices.size();
 
 	if (numPositions < 2)
 		return false;
@@ -421,19 +423,13 @@ bool IllustrativeParticleSystem::prepareForRender(Renderer::RendererSubmission &
 	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), &m_vvec4ColorBuffer[0]);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), 0, GL_STREAM_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(GLuint), &m_vuiIndices[0], GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), 0, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), &m_vuiIndices[0], GL_STREAM_DRAW);
 	
 	// Set color attribute pointer now that point array size is known
 	glBindVertexArray(this->m_glVAO);
 	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPositions * sizeof(glm::vec3)));
 	glBindVertexArray(0);
-
-	rs.primitiveType = GL_LINES;
-	rs.VAO = m_glVAO;
-	rs.vertCount = numIndices;
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.hasTransparency = true;
 
 	return true;
 }
@@ -484,6 +480,16 @@ int IllustrativeParticleSystem::getNumDyeEmitters()
 int IllustrativeParticleSystem::getNumDyeParticles()
 {
 	return m_nLastCountLiveParticles - m_nLastCountLiveSeeds;
+}
+
+GLuint IllustrativeParticleSystem::getVAO()
+{
+	return m_glVAO;
+}
+
+GLsizei IllustrativeParticleSystem::getIndexCount()
+{
+	return m_nIndexCount;
 }
 
 int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float maxZ)

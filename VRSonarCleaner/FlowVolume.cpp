@@ -90,14 +90,21 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 void FlowVolume::draw()
 {
+	if (m_pParticleSystem->getIndexCount() < 2)
+		return;
+
 	Renderer::RendererSubmission rs;
 
-	rs.shaderName = "flat";
+	rs.primitiveType = GL_LINES;
+	rs.shaderName = "flat";	
+	rs.VAO = m_pParticleSystem->getVAO();
+	rs.vertCount = m_pParticleSystem->getIndexCount();
+	rs.indexType = GL_UNSIGNED_INT;
+	rs.hasTransparency = true;
 	rs.transparencySortPosition = getCurrentVolumeTransform()[3];
 	rs.modelToWorldTransform = getCurrentDataTransform();
 
-	if (m_pParticleSystem->prepareForRender(rs))
-		Renderer::getInstance().addToDynamicRenderQueue(rs);		
+	Renderer::getInstance().addToDynamicRenderQueue(rs);		
 }
 
 void FlowVolume::preRenderUpdates()

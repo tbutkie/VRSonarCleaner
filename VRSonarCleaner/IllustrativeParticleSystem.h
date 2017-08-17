@@ -61,9 +61,12 @@ public:
 	int getNumDyeParticles();
 	int m_nLastCountLiveParticles;
 	int m_nLastCountLiveSeeds;
+	GLsizei m_nIndexCount;
+
+	GLuint getVAO();
+	GLsizei getIndexCount();
 
 	int m_nStreakSegments;
-	bool prepareForRender(Renderer::RendererSubmission &rs);
 
 private:
 	// Holds all particle positions and their trails in one array and colors in another
@@ -73,6 +76,8 @@ private:
 
 	GLuint m_glVAO, m_glVBO, m_glEBO;
 	void initGL();
+
+	bool prepareForRender();
 };
 
 #endif
