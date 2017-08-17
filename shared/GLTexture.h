@@ -15,19 +15,12 @@ public:
 		, m_uiWidth(1u)
 		, m_uiHeight(1u)
 	{
-		//glGenTextures(1, &m_uiID);
-		//glBindTexture(GL_TEXTURE_2D, m_uiID);
-		//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, color);
-		//glBindTexture(GL_TEXTURE_2D, 0);
-
 		if (color[3] == 0xFF)
 			m_bTransparency = false;
 		else
 			m_bTransparency = true;
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &m_uiID);
-		glTextureStorage2D(m_uiID, 1, GL_RGBA8, m_uiWidth, m_uiHeight);
-		glTextureSubImage2D(m_uiID, 0, 0, 0, m_uiWidth, m_uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, color);
+		load(color);
 	}
 
 	GLTexture(std::string name, unsigned short width, unsigned short height, unsigned char const * data, bool hasTransparency)
@@ -37,25 +30,7 @@ public:
 		, m_uiHeight(height)
 		, m_bTransparency(hasTransparency)
 	{		
-		// Calculate number of mipmap levels for diffuse texture
-		// this is taken straight from the spec for glTexStorage2D
-		int diffuseMipMapLevels = floor(log2((std::max)(m_uiWidth, m_uiHeight))) + 1;
-
-		// Generate texture
-		glCreateTextures(GL_TEXTURE_2D, 1, &m_uiID);
-		glTextureStorage2D(m_uiID, diffuseMipMapLevels, GL_RGBA8, m_uiWidth, m_uiHeight);
-		glTextureSubImage2D(m_uiID, 0, 0, 0, m_uiWidth, m_uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
-
-		glGenerateTextureMipmap(m_uiID);
-
-		glTextureParameteri(m_uiID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTextureParameteri(m_uiID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		GLfloat fLargest;
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
-		glTextureParameterf(m_uiID, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
+		load(data);
 	}
 
 	GLTexture(std::string png_filename, bool hasTransparency)
@@ -73,26 +48,8 @@ public:
 
 		if (error != 0)
 			std::cerr << "error " << error << ": " << lodepng_error_text(error) << std::endl;
-
-		// Calculate number of mipmap levels for diffuse texture
-		// this is taken straight from the spec for glTexStorage2D
-		int diffuseMipMapLevels = floor(log2((std::max)(m_uiWidth, m_uiHeight))) + 1;
-
-		// Generate texture
-		glCreateTextures(GL_TEXTURE_2D, 1, &m_uiID);
-		glTextureStorage2D(m_uiID, diffuseMipMapLevels, GL_RGBA8, m_uiWidth, m_uiHeight);
-		glTextureSubImage2D(m_uiID, 0, 0, 0, m_uiWidth, m_uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
-
-		glGenerateTextureMipmap(m_uiID);
-
-		glTextureParameteri(m_uiID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTextureParameteri(m_uiID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		GLfloat fLargest;
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
-		glTextureParameterf(m_uiID, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
+		
+		load(image.data());
 	}
 
 	~GLTexture()
@@ -112,4 +69,27 @@ private:
 	std::string m_strName;
 	unsigned m_uiWidth, m_uiHeight;
 	bool m_bTransparency;
+
+	void load(unsigned char const * data)
+	{
+		// Calculate number of mipmap levels for diffuse texture
+		// this is taken straight from the spec for glTexStorage2D
+		int diffuseMipMapLevels = (int)floor(log2((std::max)(m_uiWidth, m_uiHeight))) + 1;
+
+		// Generate texture
+		glCreateTextures(GL_TEXTURE_2D, 1, &m_uiID);
+		glTextureStorage2D(m_uiID, diffuseMipMapLevels, GL_RGBA8, m_uiWidth, m_uiHeight);
+		glTextureSubImage2D(m_uiID, 0, 0, 0, m_uiWidth, m_uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+
+		glGenerateTextureMipmap(m_uiID);
+
+		glTextureParameteri(m_uiID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTextureParameteri(m_uiID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_uiID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		GLfloat fLargest;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
+		glTextureParameterf(m_uiID, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
+	}
 };
