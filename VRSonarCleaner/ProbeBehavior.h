@@ -46,9 +46,6 @@ protected:
 	float m_fProbeRadiusMax;
 	float m_fProbeRadiusInitial;
 
-	std::chrono::time_point<std::chrono::steady_clock> m_LastTime;
-	float m_fCursorHoopAngle;
-
 protected:
 	virtual void receiveEvent(const int event, void* payloadData);
 	virtual void activateProbe() = 0;

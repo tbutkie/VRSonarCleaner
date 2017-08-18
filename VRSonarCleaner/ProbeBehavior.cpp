@@ -18,8 +18,6 @@ ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
 	, m_fProbeRadius(0.05f)
 	, m_fProbeRadiusMin(0.01f)
 	, m_fProbeRadiusMax(0.5f)
-	, m_LastTime(std::chrono::high_resolution_clock::now())
-	, m_fCursorHoopAngle(0.f)
 {
 }
 

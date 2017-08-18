@@ -4,12 +4,16 @@
 
 #include "Renderer.h"
 
+using namespace std::chrono_literals;
+
 PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, SonarPointCloud *pCloud, vr::IVRSystem *pHMD)
 	: ProbeBehavior(controller, pointCloudVolume)
 	, m_bProbeActive(false)
 	, m_pPointCloud(pCloud)
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
+	, m_tpLastTime(std::chrono::high_resolution_clock::now())
+	, m_fCursorHoopAngle(0.f)
 {
 }
 
@@ -19,7 +23,12 @@ PointCleanProbe::~PointCleanProbe()
 }
 
 void PointCleanProbe::update()
-{
+{	
+	// Update time vars
+	auto tick = std::chrono::high_resolution_clock::now();
+	m_durfElapsedTime = tick - m_tpLastTime;
+	m_tpLastTime = tick;
+
 	checkPoints();
 }
 
@@ -31,13 +40,10 @@ void PointCleanProbe::draw()
 	drawProbe(m_fProbeOffset - m_fProbeRadius);	
 
 	long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
-
-	// Update time vars
-	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-	m_LastTime = std::chrono::high_resolution_clock::now();
+	
 
 	// Update rotation angle
-	float angleNeeded = (360.f) * (elapsed_ms.count() % rate_ms_per_rev) / rate_ms_per_rev;
+	float angleNeeded = (360.f) * (std::chrono::duration_cast<std::chrono::milliseconds>(m_durfElapsedTime).count() % rate_ms_per_rev) / rate_ms_per_rev;
 	m_fCursorHoopAngle += angleNeeded;
 
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
@@ -126,8 +132,6 @@ void PointCleanProbe::checkPoints()
 
 	bool clearPoints = m_pController->isTriggerClicked();
 	
-
-
 	glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform();
 	glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform();
 
@@ -143,14 +147,8 @@ void PointCleanProbe::checkPoints()
 	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
 		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
 		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
-
-	// CLOCK UPDATE
-	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_LastTime);
-	m_LastTime = std::chrono::high_resolution_clock::now();
-
-	float blink_rate_ms = 250.f;
-
-	float delta = static_cast<float>(elapsed_ms.count()) / blink_rate_ms;
+	
+	float delta = std::chrono::duration_cast<std::chrono::milliseconds>(m_durfElapsedTime).count() / POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count();
 	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
 
 	// POINTS CHECK
