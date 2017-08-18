@@ -1,7 +1,6 @@
 #ifndef __SonarPointCloud_h__
 #define __SonarPointCloud_h__
 
-#include <windows.h>
 #include <vector>
 #include <GL/glew.h>
 #include <stdio.h>

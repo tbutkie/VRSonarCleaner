@@ -1,7 +1,6 @@
 #include "RenderModel.h"
 
 #include <algorithm>
-#include <windows.h>
 
 #include "GLSLpreamble.h"
 #include "Renderer.h"

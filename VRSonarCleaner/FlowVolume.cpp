@@ -1,8 +1,8 @@
 #include "FlowVolume.h"
 
-#include "ParticleManager.h"
-
 #include "Renderer.h"
+
+using namespace std::chrono_literals;
 
 FlowVolume::FlowVolume(FlowGrid* flowGrid)
 	: DataVolume(
@@ -20,6 +20,7 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 			-flowGrid->getScaledMinDepth()
 		))
 	, m_pFlowGrid(flowGrid)
+	, m_msLoopTime(35s)
 {
 	//X-Right-Left
 	//Y-UP-vertical
@@ -30,7 +31,7 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 	m_fFlowRoomMinTime = m_pFlowGrid->m_fMinTime;
 	m_fFlowRoomMaxTime = m_pFlowGrid->m_fMaxTime;
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
-	m_ullLastTimeUpdate = GetTickCount64();
+	m_tpLastTimeUpdate = std::chrono::high_resolution_clock::now();
 	
 	std::vector<FlowGrid*> flowGrids;
 	flowGrids.push_back(m_pFlowGrid);
@@ -109,11 +110,11 @@ void FlowVolume::draw()
 void FlowVolume::preRenderUpdates()
 {
 	//update time
-	ULONGLONG tick = GetTickCount64();
-	ULONGLONG timeSinceLast = tick - m_ullLastTimeUpdate;
-	if (timeSinceLast > 20)
+	auto tick = std::chrono::high_resolution_clock::now();
+	auto timeSinceLast = tick - m_tpLastTimeUpdate;
+	if (timeSinceLast > 20ms)
 	{
-		m_ullLastTimeUpdate = tick;
+		m_tpLastTimeUpdate = tick;
 		float currentTime = m_fFlowRoomTime;
 		float minTime = m_fFlowRoomMinTime;
 		float maxTime = m_fFlowRoomMaxTime;
@@ -123,7 +124,7 @@ void FlowVolume::preRenderUpdates()
 		{
 			if (true) ///playing v paused
 			{
-				float factorToAdvance = (float)timeSinceLast / 35000; //35 second loop time		
+				float factorToAdvance = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(timeSinceLast).count() / m_msLoopTime.count();
 				float newTime = currentTime + (factorToAdvance * timeRange);
 				if (newTime > maxTime)
 					newTime = minTime;

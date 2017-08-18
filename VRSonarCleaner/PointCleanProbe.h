@@ -4,8 +4,8 @@
 #include "SonarPointCloud.h"
 #include "openvr.h"
 
-#define POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE 2000ms
-#define POINT_CLOUD_HIGHLIGHT_BLINK_RATE 250ms
+#define POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE std::chrono::duration<float, std::milli>(2000)
+#define POINT_CLOUD_HIGHLIGHT_BLINK_RATE std::chrono::duration<float, std::milli>(250)
 
 class PointCleanProbe :
 	public ProbeBehavior
@@ -28,7 +28,7 @@ private:
 	vr::IVRSystem *m_pHMD;
 	
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTime;
-	std::chrono::milliseconds m_msElapsedTime;
+	std::chrono::duration<float, std::milli> m_msElapsedTime;
 
 	float m_fCursorHoopAngle;
 

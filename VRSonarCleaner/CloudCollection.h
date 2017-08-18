@@ -1,7 +1,6 @@
 #ifndef __CloudCollection_h__
 #define __CloudCollection_h__
 
-#include <windows.h>
 #include <vector>
 #include <GL/glew.h>
 #include <stdio.h>

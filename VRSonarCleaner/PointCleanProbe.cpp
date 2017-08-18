@@ -43,7 +43,7 @@ void PointCleanProbe::draw()
 	
 
 	// Update rotation angle
-	float angleNeeded = (360.f) * (m_msElapsedTime.count() % rate_ms_per_rev) / rate_ms_per_rev;
+	float angleNeeded = (360.f) * fmodf(m_msElapsedTime.count(), POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count()) / POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count();
 	m_fCursorHoopAngle += angleNeeded;
 
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
@@ -148,7 +148,7 @@ void PointCleanProbe::checkPoints()
 		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
 		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
 	
-	float delta = (float)(m_msElapsedTime.count()) / (float)(POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count());
+	float delta = m_msElapsedTime.count() / POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count();
 	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
 
 	// POINTS CHECK

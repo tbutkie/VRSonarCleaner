@@ -87,15 +87,6 @@
     <ClCompile Include="CoordinateScaler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ParticleSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StreakletSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="LightingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -140,9 +131,6 @@
     </ClCompile>
     <ClCompile Include="PointCleanProbe.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
-    <ClCompile Include="ResourceManager.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -221,15 +209,6 @@
     <ClInclude Include="BroadcastSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ParticleSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StreakletSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LightingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -274,9 +253,6 @@
     </ClInclude>
     <ClInclude Include="PointCleanProbe.h">
       <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceManager.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -7,12 +7,12 @@
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "IllustrativeParticleSystem.h"
-#include "StreakletSystem.h"
 #include "CoordinateScaler.h"
 #include <vector>
 
 #include <stdio.h>
 #include <algorithm>
+#include <chrono>
 #include "FlowGrid.h"
 #include "LightingSystem.h"
 
@@ -41,7 +41,8 @@ private:
 
 	float m_fFlowRoomTime;
 	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
-	ULONGLONG m_ullLastTimeUpdate;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTimeUpdate;
+	std::chrono::duration<float, std::milli> m_msLoopTime;
 		
 	FlowGrid* m_pFlowGrid;
 			

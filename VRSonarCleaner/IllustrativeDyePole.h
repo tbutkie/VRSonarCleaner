@@ -1,7 +1,6 @@
 #ifndef __IllustrativeDyePole_h__
 #define __IllustrativeDyePole_h__
 
-#include <windows.h>
 #include <GL/glew.h>
 #include <vector>
 #include <chrono>
