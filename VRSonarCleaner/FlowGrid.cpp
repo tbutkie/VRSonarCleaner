@@ -1,6 +1,6 @@
 #include "FlowGrid.h"
 
-#include "DebugDrawer.h"
+using namespace std::chrono_literals;
 
 FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 	: m_fMinTime(-1.f)
@@ -136,8 +136,8 @@ void FlowGrid::init()
 
 	m_bIllustrativeParticlesEnabled = true;
 	m_nIllustrativeParticles = 10000;
-	m_fIllustrativeParticleTrailTime = 500;
-	m_fIllustrativeParticleLifetime = 2500;
+	m_fIllustrativeParticleTrailTime = 500ms;
+	m_fIllustrativeParticleLifetime = 2500ms;
 	m_fIllustrativeParticleSize = 1;
 
 	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);

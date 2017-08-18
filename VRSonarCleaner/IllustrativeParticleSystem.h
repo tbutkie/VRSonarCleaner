@@ -1,17 +1,17 @@
 #ifndef __IllustrativeParticleSystem_h__
 #define __IllustrativeParticleSystem_h__
 
-#include <windows.h>
 #include <GL/glew.h>
-#include "FlowGrid.h"
 #include <vector>
+#include <chrono>
+#include "FlowGrid.h"
 #include "IllustrativeParticle.h"
 #include "IllustrativeDyePole.h"
 #include "IllustrativeParticleEmitter.h"
 #include "CoordinateScaler.h"
 #include "Renderer.h"
 
-#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20
+#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20ms
 
 #define MAX_PARTICLES 20000
 
@@ -29,8 +29,8 @@ public:
 	void deleteAllDyePoles();
 	void deleteDyePole(int index);
 
-	void addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, float lifetime);
-	void addDyeParticle(double x, double y, double z, float r, float g, float b, float lifetime);
+	void addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime);
+	void addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime);
 
 	IllustrativeDyePole* getDyePoleClosestTo(double x, double y);
 	IllustrativeParticleEmitter* getDyePotClosestTo(float x, float y, float z);
@@ -38,14 +38,10 @@ public:
 	void update(float time);
 	void pause();
 	void unPause();
-	ULONGLONG m_ullLastParticleUpdate;
-	ULONGLONG m_ullPauseTime;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastParticleUpdate;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpPauseTime;
 	
 	int m_nMaxParticles;
-
-	//void draw();
-
-	//vector <Particle> particles;
 	std::vector<IllustrativeParticle*> m_vpParticles;
 	
 	CoordinateScaler *m_pScaler;

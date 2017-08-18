@@ -1,5 +1,7 @@
 #include "IllustrativeParticle.h"
 
+using namespace std::chrono_literals;
+
 IllustrativeParticle::IllustrativeParticle()
 	: m_pFlowGrid(NULL)
 	, m_bDead(true)
@@ -13,26 +15,26 @@ IllustrativeParticle::~IllustrativeParticle()
 
 }
 
-void IllustrativeParticle::init(glm::vec3 pos, glm::vec3 color, float gravity, float timeToLive, float trailTime, ULONGLONG currentTime, bool userCreated)
+void IllustrativeParticle::init(glm::vec3 pos, glm::vec3 color, float gravity, std::chrono::milliseconds timeToLive, std::chrono::milliseconds trailTime, std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, bool userCreated)
 {
 	m_bDead = false;
 	m_bDying = false;
-	m_ullTimeToStartDying = currentTime + timeToLive;
+	m_tpTimeToStartDying = currentTime + timeToLive;
 	m_vec3StartingPosition = pos;
-	m_fTrailTime = trailTime;
+	m_msTrailTime = trailTime;
 	m_bUserCreated = userCreated;
 	m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
 	m_fGravity = gravity;
 	
-	m_ullBirthTime = currentTime;
-	m_vullTimes[0] = currentTime;
+	m_tpBirthTime = currentTime;
+	m_vtpTimes[0] = currentTime;
 
 	m_vvec3Positions[0] = m_vec3StartingPosition;
 	m_vvec3Positions[1] = m_vec3StartingPosition;
 
 	m_iBufferTail = 0;
 	m_iBufferHead = 1;
-	m_ullLiveTimeElapsed = 0ull;
+	m_msLiveTimeElapsed = std::chrono::milliseconds::zero();
 
 	m_vec3Color = color;
 }
@@ -43,59 +45,59 @@ void IllustrativeParticle::reset()
 	m_bDying = false;
 	m_bUserCreated = false;
 	m_fGravity = 0.f;
-	m_fTimeToLive = 0.f;
-	m_fTrailTime = 0.f;
+	m_msTimeToLive = 0ms;
+	m_msTrailTime = 0ms;
+	m_msLiveTimeElapsed = 0ms;
+	m_msTimeSince = 0ms;
 	m_iBufferTail = 0;
 	m_iBufferHead = 0;
-	m_ullBirthTime = 0ull;
-	m_ullLastUpdateTimestamp = 0ull;
-	m_ullLiveTimeElapsed = 0ull;
-	m_ullTimeDeathBegan = 0ull;
-	m_ullTimeSince = 0ull;
-	m_ullTimeToStartDying = 0ull;
+	m_tpBirthTime = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	m_tpLastUpdateTimestamp = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	m_tpTimeDeathBegan = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	m_tpTimeToStartDying = std::chrono::time_point<std::chrono::high_resolution_clock>();
 	m_vec3Color = glm::vec3(0.f);
 	m_vec3StartingPosition = glm::vec3(0.f);
 
-	m_vullTimes.clear();
-	m_vullTimes.resize(MAX_NUM_TRAIL_POSITIONS);
+	m_vtpTimes.clear();
+	m_vtpTimes.resize(MAX_NUM_TRAIL_POSITIONS);
 	m_vvec3Positions.clear();
 	m_vvec3Positions.resize(MAX_NUM_TRAIL_POSITIONS);
 }
 
 //returns true if needs to be deleted
-void IllustrativeParticle::updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ)
+void IllustrativeParticle::updatePosition(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, float newX, float newY, float newZ)
 {
 	if (m_bDead)
 		return;
 	else
-		m_ullLastUpdateTimestamp = currentTime;
+		m_tpLastUpdateTimestamp = currentTime;
 
 	glm::vec3 m_vec3NewPos(newX, newY, newZ);
 
-	if (currentTime >= m_ullTimeToStartDying && !m_bDying)
+	if (currentTime >= m_tpTimeToStartDying && !m_bDying)
 	{
-		m_ullTimeDeathBegan = currentTime;
+		m_tpTimeDeathBegan = currentTime;
 		m_bDying = true;
 	}
 
 	if (!m_bDying)//translate particle, filling next spot in array with new position/timestamp
 	{
 		m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
-		m_vullTimes[m_iBufferHead] = currentTime;
+		m_vtpTimes[m_iBufferHead] = currentTime;
 		m_iBufferHead = getWrappedIndex(m_iBufferHead + 1);
 	}//end if not dying
 	
-	m_ullLiveTimeElapsed = currentTime - m_vullTimes[m_iBufferTail];
+	m_msLiveTimeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_vtpTimes[m_iBufferTail]);
 
 	updateBufferIndices(currentTime);
 }
 
-void IllustrativeParticle::updateBufferIndices(ULONGLONG currentTime)
+void IllustrativeParticle::updateBufferIndices(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime)
 {
 	for (int i = m_iBufferTail; i != m_iBufferHead; i = getWrappedIndex(i + 1))
 	{
-		m_ullTimeSince = currentTime - m_vullTimes[i];
-		if (m_ullTimeSince > m_fTrailTime)
+		m_msTimeSince = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_vtpTimes[i]);
+		if (m_msTimeSince > m_msTrailTime)
 			m_iBufferTail = getWrappedIndex(i + 1);
 		else 
 			break;
@@ -148,23 +150,23 @@ float IllustrativeParticle::getFadeInFadeOutOpacity()
 {
 	if (m_bDying)
 	{
-		float opacity = (m_ullLastUpdateTimestamp - m_ullTimeDeathBegan) / m_fTrailTime;
-		if (opacity > 1)
-			return 0;
-		else if (opacity < 0)
-			return 1;
+		float opacity = (m_tpLastUpdateTimestamp - m_tpTimeDeathBegan) / m_msTrailTime;
+		if (opacity > 1.f)
+			return 0.f;
+		else if (opacity < 0.f)
+			return 1.f;
 		else
-			return (1-opacity);
+			return (1.f - opacity);
 	}
 	else
 	{
-		float timeSinceStart = m_ullLastUpdateTimestamp - m_ullBirthTime;
-		if (timeSinceStart < 200) //first 200 ms
+		std::chrono::milliseconds timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(m_tpLastUpdateTimestamp - m_tpBirthTime);
+		if (timeSinceStart < 200ms) //first 200 ms
 		{
-			return (timeSinceStart)/200;
+			return timeSinceStart / 200ms;
 		}
 		else
-			return 1;
+			return 1.f;
 	}
 }
 

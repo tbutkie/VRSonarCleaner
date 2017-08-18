@@ -1,6 +1,6 @@
 #include "IllustrativeParticleEmitter.h"
 
-#include "DebugDrawer.h"
+using namespace std::chrono_literals;
 
 IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc, CoordinateScaler *Scaler)
 {
@@ -11,10 +11,10 @@ IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc,
 	color = 0;
 	particlesPerSecond = DEFAULT_DYE_RATE;
 	radius = DEFAULT_DYE_RADIUS;
-	lifetime = DEFAULT_DYE_LIFETIME;
-	trailTime = DEFAULT_DYE_LENGTH;
+	m_msLifetime = DEFAULT_DYE_LIFETIME;
+	m_msTrailTime = DEFAULT_DYE_LENGTH;
 	gravity = DEFAULT_GRAVITY;
-	lastEmission = 0;
+	m_tpLastEmission = std::chrono::time_point<std::chrono::high_resolution_clock>();
 
 	scaler = Scaler;
 }
@@ -46,14 +46,14 @@ void IllustrativeParticleEmitter::changeSpread(float Radius)
 	radius = Radius;
 }
 
-void IllustrativeParticleEmitter::setLifetime(float time)
+void IllustrativeParticleEmitter::setLifetime(std::chrono::milliseconds time)
 {
-	lifetime = time;
+	m_msLifetime = time;
 }
 
-float IllustrativeParticleEmitter::getLifetime()
+std::chrono::milliseconds IllustrativeParticleEmitter::getLifetime()
 {
-	return lifetime;
+	return m_msLifetime;
 }
 
 void IllustrativeParticleEmitter::setRate(float ParticlesPerSecond)
@@ -61,14 +61,14 @@ void IllustrativeParticleEmitter::setRate(float ParticlesPerSecond)
 	particlesPerSecond = ParticlesPerSecond;
 }
 
-void IllustrativeParticleEmitter::setTrailTime(float time)
+void IllustrativeParticleEmitter::setTrailTime(std::chrono::milliseconds time)
 {
-	trailTime = time;
+	m_msTrailTime = time;
 }
 
-float IllustrativeParticleEmitter::getTrailTime()
+std::chrono::milliseconds IllustrativeParticleEmitter::getTrailTime()
 {
-	return trailTime;
+	return m_msTrailTime;
 }
 
 float IllustrativeParticleEmitter::getGravity()
@@ -96,26 +96,26 @@ void IllustrativeParticleEmitter::setRadius(float rad)
 	radius = rad;
 }
 
-int IllustrativeParticleEmitter::getNumParticlesToEmit(float tickCount)
+int IllustrativeParticleEmitter::getNumParticlesToEmit(std::chrono::time_point<std::chrono::high_resolution_clock> tick)
 {
-	if (lastEmission == 0.f)
-	{
-		lastEmission = tickCount - particlesPerSecond * 0.01f;
-	}
+	//if (m_tpLastEmission == std::chrono::time_point<std::chrono::high_resolution_clock>())
+	//{
+	//	m_tpLastEmission = tick - particlesPerSecond * 0.01f;
+	//}
 
-	float timeSinceLast = tickCount-lastEmission; // in milliseconds
-	if (timeSinceLast > 100) //only spawn 10 times per second
+	std::chrono::milliseconds timeSinceLast = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastEmission);
+	if (timeSinceLast > 100ms) //only spawn 10 times per second
 	{
-		int toEmit = (timeSinceLast/1000)*particlesPerSecond;
+		int toEmit = std::chrono::duration_cast<std::chrono::seconds>(timeSinceLast).count() * particlesPerSecond;
 		if (toEmit > 1000) //sanity check for times where there is too long between spawnings
 		{
-			lastEmission = tickCount;
+			m_tpLastEmission = tick;
 			return 1000;
 		}
 		else
 		{
 			if (toEmit > 0)
-				lastEmission = tickCount;
+				m_tpLastEmission = tick;
 
 			return toEmit;
 		}
@@ -190,27 +190,4 @@ glm::vec3 IllustrativeParticleEmitter::getMutedColor()
 		return glm::vec3(COLOR_7_R, COLOR_7_G, COLOR_7_B) - 0.35f;
 	else if (color == 8)
 		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B) - 0.35f;
-}
-
-void IllustrativeParticleEmitter::drawSmall3D()
-{
-	DebugDrawer::getInstance().drawPoint(
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(z)),
-		glm::vec4(getColor(), 1.f)
-	);
-	glEnd();
-
-	int nSegments = 16;
-
-	for (int i = 0; i < nSegments; ++i)
-	{
-		float theta0 = glm::two_pi<float>() * static_cast<float>(i) / (static_cast<float>(nSegments - 1));
-		float theta1 = glm::two_pi<float>() * static_cast<float>((i + 1) % nSegments) / (static_cast<float>(nSegments - 1));
-
-		DebugDrawer::getInstance().drawLine(
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta0)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta0)*scaler->getScaledLength(radius), scaler->getScaledDepth(z)),
-			glm::vec3(scaler->getScaledLonX(x) + cos(theta1)*scaler->getScaledLength(radius), scaler->getScaledLatY(y) + sin(theta1)*scaler->getScaledLength(radius), scaler->getScaledDepth(z)),
-			glm::vec4(getColor(), 1.f)
-		);
-	}
 }

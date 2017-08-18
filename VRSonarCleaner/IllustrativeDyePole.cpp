@@ -1,7 +1,5 @@
 #include "IllustrativeDyePole.h"
 
-#include "DebugDrawer.h"
-
 IllustrativeDyePole::IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler)
 {
 	x = xLoc;
@@ -62,12 +60,12 @@ void IllustrativeDyePole::changeEmitterRate(int emitterIndex, float msBetweenPar
 	emitters.at(emitterIndex)->setRate(msBetweenParticles);
 }
 
-void IllustrativeDyePole::changeEmitterLifetime(int emitterIndex, float lifetime)
+void IllustrativeDyePole::changeEmitterLifetime(int emitterIndex, std::chrono::milliseconds lifetime)
 {
 	emitters.at(emitterIndex)->setLifetime(lifetime);
 }
 
-void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, float trailTime)
+void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, std::chrono::milliseconds trailTime)
 {
 	emitters.at(emitterIndex)->setTrailTime(trailTime);
 }
@@ -75,20 +73,6 @@ void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, float trailTi
 int IllustrativeDyePole::getNumEmitters()
 {
 	return emitters.size();
-}
-
-void IllustrativeDyePole::drawSmall3D()
-{
-	DebugDrawer::getInstance().drawLine(
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop)),
-		glm::vec3(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom)),
-		glm::vec4(DYE_POLE_COLOR, 0.75f)  
-	);
-
-	for (int i=0;i<emitters.size();i++)
-	{
-		emitters.at(i)->drawSmall3D();
-	}
 }
 
 float IllustrativeDyePole::getBottomActualDepth()

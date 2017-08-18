@@ -5,7 +5,7 @@
 #include <shared/glm/glm.hpp>
 #include <map>
 
-#include "DebugDrawer.h"
+using namespace std::chrono_literals;
 
 IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection)
 {
@@ -13,10 +13,10 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 
 	m_vpFlowGridCollection = FlowGridCollection;
 
-	m_ullLastParticleUpdate = GetTickCount64();
+	m_tpLastParticleUpdate = std::chrono::high_resolution_clock::now();
 	
 	m_nMaxParticles = MAX_PARTICLES;
-	ULONGLONG tick = GetTickCount64();
+
 	printf("Initializing particle system...");
 	m_vpParticles.resize(MAX_PARTICLES);
 	for (auto &particle : m_vpParticles)
@@ -34,7 +34,7 @@ IllustrativeParticleSystem::~IllustrativeParticleSystem()
 
 }
 
-void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, float lifetime)
+void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
 {
 	double thisX = m_pScaler->getUnscaledLonX(x);
 	double thisY = m_pScaler->getUnscaledLatY(y);
@@ -46,7 +46,7 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 	addDyeParticle(thisX, thisY, thisZ, r, g, b, lifetime);
 }
 
-void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, float lifetime)
+void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
 {
 	//find particle to replace:
 	int deadParticleToReplace = -1;
@@ -71,30 +71,32 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 		printf("YOU SHOULD NEVER SEE THIS! 18515 addDyeParticle()");
 		particleIndexToReplace = 0;
 	}
+
+	//randomize the lifetimes by +\- 25% so they dont all die simultaneously	
+	lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(lifetime * ((float)(rand() % 25) / 100.f) + lifetime * 0.75f);				
 	
-	float tick = GetTickCount64();
-	lifetime = lifetime*((float)(rand()%25)/100) + lifetime*0.75;  //randomize the lifetimes by +\- 25% so they dont all die simultaneously					
-	
+	std::chrono::time_point<std::chrono::high_resolution_clock> tick = std::chrono::high_resolution_clock::now();
+
 	IllustrativeParticle* p = m_vpParticles[particleIndexToReplace];
 
 	p->m_bDead = false;
 	p->m_bDying = false;
 	p->m_bUserCreated = true;
 	p->m_fGravity = 0;
-	p->m_fTimeToLive;
-	p->m_fTrailTime = 1000.f;
+	p->m_msTimeToLive;
+	p->m_msTrailTime = 1000ms;
 	p->m_iBufferHead = 1;
 	p->m_iBufferTail = 0;
 	p->m_pFlowGrid = NULL;
-	p->m_ullBirthTime = tick;
-	p->m_ullLastUpdateTimestamp;
-	p->m_ullLiveTimeElapsed = 0ull;
-	p->m_ullTimeDeathBegan = 0ull;
-	p->m_ullTimeToStartDying = tick + lifetime;
+	p->m_tpBirthTime = tick;
+	p->m_tpLastUpdateTimestamp;
+	p->m_msLiveTimeElapsed = 0ms;
+	p->m_tpTimeDeathBegan = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	p->m_tpTimeToStartDying = tick + lifetime;
 	p->m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
 	p->m_vec3StartingPosition = glm::vec3(x, y, z);
-	p->m_vullTimes.clear();
-	p->m_vullTimes[0] = tick;
+	p->m_vtpTimes.clear();
+	p->m_vtpTimes[0] = tick;
 	p->m_vvec3Positions.clear();
 	p->m_vvec3Positions[0] = p->m_vec3StartingPosition;
 	p->m_vvec3Positions[1] = p->m_vec3StartingPosition;
@@ -102,24 +104,23 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 
 void IllustrativeParticleSystem::update(float time)
 {
-	ULONGLONG tick = GetTickCount64();
-	ULONGLONG timeSinceLastUpdate = tick - m_ullLastParticleUpdate;
+	std::chrono::time_point<std::chrono::high_resolution_clock> tick = std::chrono::high_resolution_clock::now();
+	std::chrono::milliseconds timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastParticleUpdate);
 	//printf("time since last: %f\n", (float)timeSinceLastUpdate);
-	if (timeSinceLastUpdate > 1000)
-		timeSinceLastUpdate = 1000; //dont skip or jump start
+	if (timeSinceLastUpdate > 1000ms)
+		timeSinceLastUpdate = 1000ms; //dont skip or jump start
 
 	//dont update too often
 	if (timeSinceLastUpdate <= PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL)
 		return;
 	else
-		m_ullLastParticleUpdate = tick;
+		m_tpLastParticleUpdate = tick;
 	
 	//printf("Updating existing particles..\n");
 	
 	glm::vec3 currentPos, newPos;
 	glm::vec3 vel;
 	float prodTimeVelocity;
-	float prodTimeSeconds = 1000*timeSinceLastUpdate;
 	
 	// Take inventory of dead particles and particles which can be killed
 	std::vector<IllustrativeParticle*> deadParticles;
@@ -170,7 +171,7 @@ void IllustrativeParticleSystem::update(float time)
 			bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
 
 			//calc new position
-			prodTimeVelocity = timeSinceLastUpdate * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
+			prodTimeVelocity = timeSinceLastUpdate.count() * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
 
 			newPos = currentPos + vel * prodTimeVelocity;
 
@@ -199,10 +200,11 @@ void IllustrativeParticleSystem::update(float time)
 			}
 		}
 
-		newPos.z += particle->m_fGravity / prodTimeSeconds;
-		particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);
-		
-		
+		std::chrono::duration<float> prodTimeSeconds = timeSinceLastUpdate;
+
+		newPos.z += particle->m_fGravity / prodTimeSeconds.count();
+
+		particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);		
 	}//end for all active particles
 
 	// Now remove non-active particles
@@ -238,11 +240,11 @@ void IllustrativeParticleSystem::update(float time)
 				}
 
 				//randomize the lifetimes by +\- 50f% so they dont all die simultaneously
-				float lifetime = pot->getLifetime()*((float)(rand() % 25) / 100) + pot->getLifetime()*0.75;
+				std::chrono::milliseconds lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(pot->getLifetime() * ((float)(rand() % 25) / 100.f) + pot->getLifetime() * 0.75f);
 				
 				particleToUse->reset();
 
-				particleToUse->init(particlePos, pot->getColor(), pot->getGravity(), lifetime, pot->trailTime, tick, true);
+				particleToUse->init(particlePos, pot->getColor(), pot->getGravity(), lifetime, pot->m_msTrailTime, tick, true);
 
 			}//end for numToSpawn
 		}
@@ -275,11 +277,11 @@ void IllustrativeParticleSystem::update(float time)
 						//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
 					}
 
-					float lifetime = emitter->getLifetime()*((float)(rand() % 25) / 100) + emitter->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
+					std::chrono::milliseconds  lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(emitter->getLifetime() * ((float)(rand() % 25) / 100.f) + emitter->getLifetime() * 0.75f);  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
 					
 					particleToUse->reset();
 
-					particleToUse->init(particlePos, emitter->getColor(), emitter->getGravity(), lifetime, emitter->trailTime, tick, true);
+					particleToUse->init(particlePos, emitter->getColor(), emitter->getGravity(), lifetime, emitter->m_msTrailTime, tick, true);
 
 					activeParticles.push_back(particleToUse);
 				}//end for numToSpawn
@@ -322,7 +324,7 @@ void IllustrativeParticleSystem::update(float time)
 						if ( (rand()%100) < 20) //20% surface particles
 							randPos.z = 0;
 						else
-							randPos.z = m_pScaler->getUnscaledDepth( -1.0*  (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
+							randPos.z = m_pScaler->getUnscaledDepth(-1.f * (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
 							
 						if (grid->getIsWaterAt(randPos.x, randPos.y, randPos.z, time))
 							inWater = true;
@@ -337,7 +339,7 @@ void IllustrativeParticleSystem::update(float time)
 					else
 					{
 						//randomize the lifetimes by +\- 25f% so they dont all die simultaneously
-						float lifetime = grid->m_fIllustrativeParticleLifetime*((float)(rand()%25)/100) + grid->m_fIllustrativeParticleLifetime*0.75;
+						std::chrono::milliseconds lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(grid->m_fIllustrativeParticleLifetime * ((float)(rand()%25) / 100.f) + grid->m_fIllustrativeParticleLifetime * 0.75f);
 
 						IllustrativeParticle* particleToUse = deadParticles.back();
 						deadParticles.pop_back();
@@ -375,7 +377,7 @@ bool IllustrativeParticleSystem::prepareForRender()
 		int numPositions = m_vpParticles[i]->getNumLivePositions();
 		if (numPositions > 1)
 		{
-			float timeElapsed = m_vpParticles[i]->m_ullLiveTimeElapsed;
+			std::chrono::milliseconds timeElapsed = m_vpParticles[i]->m_msLiveTimeElapsed;
 
 			for (int j = 0; j < numPositions - 1; j++)
 			{
@@ -392,9 +394,9 @@ bool IllustrativeParticleSystem::prepareForRender()
 				pos2.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);
 				pos2.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
 
-				float opacity1 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex1]) / timeElapsed;
-				float opacity2 = 1 - (m_vpParticles[i]->m_ullLastUpdateTimestamp - m_vpParticles[i]->m_vullTimes[posIndex2]) / timeElapsed;
-
+				float opacity1 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex1]) / std::chrono::duration<float>(timeElapsed);
+				float opacity2 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex2]) / std::chrono::duration<float>(timeElapsed);
+				
 				glm::vec4 col1(m_vpParticles[i]->m_vec3Color, opacity1);
 				glm::vec4 col2(m_vpParticles[i]->m_vec3Color, opacity2);
 
@@ -512,14 +514,14 @@ int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float
 
 void IllustrativeParticleSystem::drawDyePoles()
 {
-	for (int i=0;i<m_vpDyePoles.size();i++)
-		m_vpDyePoles.at(i)->drawSmall3D();  //TEMP FOR CHRIS
+	//for (int i=0;i<m_vpDyePoles.size();i++)
+	//	m_vpDyePoles.at(i)->drawSmall3D();  //TEMP FOR CHRIS
 }
 
 void IllustrativeParticleSystem::drawDyePots()
 {
-	for (auto const &dp : m_vpDyePots)
-		dp->drawSmall3D();
+	//for (auto const &dp : m_vpDyePots)
+	//	dp->drawSmall3D();
 }
 
 void IllustrativeParticleSystem::deleteAllDyePoles()
@@ -579,21 +581,21 @@ IllustrativeParticleEmitter * IllustrativeParticleSystem::getDyePotClosestTo(flo
 
 void IllustrativeParticleSystem::pause()
 {
-	m_ullPauseTime = GetTickCount64();
+	m_tpPauseTime = std::chrono::high_resolution_clock::now();
 }
 
 void IllustrativeParticleSystem::unPause()
 {
-	ULONGLONG elapsedTime = GetTickCount64() - m_ullPauseTime;
+	std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_tpPauseTime);
 
 	for (int i=0;i<m_nMaxParticles;i++)
 	{
 		if (!m_vpParticles[i]->m_bDead)
 		{
-			m_vpParticles[i]->m_ullBirthTime += elapsedTime;
-			m_vpParticles[i]->m_ullLastUpdateTimestamp += elapsedTime;
+			m_vpParticles[i]->m_tpBirthTime += elapsedTime;
+			m_vpParticles[i]->m_tpLastUpdateTimestamp += elapsedTime;
 			for (int j=0;j<100;j++)
-				m_vpParticles[i]->m_vullTimes[j] += elapsedTime;
+				m_vpParticles[i]->m_vtpTimes[j] += elapsedTime;
 		}
 	}//end for each particle
 

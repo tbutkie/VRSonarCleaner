@@ -6,6 +6,7 @@
 #include <math.h>
 #include <algorithm> 
 #include <vector>
+#include <chrono>
 #include <GL/glew.h>
 #include <shared/glm/glm.hpp>
 #include "CoordinateScaler.h"
@@ -123,8 +124,8 @@ public:
 		glm::vec3 m_vec3IllustrativeParticlesColor;
 
 		float m_fIllustrativeParticleVelocityScale;
-		float m_fIllustrativeParticleLifetime;
-		float m_fIllustrativeParticleTrailTime;
+		std::chrono::milliseconds m_fIllustrativeParticleLifetime;
+		std::chrono::milliseconds m_fIllustrativeParticleTrailTime;
 		float m_fIllustrativeParticleSize;
 
 

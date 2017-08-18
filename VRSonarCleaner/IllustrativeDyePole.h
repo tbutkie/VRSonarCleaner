@@ -3,8 +3,8 @@
 
 #include <windows.h>
 #include <GL/glew.h>
-//#include "FlowDataset.h"//#include "RTOFSdata.h"
 #include <vector>
+#include <chrono>
 #include "IllustrativeParticleEmitter.h"
 #include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
@@ -16,7 +16,6 @@ public:
 	virtual ~IllustrativeDyePole();
 
 	void addEmitter(float DepthBottom, float DepthTop);
-	//void adddEmittersAlongEntireLength(int numberOfEmitters);
 	void addDefaultEmitter();
 
 	void deleteEmitter(int index);
@@ -24,10 +23,9 @@ public:
 	void changeEmitterColor(int emitterIndex, int color);
 	void changeEmitterSpread(int emitterIndex, float radius);
 	void changeEmitterRate(int emitterIndex, float msBetweenParticles);
-	void changeEmitterLifetime(int emitterIndex, float lifetime);
-	void changeEmitterTrailtime(int emitterIndex, float trailTime);
+	void changeEmitterLifetime(int emitterIndex, std::chrono::milliseconds lifetime);
+	void changeEmitterTrailtime(int emitterIndex, std::chrono::milliseconds trailTime);
 	int getNumEmitters();
-	void drawSmall3D();
 
 	float getTopActualDepth();
 	float getBottomActualDepth();
@@ -48,7 +46,6 @@ public:
 	std::vector <IllustrativeParticleEmitter*> emitters;
 
 	CoordinateScaler *scaler;
-
 };
 
 #endif

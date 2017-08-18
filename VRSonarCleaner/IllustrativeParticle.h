@@ -1,8 +1,8 @@
 #ifndef __IllustrativeParticle_h__
 #define __IllustrativeParticle_h__
-
-#include <windows.h>                                                                         
+                                                                   
 #include <vector>
+#include <chrono>
 
 #include <shared/glm/glm.hpp>
 
@@ -17,17 +17,17 @@ public:
 	IllustrativeParticle();
 	virtual ~IllustrativeParticle();
 
-	void init(glm::vec3 pos, glm::vec3 color, float gravity, float timeToLive, float trailTime, ULONGLONG currentTime, bool userCreated);
+	void init(glm::vec3 pos, glm::vec3 color, float gravity, std::chrono::milliseconds timeToLive, std::chrono::milliseconds trailTime, std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, bool userCreated);
 
-	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ);
-	void updateBufferIndices(ULONGLONG currentTime);
+	void updatePosition(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, float newX, float newY, float newZ);
+	void updateBufferIndices(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime);
 
 	void reset();
 
-	ULONGLONG m_ullBirthTime;
-	float m_fTimeToLive;
-	ULONGLONG m_ullTimeToStartDying;
-	float m_fTrailTime;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpBirthTime;
+	std::chrono::milliseconds m_msTimeToLive;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimeToStartDying;
+	std::chrono::milliseconds m_msTrailTime;
 		
 	float getCurrentX();
 	float getCurrentY();
@@ -38,7 +38,7 @@ public:
 
 	bool m_bDead;
 	bool m_bDying;
-	ULONGLONG m_ullTimeDeathBegan;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimeDeathBegan;
 
 	bool m_bUserCreated;
 	//int color;
@@ -50,12 +50,12 @@ public:
 
 	glm::vec3 m_vec3StartingPosition;
 	std::vector<glm::vec3> m_vvec3Positions;
-	std::vector<ULONGLONG> m_vullTimes;
+	std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> m_vtpTimes;
 
 	int m_iBufferTail;
 	int m_iBufferHead; // Index of the next FREE buffer slot
-	ULONGLONG m_ullLiveTimeElapsed;
-	ULONGLONG m_ullLastUpdateTimestamp;
+	std::chrono::milliseconds m_msLiveTimeElapsed;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdateTimestamp;
 	
 	int getNumLivePositions();
 	int getLivePosition(int index);
@@ -67,7 +67,7 @@ private:
 	int getWrappedIndex(int index);
 
 	//update() vars, put them here so no alloc needed each frame
-	ULONGLONG m_ullTimeSince;
+	std::chrono::milliseconds m_msTimeSince;
 	bool foundValid;
 };
 
