@@ -28,7 +28,7 @@ private:
 	vr::IVRSystem *m_pHMD;
 	
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTime;
-	std::chrono::duration<float> m_durfElapsedTime;
+	std::chrono::milliseconds m_msElapsedTime;
 
 	float m_fCursorHoopAngle;
 
