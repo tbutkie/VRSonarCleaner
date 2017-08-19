@@ -526,15 +526,10 @@ bool CMainApplication::HandleInput()
 				{
 					savePoints();
 				}
-				//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_l)
-				//{
-				//	loadPoints("test.txt");
-				//}
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting marks\n");
 					m_pClouds->resetMarksInAllClouds();
-					//cleaningRoom->resetVolumes();
 					wallVolume->resetPositionAndOrientation();
 					tableVolume->resetPositionAndOrientation();
 				}
@@ -546,7 +541,7 @@ bool CMainApplication::HandleInput()
 					m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
 					m_pClouds->calculateCloudBoundsAndAlign();
 					m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
-					//cleaningRoom->recalcVolumeBounds();
+					
 					glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
 					glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
 
