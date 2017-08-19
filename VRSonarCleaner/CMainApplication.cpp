@@ -13,10 +13,6 @@
 #include <sstream>
 #include <string>
 
-#include <ctime>
-
-#include <thread>
-
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
 FlowProbe*						g_pFlowProbeBehavior = NULL;
@@ -76,6 +72,7 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 }
 
 
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -88,8 +85,9 @@ void dprintf(const char *fmt, ...)
 	vsprintf_s(buffer, fmt, args);
 	va_end(args);
 
-	if (g_bPrintf)
-		printf("%s", buffer);
+#ifdef DEBUG
+	printf("%s", buffer);
+#endif // DEBUG
 
 	OutputDebugStringA(buffer);
 }
@@ -594,10 +592,18 @@ bool CMainApplication::HandleInput()
 						flowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
 					}
 				}
+			}
 
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
-					printf("FPS: %u\n", m_uiCurrentFPS);
-			}			
+			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
+			{
+				std::cout << "Frame Time: " << m_msFrameTime.count() << "ms" << std::endl;
+				std::cout << "\t" << m_msInputHandleTime.count() << "ms\tInput Handling" << std::endl;
+				std::cout << "\t" << m_msUpdateTime.count() << "ms\tState Update" << std::endl;
+				std::cout << "\t" << m_msDrawTime.count() << "ms\tScene Drawing" << std::endl;
+				std::cout << "\t" << m_msRenderTime.count() << "ms\tRendering" << std::endl;
+				if (m_bUseVR)
+					std::cout << "\t" << m_msVRUpdateTime.count() << "ms\tVR System Update" << std::endl;
+			}
 		}
 
 		// MOUSE
@@ -673,65 +679,40 @@ void CMainApplication::RunMainLoop()
 
 	SDL_StartTextInput();
 
-	float fps_interval = 1.0; // sec
-	Uint32 fps_lasttime = SDL_GetTicks();
-	m_uiCurrentFPS = 0u;
-	Uint32 fps_frames = 0;
+	using clock = std::chrono::high_resolution_clock;
 
-	std::clock_t start;
+	clock::time_point start, lastTime;
 
-	ULONGLONG lastTime = GetTickCount64();
+	start = lastTime = clock::now();
 
 	while (!bQuit)
 	{
-		ULONGLONG currentTime = GetTickCount64();
-		ULONGLONG elapsedTime = currentTime - lastTime;
-		ULONGLONG timeBefore, timeAfter;;
-
-		start = std::clock();
-
-		//std::cout << "\tElapsed: " << elapsedTime << "ms\n";
-		//std::cout << "+++++++++++++++++++++++++++++++++\n";
-
-		//timeBefore = GetTickCount64();
-		bQuit = HandleInput();
-		//timeAfter = GetTickCount64();
-		//std::cout << "\tHandleInput(): " << timeAfter - timeBefore << "ms\n";
-
-		//timeBefore = GetTickCount64();
-		update();
-		//timeAfter = GetTickCount64();
-		//std::cout << "\tupdate(): " << timeAfter - timeBefore << "ms\n";
-
-		//timeBefore = GetTickCount64();
-		drawScene();
-		//timeAfter = GetTickCount64();
-		//std::cout << "\tdrawScene(): " << timeAfter - timeBefore << "ms\n";
-
-		//timeBefore = GetTickCount64();
-		render();
-		//timeAfter = GetTickCount64();
-		//std::cout << "\trender(): " << timeAfter - timeBefore << "ms\n";
-
-		// Calls WaitGetPoses(), which should occur first thing after rendering
-		//timeBefore = GetTickCount64();
-		if (m_bUseVR)
-			m_pTDM->update();
-		//timeAfter = GetTickCount64();
-		//std::cout << "\tTrackedDeviceManager::update(): " << timeAfter - timeBefore << "ms\n";
-
+		auto currentTime = clock::now();
+		m_msFrameTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-		fps_frames++;
-		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
-		{
-			fps_lasttime = SDL_GetTicks();
-			m_uiCurrentFPS = fps_frames;
-			fps_frames = 0;
-		}
+		auto a = clock::now();
+		bQuit = HandleInput();
+		m_msInputHandleTime = clock::now() - a;
 
-		//std::cout << "FPS: " << m_uiCurrentFPS << std::endl;
-		//std::cout << "--------------------------------------------------" << std::endl << std::endl;
+		a = clock::now();
+		update();
+		m_msUpdateTime = clock::now() - a;
+
+		a = clock::now();
+		drawScene();
+		m_msDrawTime = clock::now() - a;
+
+		a = clock::now();
+		render();
+		m_msRenderTime = clock::now() - a;
+
+		if (m_bUseVR)
+		{
+			a = clock::now();
+			m_pTDM->update();
+			m_msVRUpdateTime = clock::now() - a;
+		}
 	}
 
 	////doesn't help here either

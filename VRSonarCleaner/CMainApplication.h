@@ -4,9 +4,9 @@
 #include <GL/glew.h>
 #include <SDL_opengl.h>
 #include <gl/glu.h>
-#include <stdio.h>
-#include <string>
-#include <cstdlib>
+#include <chrono>
+
+#include <openvr.h>
 
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
@@ -15,14 +15,7 @@
 #include "LassoTool.h"
 #include "CloudCollection.h"
 
-#include <openvr.h>
-
-#include "../shared/lodepng.h"
-#include "../shared/pathtools.h"
-
 #include <shared/glm/glm.hpp>
-
-static bool g_bPrintf = true;
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -47,7 +40,7 @@ public:
 	bool loadPoints(std::string fileName);
 	
 private:
-	unsigned int m_uiCurrentFPS;
+	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msVRUpdateTime, m_msDrawTime, m_msRenderTime;
 
 	bool m_bGLInitialized;
 	bool m_bUseVR;

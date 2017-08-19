@@ -47,5 +47,4 @@ private:
 	FlowGrid* m_pFlowGrid;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
-	//StreakletSystem *m_pStreakletSystem;
 };
