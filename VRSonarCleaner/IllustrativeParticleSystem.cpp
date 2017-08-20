@@ -8,6 +8,7 @@
 using namespace std::chrono_literals;
 
 IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection)
+	: m_bReadyToTransferData(false)
 {
 	m_pScaler = Scaler;
 
@@ -407,11 +408,15 @@ void IllustrativeParticleSystem::update(float time)
 		}//end if two live positions (enough to draw 1 line segment)
 	}//end for each particle
 
+	m_bReadyToTransferData = true;
 	m_nIndexCount = count;
 }
 
 bool IllustrativeParticleSystem::prepareForRender()
 {
+	if (!m_bReadyToTransferData)
+		return false;
+
 	GLsizei numPositions, numColors;
 	numPositions = numColors = m_nIndexCount;
 
@@ -433,6 +438,8 @@ bool IllustrativeParticleSystem::prepareForRender()
 	glBindVertexArray(this->m_glVAO);
 	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPositions * sizeof(glm::vec3)));
 	glBindVertexArray(0);
+
+	m_bReadyToTransferData = false;
 
 	return true;
 }
