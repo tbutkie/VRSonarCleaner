@@ -91,9 +91,14 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 void FlowVolume::draw()
 {
-	if (m_Future._Is_ready())
+	if (m_Future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
 	{
+		std::chrono::high_resolution_clock::time_point before = std::chrono::high_resolution_clock::now();
 		m_pParticleSystem->prepareForRender();
+		std::chrono::duration<float, std::milli> dur = std::chrono::high_resolution_clock::now() - before;
+
+		//std::cout << "\t\t" << dur.count() << "ms\tParticle System Data Transfer" << std::endl;
+
 		m_bParticleSystemUpdating = false;
 	}
 
@@ -131,7 +136,7 @@ void FlowVolume::preRenderUpdates()
 		{
 			if (true) ///playing v paused
 			{
-				float factorToAdvance = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(timeSinceLast).count() / m_msLoopTime.count();
+				float factorToAdvance = std::chrono::duration<float, std::milli>(timeSinceLast).count() / std::chrono::duration<float, std::milli>(m_msLoopTime).count();
 				float newTime = currentTime + (factorToAdvance * timeRange);
 				if (newTime > maxTime)
 					newTime = minTime;
