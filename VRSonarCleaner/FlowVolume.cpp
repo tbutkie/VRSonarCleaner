@@ -21,6 +21,7 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 		))
 	, m_pFlowGrid(flowGrid)
 	, m_msLoopTime(35s)
+	, m_bParticleSystemUpdating(false)
 {
 	//X-Right-Left
 	//Y-UP-vertical
@@ -90,6 +91,12 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 
 void FlowVolume::draw()
 {
+	if (m_Future._Is_ready())
+	{
+		m_pParticleSystem->prepareForRender();
+		m_bParticleSystemUpdating = false;
+	}
+
 	if (m_pParticleSystem->getIndexCount() < 2)
 		return;
 
@@ -137,9 +144,10 @@ void FlowVolume::preRenderUpdates()
 		}
 	}//end if need update
 
-	//std::cout << "Updating particle system with time " << flowRoomTime << std::endl;
-	m_pParticleSystem->update(m_fFlowRoomTime);
-	//ParticleManager::getInstance().update(timeSinceLast);
-	
-	//m_pLighting->update();
+	//m_pParticleSystem->update(m_fFlowRoomTime);
+	if (!m_bParticleSystemUpdating)
+	{
+		m_Future = std::async(std::launch::async, [&] { m_pParticleSystem->update(m_fFlowRoomTime); });
+		m_bParticleSystemUpdating = true;
+	}
 }

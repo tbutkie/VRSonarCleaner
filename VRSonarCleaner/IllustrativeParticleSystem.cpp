@@ -105,7 +105,7 @@ void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, fl
 void IllustrativeParticleSystem::update(float time)
 {
 	std::chrono::time_point<std::chrono::high_resolution_clock> tick = std::chrono::high_resolution_clock::now();
-	std::chrono::milliseconds timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastParticleUpdate);
+	std::chrono::duration<float, std::milli> timeSinceLastUpdate = tick - m_tpLastParticleUpdate;
 	//printf("time since last: %f\n", (float)timeSinceLastUpdate);
 	if (timeSinceLastUpdate > 1000ms)
 		timeSinceLastUpdate = 1000ms; //dont skip or jump start
@@ -363,15 +363,7 @@ void IllustrativeParticleSystem::update(float time)
 	m_nLastCountLiveParticles = m_nMaxParticles - deadParticles.size();
 	m_nLastCountLiveSeeds = activeParticles.size();
 
-	prepareForRender();
-}
-
-bool IllustrativeParticleSystem::prepareForRender()
-{
-	m_vvec3PositionsBuffer.clear();
-	m_vvec4ColorBuffer.clear();
-	m_vuiIndices.clear(); 
-
+	uint64_t count = 0ull;
 	for (int i = 0; i < m_vpParticles.size(); ++i)
 	{
 		int numPositions = m_vpParticles[i]->getNumLivePositions();
@@ -396,23 +388,32 @@ bool IllustrativeParticleSystem::prepareForRender()
 
 				float opacity1 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex1]) / std::chrono::duration<float>(timeElapsed);
 				float opacity2 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex2]) / std::chrono::duration<float>(timeElapsed);
-				
+
 				glm::vec4 col1(m_vpParticles[i]->m_vec3Color, opacity1);
 				glm::vec4 col2(m_vpParticles[i]->m_vec3Color, opacity2);
 
-				m_vvec3PositionsBuffer.push_back(pos1);
-				m_vvec3PositionsBuffer.push_back(pos2);
-				m_vvec4ColorBuffer.push_back(col1);
-				m_vvec4ColorBuffer.push_back(col2);
-				m_vuiIndices.push_back(m_vvec3PositionsBuffer.size() - 2);
-				m_vuiIndices.push_back(m_vvec3PositionsBuffer.size() - 1);
+				m_arrvec3PositionsBuffer[count] = pos1;
+				m_arrvec4ColorBuffer[count] = col1;
+				m_arruiIndices[count] = count;
+
+				count++;
+
+				m_arrvec3PositionsBuffer[count] = pos2;
+				m_arrvec4ColorBuffer[count] = col2;
+				m_arruiIndices[count] = count;
+
+				count++;
 			}//end for each position
 		}//end if two live positions (enough to draw 1 line segment)
-	}//end for each particle	
+	}//end for each particle
 
-	GLsizei numPositions = m_vvec3PositionsBuffer.size();
-	GLsizei numColors = m_vvec4ColorBuffer.size();
-	m_nIndexCount = m_vuiIndices.size();
+	m_nIndexCount = count;
+}
+
+bool IllustrativeParticleSystem::prepareForRender()
+{
+	GLsizei numPositions, numColors;
+	numPositions = numColors = m_nIndexCount;
 
 	if (numPositions < 2)
 		return false;
@@ -421,12 +422,12 @@ bool IllustrativeParticleSystem::prepareForRender()
 	// Buffer orphaning
 	glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3) + numColors * sizeof(glm::vec4), 0, GL_STREAM_DRAW);
 	// Sub buffer data for points, then colors
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), &m_vvec3PositionsBuffer[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), &m_vvec4ColorBuffer[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), m_arrvec3PositionsBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), m_arrvec4ColorBuffer);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), 0, GL_STREAM_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), &m_vuiIndices[0], GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), m_arruiIndices, GL_STREAM_DRAW);
 	
 	// Set color attribute pointer now that point array size is known
 	glBindVertexArray(this->m_glVAO);

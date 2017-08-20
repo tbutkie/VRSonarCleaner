@@ -1,24 +1,24 @@
 #pragma once
 
-//#include <SDL.h>
 #include <GL/glew.h>
+
 #include <math.h>
+#include <vector>
+#include <stdio.h>
+#include <algorithm>
+#include <chrono>
+#include <future>
+
+#include <shared/glm/glm.hpp>
 
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "IllustrativeParticleSystem.h"
 #include "CoordinateScaler.h"
-#include <vector>
-
-#include <stdio.h>
-#include <algorithm>
-#include <chrono>
 #include "FlowGrid.h"
 #include "LightingSystem.h"
 
 #include "BroadcastSystem.h"
-
-#include <shared/glm/glm.hpp>
 
 class FlowVolume
 	: public DataVolume
@@ -47,4 +47,7 @@ private:
 	FlowGrid* m_pFlowGrid;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
+	bool m_bParticleSystemUpdating;
+
+	std::future<void> m_Future;
 };

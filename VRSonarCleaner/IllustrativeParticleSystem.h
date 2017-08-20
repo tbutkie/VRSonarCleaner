@@ -13,7 +13,7 @@
 
 #define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20ms
 
-#define MAX_PARTICLES 20000
+#define MAX_PARTICLES 100000
 
 class IllustrativeParticleSystem
 {
@@ -59,6 +59,7 @@ public:
 	int m_nLastCountLiveSeeds;
 	GLsizei m_nIndexCount;
 
+	bool prepareForRender();
 	GLuint getVAO();
 	GLsizei getIndexCount();
 
@@ -66,14 +67,14 @@ public:
 
 private:
 	// Holds all particle positions and their trails in one array and colors in another
-	std::vector<glm::vec3> m_vvec3PositionsBuffer;
-	std::vector<glm::vec4> m_vvec4ColorBuffer;
-	std::vector<GLuint> m_vuiIndices;
+	glm::vec3 m_arrvec3PositionsBuffer[MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS];
+	glm::vec4 m_arrvec4ColorBuffer[MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS];
+	GLuint m_arruiIndices[MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS];
 
 	GLuint m_glVAO, m_glVBO, m_glEBO;
 	void initGL();
 
-	bool prepareForRender();
+	bool m_bReadyToTransferData;
 };
 
 #endif
