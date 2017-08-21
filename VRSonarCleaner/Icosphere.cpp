@@ -127,11 +127,11 @@ GLuint Icosphere::getVAO()
 
 	// Populate a vertex buffer
 	glCreateBuffers(1, &m_glVBO);
-	glNamedBufferData(m_glVBO, sizeof(IcoVert) * buff.size(), &buff[0], GL_STATIC_DRAW);
+	glNamedBufferStorage(m_glVBO, sizeof(IcoVert) * buff.size(), &buff[0], GL_NONE);
 
 	// Create and populate the index buffer
 	glCreateBuffers(1, &m_glIBO);
-	glNamedBufferData(m_glIBO, sizeof(GLushort) * indices.size(), &indices[0], GL_STATIC_DRAW);
+	glNamedBufferStorage(m_glIBO, sizeof(GLushort) * indices.size(), &indices[0], GL_NONE);
 
 	GLuint m_glVAO;
 

@@ -425,7 +425,9 @@ bool IllustrativeParticleSystem::prepareForRender()
 
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
 	// Buffer orphaning
-	glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3) + numColors * sizeof(glm::vec4), 0, GL_STREAM_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3) + numColors * sizeof(glm::vec4), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * (sizeof(glm::vec3) + sizeof(glm::vec4)), NULL, GL_STREAM_DRAW);
+	//glInvalidateBufferData(this->m_glVBO);
 	// Sub buffer data for points, then colors
 	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), m_arrvec3PositionsBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), m_arrvec4ColorBuffer);

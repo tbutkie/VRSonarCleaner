@@ -21,6 +21,9 @@ namespace BroadcastSystem
 		EXIT_PLAY_AREA,
 		ENTER_PLAY_AREA,
 
+		VIVE_CONTROLLER_ATTACHED, // System button pressed
+		VIVE_CONTROLLER_DETACHED, // System button pressed
+
 		VIVE_SYSTEM_BUTTON_DOWN, // System button pressed
 		VIVE_SYSTEM_BUTTON_UP,	 // System button unpressed
 		VIVE_MENU_BUTTON_DOWN,	 // Menu button pressed
@@ -44,6 +47,10 @@ namespace BroadcastSystem
 		struct HMD {
 			TrackedDevice* m_pSelf;
 			glm::mat4 m_mat4Pose;
+		};
+
+		struct Controller {
+			ViveController* m_pSelf;
 		};
 
 		struct Trigger {
