@@ -25,7 +25,7 @@ void AdvectionProbe::update()
 
 	Renderer::RendererSubmission rs;
 
-	rs.primitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = GL_TRIANGLES;
 	rs.VAO = m_glIcoSphereVAO;
 	rs.vertCount = m_glIcoSphereVertCount;
 	rs.diffuseTexName = "gray";

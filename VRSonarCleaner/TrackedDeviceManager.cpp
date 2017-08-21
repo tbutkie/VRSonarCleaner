@@ -291,7 +291,7 @@ void TrackedDeviceManager::draw()
 						rs.shaderName = "lighting";
 						rs.VAO = rm->getVAO();
 						rs.vertCount = rm->getVertexCount();
-						rs.primitiveType = GL_TRIANGLES;
+						rs.glPrimitiveType = GL_TRIANGLES;
 						rs.diffuseTexName = rm->getName();
 						rs.specularTexName = "white";
 						rs.specularExponent = rm->getMaterialShininess();
@@ -312,7 +312,7 @@ void TrackedDeviceManager::draw()
 				rs.shaderName = "lighting";
 				rs.VAO = rm->getVAO();
 				rs.vertCount = rm->getVertexCount();
-				rs.primitiveType = GL_TRIANGLES;
+				rs.glPrimitiveType = GL_TRIANGLES;
 				rs.diffuseTexName = rm->getName();
 				rs.specularTexName = "white";
 				rs.specularExponent = rm->getMaterialShininess();

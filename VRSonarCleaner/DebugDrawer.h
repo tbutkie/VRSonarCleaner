@@ -190,7 +190,7 @@ public:
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), &m_vusPointIndices[0], GL_STREAM_DRAW);
 
-			rsPoints.primitiveType = GL_POINTS;
+			rsPoints.glPrimitiveType = GL_POINTS;
 			rsPoints.VAO = m_glPointVAO;
 			rsPoints.vertCount = m_vPointVertices.size();
 			Renderer::getInstance().addToDynamicRenderQueue(rsPoints);
@@ -205,7 +205,7 @@ public:
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), &m_vusLineIndices[0], GL_STREAM_DRAW);
 
-			rsLines.primitiveType = GL_LINES;
+			rsLines.glPrimitiveType = GL_LINES;
 			rsLines.VAO = m_glLineVAO;
 			rsLines.vertCount = m_vLineVertices.size();
 			Renderer::getInstance().addToDynamicRenderQueue(rsLines);
@@ -220,7 +220,7 @@ public:
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), &m_vusTriangleIndices[0], GL_STREAM_DRAW);
 
-			rsTriangles.primitiveType = GL_TRIANGLES;
+			rsTriangles.glPrimitiveType = GL_TRIANGLES;
 			rsTriangles.VAO = m_glTriangleVAO;
 			rsTriangles.vertCount = m_vTriangleVertices.size();
 			Renderer::getInstance().addToDynamicRenderQueue(rsTriangles);

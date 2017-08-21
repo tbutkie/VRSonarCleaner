@@ -131,7 +131,7 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std
 		return false;
 
 	RendererSubmission rs;
-	rs.primitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
 	rs.VAO = m_mapPrimitives[primName].first;
@@ -156,7 +156,7 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm
 		return false;
 
 	RendererSubmission rs;
-	rs.primitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
 	rs.VAO = m_mapPrimitives[primName].first;
@@ -181,7 +181,7 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 
 
 	RendererSubmission rs;
-	rs.primitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = GL_TRIANGLES;
 	rs.shaderName = "flat";
 	rs.modelToWorldTransform = modelTransform;
 	rs.VAO = m_mapPrimitives[primName].first;
@@ -405,7 +405,7 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glFrontFace(i.vertWindingOrder);
 
 			glBindVertexArray(i.VAO);
-			glDrawElements(i.primitiveType, i.vertCount, i.indexType, 0);
+			glDrawElements(i.glPrimitiveType, i.vertCount, i.indexType, 0);
 			glBindVertexArray(0);
 		}
 	}
@@ -496,10 +496,7 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 
 	int nVerts = numCoreSegments * numMeridianSegments;
 
-	std::vector<glm::vec3> pts;
-	std::vector<glm::vec3> norms;
-	std::vector<glm::vec4> colors;
-	std::vector<glm::vec2> texUVs;
+	std::vector<PrimVert> verts;
 	std::vector<unsigned short> inds;
 
 	for (int i = 0; i < numCoreSegments; i++)
@@ -518,10 +515,8 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 			float s = u;
 			float t = v;
 
-			pts.push_back(glm::vec3(x, y, z));
-			norms.push_back(glm::vec3(nx, ny, nz));
-			colors.push_back(glm::vec4(1.f));
-			texUVs.push_back(glm::vec2(s, t));
+			PrimVert currentVert = { glm::vec3(x, y, z), glm::vec3(nx, ny, nz),glm::vec4(1.f), glm::vec2(s, t) };
+			verts.push_back(currentVert);
 
 			unsigned short uvInd = i * numMeridianSegments + j;
 			unsigned short uvpInd = i * numMeridianSegments + (j + 1) % numMeridianSegments;
@@ -548,23 +543,17 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 
 		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
 		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*) offsetof(PrimVert, n));
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)offsetof(PrimVert, c));
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)offsetof(PrimVert, t));
 	glBindVertexArray(0);
 
-	// Allocate buffer data
-	glNamedBufferStorage(m_glTorusVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), NULL, GL_DYNAMIC_STORAGE_BIT);
-	// Sub buffer data for points, normals, textures...
-	glNamedBufferSubData(m_glTorusVBO, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
-	glNamedBufferSubData(m_glTorusVBO, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glNamedBufferSubData(m_glTorusVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
-	glNamedBufferSubData(m_glTorusVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
-
+	// Allocate and store buffer data and indices
+	glNamedBufferStorage(m_glTorusVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 	glNamedBufferStorage(m_glTorusEBO, inds.size() * sizeof(unsigned short), &inds[0], GL_NONE);
 
 	m_mapPrimitives["torus"] = std::make_pair(m_glTorusVAO, inds.size());
@@ -572,92 +561,71 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 
 void Renderer::generateCylinder(int numSegments)
 {
-	std::vector<glm::vec3> pts;
-	std::vector<glm::vec3> norms;
-	std::vector<glm::vec4> colors;
-	std::vector<glm::vec2> texUVs;
-	std::vector<unsigned short> inds;
+	std::vector<PrimVert> verts;
+	std::vector<GLushort> inds;
 
 	// Front endcap
-	pts.push_back(glm::vec3(0.f));
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-	colors.push_back(glm::vec4(1.f));
-	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
 	for (float i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-		colors.push_back(glm::vec4(1.f));
-		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
 
 		if (i > 0)
 		{
 			inds.push_back(0);
-			inds.push_back(pts.size() - 2);
-			inds.push_back(pts.size() - 1);
+			inds.push_back(verts.size() - 2);
+			inds.push_back(verts.size() - 1);
 		}
 	}
 	inds.push_back(0);
-	inds.push_back(pts.size() - 1);
+	inds.push_back(verts.size() - 1);
 	inds.push_back(1);
 
 	// Back endcap
-	pts.push_back(glm::vec3(0.f, 0.f, 1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-	colors.push_back(glm::vec4(1.f));
-	texUVs.push_back(glm::vec2(0.5f, 0.5f));
+	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
 	for (float i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
-		norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-		colors.push_back(glm::vec4(1.f));
-		texUVs.push_back((glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f);
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
 
 		if (i > 0)
 		{
-			inds.push_back(pts.size() - (i + 2)); // ctr pt of endcap
-			inds.push_back(pts.size() - 1);
-			inds.push_back(pts.size() - 2);
+			inds.push_back(verts.size() - (i + 2)); // ctr pt of endcap
+			inds.push_back(verts.size() - 1);
+			inds.push_back(verts.size() - 2);
 		}
 	}
-	inds.push_back(pts.size() - (numSegments + 1));
-	inds.push_back(pts.size() - (numSegments));
-	inds.push_back(pts.size() - 1);
+	inds.push_back(verts.size() - (numSegments + 1));
+	inds.push_back(verts.size() - (numSegments));
+	inds.push_back(verts.size() - 1);
 
 	// Shaft
 	for (float i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		colors.push_back(glm::vec4(1.f));
-		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 0.f));
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
 
-		pts.push_back(glm::vec3(sin(angle), cos(angle), 1.f));
-		norms.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-		colors.push_back(glm::vec4(1.f));
-		texUVs.push_back(glm::vec2((float)i / (float)(numSegments - 1), 1.f));
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
 
 		if (i > 0)
 		{
-			inds.push_back(pts.size() - 4);
-			inds.push_back(pts.size() - 3);
-			inds.push_back(pts.size() - 2);
+			inds.push_back(verts.size() - 4);
+			inds.push_back(verts.size() - 3);
+			inds.push_back(verts.size() - 2);
 
-			inds.push_back(pts.size() - 2);
-			inds.push_back(pts.size() - 3);
-			inds.push_back(pts.size() - 1);
+			inds.push_back(verts.size() - 2);
+			inds.push_back(verts.size() - 3);
+			inds.push_back(verts.size() - 1);
 		}
 	}
-	inds.push_back(pts.size() - 2);
-	inds.push_back(pts.size() - numSegments * 2);
-	inds.push_back(pts.size() - 1);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - numSegments * 2);
+	inds.push_back(verts.size() - 1);
 
-	inds.push_back(pts.size() - numSegments * 2);
-	inds.push_back(pts.size() - numSegments * 2 + 1);
-	inds.push_back(pts.size() - 1);
+	inds.push_back(verts.size() - numSegments * 2);
+	inds.push_back(verts.size() - numSegments * 2 + 1);
+	inds.push_back(verts.size() - 1);
 
 	glGenVertexArrays(1, &m_glCylinderVAO);
 	glGenBuffers(1, &m_glCylinderVBO);
@@ -671,57 +639,33 @@ void Renderer::generateCylinder(int numSegments)
 
 		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
 		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, c));
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, t));
 	glBindVertexArray(0);
 
 	// Allocate buffer data
-	glNamedBufferStorage(m_glCylinderVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), NULL, GL_DYNAMIC_STORAGE_BIT);
-	// Sub buffer data for points, normals, textures...
-	glNamedBufferSubData(m_glCylinderVBO, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
-	glNamedBufferSubData(m_glCylinderVBO, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glNamedBufferSubData(m_glCylinderVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
-	glNamedBufferSubData(m_glCylinderVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
-
+	glNamedBufferStorage(m_glCylinderVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 	// Element array buffer
-	glNamedBufferStorage(m_glCylinderEBO, inds.size() * sizeof(unsigned short), &inds[0], GL_NONE);
+	glNamedBufferStorage(m_glCylinderEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
 	m_mapPrimitives["cylinder"] = std::make_pair(m_glCylinderVAO, inds.size());
 }
 
 void Renderer::generatePlane()
 {
-	std::vector<glm::vec3> pts;
-	std::vector<glm::vec3> norms;
-	std::vector<glm::vec4> colors;
-	std::vector<glm::vec2> texUVs;
-	std::vector<unsigned short> inds;
+	std::vector<PrimVert> verts;
+	std::vector<GLushort> inds;
 
 	// Front face
-	pts.push_back(glm::vec3(-0.5f, -0.5f, 0.f));
-	pts.push_back(glm::vec3(0.5f, -0.5f, 0.f));
-	pts.push_back(glm::vec3(0.5f, 0.5f, 0.f));
-	pts.push_back(glm::vec3(-0.5f, 0.5f, 0.f));
-
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, 1.f));
-
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-
-	texUVs.push_back(glm::vec2(0.f, 1.f));
-	texUVs.push_back(glm::vec2(1.f, 1.f));
-	texUVs.push_back(glm::vec2(1.f, 0.f));
-	texUVs.push_back(glm::vec2(0.f, 0.f));
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f),	glm::vec4(1.f), glm::vec2(0.f, 0.f) }));
 
 	inds.push_back(0);
 	inds.push_back(1);
@@ -732,25 +676,10 @@ void Renderer::generatePlane()
 	inds.push_back(0);
 
 	// Back face
-	pts.push_back(glm::vec3(0.5f, -0.5f, 0.f));
-	pts.push_back(glm::vec3(-0.5f, -0.5f, 0.f));
-	pts.push_back(glm::vec3(-0.5f, 0.5f, 0.f));
-	pts.push_back(glm::vec3(0.5f, 0.5f, 0.f));
-
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-	norms.push_back(glm::vec3(0.f, 0.f, -1.f));
-
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-	colors.push_back(glm::vec4(1.f));
-
-	texUVs.push_back(glm::vec2(1.f, 1.f));
-	texUVs.push_back(glm::vec2(0.f, 1.f));
-	texUVs.push_back(glm::vec2(0.f, 0.f));
-	texUVs.push_back(glm::vec2(1.f, 0.f));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 
 	inds.push_back(4);
 	inds.push_back(5);
@@ -772,25 +701,19 @@ void Renderer::generatePlane()
 
 		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
 		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)(pts.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, c));
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)(pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4)));
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, t));
 	glBindVertexArray(0);
 
-	// Alloc buffer storage
-	glNamedBufferStorage(m_glPlaneVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4) + texUVs.size() * sizeof(glm::vec2), NULL, GL_DYNAMIC_STORAGE_BIT);
-	// Sub buffer data for points, normals, colors, textures...
-	glNamedBufferSubData(m_glPlaneVBO, 0, pts.size() * sizeof(glm::vec3), &pts[0]);
-	glNamedBufferSubData(m_glPlaneVBO, pts.size() * sizeof(glm::vec3), norms.size() * sizeof(glm::vec3), &norms[0]);
-	glNamedBufferSubData(m_glPlaneVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3), colors.size() * sizeof(glm::vec4), &colors[0]);
-	glNamedBufferSubData(m_glPlaneVBO, pts.size() * sizeof(glm::vec3) + norms.size() * sizeof(glm::vec3) + colors.size() * sizeof(glm::vec4), texUVs.size() * sizeof(glm::vec2), &texUVs[0]);
-
+	// Alloc buffer and store data
+	glNamedBufferStorage(m_glPlaneVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 	// Element array buffer
-	glNamedBufferStorage(m_glPlaneEBO, inds.size() * sizeof(unsigned short), &inds[0], GL_NONE);
+	glNamedBufferStorage(m_glPlaneEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
 	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 6); // one sided
 	m_mapPrimitives["planedouble"] = m_mapPrimitives["quaddouble"] = std::make_pair(m_glPlaneVAO, 12); // two sided

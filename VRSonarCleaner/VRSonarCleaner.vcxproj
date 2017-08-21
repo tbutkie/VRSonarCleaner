@@ -201,7 +201,6 @@
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h" />
     <ClInclude Include="..\shared\pathtools.h" />
-    <ClInclude Include="..\shared\Texture.h" />
     <ClInclude Include="AdvectionProbe.h" />
     <ClInclude Include="arcball.h" />
     <ClInclude Include="BehaviorBase.h" />

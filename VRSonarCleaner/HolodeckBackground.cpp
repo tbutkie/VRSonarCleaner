@@ -20,7 +20,7 @@ HolodeckBackground::HolodeckBackground(glm::vec3 roomSizeMeters, float spacingMe
 	draw();
 
 	Renderer::RendererSubmission rs;
-	rs.primitiveType = GL_LINES;
+	rs.glPrimitiveType = GL_LINES;
 	rs.modelToWorldTransform = glm::mat4();
 	rs.shaderName = "flat";
 	rs.VAO = m_glVAO;

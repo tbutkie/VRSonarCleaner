@@ -809,7 +809,7 @@ void CMainApplication::drawScene()
 				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 				Renderer::RendererSubmission rs;
-				rs.primitiveType = GL_POINTS;
+				rs.glPrimitiveType = GL_POINTS;
 				rs.shaderName = "flat";
 				rs.indexType = GL_UNSIGNED_SHORT;
 				rs.modelToWorldTransform = wallVolume->getCurrentDataTransform();
@@ -875,7 +875,7 @@ void CMainApplication::drawScene()
 
 		//draw table
 		Renderer::RendererSubmission rs;
-		rs.primitiveType = GL_POINTS;
+		rs.glPrimitiveType = GL_POINTS;
 		rs.shaderName = "flat";
 		rs.modelToWorldTransform = tableVolume->getCurrentDataTransform();
 		rs.VAO = m_pClouds->getCloud(0)->getVAO();

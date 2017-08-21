@@ -45,7 +45,7 @@ public:
 
 	struct RendererSubmission
 	{
-		GLenum			primitiveType;
+		GLenum			glPrimitiveType;
 		GLuint			VAO;
 		int				vertCount;
 		GLenum			indexType;
@@ -61,7 +61,7 @@ public:
 		glm::mat4		modelToWorldTransform;
 
 		RendererSubmission()
-			: primitiveType(GL_NONE)
+			: glPrimitiveType(GL_NONE)
 			, VAO(0)
 			, vertCount(0)
 			, indexType(GL_UNSIGNED_SHORT)
@@ -151,6 +151,13 @@ private:
 	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
 
 private:
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;

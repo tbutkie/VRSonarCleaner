@@ -186,7 +186,7 @@ void LassoTool::prepareForRender(Renderer::RendererSubmission &rs)
 	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_vvec3LassoPoints.size() * sizeof(glm::vec3)));
 	glBindVertexArray(0);
 	
-	rs.primitiveType = GL_LINES;
+	rs.glPrimitiveType = GL_LINES;
 	rs.shaderName = "flat";
 	rs.VAO = m_glVAO;
 	rs.vertCount = m_vusLassoIndices.size();

@@ -107,7 +107,7 @@ void FlowVolume::draw()
 
 	Renderer::RendererSubmission rs;
 
-	rs.primitiveType = GL_LINES;
+	rs.glPrimitiveType = GL_LINES;
 	rs.shaderName = "flat";	
 	rs.VAO = m_pParticleSystem->getVAO();
 	rs.vertCount = m_pParticleSystem->getIndexCount();
