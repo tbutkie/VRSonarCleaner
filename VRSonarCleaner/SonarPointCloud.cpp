@@ -290,31 +290,14 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		}
 		actualRemovedXmin = xMin;
 		actualRemovedYmin = yMin;
-		xMin = xMax = m_vvec3PointsPositions.front().x;
-		yMin = yMax = m_vvec3PointsPositions.front().y;
-		minDepth = maxDepth = -m_vvec3PointsPositions.front().z;
+		xMax -= xMin;
+		yMax -= yMin;
+		maxDepth -= minDepth;
+		xMin = yMin = minDepth = 0.f;
 
-		for (auto const & pos : m_vvec3PointsPositions)
-		{
-			if (pos.x < xMin)
-				xMin = pos.x;
-			if (pos.x > xMax)
-				xMax = pos.x;
-
-			if (pos.y < yMin)
-				yMin = pos.y;
-			if (pos.y > yMax)
-				yMax = pos.y;
-
-			if (-pos.z < minDepth)
-				minDepth = -pos.z;
-			if (-pos.z > maxDepth)
-				maxDepth = -pos.z;
-		}
-
-		xRange = xMax - xMin;
-		yRange = yMax - yMin;
-		rangeDepth = maxDepth - minDepth;
+		xRange = xMax;
+		yRange = yMax;
+		rangeDepth = maxDepth;
 
 		setRefreshNeeded();
 

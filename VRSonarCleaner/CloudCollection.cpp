@@ -106,7 +106,8 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
 	printf("X Min: %f Max: %f\n", xMin, xMax);
 	printf("Y Min: %f Max: %f\n", yMin, yMax);
-	printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
+	printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
+	printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
 
 
 	xRange = xMax - xMin;
