@@ -15,6 +15,8 @@
 #include "GLSLpreamble.h"
 #include "Renderer.h"
 
+#define MAX_DEBUGDRAWER_PRIMITIVES_PER_TYPE 1
+
 class DebugDrawer
 {
 public:
@@ -184,10 +186,8 @@ public:
 		if (m_vPointVertices.size() > 0u)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_glPointVBO);
-			glBufferData(GL_ARRAY_BUFFER, m_vPointVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
 			glBufferData(GL_ARRAY_BUFFER, m_vPointVertices.size() * sizeof(DebugVertex), m_vPointVertices.data(), GL_STREAM_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glPointEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), &m_vusPointIndices[0], GL_STREAM_DRAW);
 
 			rsPoints.glPrimitiveType = GL_POINTS;
@@ -199,10 +199,8 @@ public:
 		if (m_vLineVertices.size() > 0u)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_glLineVBO);
-			glBufferData(GL_ARRAY_BUFFER, m_vLineVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
 			glBufferData(GL_ARRAY_BUFFER, m_vLineVertices.size() * sizeof(DebugVertex), m_vLineVertices.data(), GL_STREAM_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glLineEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), &m_vusLineIndices[0], GL_STREAM_DRAW);
 
 			rsLines.glPrimitiveType = GL_LINES;
@@ -214,10 +212,8 @@ public:
 		if (m_vTriangleVertices.size() > 0)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_glTriangleVBO);
-			glBufferData(GL_ARRAY_BUFFER, m_vTriangleVertices.size() * sizeof(DebugVertex), NULL, GL_STREAM_DRAW); // buffer orphaning
 			glBufferData(GL_ARRAY_BUFFER, m_vTriangleVertices.size() * sizeof(DebugVertex), m_vTriangleVertices.data(), GL_STREAM_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glTriangleEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), 0, GL_STREAM_DRAW);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), &m_vusTriangleIndices[0], GL_STREAM_DRAW);
 
 			rsTriangles.glPrimitiveType = GL_TRIANGLES;
@@ -389,10 +385,10 @@ private:
 		// Set the vertex attribute pointers
 		// Vertex Positions
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)0);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*) offsetof(DebugVertex, pos));
 		// Vertex Colors
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*) offsetof(DebugVertex, col));
 
 		glBindVertexArray(0);
 	}

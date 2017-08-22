@@ -89,6 +89,8 @@ class SonarPointCloud
 
 		std::vector<glm::vec3> m_vvec3PointsPositions;
 		std::vector<glm::vec4> m_vvec4PointsColors;
+		std::vector<GLushort> m_vusIndicesFull;
+		std::vector<GLushort> m_vusIndicesPreview;
 		int *pointsMarks;
 		float *pointsDepthTPU;
 		float *pointsPositionTPU;
@@ -109,9 +111,9 @@ class SonarPointCloud
 
 		//OpenGL
 		GLuint m_glVAO, m_glVBO, m_glEBO;
-		GLuint m_glPreviewVAO, m_glPreviewEBO;
+		GLuint m_glPreviewVAO, m_glPreviewEBO;		
 
-
+		void loadBuffers();
 };
 
 #endif

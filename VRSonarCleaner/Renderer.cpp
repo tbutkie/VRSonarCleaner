@@ -488,16 +488,10 @@ void Renderer::generateIcosphere(int recursionLevel)
 
 void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments)
 {
-	//float coreRadius = 1.f;
-	//float meridianRadius = 0.025f;
-	//
-	//int numCoreSegments = 32;
-	//int numMeridianSegments = 8;
-
 	int nVerts = numCoreSegments * numMeridianSegments;
 
 	std::vector<PrimVert> verts;
-	std::vector<unsigned short> inds;
+	std::vector<GLushort> inds;
 
 	for (int i = 0; i < numCoreSegments; i++)
 		for (int j = 0; j < numMeridianSegments; j++)
@@ -515,13 +509,13 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 			float s = u;
 			float t = v;
 
-			PrimVert currentVert = { glm::vec3(x, y, z), glm::vec3(nx, ny, nz),glm::vec4(1.f), glm::vec2(s, t) };
+			PrimVert currentVert = { glm::vec3(x, y, z), glm::vec3(nx, ny, nz), glm::vec4(1.f), glm::vec2(s, t) };
 			verts.push_back(currentVert);
 
-			unsigned short uvInd = i * numMeridianSegments + j;
-			unsigned short uvpInd = i * numMeridianSegments + (j + 1) % numMeridianSegments;
-			unsigned short umvInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + j; // true modulo (not C++ remainder operand %) for negative wraparound
-			unsigned short umvpInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + (j + 1) % numMeridianSegments;
+			GLushort uvInd = i * numMeridianSegments + j;
+			GLushort uvpInd = i * numMeridianSegments + (j + 1) % numMeridianSegments;
+			GLushort umvInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + j; // true modulo (not C++ remainder operand %) for negative wraparound
+			GLushort umvpInd = (((i - 1) % numCoreSegments + numCoreSegments) % numCoreSegments) * numMeridianSegments + (j + 1) % numMeridianSegments;
 
 			inds.push_back(uvInd);   // (u    , v)
 			inds.push_back(uvpInd);  // (u    , v + 1)
@@ -545,16 +539,16 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
 		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*) offsetof(PrimVert, n));
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)offsetof(PrimVert, c));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*)offsetof(PrimVert, t));
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 	glBindVertexArray(0);
 
 	// Allocate and store buffer data and indices
 	glNamedBufferStorage(m_glTorusVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	glNamedBufferStorage(m_glTorusEBO, inds.size() * sizeof(unsigned short), &inds[0], GL_NONE);
+	glNamedBufferStorage(m_glTorusEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
 	m_mapPrimitives["torus"] = std::make_pair(m_glTorusVAO, inds.size());
 }

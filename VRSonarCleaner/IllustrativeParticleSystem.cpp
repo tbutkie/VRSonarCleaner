@@ -425,15 +425,11 @@ bool IllustrativeParticleSystem::prepareForRender()
 
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
 	// Buffer orphaning
-	//glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3) + numColors * sizeof(glm::vec4), NULL, GL_STREAM_DRAW);
-	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * (sizeof(glm::vec3) + sizeof(glm::vec4)), NULL, GL_STREAM_DRAW);
-	//glInvalidateBufferData(this->m_glVBO);
 	// Sub buffer data for points, then colors
 	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), m_arrvec3PositionsBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), m_arrvec4ColorBuffer);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), 0, GL_STREAM_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), m_arruiIndices, GL_STREAM_DRAW);
 	
 	// Set color attribute pointer now that point array size is known
@@ -452,9 +448,13 @@ void IllustrativeParticleSystem::initGL()
 	glGenBuffers(1, &m_glEBO);
 
 	glBindVertexArray(this->m_glVAO);
-	// Bind the array and element buffers
+	// Bind the array and allocate its storage
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	glNamedBufferStorage(m_glVBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * (sizeof(glm::vec3) + sizeof(glm::vec4)), NULL, GL_DYNAMIC_STORAGE_BIT);
+
+	// Now do the same with the element array buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glNamedBufferStorage(m_glEBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 
 	// Enable attribute arrays (with layouts to be defined later)
 	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
