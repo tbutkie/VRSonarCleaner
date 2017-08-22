@@ -261,17 +261,11 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		//now load lines of points
 		GLushort index = 0;
 		m_vusIndicesFull = std::vector<GLushort>(numPoints);
-		m_vusIndicesPreview = std::vector<GLushort>(ceil((float)numPoints / (float)m_iPreviewReductionFactor));
 		double averageDepth =  0;
 		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
 			setUncertaintyPoint(index, x, y, depth, depthTPU, positionTPU);
-			m_vusIndicesFull[index] = index;
-			if (index % m_iPreviewReductionFactor == 0)
-			{
-				m_vusIndicesPreview[index / m_iPreviewReductionFactor] = index;
-			}
-			index++;
+			m_vusIndicesFull[index] = index++;
 			averageDepth += depth;
 		}
 		averageDepth /= numPoints;
@@ -331,7 +325,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
 		printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
 
-		loadBuffers();
+		createAndLoadBuffers();
 	}
 
 	return true;
@@ -551,7 +545,7 @@ void SonarPointCloud::setName(char* Name)
 	strcpy(name, Name);
 }
 
-void SonarPointCloud::loadBuffers()
+void SonarPointCloud::createAndLoadBuffers()
 {
 	// Create data buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glVBO);
@@ -559,14 +553,16 @@ void SonarPointCloud::loadBuffers()
 	glNamedBufferSubData(m_glVBO, 0, m_vvec3PointsPositions.size() * sizeof(glm::vec3), &m_vvec3PointsPositions[0]);
 	glNamedBufferSubData(m_glVBO, m_vvec3PointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
+	// Create index buffer, allocate storage, and upload initial data
+	glCreateBuffers(1, &m_glEBO);
+	glNamedBufferStorage(m_glEBO, numPoints * sizeof(unsigned short), &m_vusIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
+
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
-	glCreateBuffers(1, &m_glEBO);
-
 	glBindVertexArray(this->m_glVAO);
 		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
 		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
@@ -577,23 +573,17 @@ void SonarPointCloud::loadBuffers()
 
 	// Create preview VAO
 	glGenVertexArrays(1, &m_glPreviewVAO);
-	glCreateBuffers(1, &m_glPreviewEBO);
-
-	glBindVertexArray(this->m_glPreviewVAO);
+	glBindVertexArray(m_glPreviewVAO);
 		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPreviewEBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
 		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPoints * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(numPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);
-
-	glNamedBufferStorage(m_glEBO, numPoints * sizeof(unsigned short), &m_vusIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
-
-	glNamedBufferStorage(m_glPreviewEBO, (numPoints / m_iPreviewReductionFactor) * sizeof(unsigned short), &m_vusIndicesPreview[0], GL_DYNAMIC_STORAGE_BIT);
 }
 
 double SonarPointCloud::getActualRemovedXMin()
