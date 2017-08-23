@@ -10,15 +10,9 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
 
 	firstMinMaxSet = false;
 
-	xMin = 0;
-	xMax = 0;
-	xRange = xMax - xMin;
-	yMin = 0;
-	yMax = 0;
-	yRange = yMax - yMin;
-	
-	minDepth = 123456789;
-	maxDepth = -123456789;
+	m_dvec3MinBounds = glm::dvec3(0., 0., 123456789.);
+	m_dvec3MaxBounds = glm::dvec3(0., 0., -123456789.);
+	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	minDepthTPU = 0;
 	maxDepthTPU = 0;
@@ -97,29 +91,24 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	
 	if (firstMinMaxSet)
 	{
-		if (lonX < xMin)
-			xMin = lonX;
-		if (lonX > xMax)
-			xMax = lonX;
+		if (lonX < m_dvec3MinBounds.x)
+			m_dvec3MinBounds.x = lonX;
+		if (lonX > m_dvec3MaxBounds.x)
+			m_dvec3MaxBounds.x = lonX;
 
-		if (latY < yMin)
-			yMin = latY;
-		if (latY > yMax)
-			yMax = latY;
+		if (latY < m_dvec3MinBounds.y)
+			m_dvec3MinBounds.y = latY;
+		if (latY > m_dvec3MaxBounds.y)
+			m_dvec3MaxBounds.y = latY;
 		
-		if (depth < minDepth)
-			minDepth = depth;
-		if (depth > maxDepth)
-			maxDepth = depth;
+		if (depth < m_dvec3MinBounds.z)
+			m_dvec3MinBounds.z = depth;
+		if (depth > m_dvec3MaxBounds.z)
+			m_dvec3MaxBounds.z = depth;
 	}
 	else
 	{
-		xMin = lonX;
-		xMax = lonX;
-		yMin = latY;
-		yMax = latY;
-		minDepth = depth;
-		maxDepth = depth;
+		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
 		firstMinMaxSet = true;
 	}
 
@@ -141,20 +130,20 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 	if (firstMinMaxSet)
 	{
-		if (lonX < xMin)
-			xMin = lonX;
-		if (lonX > xMax)
-			xMax = lonX;
+		if (lonX < m_dvec3MinBounds.x)
+			m_dvec3MinBounds.x = lonX;
+		if (lonX > m_dvec3MaxBounds.x)
+			m_dvec3MaxBounds.x = lonX;
 
-		if (latY < yMin)
-			yMin = latY;
-		if (latY > yMax)
-			yMax = latY;
+		if (latY < m_dvec3MinBounds.y)
+			m_dvec3MinBounds.y = latY;
+		if (latY > m_dvec3MaxBounds.y)
+			m_dvec3MaxBounds.y = latY;
 
-		if (depth < minDepth)
-			minDepth = depth;
-		if (depth > maxDepth)
-			maxDepth = depth;
+		if (depth < m_dvec3MinBounds.z)
+			m_dvec3MinBounds.z = depth;
+		if (depth > m_dvec3MaxBounds.z)
+			m_dvec3MaxBounds.z = depth;
 
 		if (depthTPU < minDepthTPU)
 			minDepthTPU = depthTPU;
@@ -168,16 +157,9 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 	}
 	else
 	{
-		xMin = lonX;
-		xMax = lonX;
-		yMin = latY;
-		yMax = latY;
-		minDepth = depth;
-		maxDepth = depth;
-		minDepthTPU = depthTPU;
-		maxDepthTPU = depthTPU;
-		minPositionalTPU = positionTPU;
-		maxPositionalTPU = positionTPU;
+		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
+		minDepthTPU = maxDepthTPU = depthTPU;
+		minPositionalTPU = maxPositionalTPU = positionTPU;
 		firstMinMaxSet = true;
 	}
 
@@ -273,40 +255,36 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", xMin, xMax);
-		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
-		printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
+		printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
+		printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
+		printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
+		printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
 
 		//scaling hack
-		for (int i = 0; i < numPoints; i++)
-		{
-			m_vvec3PointsPositions[i].x -= xMin;
-			m_vvec3PointsPositions[i].y -= yMin;
-			m_vvec3PointsPositions[i].z -= -minDepth;
-		}
-		actualRemovedXmin = xMin;
-		actualRemovedYmin = yMin;
-		xMax -= xMin;
-		yMax -= yMin;
-		maxDepth -= minDepth;
-		xMin = yMin = minDepth = 0.f;
+		//for (int i = 0; i < numPoints; i++)
+		//{
+		//	m_vvec3PointsPositions[i].x -= m_dvec3MinBounds.x;
+		//	m_vvec3PointsPositions[i].y -= m_dvec3MinBounds.y;
+		//	m_vvec3PointsPositions[i].z -= -m_dvec3MinBounds.z;
+		//}
+		//actualRemovedXmin = m_dvec3MinBounds.x;
+		//actualRemovedYmin = m_dvec3MinBounds.y;
+		//m_dvec3MaxBounds -= m_dvec3MinBounds;
+		//m_dvec3MinBounds = glm::dvec3(0.);
 
-		xRange = xMax;
-		yRange = yMax;
-		rangeDepth = maxDepth;
+		m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 		setRefreshNeeded();
 
-		printf("Trimmed Min/Maxes:\n");
-		printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-		printf("X Min: %f Max: %f\n", xMin, xMax);
-		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
-		printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
+		//printf("Trimmed Min/Maxes:\n");
+		//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+		//printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
+		//printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
+		//printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
+		//printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 
 		createAndLoadBuffers();
 	}
@@ -353,39 +331,34 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 	}
 
 	//scaling hack
-	for (int i = 0; i < numPoints; i++)
-	{
-		m_vvec3PointsPositions[i].x -= xMin;
-		m_vvec3PointsPositions[i].y -= yMin;
-		m_vvec3PointsPositions[i].z -= -minDepth;
-	}
-	actualRemovedXmin = xMin;
-	actualRemovedYmin = yMin;
-	xMin = xMax = m_vvec3PointsPositions.front().x;
-	yMin = yMax = m_vvec3PointsPositions.front().y;
-	minDepth = maxDepth = -m_vvec3PointsPositions.front().z;
+	//for (auto &pt : m_vvec3PointsPositions)
+	//	pt -= glm::dvec3(m_dvec3MinBounds.x, m_dvec3MinBounds.y, -m_dvec3MinBounds.z);
+	//
+	//actualRemovedXmin = m_dvec3MinBounds.x;
+	//actualRemovedYmin = m_dvec3MinBounds.y;
+	//m_dvec3MinBounds = m_dvec3MaxBounds = m_vvec3PointsPositions.front();
+	//m_dvec3MinBounds.z = -m_dvec3MinBounds.z;
+	//m_dvec3MaxBounds.z *= -m_dvec3MaxBounds.z;
 
-	for (auto const & pos : m_vvec3PointsPositions)
-	{
-		if (pos.x < xMin)
-			xMin = pos.x;
-		if (pos.x > xMax)
-			xMax = pos.x;
+	//for (auto const & pos : m_vvec3PointsPositions)
+	//{
+	//	if (pos.x < m_dvec3MinBounds.x)
+	//		m_dvec3MinBounds.x = pos.x;
+	//	if (pos.x > m_dvec3MaxBounds.x)
+	//		m_dvec3MaxBounds.x = pos.x;
+	//
+	//	if (pos.y < m_dvec3MinBounds.y)
+	//		m_dvec3MinBounds.y = pos.y;
+	//	if (pos.y > m_dvec3MaxBounds.y)
+	//		m_dvec3MaxBounds.y = pos.y;
+	//
+	//	if (-pos.z < m_dvec3MinBounds.z)
+	//		m_dvec3MinBounds.z = -pos.z;
+	//	if (-pos.z > m_dvec3MaxBounds.z)
+	//		m_dvec3MaxBounds.z = -pos.z;
+	//}
 
-		if (pos.y < yMin)
-			yMin = pos.y;
-		if (pos.y > yMax)
-			yMax = pos.y;
-
-		if (-pos.z < minDepth)
-			minDepth = -pos.z;
-		if (-pos.z > maxDepth)
-			maxDepth = -pos.z;
-	}
-
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
-	rangeDepth = maxDepth - minDepth;
+	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	setRefreshNeeded();
 
@@ -473,32 +446,32 @@ std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 
 double SonarPointCloud::getXMin()
 {
-	return xMin;
+	return m_dvec3MinBounds.x;
 }
 
 double SonarPointCloud::getXMax()
 {
-	return xMax;
+	return m_dvec3MaxBounds.x;
 }
 
 double SonarPointCloud::getYMin()
 {
-	return yMin;
+	return m_dvec3MinBounds.y;
 }
 
 double SonarPointCloud::getYMax()
 {
-	return yMax;
+	return m_dvec3MaxBounds.y;
 }
 
 double SonarPointCloud::getMinDepth()
 {
-	return minDepth;
+	return m_dvec3MinBounds.z;
 }
 
 double SonarPointCloud::getMaxDepth()
 {
-	return maxDepth;
+	return m_dvec3MaxBounds.z;
 }
 
 double SonarPointCloud::getMinDepthTPU()
@@ -569,6 +542,7 @@ void SonarPointCloud::createAndLoadBuffers()
 	glBindVertexArray(0);
 }
 
+/*
 double SonarPointCloud::getActualRemovedXMin()
 {
 	return actualRemovedXmin;
@@ -581,34 +555,27 @@ double SonarPointCloud::getActualRemovedYMin()
 
 void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin)
 {
-	double adjustmentX = actualRemovedXmin - newRemovedXmin;
-	double adjustmentY = actualRemovedYmin - newRemovedYmin;
+	glm::dvec3 adjustment(actualRemovedXmin - newRemovedXmin, actualRemovedYmin - newRemovedYmin, 0.);
 
-	printf("adjusting cloud by %f, %f\n", adjustmentX, adjustmentY);
+	printf("adjusting cloud by %f, %f\n", adjustment.x, adjustment.y);
 
 	actualRemovedXmin = newRemovedXmin;
 	actualRemovedYmin = newRemovedYmin;
 
 	//adjust bounds
-	xMin += adjustmentX;
-	xMax += adjustmentX; 
-	yMin += adjustmentY;
-	yMax += adjustmentY;
+	m_dvec3MinBounds += adjustment;
+	m_dvec3MaxBounds += adjustment;
 
 	//shouldn't have to do this, but just in case of precision errors
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
+	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	//adjust point positions
-	for (int i = 0; i < numPoints; i++)
-	{
-		m_vvec3PointsPositions[i].x += adjustmentX;
-		m_vvec3PointsPositions[i].y += adjustmentY;
-	}
+	for (auto &point : m_vvec3PointsPositions)
+		point += adjustment;
 
 	setRefreshNeeded();
 }
-
+*/
 void SonarPointCloud::markPoint(int index, int code)
 {
 	pointsMarks[index] = code;			

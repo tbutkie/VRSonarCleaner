@@ -66,14 +66,14 @@ class SonarPointCloud
 		double getYMax();
 		double getMinDepth();
 		double getMaxDepth();
-		double getActualRemovedXMin();
-		double getActualRemovedYMin();
+		//double getActualRemovedXMin();
+		//double getActualRemovedYMin();
 		double getMinDepthTPU();
 		double getMaxDepthTPU();
 		double getMinPositionalTPU();
 		double getMaxPositionalTPU();
 
-		void useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin);
+		//void useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin);
 
 		char* getName();
 		void setName(char* Name);
@@ -81,10 +81,10 @@ class SonarPointCloud
 	private:
 		//variables
 		char name[512];
-		double xMin, xMax, xRange;
-		double yMin, yMax, yRange;
-		double minDepth, maxDepth, rangeDepth;
-		double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
+		glm::dvec3 m_dvec3MinBounds;
+		glm::dvec3 m_dvec3MaxBounds;
+		glm::dvec3 m_dvec3BoundsRange;
+		//double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
 		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 
 		std::vector<glm::vec3> m_vvec3PointsPositions;
