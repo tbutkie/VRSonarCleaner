@@ -34,8 +34,8 @@ public:
 	double getYMax();
 	double getMinDepth();
 	double getMaxDepth();
-	double getActualRemovedXMin();
-	double getActualRemovedYMin();
+	//double getActualRemovedXMin();
+	//double getActualRemovedYMin();
 	double getMinDepthTPU();
 	double getMaxDepthTPU();
 	double getMinPositionalTPU();
@@ -48,7 +48,7 @@ private:
 	double xMin, xMax, xRange;
 	double yMin, yMax, yRange;
 	double minDepth, maxDepth, rangeDepth;
-	double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
+	//double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
 	float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 };
 

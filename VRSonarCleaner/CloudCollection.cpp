@@ -28,33 +28,28 @@ void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float size
 void CloudCollection::calculateCloudBoundsAndAlign()
 {
 	//find absolute minimum actual removed min values (the min bounds of the whole dataset)
-	for (int i = 0; i < clouds.size(); i++)
-	{
-		if (i == 0)//if first cloud use its values
-		{
-			actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
-			actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
-		}
-		else
-		{
-			if (clouds.at(i)->getActualRemovedXMin() < actualRemovedXmin)
-				actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
-			if (clouds.at(i)->getActualRemovedYMin() < actualRemovedYmin)
-				actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
-		}
-	}//end for
-
-	printf("Lowest Trimmed Min/Maxes:\n");
-	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-	
-	//now we have the actual min bounds, refactor the others with those as their new removed mins
-	if (clouds.size() > 1)
-	{
-		for (int i = 0; i < clouds.size(); i++)
-		{
-			clouds.at(i)->useNewActualRemovedMinValues(actualRemovedXmin, actualRemovedYmin);
-		}
-	}//end if
+	//for (int i = 0; i < clouds.size(); i++)
+	//{
+	//	if (i == 0)//if first cloud use its values
+	//	{
+	//		actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
+	//		actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
+	//	}
+	//	else
+	//	{
+	//		if (clouds.at(i)->getActualRemovedXMin() < actualRemovedXmin)
+	//			actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
+	//		if (clouds.at(i)->getActualRemovedYMin() < actualRemovedYmin)
+	//			actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
+	//	}
+	//}//end for
+	//
+	//printf("Lowest Trimmed Min/Maxes:\n");
+	//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+	//
+	////now we have the actual min bounds, refactor the others with those as their new removed mins
+	//for (auto &cloud : clouds)
+	//	cloud->useNewActualRemovedMinValues(actualRemovedXmin, actualRemovedYmin);
 
 	for (int i = 0; i < clouds.size(); i++)
 	{
@@ -103,7 +98,7 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	}//end for i
 
 	printf("Final Aligned Min/Maxes:\n");
-	printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
+	//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
 	printf("X Min: %f Max: %f\n", xMin, xMax);
 	printf("Y Min: %f Max: %f\n", yMin, yMax);
 	printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
@@ -181,15 +176,16 @@ double CloudCollection::getMaxPositionalTPU()
 {
 	return maxPositionalTPU;
 }
-double CloudCollection::getActualRemovedXMin()
-{
-	return actualRemovedXmin;
-}
 
-double CloudCollection::getActualRemovedYMin()
-{
-	return actualRemovedYmin;
-}
+//double CloudCollection::getActualRemovedXMin()
+//{
+//	return actualRemovedXmin;
+//}
+//
+//double CloudCollection::getActualRemovedYMin()
+//{
+//	return actualRemovedYmin;
+//}
 
 void CloudCollection::updateClouds()
 {

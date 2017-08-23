@@ -63,7 +63,7 @@ void DataVolume::setInnerCoords(glm::vec3 minCoords, glm::vec3  maxCoords)
 	m_vec3InnerMax = maxCoords;
 	m_vec3InnerRange = m_vec3InnerMax - m_vec3InnerMin;
 
-	m_vec3DataCenteringOffset = (-m_vec3InnerRange * 0.5f) - m_vec3InnerMin;
+	m_vec3DataCenteringOffset -= m_vec3InnerMin + m_vec3InnerRange * 0.5f;
 
 	recalcScaling();
 }
