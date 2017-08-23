@@ -145,6 +145,7 @@ private:
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
 	void generateCylinder(int numSegments);
 	void generatePlane();
+	void generateBBox();
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
@@ -177,10 +178,11 @@ private:
 
 	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
 
-	unsigned int m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
-	unsigned int m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
-	unsigned int m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
-	unsigned int m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;
+	GLuint m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
+	GLuint m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
+	GLuint m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
+	GLuint m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;
+	GLuint m_glBBoxVAO, m_glBBoxVBO, m_glBBoxEBO;
 
 	GLuint m_glFrameUBO;
 	

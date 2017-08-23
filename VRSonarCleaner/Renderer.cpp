@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include <vector>
+#include <numeric>
 #include <shared/glm/glm.hpp>
 #include <shared/glm/gtc/type_ptr.hpp>
 #include <shared/glm/gtx/norm.hpp>
@@ -181,7 +182,7 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 
 
 	RendererSubmission rs;
-	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "flat";
 	rs.modelToWorldTransform = modelTransform;
 	rs.VAO = m_mapPrimitives[primName].first;
@@ -189,7 +190,7 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = color;
 
-	if (primName.find("inverse") != std::string::npos)
+	if (primName.find("_inverse") != std::string::npos)
 		rs.vertWindingOrder = GL_CW;
 
 	addToDynamicRenderQueue(rs);
@@ -426,6 +427,7 @@ void Renderer::setupPrimitives()
 	generateCylinder(32);
 	generateTorus(1.f, 0.025f, 32, 8);
 	generatePlane();
+	generateBBox();
 }
 
 
@@ -711,6 +713,72 @@ void Renderer::generatePlane()
 
 	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 6); // one sided
 	m_mapPrimitives["planedouble"] = m_mapPrimitives["quaddouble"] = std::make_pair(m_glPlaneVAO, 12); // two sided
+}
+
+
+// Essentially a unit cube wireframe
+void Renderer::generateBBox()
+{
+	std::vector<PrimVert> verts;
+
+	glm::vec3 bboxMin(-0.5f);
+	glm::vec3 bboxMax(0.5f);
+
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
+
+	std::vector<GLushort> inds(12 * 2);
+	std::iota(inds.begin(), inds.end(), 0u);
+
+	glGenVertexArrays(1, &m_glBBoxVAO);
+	glGenBuffers(1, &m_glBBoxVBO);
+	glGenBuffers(1, &m_glBBoxEBO);
+
+	// Setup VAO
+	glBindVertexArray(m_glBBoxVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, m_glBBoxVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glBBoxEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+	glBindVertexArray(0);
+
+	// Alloc buffer and store data
+	glNamedBufferStorage(m_glBBoxVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
+	// Element array buffer
+	glNamedBufferStorage(m_glBBoxEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
+
+	m_mapPrimitives["bbox_lines"] = std::make_pair(m_glBBoxVAO, inds.size()); 
 }
 
 

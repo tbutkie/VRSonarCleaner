@@ -1,5 +1,4 @@
 #include "DataVolume.h"
-#include "DebugDrawer.h"
 #include "Renderer.h"
 
 #include "shared/glm/gtx/transform.hpp"
@@ -92,15 +91,10 @@ glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 innerPos)
 }
 
 void DataVolume::drawBBox(glm::vec4 color, float padPct)
-{	
-	glm::vec3 bbMin(-0.5f);
-	glm::vec3 bbMax(0.5f);
+{
+	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
 
-	DebugDrawer::getInstance().setTransform(
-		glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct))
-	);
-
-	DebugDrawer::getInstance().drawBox(bbMin, bbMax, color);
+	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, color);
 }
 
 void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
