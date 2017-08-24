@@ -5,11 +5,12 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
+#include "Dataset.h"
 #include "ColorScaler.h"
 #include <vector>
 #include "SonarPointCloud.h"
 
-class CloudCollection
+class CloudCollection : public Dataset
 {
 public:
 	CloudCollection(ColorScaler *colorScaler);
@@ -27,15 +28,6 @@ public:
 
 	void resetMarksInAllClouds();
 
-	//bounds access:
-	double getXMin();
-	double getXMax();
-	double getYMin();
-	double getYMax();
-	double getMinDepth();
-	double getMaxDepth();
-	//double getActualRemovedXMin();
-	//double getActualRemovedYMin();
 	double getMinDepthTPU();
 	double getMaxDepthTPU();
 	double getMinPositionalTPU();
@@ -45,10 +37,6 @@ private:
 	ColorScaler *m_pColorScaler;
 	std::vector <SonarPointCloud*> clouds;
 
-	double xMin, xMax, xRange;
-	double yMin, yMax, yRange;
-	double minDepth, maxDepth, rangeDepth;
-	//double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
 	float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 };
 

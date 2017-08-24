@@ -1,7 +1,8 @@
 #include "CloudCollection.h"
 
 CloudCollection::CloudCollection(ColorScaler *colorScaler)
-	: m_pColorScaler(colorScaler)
+	: Dataset(false)
+	, m_pColorScaler(colorScaler)
 {
 }
 
@@ -55,13 +56,8 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	{
 		if (i == 0)//for the first cloud, just use its bounds
 		{
-			xMin = clouds.at(i)->getXMin();
-			xMax = clouds.at(i)->getXMax();
-			yMin = clouds.at(i)->getYMin();
-			yMax = clouds.at(i)->getYMax();
-			minDepth = clouds.at(i)->getMinDepth();
-			maxDepth = clouds.at(i)->getMaxDepth();
-			minDepthTPU = clouds.at(i)->getMinDepthTPU();
+			m_dvec3MinBounds = clouds.at(i)->getMinBounds();
+			m_dvec3MaxBounds = clouds.at(i)->getMaxBounds();
 			maxDepthTPU = clouds.at(i)->getMaxDepthTPU();
 			minPositionalTPU = clouds.at(i)->getMinPositionalTPU();
 			maxPositionalTPU = clouds.at(i)->getMaxPositionalTPU();
@@ -69,20 +65,20 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 		else //for each additonal cloud being added
 		{
 			//first check the min removed values and update other clouds as needed
-			if (clouds.at(i)->getXMin() < xMin)
-				xMin = clouds.at(i)->getXMin();
-			if (clouds.at(i)->getXMax() > xMax)
-				xMax = clouds.at(i)->getXMax();
+			if (clouds.at(i)->getXMin() < m_dvec3MinBounds.x)
+				m_dvec3MinBounds.x = clouds.at(i)->getXMin();
+			if (clouds.at(i)->getXMax() > m_dvec3MaxBounds.x)
+				m_dvec3MaxBounds.x = clouds.at(i)->getXMax();
 
-			if (clouds.at(i)->getYMin() < yMin)
-				yMin = clouds.at(i)->getYMin();
-			if (clouds.at(i)->getYMax() > yMax)
-				yMax = clouds.at(i)->getYMax();
+			if (clouds.at(i)->getYMin() < m_dvec3MinBounds.y)
+				m_dvec3MinBounds.y = clouds.at(i)->getYMin();
+			if (clouds.at(i)->getYMax() > m_dvec3MaxBounds.y)
+				m_dvec3MaxBounds.y = clouds.at(i)->getYMax();
 
-			if (clouds.at(i)->getMinDepth() < minDepth)
-				minDepth = clouds.at(i)->getMinDepth();
-			if (clouds.at(i)->getMaxDepth() > maxDepth)
-				maxDepth = clouds.at(i)->getMaxDepth();
+			if (clouds.at(i)->getZMin() < m_dvec3MinBounds.z)
+				m_dvec3MinBounds.z = clouds.at(i)->getZMin();
+			if (clouds.at(i)->getZMax() > m_dvec3MaxBounds.z)
+				m_dvec3MaxBounds.z = clouds.at(i)->getZMax();
 
 			if (clouds.at(i)->getMinDepthTPU() < minDepthTPU)
 				minDepthTPU = clouds.at(i)->getMinDepthTPU();
@@ -98,25 +94,19 @@ void CloudCollection::calculateCloudBoundsAndAlign()
 	}//end for i
 
 	printf("Final Aligned Min/Maxes:\n");
-	//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-	printf("X Min: %f Max: %f\n", xMin, xMax);
-	printf("Y Min: %f Max: %f\n", yMin, yMax);
-	printf("Z Min: %f Max: %f\n", -maxDepth, -minDepth);
-	printf("Depth Min: %f Max: %f\n", minDepth, maxDepth);
+	printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
+	printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
+	printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
+	printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 
-
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
-	rangeDepth = maxDepth - minDepth;
+	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
 }//end calculateCloudBoundsAndAlign()
 
 void CloudCollection::clearAllClouds()
 {
 	for (auto &cloud : clouds)
-	{
-		cloud->deleteSelf();
 		delete cloud;
-	}
+
 	clouds.clear();
 }
 
@@ -128,36 +118,6 @@ int CloudCollection::getNumClouds()
 SonarPointCloud* CloudCollection::getCloud(int index)
 {
 	return clouds.at(index);
-}
-
-double CloudCollection::getXMin()
-{
-	return xMin;
-}
-
-double CloudCollection::getXMax()
-{
-	return xMax;
-}
-
-double CloudCollection::getYMin()
-{
-	return yMin;
-}
-
-double CloudCollection::getYMax()
-{
-	return yMax;
-}
-
-double CloudCollection::getMinDepth()
-{
-	return minDepth;
-}
-
-double CloudCollection::getMaxDepth()
-{
-	return maxDepth;
 }
 
 double CloudCollection::getMinDepthTPU()

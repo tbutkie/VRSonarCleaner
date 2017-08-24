@@ -214,7 +214,7 @@ bool CMainApplication::init()
 		m_pColorScalerTPU->setBiValueScale(1);
 
 		m_pClouds = new CloudCollection(m_pColorScalerTPU);
-		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
 		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt");
@@ -231,8 +231,8 @@ bool CMainApplication::init()
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 
-		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), -m_pClouds->getMaxDepth());
-		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), -m_pClouds->getMinDepth());
+		glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), -m_pClouds->getZMax());
+		glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), -m_pClouds->getZMin());
 
 		glm::vec3 tablePosition;
 		glm::vec3 tableSize;
@@ -242,11 +242,11 @@ bool CMainApplication::init()
 		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = tablePosition;
 
-		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), -m_pClouds->getCloud(0)->getMaxDepth());
-		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), -m_pClouds->getCloud(0)->getMinDepth());
+		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), -m_pClouds->getCloud(0)->getZMax());
+		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), -m_pClouds->getCloud(0)->getZMin());
 
-		tableVolume = new DataVolume(tablePosition, 0, tableSize, tableMinCoords, tableMaxCoords);
-		wallVolume = new DataVolume(wallPosition, 1, wallSize, wallMinCoords, wallMaxCoords);
+		tableVolume = new DataVolume(m_pClouds->getCloud(0), tablePosition, 0, tableSize);
+		wallVolume = new DataVolume(m_pClouds, wallPosition, 1, wallSize);
 
 	}
 	else if (m_bFlowVis)
@@ -540,14 +540,11 @@ bool CMainApplication::HandleInput()
 					m_pClouds->calculateCloudBoundsAndAlign();
 					m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
 					
-					glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getMinDepth(), m_pClouds->getCloud(0)->getYMin());
-					glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getMaxDepth(), m_pClouds->getCloud(0)->getYMax());
+					glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), m_pClouds->getCloud(0)->getZMin());
+					glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), m_pClouds->getCloud(0)->getZMax());
 
-					glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getMinDepth(), m_pClouds->getYMin());
-					glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getMaxDepth(), m_pClouds->getYMax());
-
-					tableVolume->setInnerCoords(tableMinCoords, tableMaxCoords);
-					wallVolume->setInnerCoords(wallMinCoords, wallMaxCoords);
+					glm::vec3 wallMinCoords(m_pClouds->getXMin(), m_pClouds->getYMin(), m_pClouds->getZMin());
+					glm::vec3 wallMaxCoords(m_pClouds->getXMax(), m_pClouds->getYMax(), m_pClouds->getZMax());
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
@@ -872,6 +869,7 @@ void CMainApplication::drawScene()
 
 		tableVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+		tableVolume->drawAxes();
 
 		//draw table
 		Renderer::RendererSubmission rs;

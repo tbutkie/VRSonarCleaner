@@ -1,18 +1,20 @@
 #include "SonarPointCloud.h"
 
-#include "DebugDrawer.h"
+#include "GLSLpreamble.h"
+#include <numeric>
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
-	: m_pColorScaler(colorScaler)
+	: Dataset(false)
+	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(20)
+	, m_bFirstMinMaxSet(false)
+	, m_bPointsAllocated(false)
+	, refreshNeeded(true)
+	, previewRefreshNeeded(true)
 {
-	markedForDeletion = false;
-
-	firstMinMaxSet = false;
-
 	m_dvec3MinBounds = glm::dvec3(0., 0., 123456789.);
 	m_dvec3MaxBounds = glm::dvec3(0., 0., -123456789.);
-	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
+	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	minDepthTPU = 0;
 	maxDepthTPU = 0;
@@ -22,61 +24,33 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
 	colorMode = 1; //0=predefined 1=scaled
 	colorScale = 2;
 	colorScope = 1; //0=global 1=dynamic
-
-	pointsAllocated = false;
-
-	refreshNeeded = true;
-	previewRefreshNeeded = true;
 }
 
 SonarPointCloud::~SonarPointCloud()
-{
-	deleteSelf();
-}
-
-void SonarPointCloud::markForDeletion()
-{
-	markedForDeletion = true;
-}
-
-bool SonarPointCloud::shouldBeDeleted()
-{
-	return markedForDeletion;
-}
-
-void SonarPointCloud::deleteSelf()
-{
-	printf("PointCloud cleaning itself up...\n");
-	
-	if (pointsAllocated)
-	{
-		m_vvec3PointsPositions.clear();
-		m_vvec4PointsColors.clear();
-		delete[] pointsMarks;
-		delete[] pointsDepthTPU;
-		delete[] pointsPositionTPU;
-		pointsAllocated = false;
-	}
-	printf("PointCloud done cleaning itself up!\n");
+{	
 }
 
 void SonarPointCloud::initPoints(int numPointsToAllocate)
 {
-	numPoints = numPointsToAllocate;
-	if (pointsAllocated)
+	m_nPoints = numPointsToAllocate;
+	if (m_bPointsAllocated)
 	{
 		m_vvec3PointsPositions.clear();
 		m_vvec4PointsColors.clear();
-		delete[] pointsMarks;
-		delete[] pointsDepthTPU;
-		delete[] pointsPositionTPU;
+		m_vuiPointsMarks.clear();
+		m_vfPointsDepthTPU.clear();
+		m_vfPointsPositionTPU.clear();
+		m_vusIndicesFull.clear();
 	}
-	m_vvec3PointsPositions.resize(numPoints);
-	m_vvec4PointsColors.resize(numPoints);
-	pointsDepthTPU = new float[numPoints];
-	pointsPositionTPU = new float[numPoints];;
-	pointsMarks = new int[numPoints];
-	pointsAllocated = true;
+
+	m_vvec3PointsPositions.resize(m_nPoints);
+	m_vvec4PointsColors.resize(m_nPoints);
+	m_vuiPointsMarks.resize(m_nPoints);
+	m_vfPointsDepthTPU.resize(m_nPoints);
+	m_vfPointsPositionTPU.resize(m_nPoints);
+	m_vusIndicesFull.resize(m_nPoints);
+
+	m_bPointsAllocated = true;
 }
 
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
@@ -85,11 +59,11 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	
 	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
-	pointsDepthTPU[index] = 0.0;
-	pointsPositionTPU[index] = 0.0;
-	pointsMarks[index] = 0;
+	m_vfPointsDepthTPU[index] = 0.f;
+	m_vfPointsPositionTPU[index] = 0.f;
+	m_vuiPointsMarks[index] = 0u;
 	
-	if (firstMinMaxSet)
+	if (m_bFirstMinMaxSet)
 	{
 		if (lonX < m_dvec3MinBounds.x)
 			m_dvec3MinBounds.x = lonX;
@@ -109,7 +83,7 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	else
 	{
 		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
-		firstMinMaxSet = true;
+		m_bFirstMinMaxSet = true;
 	}
 
 }
@@ -123,12 +97,12 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
-	pointsDepthTPU[index] = depthTPU;
-	pointsPositionTPU[index] = positionTPU;
+	m_vfPointsDepthTPU[index] = depthTPU;
+	m_vfPointsPositionTPU[index] = positionTPU;
 
-	pointsMarks[index] = 0;
+	m_vuiPointsMarks[index] = 0u;
 
-	if (firstMinMaxSet)
+	if (m_bFirstMinMaxSet)
 	{
 		if (lonX < m_dvec3MinBounds.x)
 			m_dvec3MinBounds.x = lonX;
@@ -160,7 +134,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
 		minDepthTPU = maxDepthTPU = depthTPU;
 		minPositionalTPU = maxPositionalTPU = positionTPU;
-		firstMinMaxSet = true;
+		m_bFirstMinMaxSet = true;
 	}
 
 }
@@ -172,9 +146,9 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
-	pointsDepthTPU[index] = 0.0;
-	pointsPositionTPU[index] = 0.0;
-	pointsMarks[index] = 0;
+	m_vfPointsDepthTPU[index] = 0.f;
+	m_vfPointsPositionTPU[index] = 0.f;
+	m_vuiPointsMarks[index] = 0u;
 }
 
 
@@ -183,8 +157,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 	
 	printf("Loading Point Cloud from %s\n", filename);
 
-	strcpy(name, filename);
-
+	m_strName = std::string(filename);
 		
 	FILE *file;
 	file = fopen(filename, "r");
@@ -217,9 +190,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		float depthTPU, positionTPU, alongAngle, acrossAngle;
 		int numPointsInFile = 0;
 		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
-		{
 			numPointsInFile++;
-		}
 
 		initPoints(numPointsInFile);
 		printf("found %d lines of points\n", numPointsInFile);
@@ -242,15 +213,15 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 
 		//now load lines of points
 		GLushort index = 0;
-		m_vusIndicesFull = std::vector<GLushort>(numPoints);
 		double averageDepth =  0;
 		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
 			setUncertaintyPoint(index, x, y, depth, depthTPU, positionTPU);
-			m_vusIndicesFull[index] = index++;
 			averageDepth += depth;
 		}
-		averageDepth /= numPoints;
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vusIndicesFull.begin(), m_vusIndicesFull.end(), 0u);
 
 		printf("Loaded %d points\n", index);
 
@@ -263,28 +234,9 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 
 		fclose(file);
 
-		//scaling hack
-		//for (int i = 0; i < numPoints; i++)
-		//{
-		//	m_vvec3PointsPositions[i].x -= m_dvec3MinBounds.x;
-		//	m_vvec3PointsPositions[i].y -= m_dvec3MinBounds.y;
-		//	m_vvec3PointsPositions[i].z -= -m_dvec3MinBounds.z;
-		//}
-		//actualRemovedXmin = m_dvec3MinBounds.x;
-		//actualRemovedYmin = m_dvec3MinBounds.y;
-		//m_dvec3MaxBounds -= m_dvec3MinBounds;
-		//m_dvec3MinBounds = glm::dvec3(0.);
-
-		m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
+		m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 		setRefreshNeeded();
-
-		//printf("Trimmed Min/Maxes:\n");
-		//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-		//printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
-		//printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
-		//printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
-		//printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 
 		createAndLoadBuffers();
 	}
@@ -294,7 +246,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 
 bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, int numPoints)
 {
-	strcpy(name, "fakeCloud");
+	m_strName = "fakeCloud";
 	
 	initPoints(numPoints);
 
@@ -330,35 +282,7 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 		setUncertaintyPoint(i, randX, randY, randDepth, 0.0, 0.0);
 	}
 
-	//scaling hack
-	//for (auto &pt : m_vvec3PointsPositions)
-	//	pt -= glm::dvec3(m_dvec3MinBounds.x, m_dvec3MinBounds.y, -m_dvec3MinBounds.z);
-	//
-	//actualRemovedXmin = m_dvec3MinBounds.x;
-	//actualRemovedYmin = m_dvec3MinBounds.y;
-	//m_dvec3MinBounds = m_dvec3MaxBounds = m_vvec3PointsPositions.front();
-	//m_dvec3MinBounds.z = -m_dvec3MinBounds.z;
-	//m_dvec3MaxBounds.z *= -m_dvec3MaxBounds.z;
-
-	//for (auto const & pos : m_vvec3PointsPositions)
-	//{
-	//	if (pos.x < m_dvec3MinBounds.x)
-	//		m_dvec3MinBounds.x = pos.x;
-	//	if (pos.x > m_dvec3MaxBounds.x)
-	//		m_dvec3MaxBounds.x = pos.x;
-	//
-	//	if (pos.y < m_dvec3MinBounds.y)
-	//		m_dvec3MinBounds.y = pos.y;
-	//	if (pos.y > m_dvec3MaxBounds.y)
-	//		m_dvec3MaxBounds.y = pos.y;
-	//
-	//	if (-pos.z < m_dvec3MinBounds.z)
-	//		m_dvec3MinBounds.z = -pos.z;
-	//	if (-pos.z > m_dvec3MaxBounds.z)
-	//		m_dvec3MaxBounds.z = -pos.z;
-	//}
-
-	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
+	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	setRefreshNeeded();
 
@@ -383,7 +307,7 @@ GLuint SonarPointCloud::getVAO()
 
 GLsizei SonarPointCloud::getPointCount()
 {
-	return numPoints;
+	return m_nPoints;
 }
 
 GLuint SonarPointCloud::getPreviewVAO()
@@ -393,7 +317,7 @@ GLuint SonarPointCloud::getPreviewVAO()
 
 GLsizei SonarPointCloud::getPreviewPointCount()
 {
-	return numPoints / m_iPreviewReductionFactor;
+	return m_nPoints / m_iPreviewReductionFactor;
 }
 
 bool SonarPointCloud::getRefreshNeeded()
@@ -444,36 +368,6 @@ std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 	return m_vvec3PointsPositions;
 }
 
-double SonarPointCloud::getXMin()
-{
-	return m_dvec3MinBounds.x;
-}
-
-double SonarPointCloud::getXMax()
-{
-	return m_dvec3MaxBounds.x;
-}
-
-double SonarPointCloud::getYMin()
-{
-	return m_dvec3MinBounds.y;
-}
-
-double SonarPointCloud::getYMax()
-{
-	return m_dvec3MaxBounds.y;
-}
-
-double SonarPointCloud::getMinDepth()
-{
-	return m_dvec3MinBounds.z;
-}
-
-double SonarPointCloud::getMaxDepth()
-{
-	return m_dvec3MaxBounds.z;
-}
-
 double SonarPointCloud::getMinDepthTPU()
 {
 	return minDepthTPU;
@@ -491,27 +385,27 @@ double SonarPointCloud::getMaxPositionalTPU()
 	return maxPositionalTPU;
 }
 
-char* SonarPointCloud::getName()
+std::string SonarPointCloud::getName()
 {
-	return name;
+	return m_strName;
 }
 
-void SonarPointCloud::setName(char* Name)
+void SonarPointCloud::setName(std::string name)
 {
-	strcpy(name, Name);
+	m_strName = name;
 }
 
 void SonarPointCloud::createAndLoadBuffers()
 {
 	// Create data buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glVBO);
-	glNamedBufferStorage(m_glVBO, numPoints * sizeof(glm::vec3) + numPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
 	glNamedBufferSubData(m_glVBO, 0, m_vvec3PointsPositions.size() * sizeof(glm::vec3), &m_vvec3PointsPositions[0]);
 	glNamedBufferSubData(m_glVBO, m_vvec3PointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
 	// Create index buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glEBO);
-	glNamedBufferStorage(m_glEBO, numPoints * sizeof(unsigned short), &m_vusIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(unsigned short), &m_vusIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
 
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
@@ -524,7 +418,7 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPoints * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);
 
 	// Create preview VAO
@@ -538,47 +432,13 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(numPoints * sizeof(glm::vec3)));
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);
 }
 
-/*
-double SonarPointCloud::getActualRemovedXMin()
-{
-	return actualRemovedXmin;
-}
-
-double SonarPointCloud::getActualRemovedYMin()
-{
-	return actualRemovedYmin;
-}
-
-void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin)
-{
-	glm::dvec3 adjustment(actualRemovedXmin - newRemovedXmin, actualRemovedYmin - newRemovedYmin, 0.);
-
-	printf("adjusting cloud by %f, %f\n", adjustment.x, adjustment.y);
-
-	actualRemovedXmin = newRemovedXmin;
-	actualRemovedYmin = newRemovedYmin;
-
-	//adjust bounds
-	m_dvec3MinBounds += adjustment;
-	m_dvec3MaxBounds += adjustment;
-
-	//shouldn't have to do this, but just in case of precision errors
-	m_dvec3BoundsRange = m_dvec3MaxBounds - m_dvec3MinBounds;
-
-	//adjust point positions
-	for (auto &point : m_vvec3PointsPositions)
-		point += adjustment;
-
-	setRefreshNeeded();
-}
-*/
 void SonarPointCloud::markPoint(int index, int code)
 {
-	pointsMarks[index] = code;			
+	m_vuiPointsMarks[index] = code;			
 	
 	if (code == 1)
 	{
@@ -587,32 +447,32 @@ void SonarPointCloud::markPoint(int index, int code)
 	else
 	{
 		float r, g, b;
-		m_pColorScaler->getBiValueScaledColor(pointsDepthTPU[index], pointsPositionTPU[index], &r, &g, &b);
+		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
 
-		if (pointsMarks[index] == 2)
+		if (m_vuiPointsMarks[index] == 2)
 		{
 			r = 1.0;
 			g = 0.0;
 			b = 0.0;
 		}
-		if (pointsMarks[index] == 3)
+		if (m_vuiPointsMarks[index] == 3)
 		{
 			r = 0.0;
 			g = 1.0;
 			b = 0.0;
 		}
-		if (pointsMarks[index] == 4)
+		if (m_vuiPointsMarks[index] == 4)
 		{
 			r = 0.0;
 			g = 0.0;
 			b = 1.0;
 		}
 
-		if (pointsMarks[index] >= 100)
+		if (m_vuiPointsMarks[index] >= 100)
 		{
-			r = (1.f / r) * (static_cast<float>(pointsMarks[index]) - 100.f) / 100.f;
-			g = (1.f / g) * (static_cast<float>(pointsMarks[index]) - 100.f) / 100.f;
-			b = (1.f / b) * (static_cast<float>(pointsMarks[index]) - 100.f) / 100.f;
+			r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+			g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+			b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		}
 		m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 	}
@@ -622,11 +482,11 @@ void SonarPointCloud::markPoint(int index, int code)
 
 void SonarPointCloud::resetAllMarks()
 {
-	for (int i = 0; i < numPoints; i++)
+	for (int i = 0; i < m_nPoints; i++)
 		markPoint(i, 0);	
 }
 
 int SonarPointCloud::getPointMark(int index)
 {
-	return pointsMarks[index];
+	return m_vuiPointsMarks[index];
 }

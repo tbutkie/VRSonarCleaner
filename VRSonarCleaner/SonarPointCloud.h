@@ -5,21 +5,18 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
+#include "Dataset.h"
 #include "ColorScaler.h"
 
 #include "../thirdparty/OpenNS_1.6.0/include/bag.h"
 
 #include <shared/glm/glm.hpp>
 
-class SonarPointCloud
+class SonarPointCloud : public Dataset
 {
 	public:
 		SonarPointCloud(ColorScaler * const colorScaler);
 		~SonarPointCloud();
-
-		void markForDeletion();
-		bool shouldBeDeleted();
-		bool markedForDeletion;
 		
 		bool getRefreshNeeded();
 		void setRefreshNeeded();
@@ -31,8 +28,7 @@ class SonarPointCloud
 		GLsizei getPreviewPointCount();
 
 		//methods:
-		void deleteSelf();
-	
+
 		void initPoints(int numPoints);
 		void setPoint(int index, double lonX, double latY, double depth);
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
@@ -60,42 +56,28 @@ class SonarPointCloud
 		int getPointMark(int index);
 
 		//bounds access:
-		double getXMin();
-		double getXMax();
-		double getYMin();
-		double getYMax();
-		double getMinDepth();
-		double getMaxDepth();
-		//double getActualRemovedXMin();
-		//double getActualRemovedYMin();
 		double getMinDepthTPU();
 		double getMaxDepthTPU();
 		double getMinPositionalTPU();
 		double getMaxPositionalTPU();
-
-		//void useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin);
-
-		char* getName();
-		void setName(char* Name);
+		
+		std::string getName();
+		void setName(std::string n);
 
 	private:
 		//variables
-		char name[512];
-		glm::dvec3 m_dvec3MinBounds;
-		glm::dvec3 m_dvec3MaxBounds;
-		glm::dvec3 m_dvec3BoundsRange;
-		//double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
+		std::string m_strName;
 		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 
 		std::vector<glm::vec3> m_vvec3PointsPositions;
 		std::vector<glm::vec4> m_vvec4PointsColors;
 		std::vector<GLushort> m_vusIndicesFull;
-		int *pointsMarks;
-		float *pointsDepthTPU;
-		float *pointsPositionTPU;
-		int numPoints;
-		bool pointsAllocated;
-		bool firstMinMaxSet;
+		std::vector<GLuint> m_vuiPointsMarks;
+		std::vector<float> m_vfPointsDepthTPU;
+		std::vector<float> m_vfPointsPositionTPU;
+		int m_nPoints;
+		bool m_bPointsAllocated;
+		bool m_bFirstMinMaxSet;
 
 		int colorMode;
 		int colorScope;
