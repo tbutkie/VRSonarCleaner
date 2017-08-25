@@ -62,9 +62,9 @@ private:
 
 	bool editCleaningTableDesktop();
 	
-	DataVolume* wallVolume;
-	DataVolume* tableVolume;
-	FlowVolume* flowVolume;
+	DataVolume* m_pWallVolume;
+	DataVolume* m_pTableVolume;
+	FlowVolume* m_pFlowVolume;
 
 	CloudCollection* m_pClouds;
 	ColorScaler* m_pColorScalerTPU;

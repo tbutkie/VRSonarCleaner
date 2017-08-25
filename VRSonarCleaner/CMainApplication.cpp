@@ -245,8 +245,8 @@ bool CMainApplication::init()
 		glm::vec3 tableMinCoords(m_pClouds->getCloud(0)->getXMin(), m_pClouds->getCloud(0)->getYMin(), -m_pClouds->getCloud(0)->getZMax());
 		glm::vec3 tableMaxCoords(m_pClouds->getCloud(0)->getXMax(), m_pClouds->getCloud(0)->getYMax(), -m_pClouds->getCloud(0)->getZMin());
 
-		tableVolume = new DataVolume(m_pClouds->getCloud(0), tablePosition, 0, tableSize);
-		wallVolume = new DataVolume(m_pClouds, wallPosition, 1, wallSize);
+		m_pTableVolume = new DataVolume(m_pClouds->getCloud(0), tablePosition, 0, tableSize);
+		m_pWallVolume = new DataVolume(m_pClouds, wallPosition, 1, wallSize);
 
 	}
 	else if (m_bFlowVis)
@@ -265,13 +265,13 @@ bool CMainApplication::init()
 		}
 
 		tempFG->setCoordinateScaler(new CoordinateScaler());
-		flowVolume = new FlowVolume(tempFG);
+		m_pFlowVolume = new FlowVolume(tempFG);
 
 		if (m_bGreatBayModel)
-			flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
+			m_pFlowVolume->setScale(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
 
-		m_vec3BallEye = flowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_vec3BallCenter = flowVolume->getPosition();
+		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_vec3BallCenter = m_pFlowVolume->getPosition();
 	}
 
 	return true;
@@ -403,8 +403,8 @@ bool CMainApplication::initDesktop()
 
 	if (m_bFlowVis)
 	{
-		m_vec3BallEye = flowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_vec3BallCenter = flowVolume->getPosition();
+		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_vec3BallCenter = m_pFlowVolume->getPosition();
 	}
 
 	return true;
@@ -482,6 +482,14 @@ bool CMainApplication::HandleInput()
 					initVR();
 				}
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_t)
+			{
+				if (m_pTableVolume)
+				{
+					glm::vec3 tmp = m_pTableVolume->convertToDataCoords(m_pTableVolume->getPosition());
+					std::cout << "(" << tmp.x << ", " << tmp.y << ", " << tmp.z << ")" << std::endl;
+				}
+			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)
 			{
@@ -528,8 +536,8 @@ bool CMainApplication::HandleInput()
 				{
 					printf("Pressed r, resetting marks\n");
 					m_pClouds->resetMarksInAllClouds();
-					wallVolume->resetPositionAndOrientation();
-					tableVolume->resetPositionAndOrientation();
+					m_pWallVolume->resetPositionAndOrientation();
+					m_pTableVolume->resetPositionAndOrientation();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_g)
@@ -561,7 +569,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting something...\n");
-					flowVolume->resetPositionAndOrientation();
+					m_pFlowVolume->resetPositionAndOrientation();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_1)
@@ -569,14 +577,14 @@ bool CMainApplication::HandleInput()
 					if (m_bUseVR)
 					{
 						glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
-						flowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
-						flowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
+						m_pFlowVolume->setScale(glm::vec3(1.f, 1.f, 0.1f));
+						m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
 
 						glm::mat3 matOrientation;
 						matOrientation[0] = matHMD[0];
 						matOrientation[1] = matHMD[2];
 						matOrientation[2] = -matHMD[1];
-						flowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
+						m_pFlowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
 					}
 				}
 
@@ -584,9 +592,9 @@ bool CMainApplication::HandleInput()
 				{
 					if (m_bUseVR)
 					{
-						flowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
-						flowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
-						flowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+						m_pFlowVolume->setScale(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
+						m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
+						m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
 					}
 				}
 			}
@@ -728,13 +736,13 @@ void CMainApplication::update()
 		{
 			if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
 			{
-				g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), flowVolume);
+				g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume);
 				g_vpBehaviors.push_back(g_pFlowProbeBehavior);
 			}
 
 			if (m_pTDM->getSecondaryController() && !g_pAdvectionProbeBehavior)
 			{
-				g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), flowVolume);
+				g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), m_pFlowVolume);
 				g_vpBehaviors.push_back(g_pAdvectionProbeBehavior);
 			}
 		}
@@ -743,7 +751,7 @@ void CMainApplication::update()
 		{
 			if (m_pTDM->getPrimaryController() && !g_pPointCleanProbeBehavior)
 			{
-				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), tableVolume, m_pClouds->getCloud(0), m_pHMD);
+				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pClouds->getCloud(0), m_pHMD);
 				g_vpBehaviors.push_back(g_pPointCleanProbeBehavior);
 			}
 		}
@@ -752,9 +760,9 @@ void CMainApplication::update()
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
 		{
 			if (m_bSonarCleaning)
-				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), tableVolume);
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume);
 			else if (m_bFlowVis)
-				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), flowVolume);
+				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pFlowVolume);
 			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
 		}
 
@@ -784,12 +792,12 @@ void CMainApplication::update()
 		}
 
 		if (m_bUseDesktop)
-			tableVolume->setOrientation(tableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
+			m_pTableVolume->setOrientation(m_pTableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
 	}
 
 	if (m_bFlowVis)
 	{
-		flowVolume->preRenderUpdates();
+		m_pFlowVolume->preRenderUpdates();
 	}
 }
 
@@ -802,14 +810,14 @@ void CMainApplication::drawScene()
 			if (!m_bUseDesktop)
 			{
 				//draw wall
-				wallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
-				wallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+				m_pWallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
+				m_pWallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
 				Renderer::RendererSubmission rs;
 				rs.glPrimitiveType = GL_POINTS;
 				rs.shaderName = "flat";
-				rs.indexType = GL_UNSIGNED_SHORT;
-				rs.modelToWorldTransform = wallVolume->getCurrentDataTransform();
+				rs.indexType = GL_UNSIGNED_INT;
+				rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform();
 
 				for (int i = 0; i < m_pClouds->getNumClouds(); ++i)
 				{
@@ -867,28 +875,28 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		tableVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
-		tableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
-		tableVolume->drawAxes();
+		m_pTableVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+		m_pTableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+		//m_pTableVolume->drawAxes();
 
 		//draw table
 		Renderer::RendererSubmission rs;
 		rs.glPrimitiveType = GL_POINTS;
 		rs.shaderName = "flat";
-		rs.modelToWorldTransform = tableVolume->getCurrentDataTransform();
+		rs.modelToWorldTransform = m_pTableVolume->getCurrentDataTransform();
 		rs.VAO = m_pClouds->getCloud(0)->getVAO();
 		rs.vertCount = m_pClouds->getCloud(0)->getPointCount();
-		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.indexType = GL_UNSIGNED_INT;
 		
 		Renderer::getInstance().addToDynamicRenderQueue(rs);		
 	}
 
 	if (m_bFlowVis)
 	{
-		flowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
-		flowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+		m_pFlowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
-		flowVolume->draw();
+		m_pFlowVolume->draw();
 	}
 
 	for (auto const &b : g_vpBehaviors)
@@ -1105,7 +1113,7 @@ bool CMainApplication::editCleaningTableDesktop()
 
 	for (int i = 0; i < inPts.size(); ++i)
 	{
-		glm::vec3 in = tableVolume->convertToWorldCoords(inPts[i]);
+		glm::vec3 in = m_pTableVolume->convertToWorldCoords(inPts[i]);
 		glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 
 		if (m_pLasso->checkPoint(glm::vec2(out)))

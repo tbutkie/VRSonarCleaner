@@ -10,8 +10,9 @@
 #include <GL/glew.h>
 #include <shared/glm/glm.hpp>
 #include "CoordinateScaler.h"
+#include "Dataset.h"
 
-class FlowGrid
+class FlowGrid : public Dataset
 {
 	public:
 		//FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);

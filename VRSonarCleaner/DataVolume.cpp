@@ -7,10 +7,10 @@
 #include <math.h>
 
 DataVolume::DataVolume(Dataset* data, glm::vec3 pos, int startingOrientation, glm::vec3 dimensions)
-	: Node(pos)
+	: Node(pos, glm::quat(), dimensions)
 	, m_pDataset(data)
 	, m_vec3OriginalPosition(pos)
-	, m_vec3Dimensions(dimensions)
+	, m_vec3OriginalScale(dimensions)
 	, m_bFirstRun(true)
 {
 	if (startingOrientation == 0)
@@ -42,23 +42,7 @@ void DataVolume::resetPositionAndOrientation()
 {
 	setPosition(m_vec3OriginalPosition);
 	setOrientation(m_qOriginalOrientation);
-}
-
-void DataVolume::setDimensions(glm::vec3 dimensions)
-{
-	m_vec3Dimensions = dimensions;
-
-	float XYscale = std::min(m_vec3Dimensions.x / m_pDataset->getXDimension(), m_vec3Dimensions.y / m_pDataset->getYDimension());
-	float depthScale = m_vec3Dimensions.z / m_pDataset->getZDimension();
-
-	setScale(glm::vec3(XYscale, XYscale, depthScale));
-
-	updateTransforms();
-}
-
-glm::vec3 DataVolume::getDimensions()
-{
-	return m_vec3Dimensions;
+	setScale(m_vec3OriginalScale);
 }
 
 glm::vec3 DataVolume::convertToDataCoords(glm::vec3 worldPos)
@@ -75,14 +59,14 @@ glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 dataPos)
 
 void DataVolume::drawBBox(glm::vec4 color, float padPct)
 {
-	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
+	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
 
 	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, color);
 }
 
 void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
 {
-	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
 
 	Renderer::getInstance().drawPrimitive("inverse_icosphere", volTransform, color, color, 0.f);
 }
@@ -95,7 +79,7 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 	glm::vec3 viewPos = glm::vec3(worldToHMDTransform[3]);
 	glm::vec3 viewDir = -glm::normalize(glm::vec3(worldToHMDTransform[2]));
 
-	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(m_vec3Dimensions * (1.f + 0.01f * padPct));
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
 
 	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
@@ -217,8 +201,19 @@ void DataVolume::updateTransforms()
 		m_mat4DataTransformPrevious = m_mat4DataTransform;
 		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 
-		m_mat4DataTransform =  glm::translate(getModelToWorldTransform(), m_vec3DataCenteringOffset);
-		m_mat4VolumeTransform = getModelToWorldTransform() * glm::scale(1.f / getScale()); // undo the scaling
+		glm::mat4 handednessConversion;
+		if (m_pDataset->isDataRightHanded() != m_pDataset->isOutputRightHanded())
+			handednessConversion[2][2] = -1.f;
+
+		glm::vec3 dataCenteringOffset = -(m_pDataset->getMinBounds() + m_pDataset->getDimensions() * 0.5);
+
+		float XYscale = std::min(1.f / m_pDataset->getXDimension(), 1.f / m_pDataset->getYDimension());
+		float depthScale = 1.f / m_pDataset->getZDimension();
+
+		m_vec3ScalingFactors = glm::vec3(XYscale, XYscale, depthScale);
+		
+		m_mat4DataTransform = getModelToWorldTransform() * glm::scale(m_vec3ScalingFactors) * handednessConversion * glm::translate(glm::mat4(), dataCenteringOffset);
+		m_mat4VolumeTransform = getModelToWorldTransform();
 
 		if (m_bFirstRun)
 		{

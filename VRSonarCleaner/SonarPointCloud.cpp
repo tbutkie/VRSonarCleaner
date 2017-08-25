@@ -35,27 +35,29 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	m_nPoints = numPointsToAllocate;
 	if (m_bPointsAllocated)
 	{
-		m_vvec3PointsPositions.clear();
+		m_vvec3RawPointsPositions.clear();
+		m_vvec3AdjustedPointsPositions.clear();
 		m_vvec4PointsColors.clear();
 		m_vuiPointsMarks.clear();
 		m_vfPointsDepthTPU.clear();
 		m_vfPointsPositionTPU.clear();
-		m_vusIndicesFull.clear();
+		m_vuiIndicesFull.clear();
 	}
 
-	m_vvec3PointsPositions.resize(m_nPoints);
+	m_vvec3RawPointsPositions.resize(m_nPoints);
+	m_vvec3AdjustedPointsPositions.resize(m_nPoints);
 	m_vvec4PointsColors.resize(m_nPoints);
 	m_vuiPointsMarks.resize(m_nPoints);
 	m_vfPointsDepthTPU.resize(m_nPoints);
 	m_vfPointsPositionTPU.resize(m_nPoints);
-	m_vusIndicesFull.resize(m_nPoints);
+	m_vuiIndicesFull.resize(m_nPoints);
 
 	m_bPointsAllocated = true;
 }
 
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth);
+	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth);
 	
 	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
@@ -91,7 +93,7 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 
 void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth); 
+	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth); 
 
 	float r, g, b;
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
@@ -142,7 +144,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b)
 {
-	m_vvec3PointsPositions[index] = glm::vec3(lonX, latY, -depth);
+	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth);
 
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
@@ -188,7 +190,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		double x, y, depth;
 		int profnum, beamnum;
 		float depthTPU, positionTPU, alongAngle, acrossAngle;
-		int numPointsInFile = 0;
+		unsigned int numPointsInFile = 0u;
 		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 			numPointsInFile++;
 
@@ -212,29 +214,30 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		}
 
 		//now load lines of points
-		GLushort index = 0;
-		double averageDepth =  0;
+		GLuint index = 0u;
+		double averageDepth =  0.0;
 		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
-			setUncertaintyPoint(index, x, y, depth, depthTPU, positionTPU);
+			setUncertaintyPoint(index++, x, y, depth, depthTPU, positionTPU);
 			averageDepth += depth;
 		}
 		averageDepth /= m_nPoints;
 
-		std::iota(m_vusIndicesFull.begin(), m_vusIndicesFull.end(), 0u);
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
 
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
 		printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
 		printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
-		printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
 		printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
 
 		m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
+
+		adjustPoints();
 
 		setRefreshNeeded();
 
@@ -294,7 +297,7 @@ void SonarPointCloud::update()
 	if (refreshNeeded)
 	{
 		// Sub buffer data for colors...
-		glNamedBufferSubData(m_glVBO, m_vvec3PointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+		glNamedBufferSubData(m_glVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
 		refreshNeeded = false;
 	}
@@ -365,7 +368,7 @@ int SonarPointCloud::getColorScope()
 
 std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 {
-	return m_vvec3PointsPositions;
+	return m_vvec3AdjustedPointsPositions;
 }
 
 double SonarPointCloud::getMinDepthTPU()
@@ -395,21 +398,32 @@ void SonarPointCloud::setName(std::string name)
 	m_strName = name;
 }
 
+void SonarPointCloud::adjustPoints()
+{
+	glm::dvec3 adjustment = -(m_dvec3MinBounds + m_dvec3Dimensions * 0.5);
+
+	for (int i = 0; i < m_nPoints; ++i)
+		m_vvec3AdjustedPointsPositions[i] = m_vvec3RawPointsPositions[i] + adjustment;
+		
+	m_dvec3MinBounds += adjustment;
+	m_dvec3MaxBounds += adjustment;
+}
+
 void SonarPointCloud::createAndLoadBuffers()
 {
 	// Create data buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glVBO);
 	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
-	glNamedBufferSubData(m_glVBO, 0, m_vvec3PointsPositions.size() * sizeof(glm::vec3), &m_vvec3PointsPositions[0]);
-	glNamedBufferSubData(m_glVBO, m_vvec3PointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+	glNamedBufferSubData(m_glVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
+	glNamedBufferSubData(m_glVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
 	// Create index buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glEBO);
-	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(unsigned short), &m_vusIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(GLuint), &m_vuiIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
 
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
-	glBindVertexArray(this->m_glVAO);
+	glBindVertexArray(m_glVAO);
 		// Load data into vertex buffers
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);

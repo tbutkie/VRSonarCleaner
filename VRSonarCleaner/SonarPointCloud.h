@@ -69,9 +69,10 @@ class SonarPointCloud : public Dataset
 		std::string m_strName;
 		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
 
-		std::vector<glm::vec3> m_vvec3PointsPositions;
+		std::vector<glm::dvec3> m_vvec3RawPointsPositions;
+		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
 		std::vector<glm::vec4> m_vvec4PointsColors;
-		std::vector<GLushort> m_vusIndicesFull;
+		std::vector<GLuint> m_vuiIndicesFull;
 		std::vector<GLuint> m_vuiPointsMarks;
 		std::vector<float> m_vfPointsDepthTPU;
 		std::vector<float> m_vfPointsPositionTPU;
@@ -94,6 +95,7 @@ class SonarPointCloud : public Dataset
 		GLuint m_glVAO, m_glVBO, m_glEBO;
 		GLuint m_glPreviewVAO;		
 
+		void adjustPoints();
 		void createAndLoadBuffers();
 };
 

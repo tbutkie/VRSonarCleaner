@@ -23,9 +23,6 @@ public:
 	void drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct);
 	void drawEllipsoidBacking(glm::vec4 color, float padPct);
 
-	void setDimensions(glm::vec3 dimensions);
-	glm::vec3 getDimensions();
-
 	glm::vec3 getOriginalPosition();
 	glm::quat getOriginalOrientation();
 	
@@ -46,8 +43,9 @@ protected:
 
 	glm::vec3 m_vec3OriginalPosition; // Original Data Volume Position	
 	glm::quat m_qOriginalOrientation; // Original Data Volume Orientation
+	glm::vec3 m_vec3OriginalScale; // Original Data Volume Orientation
 
-	glm::vec3 m_vec3Dimensions; // Volume Dimensions
+	glm::vec3 m_vec3ScalingFactors; // Volume Dimensions
 
 	glm::mat4 m_mat4VolumeTransform; // Volume Position and Orientation Transform
 	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
