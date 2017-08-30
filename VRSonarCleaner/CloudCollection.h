@@ -28,16 +28,16 @@ public:
 
 	void resetMarksInAllClouds();
 
-	double getMinDepthTPU();
-	double getMaxDepthTPU();
-	double getMinPositionalTPU();
-	double getMaxPositionalTPU();
+	float getMinDepthTPU();
+	float getMaxDepthTPU();
+	float getMinPositionalTPU();
+	float getMaxPositionalTPU();
 	
 private:
 	ColorScaler *m_pColorScaler;
-	std::vector <SonarPointCloud*> clouds;
+	std::vector<SonarPointCloud*> m_vpClouds;
 
-	float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
+	float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 };
 
 #endif

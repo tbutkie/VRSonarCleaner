@@ -2,28 +2,23 @@
 
 #include "GLSLpreamble.h"
 #include <numeric>
+#include <limits>
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
 	: Dataset(false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(20)
-	, m_bFirstMinMaxSet(false)
 	, m_bPointsAllocated(false)
 	, refreshNeeded(true)
 	, previewRefreshNeeded(true)
+	, colorMode(1) //0=predefined 1=scaled
+	, colorScale(2)
+	, colorScope(1) //0=global 1=dynamic
+	, m_fMinPositionalTPU(std::numeric_limits<float>::max())
+	, m_fMaxPositionalTPU(std::numeric_limits<float>::min())
+	, m_fMinDepthTPU(std::numeric_limits<float>::max())
+	, m_fMaxDepthTPU(std::numeric_limits<float>::min())
 {
-	m_dvec3MinBounds = glm::dvec3(0., 0., 123456789.);
-	m_dvec3MaxBounds = glm::dvec3(0., 0., -123456789.);
-	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
-
-	minDepthTPU = 0;
-	maxDepthTPU = 0;
-	minPositionalTPU = 0;
-	maxPositionalTPU = 0;
-
-	colorMode = 1; //0=predefined 1=scaled
-	colorScale = 2;
-	colorScope = 1; //0=global 1=dynamic
 }
 
 SonarPointCloud::~SonarPointCloud()
@@ -57,7 +52,8 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
 {
-	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth);
+	glm::dvec3 pt(lonX, latY, depth);
+	m_vvec3RawPointsPositions[index] = pt;
 	
 	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
@@ -65,35 +61,14 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	m_vfPointsPositionTPU[index] = 0.f;
 	m_vuiPointsMarks[index] = 0u;
 	
-	if (m_bFirstMinMaxSet)
-	{
-		if (lonX < m_dvec3MinBounds.x)
-			m_dvec3MinBounds.x = lonX;
-		if (lonX > m_dvec3MaxBounds.x)
-			m_dvec3MaxBounds.x = lonX;
-
-		if (latY < m_dvec3MinBounds.y)
-			m_dvec3MinBounds.y = latY;
-		if (latY > m_dvec3MaxBounds.y)
-			m_dvec3MaxBounds.y = latY;
-		
-		if (depth < m_dvec3MinBounds.z)
-			m_dvec3MinBounds.z = depth;
-		if (depth > m_dvec3MaxBounds.z)
-			m_dvec3MaxBounds.z = depth;
-	}
-	else
-	{
-		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
-		m_bFirstMinMaxSet = true;
-	}
-
+	checkNewRawPosition(pt);
 }
 
 
 void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU)
 {
-	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth); 
+	glm::dvec3 pt(lonX, latY, depth); 
+	m_vvec3RawPointsPositions[index] = pt;
 
 	float r, g, b;
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
@@ -104,41 +79,17 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 	m_vuiPointsMarks[index] = 0u;
 
-	if (m_bFirstMinMaxSet)
-	{
-		if (lonX < m_dvec3MinBounds.x)
-			m_dvec3MinBounds.x = lonX;
-		if (lonX > m_dvec3MaxBounds.x)
-			m_dvec3MaxBounds.x = lonX;
+	checkNewRawPosition(pt);
 
-		if (latY < m_dvec3MinBounds.y)
-			m_dvec3MinBounds.y = latY;
-		if (latY > m_dvec3MaxBounds.y)
-			m_dvec3MaxBounds.y = latY;
+	if (depthTPU < m_fMinDepthTPU)
+		m_fMinDepthTPU = depthTPU;
+	if (depthTPU > m_fMaxDepthTPU)
+		m_fMaxDepthTPU = depthTPU;
 
-		if (depth < m_dvec3MinBounds.z)
-			m_dvec3MinBounds.z = depth;
-		if (depth > m_dvec3MaxBounds.z)
-			m_dvec3MaxBounds.z = depth;
-
-		if (depthTPU < minDepthTPU)
-			minDepthTPU = depthTPU;
-		if (depthTPU > maxDepthTPU)
-			maxDepthTPU = depthTPU;
-
-		if (positionTPU < minPositionalTPU)
-			minPositionalTPU = positionTPU;
-		if (positionTPU > maxPositionalTPU)
-			maxPositionalTPU = positionTPU;
-	}
-	else
-	{
-		m_dvec3MinBounds = m_dvec3MaxBounds = glm::dvec3(lonX, latY, depth);
-		minDepthTPU = maxDepthTPU = depthTPU;
-		minPositionalTPU = maxPositionalTPU = positionTPU;
-		m_bFirstMinMaxSet = true;
-	}
-
+	if (positionTPU < m_fMinPositionalTPU)
+		m_fMinPositionalTPU = positionTPU;
+	if (positionTPU > m_fMaxPositionalTPU)
+		m_fMaxPositionalTPU = positionTPU;
 }
 
 
@@ -228,15 +179,13 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
-		printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
-		printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
-
-		m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
-
+		
 		adjustPoints();
 
 		setRefreshNeeded();
@@ -284,8 +233,6 @@ bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, i
 		}
 		setUncertaintyPoint(i, randX, randY, randDepth, 0.0, 0.0);
 	}
-
-	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 	setRefreshNeeded();
 
@@ -371,21 +318,21 @@ std::vector<glm::vec3> SonarPointCloud::getPointPositions()
 	return m_vvec3AdjustedPointsPositions;
 }
 
-double SonarPointCloud::getMinDepthTPU()
+float SonarPointCloud::getMinDepthTPU()
 {
-	return minDepthTPU;
+	return m_fMinDepthTPU;
 }
-double SonarPointCloud::getMaxDepthTPU()
+float SonarPointCloud::getMaxDepthTPU()
 {
-	return maxDepthTPU;
+	return m_fMaxDepthTPU;
 }
-double SonarPointCloud::getMinPositionalTPU()
+float SonarPointCloud::getMinPositionalTPU()
 {
-	return minPositionalTPU;
+	return m_fMinPositionalTPU;
 }
-double SonarPointCloud::getMaxPositionalTPU()
+float SonarPointCloud::getMaxPositionalTPU()
 {
-	return maxPositionalTPU;
+	return m_fMaxPositionalTPU;
 }
 
 std::string SonarPointCloud::getName()
@@ -400,13 +347,10 @@ void SonarPointCloud::setName(std::string name)
 
 void SonarPointCloud::adjustPoints()
 {
-	glm::dvec3 adjustment = -(m_dvec3MinBounds + m_dvec3Dimensions * 0.5);
+	glm::dvec3 adjustment = getDataCenteringAdjustments();
 
 	for (int i = 0; i < m_nPoints; ++i)
-		m_vvec3AdjustedPointsPositions[i] = m_vvec3RawPointsPositions[i] + adjustment;
-		
-	m_dvec3MinBounds += adjustment;
-	m_dvec3MaxBounds += adjustment;
+		m_vvec3AdjustedPointsPositions[i] = m_vvec3RawPointsPositions[i] + adjustment;		
 }
 
 void SonarPointCloud::createAndLoadBuffers()

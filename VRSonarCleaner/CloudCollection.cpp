@@ -1,21 +1,27 @@
 #include "CloudCollection.h"
 
+#include <limits>
+
 CloudCollection::CloudCollection(ColorScaler *colorScaler)
 	: Dataset(false)
 	, m_pColorScaler(colorScaler)
+	, m_fMinPositionalTPU(std::numeric_limits<float>::max())
+	, m_fMaxPositionalTPU(std::numeric_limits<float>::min())
+	, m_fMinDepthTPU(std::numeric_limits<float>::max())
+	, m_fMaxDepthTPU(std::numeric_limits<float>::min())
 {
 }
 
 CloudCollection::~CloudCollection()
 {
 	clearAllClouds();
-	clouds.clear();
+	m_vpClouds.clear();
 }
 
 void CloudCollection::loadCloud(char* filename)
 {
-	clouds.push_back(new SonarPointCloud(m_pColorScaler));
-	clouds.back()->loadFromSonarTxt(filename);
+	m_vpClouds.push_back(new SonarPointCloud(m_pColorScaler));
+	m_vpClouds.back()->loadFromSonarTxt(filename);
 }
 
 void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints)
@@ -23,138 +29,83 @@ void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float size
 	SonarPointCloud* cloud;
 	cloud = new SonarPointCloud(m_pColorScaler);
 	cloud->generateFakeCloud(sizeX, sizeY, sizeZ, numPoints);
-	clouds.push_back(cloud);
+	m_vpClouds.push_back(cloud);
 }
 
 void CloudCollection::calculateCloudBoundsAndAlign()
 {
-	//find absolute minimum actual removed min values (the min bounds of the whole dataset)
-	//for (int i = 0; i < clouds.size(); i++)
-	//{
-	//	if (i == 0)//if first cloud use its values
-	//	{
-	//		actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
-	//		actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
-	//	}
-	//	else
-	//	{
-	//		if (clouds.at(i)->getActualRemovedXMin() < actualRemovedXmin)
-	//			actualRemovedXmin = clouds.at(i)->getActualRemovedXMin();
-	//		if (clouds.at(i)->getActualRemovedYMin() < actualRemovedYmin)
-	//			actualRemovedYmin = clouds.at(i)->getActualRemovedYMin();
-	//	}
-	//}//end for
-	//
-	//printf("Lowest Trimmed Min/Maxes:\n");
-	//printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-	//
-	////now we have the actual min bounds, refactor the others with those as their new removed mins
-	//for (auto &cloud : clouds)
-	//	cloud->useNewActualRemovedMinValues(actualRemovedXmin, actualRemovedYmin);
-
-	for (int i = 0; i < clouds.size(); i++)
+	// Figure out boundaries for all clouds
+	for (int i = 0; i < m_vpClouds.size(); i++)
 	{
-		if (i == 0)//for the first cloud, just use its bounds
-		{
-			m_dvec3MinBounds = clouds.at(i)->getMinBounds();
-			m_dvec3MaxBounds = clouds.at(i)->getMaxBounds();
-			maxDepthTPU = clouds.at(i)->getMaxDepthTPU();
-			minPositionalTPU = clouds.at(i)->getMinPositionalTPU();
-			maxPositionalTPU = clouds.at(i)->getMaxPositionalTPU();
-		}
-		else //for each additonal cloud being added
-		{
-			//first check the min removed values and update other clouds as needed
-			if (clouds.at(i)->getXMin() < m_dvec3MinBounds.x)
-				m_dvec3MinBounds.x = clouds.at(i)->getXMin();
-			if (clouds.at(i)->getXMax() > m_dvec3MaxBounds.x)
-				m_dvec3MaxBounds.x = clouds.at(i)->getXMax();
+		glm::dvec3 minPos = m_vpClouds.at(i)->getRawMinBounds();
+		glm::dvec3 maxPos = m_vpClouds.at(i)->getRawMaxBounds();
 
-			if (clouds.at(i)->getYMin() < m_dvec3MinBounds.y)
-				m_dvec3MinBounds.y = clouds.at(i)->getYMin();
-			if (clouds.at(i)->getYMax() > m_dvec3MaxBounds.y)
-				m_dvec3MaxBounds.y = clouds.at(i)->getYMax();
+		checkNewRawPosition(minPos);
+		checkNewRawPosition(maxPos);
 
-			if (clouds.at(i)->getZMin() < m_dvec3MinBounds.z)
-				m_dvec3MinBounds.z = clouds.at(i)->getZMin();
-			if (clouds.at(i)->getZMax() > m_dvec3MaxBounds.z)
-				m_dvec3MaxBounds.z = clouds.at(i)->getZMax();
+		if (m_vpClouds.at(i)->getMinDepthTPU() < m_fMinDepthTPU)
+			m_fMinDepthTPU = m_vpClouds.at(i)->getMinDepthTPU();
+		if (m_vpClouds.at(i)->getMaxDepthTPU() > m_fMaxDepthTPU)
+			m_fMaxDepthTPU = m_vpClouds.at(i)->getMaxDepthTPU();
 
-			if (clouds.at(i)->getMinDepthTPU() < minDepthTPU)
-				minDepthTPU = clouds.at(i)->getMinDepthTPU();
-			if (clouds.at(i)->getMaxDepthTPU() > maxDepthTPU)
-				maxDepthTPU = clouds.at(i)->getMaxDepthTPU();
+		if (m_vpClouds.at(i)->getMinPositionalTPU() < m_fMinPositionalTPU)
+			m_fMinPositionalTPU = m_vpClouds.at(i)->getMinPositionalTPU();
+		if (m_vpClouds.at(i)->getMaxPositionalTPU() > m_fMaxPositionalTPU)
+			m_fMaxPositionalTPU = m_vpClouds.at(i)->getMaxPositionalTPU();
+	}
 
-			if (clouds.at(i)->getMinPositionalTPU() < minPositionalTPU)
-				minPositionalTPU = clouds.at(i)->getMinPositionalTPU();
-			if (clouds.at(i)->getMaxPositionalTPU() > maxPositionalTPU)
-				maxPositionalTPU = clouds.at(i)->getMaxPositionalTPU();
-			
-		}//end else additonal cloud being added
-	}//end for i
+	// Assign offsets to each cloud to position it within the collection bounds
 
-	printf("Final Aligned Min/Maxes:\n");
-	printf("X Min: %f Max: %f\n", m_dvec3MinBounds.x, m_dvec3MaxBounds.x);
-	printf("Y Min: %f Max: %f\n", m_dvec3MinBounds.y, m_dvec3MaxBounds.y);
-	printf("Z Min: %f Max: %f\n", -m_dvec3MaxBounds.z, -m_dvec3MinBounds.z);
-	printf("Depth Min: %f Max: %f\n", m_dvec3MinBounds.z, m_dvec3MaxBounds.z);
 
-	m_dvec3Dimensions = m_dvec3MaxBounds - m_dvec3MinBounds;
+	printf("Final Adjusted/Aligned Boundaries:\n");
+	printf("X Min: %f Max: %f\n", getAdjustedXMin(), getAdjustedXMax());
+	printf("Y Min: %f Max: %f\n", getAdjustedYMin(), getAdjustedYMax());
+	printf("Z Min: %f Max: %f\n", getAdjustedZMin(), getAdjustedZMax());
 }//end calculateCloudBoundsAndAlign()
 
 void CloudCollection::clearAllClouds()
 {
-	for (auto &cloud : clouds)
+	for (auto &cloud : m_vpClouds)
 		delete cloud;
 
-	clouds.clear();
+	m_vpClouds.clear();
 }
 
 int CloudCollection::getNumClouds()
 {
-	return clouds.size();
+	return m_vpClouds.size();
 }
 
 SonarPointCloud* CloudCollection::getCloud(int index)
 {
-	return clouds.at(index);
+	return m_vpClouds.at(index);
 }
 
-double CloudCollection::getMinDepthTPU()
+float CloudCollection::getMinDepthTPU()
 {
-	return minDepthTPU;
+	return m_fMinDepthTPU;
 }
-double CloudCollection::getMaxDepthTPU()
+float CloudCollection::getMaxDepthTPU()
 {
-	return maxDepthTPU;
+	return m_fMaxDepthTPU;
 }
-double CloudCollection::getMinPositionalTPU()
+float CloudCollection::getMinPositionalTPU()
 {
-	return minPositionalTPU;
+	return m_fMinPositionalTPU;
 }
-double CloudCollection::getMaxPositionalTPU()
+float CloudCollection::getMaxPositionalTPU()
 {
-	return maxPositionalTPU;
+	return m_fMaxPositionalTPU;
 }
-
-//double CloudCollection::getActualRemovedXMin()
-//{
-//	return actualRemovedXmin;
-//}
-//
-//double CloudCollection::getActualRemovedYMin()
-//{
-//	return actualRemovedYmin;
-//}
 
 void CloudCollection::updateClouds()
 {
-	for (auto const &cloud : clouds)
+	for (auto const &cloud : m_vpClouds)
 		cloud->update();
 }
 
 void CloudCollection::resetMarksInAllClouds()
 {
-	for (int i = 0; i < clouds.size(); i++)
-		clouds.at(i)->resetAllMarks();
+	for (auto const &cloud : m_vpClouds)
+		cloud->resetAllMarks();
 }

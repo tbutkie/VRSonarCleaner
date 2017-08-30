@@ -55,11 +55,10 @@ class SonarPointCloud : public Dataset
 
 		int getPointMark(int index);
 
-		//bounds access:
-		double getMinDepthTPU();
-		double getMaxDepthTPU();
-		double getMinPositionalTPU();
-		double getMaxPositionalTPU();
+		float getMinDepthTPU();
+		float getMaxDepthTPU();
+		float getMinPositionalTPU();
+		float getMaxPositionalTPU();
 		
 		std::string getName();
 		void setName(std::string n);
@@ -67,7 +66,7 @@ class SonarPointCloud : public Dataset
 	private:
 		//variables
 		std::string m_strName;
-		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
+		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 
 		std::vector<glm::dvec3> m_vvec3RawPointsPositions;
 		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
@@ -78,7 +77,6 @@ class SonarPointCloud : public Dataset
 		std::vector<float> m_vfPointsPositionTPU;
 		int m_nPoints;
 		bool m_bPointsAllocated;
-		bool m_bFirstMinMaxSet;
 
 		int colorMode;
 		int colorScope;

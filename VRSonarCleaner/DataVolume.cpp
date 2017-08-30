@@ -205,10 +205,10 @@ void DataVolume::updateTransforms()
 		if (m_pDataset->isDataRightHanded() != m_pDataset->isOutputRightHanded())
 			handednessConversion[2][2] = -1.f;
 
-		glm::vec3 dataCenteringOffset = -(m_pDataset->getMinBounds() + m_pDataset->getDimensions() * 0.5);
+		glm::vec3 dataCenteringOffset = -(m_pDataset->getAdjustedMinBounds() + m_pDataset->getAdjustedDimensions() * 0.5f);
 
-		float XYscale = std::min(1.f / m_pDataset->getXDimension(), 1.f / m_pDataset->getYDimension());
-		float depthScale = 1.f / m_pDataset->getZDimension();
+		float XYscale = std::min(1.f / m_pDataset->getAdjustedXDimension(), 1.f / m_pDataset->getAdjustedYDimension());
+		float depthScale = 1.f / m_pDataset->getAdjustedZDimension();
 
 		m_vec3ScalingFactors = glm::vec3(XYscale, XYscale, depthScale);
 		
