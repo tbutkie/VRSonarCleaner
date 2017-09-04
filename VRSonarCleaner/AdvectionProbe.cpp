@@ -21,7 +21,7 @@ AdvectionProbe::~AdvectionProbe()
 
 void AdvectionProbe::update()
 {
-	float sphereRad = m_pDataVolume->getScaleY() * 0.25f;
+	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
 
 	Renderer::RendererSubmission rs;
 

@@ -187,7 +187,6 @@
     <ClCompile Include="IllustrativeParticleSystem.cpp" />
     <ClCompile Include="LassoTool.cpp" />
     <ClCompile Include="LightingSystem.cpp" />
-    <ClCompile Include="Node.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="shaderset.cpp" />
@@ -231,7 +230,6 @@
     <ClInclude Include="IllustrativeParticleSystem.h" />
     <ClInclude Include="LassoTool.h" />
     <ClInclude Include="LightingSystem.h" />
-    <ClInclude Include="Node.h" />
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="shaderset.h" />

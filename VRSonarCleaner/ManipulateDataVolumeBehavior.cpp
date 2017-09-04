@@ -25,7 +25,7 @@ void ManipulateDataVolumeBehavior::update()
 	{
 		float currentDist = controllerDistance();
 		float delta = currentDist - m_fInitialDistance;
-		m_pDataVolume->setScale(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
+		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
 	}
 	
 	if (m_bGripping)
@@ -36,25 +36,6 @@ void ManipulateDataVolumeBehavior::update()
 
 void ManipulateDataVolumeBehavior::draw()
 {
-	// Draw Axes
-	if (false)
-	{
-		DebugDrawer::getInstance().setTransform(m_pPrimaryController->getDeviceToWorldTransform());
-		DebugDrawer::getInstance().drawTransform(0.1f);
-	}
-
-	// Draw Touchpad line
-	if (m_pPrimaryController->isTouchpadTouched())
-	{
-
-		glm::vec4 start = glm::vec4(m_pPrimaryController->getInitialTouchpadTouchPoint(), 1.f);
-		glm::vec4 startColor(.9f, .2f, .1f, 0.75f);
-		glm::vec4 end = glm::vec4(m_pPrimaryController->getCurrentTouchpadTouchPoint(), 1.f);
-		glm::vec4 endColor(.1f, .2f, .9f, 0.75f);
-
-		DebugDrawer::getInstance().setTransform(m_pPrimaryController->getDeviceToWorldTransform());
-		DebugDrawer::getInstance().drawLine(glm::vec3(start), glm::vec3(end), startColor, endColor);
-	}
 }
 
 void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadData)
@@ -97,7 +78,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 			m_bScaling = true;
 
 			m_fInitialDistance = controllerDistance();
-			m_vec3InitialDimensions = m_pDataVolume->getScale();
+			m_vec3InitialDimensions = m_pDataVolume->getDimensions();
 		}
 		
 		break;
@@ -127,7 +108,7 @@ void ManipulateDataVolumeBehavior::startRotation()
 {
 	m_mat4ControllerPoseAtRotationStart = m_pPrimaryController->getDeviceToWorldTransform();
 	//m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4_cast(m_qOrientation);
-	m_mat4DataVolumePoseAtRotationStart = m_pDataVolume->getCurrentVolumeTransform();
+	m_mat4DataVolumePoseAtRotationStart = glm::translate(glm::mat4(), m_pDataVolume->getPosition()) * glm::mat4_cast(m_pDataVolume->getOrientation());
 
 	//save volume pose in controller space
 	m_mat4ControllerToVolumeTransform = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;

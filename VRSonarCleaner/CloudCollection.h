@@ -8,6 +8,7 @@
 #include "Dataset.h"
 #include "ColorScaler.h"
 #include <vector>
+#include <map>
 #include "SonarPointCloud.h"
 
 class CloudCollection : public Dataset
@@ -23,6 +24,7 @@ public:
 
 	SonarPointCloud* getCloud(int index);
 	int getNumClouds();
+	glm::vec3 getCloudOffset(int index);
 
 	void updateClouds();
 
@@ -36,6 +38,7 @@ public:
 private:
 	ColorScaler *m_pColorScaler;
 	std::vector<SonarPointCloud*> m_vpClouds;
+	std::map<SonarPointCloud*, glm::vec3> m_mapOffsets;
 
 	float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 };

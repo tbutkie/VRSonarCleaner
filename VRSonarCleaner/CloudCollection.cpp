@@ -35,27 +35,30 @@ void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float size
 void CloudCollection::calculateCloudBoundsAndAlign()
 {
 	// Figure out boundaries for all clouds
-	for (int i = 0; i < m_vpClouds.size(); i++)
+	for (auto const &cloud : m_vpClouds)
 	{
-		glm::dvec3 minPos = m_vpClouds.at(i)->getRawMinBounds();
-		glm::dvec3 maxPos = m_vpClouds.at(i)->getRawMaxBounds();
+		glm::dvec3 minPos = cloud->getRawMinBounds();
+		glm::dvec3 maxPos = cloud->getRawMaxBounds();
 
 		checkNewRawPosition(minPos);
 		checkNewRawPosition(maxPos);
 
-		if (m_vpClouds.at(i)->getMinDepthTPU() < m_fMinDepthTPU)
-			m_fMinDepthTPU = m_vpClouds.at(i)->getMinDepthTPU();
-		if (m_vpClouds.at(i)->getMaxDepthTPU() > m_fMaxDepthTPU)
-			m_fMaxDepthTPU = m_vpClouds.at(i)->getMaxDepthTPU();
+		if (cloud->getMinDepthTPU() < m_fMinDepthTPU)
+			m_fMinDepthTPU = cloud->getMinDepthTPU();
+		if (cloud->getMaxDepthTPU() > m_fMaxDepthTPU)
+			m_fMaxDepthTPU = cloud->getMaxDepthTPU();
 
-		if (m_vpClouds.at(i)->getMinPositionalTPU() < m_fMinPositionalTPU)
-			m_fMinPositionalTPU = m_vpClouds.at(i)->getMinPositionalTPU();
-		if (m_vpClouds.at(i)->getMaxPositionalTPU() > m_fMaxPositionalTPU)
-			m_fMaxPositionalTPU = m_vpClouds.at(i)->getMaxPositionalTPU();
+		if (cloud->getMinPositionalTPU() < m_fMinPositionalTPU)
+			m_fMinPositionalTPU = cloud->getMinPositionalTPU();
+		if (cloud->getMaxPositionalTPU() > m_fMaxPositionalTPU)
+			m_fMaxPositionalTPU = cloud->getMaxPositionalTPU();
 	}
 
 	// Assign offsets to each cloud to position it within the collection bounds
-
+	for (auto const &cloud : m_vpClouds)
+	{
+		m_mapOffsets[cloud] = cloud->getRawMinBounds() - getRawMinBounds();
+	}
 
 	printf("Final Adjusted/Aligned Boundaries:\n");
 	printf("X Min: %f Max: %f\n", getAdjustedXMin(), getAdjustedXMax());
@@ -74,6 +77,11 @@ void CloudCollection::clearAllClouds()
 int CloudCollection::getNumClouds()
 {
 	return m_vpClouds.size();
+}
+
+glm::vec3 CloudCollection::getCloudOffset(int index)
+{
+	return m_mapOffsets[m_vpClouds[index]];
 }
 
 SonarPointCloud* CloudCollection::getCloud(int index)

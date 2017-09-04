@@ -216,7 +216,7 @@ bool CMainApplication::init()
 		m_pClouds = new CloudCollection(m_pColorScalerTPU);
 		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
 		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
-		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
+		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt");
@@ -260,7 +260,7 @@ bool CMainApplication::init()
 		m_pFlowVolume = new FlowVolume(tempFG);
 
 		if (m_bGreatBayModel)
-			m_pFlowVolume->setScale(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
+			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
 
 		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = m_pFlowVolume->getPosition();
@@ -563,7 +563,7 @@ bool CMainApplication::HandleInput()
 					if (m_bUseVR)
 					{
 						glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
-						m_pFlowVolume->setScale(glm::vec3(1.f, 1.f, 0.1f));
+						m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
 						m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
 
 						glm::mat3 matOrientation;
@@ -578,7 +578,7 @@ bool CMainApplication::HandleInput()
 				{
 					if (m_bUseVR)
 					{
-						m_pFlowVolume->setScale(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
+						m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
 						m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
 						m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
 					}
@@ -772,13 +772,16 @@ void CMainApplication::update()
 	{
 		m_pClouds->updateClouds();
 
+
 		if (m_bUseVR)
 		{
-
+			m_pWallVolume->update();
 		}
 
 		if (m_bUseDesktop)
 			m_pTableVolume->setOrientation(m_pTableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
+
+		m_pTableVolume->update();
 	}
 
 	if (m_bFlowVis)
@@ -803,12 +806,12 @@ void CMainApplication::drawScene()
 				rs.glPrimitiveType = GL_POINTS;
 				rs.shaderName = "flat";
 				rs.indexType = GL_UNSIGNED_INT;
-				rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform();
 
 				for (int i = 0; i < m_pClouds->getNumClouds(); ++i)
 				{
 					 rs.VAO = m_pClouds->getCloud(i)->getPreviewVAO();
 					 rs.vertCount = m_pClouds->getCloud(i)->getPreviewPointCount();
+					 rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform() * glm::translate(glm::mat4(), m_pClouds->getCloudOffset(i));
 					 Renderer::getInstance().addToDynamicRenderQueue(rs);
 				}
 			}

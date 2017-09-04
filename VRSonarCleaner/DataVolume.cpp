@@ -7,10 +7,11 @@
 #include <math.h>
 
 DataVolume::DataVolume(Dataset* data, glm::vec3 pos, int startingOrientation, glm::vec3 dimensions)
-	: Node(pos, glm::quat(), dimensions)
+	: m_vec3Position(pos)
+	, m_vec3Dimensions(dimensions)
 	, m_pDataset(data)
 	, m_vec3OriginalPosition(pos)
-	, m_vec3OriginalScale(dimensions)
+	, m_vec3OriginalDimensions(dimensions)
 	, m_bFirstRun(true)
 {
 	if (startingOrientation == 0)
@@ -25,7 +26,6 @@ DataVolume::DataVolume(Dataset* data, glm::vec3 pos, int startingOrientation, gl
 
 DataVolume::~DataVolume()
 {
-
 }
 
 glm::vec3 DataVolume::getOriginalPosition()
@@ -42,7 +42,7 @@ void DataVolume::resetPositionAndOrientation()
 {
 	setPosition(m_vec3OriginalPosition);
 	setOrientation(m_qOriginalOrientation);
-	setScale(m_vec3OriginalScale);
+	setDimensions(m_vec3OriginalDimensions);
 }
 
 glm::vec3 DataVolume::convertToDataCoords(glm::vec3 worldPos)
@@ -52,21 +52,19 @@ glm::vec3 DataVolume::convertToDataCoords(glm::vec3 worldPos)
 
 glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 dataPos)
 {
-	updateTransforms();
-
 	return glm::vec3(getCurrentDataTransform() * glm::vec4(dataPos, 1.f));
 }
 
 void DataVolume::drawBBox(glm::vec4 color, float padPct)
 {
-	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
+	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
 	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, color);
 }
 
 void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
 {
-	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
 	Renderer::getInstance().drawPrimitive("inverse_icosphere", volTransform, color, color, 0.f);
 }
@@ -79,7 +77,7 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 	glm::vec3 viewPos = glm::vec3(worldToHMDTransform[3]);
 	glm::vec3 viewDir = -glm::normalize(glm::vec3(worldToHMDTransform[2]));
 
-	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getScale() * (1.f + 0.01f * padPct));
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
 	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
@@ -168,35 +166,72 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 
 glm::mat4 DataVolume::getCurrentDataTransform()
 {
-	updateTransforms();
-
 	return m_mat4DataTransform;
 }
 
 glm::mat4 DataVolume::getLastDataTransform()
 {
-	updateTransforms();
-
 	return m_mat4DataTransformPrevious;
 }
 
 glm::mat4 DataVolume::getCurrentVolumeTransform()
 {
-	updateTransforms();
-
 	return m_mat4VolumeTransform;
 }
 
 glm::mat4 DataVolume::getLastVolumeTransform()
 {
-	updateTransforms();
-
 	return m_mat4VolumeTransformPrevious;
+}
+
+void DataVolume::setPosition(glm::vec3 newPos)
+{
+	m_vec3Position = newPos;
+	m_bDirty = true;
+}
+
+glm::vec3 DataVolume::getPosition()
+{
+	return m_vec3Position;
+}
+
+void DataVolume::setOrientation(glm::quat newOrientation)
+{
+	m_qOrientation = newOrientation;
+	m_bDirty = true;
+}
+
+glm::quat DataVolume::getOrientation()
+{
+	return m_qOrientation;
+}
+
+void DataVolume::setDimensions(glm::vec3 newScale)
+{
+	m_vec3Dimensions = newScale;
+	m_bDirty = true;
+}
+
+glm::vec3 DataVolume::getDimensions()
+{
+	return m_vec3Dimensions;
+}
+
+void DataVolume::drawAxes(float size)
+{
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(m_mat4VolumeTransform, glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f), 1.f);
+}
+
+void DataVolume::update()
+{
+	updateTransforms();
 }
 
 void DataVolume::updateTransforms()
 {
-	if (isDirty())
+	if (m_bDirty)
 	{
 		m_mat4DataTransformPrevious = m_mat4DataTransform;
 		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
@@ -211,9 +246,9 @@ void DataVolume::updateTransforms()
 		float depthScale = 1.f / m_pDataset->getAdjustedZDimension();
 
 		m_vec3ScalingFactors = glm::vec3(XYscale, XYscale, depthScale);
-		
-		m_mat4DataTransform = getModelToWorldTransform() * glm::scale(m_vec3ScalingFactors) * handednessConversion * glm::translate(glm::mat4(), dataCenteringOffset);
-		m_mat4VolumeTransform = getModelToWorldTransform();
+
+		m_mat4VolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Dimensions);
+		m_mat4DataTransform = m_mat4VolumeTransform * glm::scale(m_vec3ScalingFactors) * handednessConversion * glm::translate(glm::mat4(), dataCenteringOffset);
 
 		if (m_bFirstRun)
 		{
@@ -221,5 +256,7 @@ void DataVolume::updateTransforms()
 			m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 			m_bFirstRun = false;
 		}
+
+		m_bDirty = false;
 	}
 }
