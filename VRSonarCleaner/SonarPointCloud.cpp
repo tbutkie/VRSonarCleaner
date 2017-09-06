@@ -109,9 +109,9 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 {
 	
-	printf("Loading Point Cloud from %s\n", filename);
+	printf("Loading Point Cloud from %s\n", filename.c_str());
 
-	m_strName = std::string(filename);
+	m_strName = filename;
 		
 	FILE *file;
 	file = fopen(filename.c_str(), "r");

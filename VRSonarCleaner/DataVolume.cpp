@@ -239,6 +239,14 @@ void DataVolume::updateTransforms()
 {
 	if (m_bDirty)
 	{
+		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
+
+		// M = T * R * S
+		m_mat4VolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Dimensions);
+
+		if (m_vpDatasets.size() == 0u)
+			return;
+
 		auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
 		auto minXCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
 		auto maxXCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
@@ -258,10 +266,6 @@ void DataVolume::updateTransforms()
 		glm::dvec3 combinedDataCenter = minBound + dims * 0.5;
 
 		m_mapDataTransformsPrevious = m_mapDataTransforms;
-		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
-
-		// M = T * R * S
-		m_mat4VolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Dimensions);
 
 		for (auto &dataset : m_vpDatasets)
 		{
