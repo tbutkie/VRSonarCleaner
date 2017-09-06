@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
+#include <vector>
+#include <map>
 #include "Dataset.h"
 #include "../shared/glm/gtc/quaternion.hpp"
 #include "../shared/glm/gtx/quaternion.hpp"
@@ -14,8 +16,12 @@
 class DataVolume
 {
 public:
-	DataVolume(Dataset* data, glm::vec3 pos, int startingOrientation, glm::vec3 dimensions);
+	DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions);
 	virtual ~DataVolume();
+
+	void add(Dataset* data);
+
+	std::vector<Dataset*> getDatasets();
 
 	void drawBBox(glm::vec4 color, float padPct);
 	void drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct);
@@ -24,11 +30,11 @@ public:
 	glm::vec3 getOriginalPosition();
 	glm::quat getOriginalOrientation();
 	
-	glm::vec3 convertToDataCoords(glm::vec3 worldPos);
-	glm::vec3 convertToWorldCoords(glm::vec3 dataPos);
+	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
+	glm::vec3 convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos);
 	
-	glm::mat4 getCurrentDataTransform();
-	glm::mat4 getLastDataTransform();
+	glm::mat4 getCurrentDataTransform(Dataset* dataset);
+	glm::mat4 getLastDataTransform(Dataset* dataset);
 	glm::mat4 getCurrentVolumeTransform();
 	glm::mat4 getLastVolumeTransform();
 
@@ -48,7 +54,9 @@ public:
 protected:
 	void updateTransforms();
 
-	Dataset* m_pDataset;
+	std::vector<Dataset*> m_vpDatasets;
+	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
+	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
 
 	glm::vec3 m_vec3OriginalPosition;        // Original Data Volume Position	
 	glm::vec3 m_vec3Position;
@@ -57,12 +65,8 @@ protected:
 	glm::vec3 m_vec3OriginalDimensions;           // Original Data Volume Orientation
 	glm::vec3 m_vec3Dimensions;
 
-	glm::vec3 m_vec3ScalingFactors;          // Volume Dimensions
-
 	glm::mat4 m_mat4VolumeTransform;         // Volume Position and Orientation Transform
 	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
-	glm::mat4 m_mat4DataTransform;           // Data to World Transform
-	glm::mat4 m_mat4DataTransformPrevious;   // Previous Data to World Transform
 	
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed

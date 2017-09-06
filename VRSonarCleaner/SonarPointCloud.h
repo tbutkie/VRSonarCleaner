@@ -15,7 +15,7 @@
 class SonarPointCloud : public Dataset
 {
 	public:
-		SonarPointCloud(ColorScaler * const colorScaler);
+		SonarPointCloud(ColorScaler * const colorScaler, std::string fileName);
 		~SonarPointCloud();
 		
 		bool getRefreshNeeded();
@@ -34,7 +34,7 @@ class SonarPointCloud : public Dataset
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
-		bool loadFromSonarTxt(char* filename);
+		bool loadFromSonarTxt(std::string filename);
 
 		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
 

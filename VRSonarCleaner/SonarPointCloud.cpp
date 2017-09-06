@@ -4,7 +4,7 @@
 #include <numeric>
 #include <limits>
 
-SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
+SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName)
 	: Dataset(false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(20)
@@ -19,6 +19,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler)
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
 	, m_fMaxDepthTPU(std::numeric_limits<float>::min())
 {
+	loadFromSonarTxt(fileName);
 }
 
 SonarPointCloud::~SonarPointCloud()
@@ -105,7 +106,7 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 }
 
 
-bool SonarPointCloud::loadFromSonarTxt(char* filename)
+bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 {
 	
 	printf("Loading Point Cloud from %s\n", filename);
@@ -113,7 +114,7 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 	m_strName = std::string(filename);
 		
 	FILE *file;
-	file = fopen(filename, "r");
+	file = fopen(filename.c_str(), "r");
 	if (file == NULL)
 	{
 		printf("ERROR reading file in %s\n", __FUNCTION__);

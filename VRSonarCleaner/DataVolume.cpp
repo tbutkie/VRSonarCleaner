@@ -6,26 +6,32 @@
 #include <iostream>
 #include <math.h>
 
-DataVolume::DataVolume(Dataset* data, glm::vec3 pos, int startingOrientation, glm::vec3 dimensions)
+DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions)
 	: m_vec3Position(pos)
+	, m_qOrientation(orientation)
 	, m_vec3Dimensions(dimensions)
-	, m_pDataset(data)
 	, m_vec3OriginalPosition(pos)
+	, m_qOriginalOrientation(orientation)
 	, m_vec3OriginalDimensions(dimensions)
 	, m_bFirstRun(true)
 {
-	if (startingOrientation == 0)
-		setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-	else
-		setOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
-
-	m_qOriginalOrientation = getOrientation();
-
 	updateTransforms();
 }
 
 DataVolume::~DataVolume()
 {
+}
+
+void DataVolume::add(Dataset * data)
+{
+	m_vpDatasets.push_back(data);
+	m_bDirty = true;
+	updateTransforms();
+}
+
+std::vector<Dataset*> DataVolume::getDatasets()
+{
+	return m_vpDatasets;
 }
 
 glm::vec3 DataVolume::getOriginalPosition()
@@ -45,14 +51,14 @@ void DataVolume::resetPositionAndOrientation()
 	setDimensions(m_vec3OriginalDimensions);
 }
 
-glm::vec3 DataVolume::convertToDataCoords(glm::vec3 worldPos)
+glm::vec3 DataVolume::convertToDataCoords(Dataset* dataset, glm::vec3 worldPos)
 {
-	return glm::vec3(glm::inverse(getCurrentDataTransform()) * glm::vec4(worldPos, 1.f));
+	return glm::vec3(glm::inverse(getCurrentDataTransform(dataset)) * glm::vec4(worldPos, 1.f));
 }
 
-glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 dataPos)
+glm::vec3 DataVolume::convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos)
 {
-	return glm::vec3(getCurrentDataTransform() * glm::vec4(dataPos, 1.f));
+	return glm::vec3(getCurrentDataTransform(dataset) * glm::vec4(dataPos, 1.f));
 }
 
 void DataVolume::drawBBox(glm::vec4 color, float padPct)
@@ -164,14 +170,14 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 	}
 }
 
-glm::mat4 DataVolume::getCurrentDataTransform()
+glm::mat4 DataVolume::getCurrentDataTransform(Dataset* dataset)
 {
-	return m_mat4DataTransform;
+	return m_mapDataTransforms[dataset];
 }
 
-glm::mat4 DataVolume::getLastDataTransform()
+glm::mat4 DataVolume::getLastDataTransform(Dataset* dataset)
 {
-	return m_mat4DataTransformPrevious;
+	return m_mapDataTransformsPrevious[dataset];
 }
 
 glm::mat4 DataVolume::getCurrentVolumeTransform()
@@ -233,26 +239,59 @@ void DataVolume::updateTransforms()
 {
 	if (m_bDirty)
 	{
-		m_mat4DataTransformPrevious = m_mat4DataTransform;
+		auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
+		auto minXCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
+		auto maxXCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
+
+		auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
+		auto minYCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
+		auto maxYCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
+
+		auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
+		auto minZCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
+		auto maxZCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
+
+		glm::dvec3 minBound(minXCloud->getRawXMin(), minYCloud->getRawYMin(), minZCloud->getRawZMin());
+		glm::dvec3 maxBound(maxXCloud->getRawXMax(), maxYCloud->getRawYMax(), maxZCloud->getRawZMax());
+		glm::dvec3 dims(maxBound - minBound);
+
+		glm::dvec3 combinedDataCenter = minBound + dims * 0.5;
+
+		m_mapDataTransformsPrevious = m_mapDataTransforms;
 		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 
-		glm::mat4 handednessConversion;
-		if (m_pDataset->isDataRightHanded() != m_pDataset->isOutputRightHanded())
-			handednessConversion[2][2] = -1.f;
-
-		glm::vec3 dataCenteringOffset = -(m_pDataset->getAdjustedMinBounds() + m_pDataset->getAdjustedDimensions() * 0.5f);
-
-		float XYscale = std::min(1.f / m_pDataset->getAdjustedXDimension(), 1.f / m_pDataset->getAdjustedYDimension());
-		float depthScale = 1.f / m_pDataset->getAdjustedZDimension();
-
-		m_vec3ScalingFactors = glm::vec3(XYscale, XYscale, depthScale);
-
+		// M = T * R * S
 		m_mat4VolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Dimensions);
-		m_mat4DataTransform = m_mat4VolumeTransform * glm::scale(m_vec3ScalingFactors) * handednessConversion * glm::translate(glm::mat4(), dataCenteringOffset);
+
+		for (auto &dataset : m_vpDatasets)
+		{
+			glm::dvec3 dataCenterRaw = dataset->getRawMinBounds() + dataset->getRawDimensions() * 0.5;
+
+			glm::vec3 dataPositionOffsetInVolume = combinedDataCenter - dataCenterRaw;
+
+			glm::vec3 dataCenteringOffset = -(dataset->getAdjustedMinBounds() + dataset->getAdjustedDimensions() * 0.5f);
+
+			glm::mat4 handednessConversion;
+			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
+				handednessConversion[2][2] = -1.f;
+
+			// Scale x and y (lon and lat) while maintaining aspect ratio
+			float XYscale = std::min(1.f / dataset->getAdjustedXDimension(), 1.f / dataset->getAdjustedYDimension());
+			float depthScale = 1.f / dataset->getAdjustedZDimension();
+
+			glm::vec3 scalingFactors = glm::vec3(XYscale, XYscale, depthScale);
+
+			glm::mat4 dataTransform = m_mat4VolumeTransform; // 4. Now apply the data volume transform
+			dataTransform *= glm::scale(scalingFactors); // 3. Scaling factors so data to fits in the data volume
+			dataTransform *= handednessConversion; // 2. Inverts the z-coordinate to change handedness, if needed
+			dataTransform *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
+
+			m_mapDataTransforms[dataset] = dataTransform;
+		}
 
 		if (m_bFirstRun)
 		{
-			m_mat4DataTransformPrevious = m_mat4DataTransform;
+			m_mapDataTransformsPrevious = m_mapDataTransforms;
 			m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 			m_bFirstRun = false;
 		}

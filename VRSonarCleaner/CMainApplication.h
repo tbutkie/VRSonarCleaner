@@ -5,6 +5,7 @@
 #include <SDL_opengl.h>
 #include <gl/glu.h>
 #include <chrono>
+#include <vector>
 
 #include <openvr.h>
 
@@ -13,7 +14,8 @@
 #include "Renderer.h"
 #include "arcball.h"
 #include "LassoTool.h"
-#include "CloudCollection.h"
+#include "SonarPointCloud.h"
+#include "ColorScaler.h"
 
 #include <shared/glm/glm.hpp>
 
@@ -66,7 +68,7 @@ private:
 	DataVolume* m_pTableVolume;
 	FlowVolume* m_pFlowVolume;
 
-	CloudCollection* m_pClouds;
+	std::vector<SonarPointCloud*> m_vpClouds;
 	ColorScaler* m_pColorScalerTPU;
 
 	//ARCBALL STUFF

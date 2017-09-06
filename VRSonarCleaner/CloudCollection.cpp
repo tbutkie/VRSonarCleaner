@@ -20,14 +20,14 @@ CloudCollection::~CloudCollection()
 
 void CloudCollection::loadCloud(char* filename)
 {
-	m_vpClouds.push_back(new SonarPointCloud(m_pColorScaler));
+	m_vpClouds.push_back(new SonarPointCloud(m_pColorScaler, std::string(filename)));
 	m_vpClouds.back()->loadFromSonarTxt(filename);
 }
 
 void CloudCollection::generateFakeTestCloud(float sizeX, float sizeY, float sizeZ, int numPoints)
 {
 	SonarPointCloud* cloud;
-	cloud = new SonarPointCloud(m_pColorScaler);
+	cloud = new SonarPointCloud(m_pColorScaler, std::string());
 	cloud->generateFakeCloud(sizeX, sizeY, sizeZ, numPoints);
 	m_vpClouds.push_back(cloud);
 }

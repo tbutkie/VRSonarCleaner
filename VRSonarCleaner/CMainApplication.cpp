@@ -1,7 +1,6 @@
 #include "CMainApplication.h"
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
-#include "CloudCollection.h"
 
 #include "ManipulateDataVolumeBehavior.h"
 #include "FlowProbe.h"
@@ -12,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
@@ -181,6 +181,9 @@ CMainApplication::~CMainApplication()
 	dprintf("Shutdown");
 }
 
+bool depthCompareFunc(SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinDepthTPU() < rhs->getMinDepthTPU(); }
+
+bool posCompareFunc(SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU(); }
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -213,32 +216,42 @@ bool CMainApplication::init()
 		m_pColorScalerTPU->setColorScale(2);
 		m_pColorScalerTPU->setBiValueScale(1);
 
-		m_pClouds = new CloudCollection(m_pColorScalerTPU);
-		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
-		m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt");
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt");
 		//m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt");
 		////m_pClouds->loadCloud("H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_XL_901_1458.txt");  //TOO BIG AND LONG at 90 degree angle to others
-		m_pClouds->calculateCloudBoundsAndAlign();
 
-		m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
+		float minDepthTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), depthCompareFunc))->getMinDepthTPU();
+		float maxDepthTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), depthCompareFunc))->getMaxDepthTPU();
+
+		float minPosTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), posCompareFunc))->getMinPositionalTPU();
+		float maxPosTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), posCompareFunc))->getMaxPositionalTPU();
+
+		m_pColorScalerTPU->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
 		
 		// apply new color scale
-		m_pClouds->resetMarksInAllClouds();
+		for (auto &cloud : m_vpClouds)
+			cloud->resetAllMarks();
 
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
+		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 		
 		glm::vec3 tablePosition = glm::vec3(0.f, 1.1f, 0.f);
+		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
 
 		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = tablePosition;
 
-		m_pTableVolume = new DataVolume(m_pClouds->getCloud(0), tablePosition, 0, tableSize);
-		m_pWallVolume = new DataVolume(m_pClouds, wallPosition, 1, wallSize);
+		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
+		m_pTableVolume->add(m_vpClouds[0]);
+		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
+		for (auto const &cloud : m_vpClouds)
+			m_pWallVolume->add(cloud);
 
 	}
 	else if (m_bFlowVis)
@@ -478,8 +491,11 @@ bool CMainApplication::HandleInput()
 			{
 				if (m_pTableVolume)
 				{
-					glm::vec3 tmp = m_pTableVolume->convertToDataCoords(m_pTableVolume->getPosition());
-					std::cout << "(" << tmp.x << ", " << tmp.y << ", " << tmp.z << ")" << std::endl;
+					for (auto &dataset : m_pTableVolume->getDatasets())
+					{
+						glm::vec3 tmp = m_pTableVolume->convertToDataCoords(dataset, m_pTableVolume->getPosition());
+						std::cout << "(" << tmp.x << ", " << tmp.y << ", " << tmp.z << ")" << std::endl;
+					}
 				}
 			}
 
@@ -527,7 +543,8 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting marks\n");
-					m_pClouds->resetMarksInAllClouds();
+					for (auto &cloud : m_vpClouds)
+						cloud->resetAllMarks();
 					m_pWallVolume->resetPositionAndOrientation();
 					m_pTableVolume->resetPositionAndOrientation();
 				}
@@ -535,10 +552,8 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_g)
 				{
 					printf("Pressed g, generating fake test cloud\n");
-					m_pClouds->clearAllClouds();
-					m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
-					m_pClouds->calculateCloudBoundsAndAlign();
-					m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
+					//m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
+					//m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
@@ -737,7 +752,7 @@ void CMainApplication::update()
 		{
 			if (m_pTDM->getPrimaryController() && !g_pPointCleanProbeBehavior)
 			{
-				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pClouds->getCloud(0), m_pHMD);
+				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_vpClouds[0], m_pHMD);
 				g_vpBehaviors.push_back(g_pPointCleanProbeBehavior);
 			}
 		}
@@ -770,7 +785,8 @@ void CMainApplication::update()
 
 	if (m_bSonarCleaning)
 	{
-		m_pClouds->updateClouds();
+		for (auto &cloud : m_vpClouds)
+			cloud->update();
 
 
 		if (m_bUseVR)
@@ -807,11 +823,11 @@ void CMainApplication::drawScene()
 				rs.shaderName = "flat";
 				rs.indexType = GL_UNSIGNED_INT;
 
-				for (int i = 0; i < m_pClouds->getNumClouds(); ++i)
+				for (auto &cloud : m_pWallVolume->getDatasets())
 				{
-					 rs.VAO = m_pClouds->getCloud(i)->getPreviewVAO();
-					 rs.vertCount = m_pClouds->getCloud(i)->getPreviewPointCount();
-					 rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform() * glm::translate(glm::mat4(), m_pClouds->getCloudOffset(i));
+					 rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
+					 rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+					 rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform(cloud);
 					 Renderer::getInstance().addToDynamicRenderQueue(rs);
 				}
 			}
@@ -872,12 +888,15 @@ void CMainApplication::drawScene()
 		Renderer::RendererSubmission rs;
 		rs.glPrimitiveType = GL_POINTS;
 		rs.shaderName = "flat";
-		rs.modelToWorldTransform = m_pTableVolume->getCurrentDataTransform();
-		rs.VAO = m_pClouds->getCloud(0)->getVAO();
-		rs.vertCount = m_pClouds->getCloud(0)->getPointCount();
 		rs.indexType = GL_UNSIGNED_INT;
 		
-		Renderer::getInstance().addToDynamicRenderQueue(rs);		
+		for (auto &cloud : m_pTableVolume->getDatasets())
+		{
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
+			rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+			rs.modelToWorldTransform = m_pTableVolume->getCurrentDataTransform(cloud);
+			Renderer::getInstance().addToDynamicRenderQueue(rs);
+		}	
 	}
 
 	if (m_bFlowVis)
@@ -1001,7 +1020,7 @@ std::string getTimeString()
 
 void CMainApplication::savePoints()
 {	
-	std::vector<glm::vec3> points = m_pClouds->getCloud(0)->getPointPositions();
+	std::vector<glm::vec3> points = m_vpClouds[0]->getPointPositions();
 
 	// construct filename
 	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
@@ -1023,7 +1042,7 @@ void CMainApplication::savePoints()
 
 	for (size_t i = 0ull; i < points.size(); ++i)
 	{
-		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (m_pClouds->getCloud(0)->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (m_vpClouds[0]->getPointMark(i) == 1 ? "1" : "0") << std::endl;
 	}
 
 	outFile.close();
@@ -1096,23 +1115,25 @@ bool CMainApplication::editCleaningTableDesktop()
 {
 	bool hit = false;
 
-	std::vector<glm::vec3> inPts = m_pClouds->getCloud(0)->getPointPositions();
-
-	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
-
-	for (int i = 0; i < inPts.size(); ++i)
+	for (auto &cloud : m_pTableVolume->getDatasets())
 	{
-		glm::vec3 in = m_pTableVolume->convertToWorldCoords(inPts[i]);
-		glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+		std::vector<glm::vec3> inPts = static_cast<SonarPointCloud*>(cloud)->getPointPositions();
 
-		if (m_pLasso->checkPoint(glm::vec2(out)))
+		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
+
+		for (int i = 0; i < inPts.size(); ++i)
 		{
-			m_pClouds->getCloud(0)->markPoint(i, 1);
-			hit = true;
-			m_pClouds->getCloud(0)->setRefreshNeeded();
+			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud, inPts[i]);
+			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+
+			if (m_pLasso->checkPoint(glm::vec2(out)))
+			{
+				static_cast<SonarPointCloud*>(cloud)->markPoint(i, 1);
+				static_cast<SonarPointCloud*>(cloud)->setRefreshNeeded();
+				hit = true;
+			}
 		}
 	}
-
 	return hit;
 }
 

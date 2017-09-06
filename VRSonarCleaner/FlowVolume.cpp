@@ -6,9 +6,8 @@ using namespace std::chrono_literals;
 
 FlowVolume::FlowVolume(FlowGrid* flowGrid)
 	: DataVolume(
-		flowGrid,
 		glm::vec3(0.f, 1.f, 0.f), 
-		0, 
+		glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		glm::vec3(1.f))
 	, m_pFlowGrid(flowGrid)
 	, m_msLoopTime(35s)
@@ -17,6 +16,8 @@ FlowVolume::FlowVolume(FlowGrid* flowGrid)
 	//X-Right-Left
 	//Y-UP-vertical
 	//Z-toward monitor
+
+	add(flowGrid);
 
 	m_pScaler = m_pFlowGrid->scaler;
 	
@@ -53,7 +54,7 @@ void FlowVolume::recalcVolumeBounds()
 
 IllustrativeParticleEmitter* FlowVolume::placeDyeEmitterWorldCoords(glm::vec3 pos)
 {
-	glm::vec3 innerPos = convertToDataCoords(pos);
+	glm::vec3 innerPos = convertToDataCoords(m_vpDatasets[0], pos);
 
 	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
@@ -67,7 +68,7 @@ IllustrativeParticleEmitter* FlowVolume::placeDyeEmitterWorldCoords(glm::vec3 po
 
 bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 {
-	glm::vec3 innerPos = convertToDataCoords(pos);
+	glm::vec3 innerPos = convertToDataCoords(m_vpDatasets[0], pos);
 
 	printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
@@ -105,7 +106,7 @@ void FlowVolume::draw()
 	rs.indexType = GL_UNSIGNED_INT;
 	rs.hasTransparency = true;
 	rs.transparencySortPosition = getCurrentVolumeTransform()[3];
-	rs.modelToWorldTransform = getCurrentDataTransform();
+	rs.modelToWorldTransform = getCurrentDataTransform(m_vpDatasets[0]);
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);		
 }

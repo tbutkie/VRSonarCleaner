@@ -24,7 +24,7 @@ void FlowProbe::update()
 	//m_pEmitter->setRate(1.f + (m_pController->getTriggerPullAmount() / 0.85f) * 9.f);
 	m_pEmitter->setTrailTime(std::chrono::duration_cast<std::chrono::milliseconds>(2500ms - 2000ms * (m_pController->getTriggerPullAmount() / 0.85f)));
 
-	glm::vec3 innerPos = m_pDataVolume->convertToDataCoords(getPosition());
+	glm::vec3 innerPos = m_pDataVolume->convertToDataCoords(m_pFlowVolume->getDatasets()[0], getPosition());
 	m_pEmitter->x = innerPos.x;
 	m_pEmitter->y = innerPos.y;
 	m_pEmitter->z = innerPos.z;

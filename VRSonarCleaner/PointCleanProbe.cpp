@@ -132,8 +132,8 @@ void PointCleanProbe::checkPoints()
 
 	bool clearPoints = m_pController->isTriggerClicked();
 	
-	glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform();
-	glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform();
+	glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform(m_pDataVolume->getDatasets()[0]);
+	glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform(m_pDataVolume->getDatasets()[0]);
 
 	if (mat4LastVolumeXform == glm::mat4())
 		mat4LastVolumeXform = mat4CurrentVolumeXform;
