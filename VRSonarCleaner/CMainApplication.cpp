@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <filesystem>
 
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
@@ -250,7 +251,10 @@ bool CMainApplication::init()
 		m_pTableVolume->add(m_vpClouds[0]);
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 		for (auto const &cloud : m_vpClouds)
+		{
+			m_pTableVolume->add(cloud);
 			m_pWallVolume->add(cloud);
+		}
 
 	}
 	else if (m_bFlowVis)
@@ -476,6 +480,16 @@ bool CMainApplication::HandleInput()
 				|| sdlEvent.key.keysym.sym == SDLK_q)
 			{
 				bRet = true;
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_f)
+			{
+				using namespace std::experimental::filesystem::v1;
+				auto herePath = current_path();
+				std::cout << "Current directory: " << herePath << std::endl;
+				for (directory_iterator it(herePath); it != directory_iterator(); ++it)
+					if(is_regular_file(*it))
+						std::cout << (*it) << std::endl;
 			}
 
 			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
@@ -891,8 +905,8 @@ void CMainApplication::drawScene()
 		
 		for (auto &cloud : m_pTableVolume->getDatasets())
 		{
-			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
-			rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+			rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
 			rs.modelToWorldTransform = m_pTableVolume->getCurrentDataTransform(cloud);
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}	

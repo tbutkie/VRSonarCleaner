@@ -62,9 +62,9 @@ double Dataset::getRawYMin()
 double Dataset::getRawZMin()
 {
 	update();
-	if (m_bRHCoordSys_input != m_bRHCoordSys_output)
-		return -m_dvec3RawMaxBounds.z;
-	else
+	//if (m_bRHCoordSys_input != m_bRHCoordSys_output)
+	//	return -m_dvec3RawMaxBounds.z;
+	//else
 		return m_dvec3RawMinBounds.z;
 }
 
@@ -137,9 +137,9 @@ double Dataset::getRawYMax()
 double Dataset::getRawZMax()
 {
 	update();
-	if (m_bRHCoordSys_input != m_bRHCoordSys_output)
-		return -m_dvec3RawMinBounds.z;
-	else
+	//if (m_bRHCoordSys_input != m_bRHCoordSys_output)
+	//	return -m_dvec3RawMinBounds.z;
+	//else
 		return m_dvec3RawMaxBounds.z;
 }
 
@@ -257,7 +257,8 @@ void Dataset::update()
 	{
 		m_dvec3RawDimensions = m_dvec3RawMaxBounds - m_dvec3RawMinBounds;
 
-		m_dvec3Adjustments = -(m_dvec3RawMinBounds + m_dvec3RawDimensions * 0.5);
+		m_dvec3Adjustments = -(m_dvec3RawMinBounds + m_dvec3RawDimensions * 0.5); // origin at center
+		//m_dvec3Adjustments = -m_dvec3RawMinBounds; // origin at min bound
 
 		m_vec3AdjustedMaxBounds = m_dvec3RawMaxBounds + m_dvec3Adjustments;
 		m_vec3AdjustedMinBounds = m_dvec3RawMinBounds + m_dvec3Adjustments;

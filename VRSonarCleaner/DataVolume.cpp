@@ -248,16 +248,19 @@ void DataVolume::updateTransforms()
 			return;
 
 		auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
+		auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
 		auto minXCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
-		auto maxXCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
+		auto maxXCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn);
 
 		auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
+		auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
 		auto minYCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
-		auto maxYCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
+		auto maxYCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn);
 
 		auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
+		auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
 		auto minZCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
-		auto maxZCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
+		auto maxZCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn);
 
 		glm::dvec3 minBound(minXCloud->getRawXMin(), minYCloud->getRawYMin(), minZCloud->getRawZMin());
 		glm::dvec3 maxBound(maxXCloud->getRawXMax(), maxYCloud->getRawYMax(), maxZCloud->getRawZMax());
@@ -279,15 +282,21 @@ void DataVolume::updateTransforms()
 			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
 				handednessConversion[2][2] = -1.f;
 
+			float volumeAR = m_vec3Dimensions.x / m_vec3Dimensions.y;
+			float overallDataAR = dims.x / dims.y;
+
+			glm::vec3 volScale = dataset->getRawDimensions() / dims;
+
 			// Scale x and y (lon and lat) while maintaining aspect ratio
 			float XYscale = std::min(1.f / dataset->getAdjustedXDimension(), 1.f / dataset->getAdjustedYDimension());
 			float depthScale = 1.f / dataset->getAdjustedZDimension();
 
-			glm::vec3 scalingFactors = glm::vec3(XYscale, XYscale, depthScale);
+			glm::vec3 scalingFactors = volScale / dataset->getAdjustedDimensions();//glm::vec3(XYscale, XYscale, depthScale) * volScale;
 
 			glm::mat4 dataTransform = m_mat4VolumeTransform; // 4. Now apply the data volume transform
 			dataTransform *= glm::scale(scalingFactors); // 3. Scaling factors so data to fits in the data volume
 			dataTransform *= handednessConversion; // 2. Inverts the z-coordinate to change handedness, if needed
+			dataTransform *= glm::translate(glm::mat4(), dataPositionOffsetInVolume); // 4. Move origin to center of dataset
 			dataTransform *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
 
 			m_mapDataTransforms[dataset] = dataTransform;
