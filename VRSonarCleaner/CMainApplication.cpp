@@ -248,7 +248,6 @@ bool CMainApplication::init()
 		m_vec3BallCenter = tablePosition;
 
 		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
-		m_pTableVolume->add(m_vpClouds[0]);
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 		for (auto const &cloud : m_vpClouds)
 		{
