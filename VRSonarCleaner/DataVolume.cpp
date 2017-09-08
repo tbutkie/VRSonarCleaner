@@ -300,27 +300,12 @@ void DataVolume::updateTransforms()
 			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
 				handednessConversion[2][2] = -1.f;
 
-			float dataAR = dataset->getAdjustedXDimension() / dataset->getAdjustedYDimension();
-
-			glm::vec3 scalingFactors;
-
-			if (domainAR > dataAR)
-			{
-				scalingFactors.x = dataset->getAdjustedXDimension() * (domainAdjustedVolumeDims.y / dataset->getAdjustedYDimension());
-				scalingFactors.y = domainAdjustedVolumeDims.y;
-			}
-			else
-			{
-				scalingFactors.x = domainAdjustedVolumeDims.x;
-				scalingFactors.y = dataset->getAdjustedYDimension() * (domainAdjustedVolumeDims.x / dataset->getAdjustedXDimension());
-			}
-
-			scalingFactors.z = domainAdjustedVolumeDims.z;
+			glm::vec3 scalingFactors = glm::vec3(dataset->getRawDimensions() / domainDims) * domainAdjustedVolumeDims;
 
 			glm::mat4 dataTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation); // 4. Now apply the data volume transform
 			dataTransform *= glm::scale(scalingFactors / dataset->getAdjustedDimensions()); // 3. Scaling factors so data to fits in the data volume
-			//dataTransform *= glm::translate(glm::mat4(), dataPositionOffsetInVolume); // 4. Move origin to center of dataset
 			dataTransform *= handednessConversion; // 2. Inverts the z-coordinate to change handedness, if needed
+			dataTransform *= glm::translate(glm::mat4(), dataPositionOffsetInVolume);
 			dataTransform *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
 
 			m_mapDataTransforms[dataset] = dataTransform;
