@@ -254,6 +254,8 @@ bool CMainApplication::init()
 			m_pWallVolume->add(cloud);
 		}
 
+		m_vpDataVolumes.push_back(m_pTableVolume);
+		m_vpDataVolumes.push_back(m_pWallVolume);
 	}
 	else if (m_bFlowVis)
 	{
@@ -554,10 +556,12 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting marks\n");
+
 					for (auto &cloud : m_vpClouds)
 						cloud->resetAllMarks();
-					m_pWallVolume->resetPositionAndOrientation();
-					m_pTableVolume->resetPositionAndOrientation();
+
+					for (auto &dv : m_vpDataVolumes)
+						dv->resetPositionAndOrientation();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_g)
@@ -796,19 +800,14 @@ void CMainApplication::update()
 
 	if (m_bSonarCleaning)
 	{
-		for (auto &cloud : m_vpClouds)
-			cloud->update();
-
-
-		if (m_bUseVR)
-		{
-			m_pWallVolume->update();
-		}
-
 		if (m_bUseDesktop)
 			m_pTableVolume->setOrientation(m_pTableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
 
-		m_pTableVolume->update();
+		for (auto &cloud : m_vpClouds)
+			cloud->update();
+
+		for (auto &dv : m_vpDataVolumes)
+			dv->update();
 	}
 
 	if (m_bFlowVis)
@@ -823,26 +822,7 @@ void CMainApplication::drawScene()
 	{
 		if (m_bUseVR)
 		{
-			if (!m_bUseDesktop)
-			{
-				//draw wall
-				m_pWallVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
-				m_pWallVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
-
-				Renderer::RendererSubmission rs;
-				rs.glPrimitiveType = GL_POINTS;
-				rs.shaderName = "flat";
-				rs.indexType = GL_UNSIGNED_INT;
-
-				for (auto &cloud : m_pWallVolume->getDatasets())
-				{
-					 rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
-					 rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
-					 rs.modelToWorldTransform = m_pWallVolume->getCurrentDataTransform(cloud);
-					 Renderer::getInstance().addToDynamicRenderQueue(rs);
-				}
-			}
-			else if (m_bShowDesktopFrustum)
+			if (m_bShowDesktopFrustum)
 			{
 				// get frustum with near plane 1m out from view pos
 				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, 1.f, g_fFarClip);
@@ -891,23 +871,26 @@ void CMainApplication::drawScene()
 			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
-		m_pTableVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
-		m_pTableVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
-		//m_pTableVolume->drawAxes();
-
-		//draw table
-		Renderer::RendererSubmission rs;
-		rs.glPrimitiveType = GL_POINTS;
-		rs.shaderName = "flat";
-		rs.indexType = GL_UNSIGNED_INT;
-		
-		for (auto &cloud : m_pTableVolume->getDatasets())
+		for (auto &dv : m_vpDataVolumes)
 		{
-			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-			rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
-			rs.modelToWorldTransform = m_pTableVolume->getCurrentDataTransform(cloud);
-			Renderer::getInstance().addToDynamicRenderQueue(rs);
-		}	
+			dv->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+			//dv->drawAxes();
+
+			//draw table
+			Renderer::RendererSubmission rs;
+			rs.glPrimitiveType = GL_POINTS;
+			rs.shaderName = "flat";
+			rs.indexType = GL_UNSIGNED_INT;
+
+			for (auto &cloud : dv->getDatasets())
+			{
+				rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+				rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
+				Renderer::getInstance().addToDynamicRenderQueue(rs);
+			}
+		}
 	}
 
 	if (m_bFlowVis)

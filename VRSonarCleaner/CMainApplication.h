@@ -69,6 +69,7 @@ private:
 	FlowVolume* m_pFlowVolume;
 
 	std::vector<SonarPointCloud*> m_vpClouds;
+	std::vector<DataVolume*> m_vpDataVolumes;
 	ColorScaler* m_pColorScalerTPU;
 
 	//ARCBALL STUFF
