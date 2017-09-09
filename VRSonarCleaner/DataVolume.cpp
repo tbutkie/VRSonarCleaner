@@ -249,21 +249,21 @@ void DataVolume::updateTransforms()
 
 		auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
 		auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
-		auto minXCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
-		auto maxXCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn);
+		auto minX = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn))->getRawXMin();
+		auto maxX = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn))->getRawXMax();
 
 		auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
 		auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
-		auto minYCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
-		auto maxYCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn);
+		auto minY = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn))->getRawYMin();
+		auto maxY = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn))->getRawYMax();
 
 		auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
 		auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
-		auto minZCloud = *std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
-		auto maxZCloud = *std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn);
+		auto minZ = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn))->getRawZMin();
+		auto maxZ = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn))->getRawZMax();
 
-		glm::dvec3 domainMinBound(minXCloud->getRawXMin(), minYCloud->getRawYMin(), minZCloud->getRawZMin());
-		glm::dvec3 domainMaxBound(maxXCloud->getRawXMax(), maxYCloud->getRawYMax(), maxZCloud->getRawZMax());
+		glm::dvec3 domainMinBound(minX, minY, minZ);
+		glm::dvec3 domainMaxBound(maxX, maxY, maxZ);
 		glm::dvec3 domainDims(domainMaxBound - domainMinBound);
 
 		float domainAR = domainDims.x / domainDims.y; // for figuring out how to maintain correct scale in the data volume

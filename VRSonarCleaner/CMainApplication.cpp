@@ -210,7 +210,6 @@ bool CMainApplication::init()
 	if (m_bSonarCleaning)
 	{
 		m_pColorScalerTPU = new ColorScaler();
-		m_pColorScalerTPU->setColorScale(2);
 		m_pColorScalerTPU->setBiValueScale(1);
 
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
@@ -767,7 +766,7 @@ void CMainApplication::update()
 		{
 			if (m_pTDM->getPrimaryController() && !g_pPointCleanProbeBehavior)
 			{
-				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_vpClouds[0], m_pHMD);
+				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD);
 				g_vpBehaviors.push_back(g_pPointCleanProbeBehavior);
 			}
 		}
@@ -1013,15 +1012,13 @@ std::string getTimeString()
 }
 
 void CMainApplication::savePoints()
-{	
-	std::vector<glm::vec3> points = m_vpClouds[0]->getPointPositions();
-
+{
 	// construct filename
-	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
+	std::string outFileName("saved_points_" + getTimeString() + ".csv");
 
 	// if file exists, keep trying until we find a filename that doesn't already exist
 	for (int i = 0; fileExists(outFileName); ++i)
-		outFileName = std::string("saved_points_" + intToString(points.size(), 0) + "_" /*+ getTimeString() + "_"*/ + "(" + std::to_string(i + 1) + ")" + ".csv");
+		outFileName = std::string("saved_points_" + getTimeString() + "_" + "(" + std::to_string(i + 1) + ")" + ".csv");
 	
 	std::ofstream outFile;
 	outFile.open(outFileName);
@@ -1034,9 +1031,14 @@ void CMainApplication::savePoints()
 	else
 		std::cout << "Error opening file " << outFileName << " for writing output" << std::endl;
 
-	for (size_t i = 0ull; i < points.size(); ++i)
+	for (auto &ds : m_pTableVolume->getDatasets())
 	{
-		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (m_vpClouds[0]->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(ds);
+
+		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
+		{
+			outFile << cloud->getRawPointPosition(i).x << "," << cloud->getRawPointPosition(i).y << "," << cloud->getRawPointPosition(i).z << "," << (cloud->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+		}
 	}
 
 	outFile.close();
@@ -1109,15 +1111,15 @@ bool CMainApplication::editCleaningTableDesktop()
 {
 	bool hit = false;
 
-	for (auto &cloud : m_pTableVolume->getDatasets())
+	for (auto &ds : m_pTableVolume->getDatasets())
 	{
-		std::vector<glm::vec3> inPts = static_cast<SonarPointCloud*>(cloud)->getPointPositions();
+		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(ds);
 
 		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
 
-		for (int i = 0; i < inPts.size(); ++i)
+		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
-			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud, inPts[i]);
+			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud, cloud->getAdjustedPointPosition(i));
 			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 
 			if (m_pLasso->checkPoint(glm::vec2(out)))

@@ -23,9 +23,9 @@ class SonarPointCloud : public Dataset
 		void update();
 
 		GLuint getVAO();
-		GLsizei getPointCount();
+		unsigned int getPointCount();
 		GLuint getPreviewVAO();
-		GLsizei getPreviewPointCount();
+		unsigned int getPreviewPointCount();
 
 		//methods:
 
@@ -47,13 +47,12 @@ class SonarPointCloud : public Dataset
 		void setColorScope(int mode);
 		int getColorScope();
 		
-		void markPoint(int index, int code);
+		void markPoint(unsigned int index, int code);
 		void resetAllMarks();
 
-		//cleaning
-		std::vector<glm::vec3> getPointPositions();
-
-		int getPointMark(int index);
+		glm::vec3 getAdjustedPointPosition(unsigned int index);
+		glm::vec3 getRawPointPosition(unsigned int index);
+		int getPointMark(unsigned int index);
 
 		float getMinDepthTPU();
 		float getMaxDepthTPU();
@@ -75,7 +74,9 @@ class SonarPointCloud : public Dataset
 		std::vector<GLuint> m_vuiPointsMarks;
 		std::vector<float> m_vfPointsDepthTPU;
 		std::vector<float> m_vfPointsPositionTPU;
-		int m_nPoints;
+		std::vector<unsigned int> m_vuiRejectedPoints;
+		std::vector<unsigned int> m_vuiMarkedPoints;
+		unsigned int m_nPoints;
 		bool m_bPointsAllocated;
 
 		int colorMode;

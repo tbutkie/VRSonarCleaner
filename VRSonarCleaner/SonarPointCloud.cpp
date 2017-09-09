@@ -256,7 +256,7 @@ GLuint SonarPointCloud::getVAO()
 	return m_glVAO;
 }
 
-GLsizei SonarPointCloud::getPointCount()
+unsigned int SonarPointCloud::getPointCount()
 {
 	return m_nPoints;
 }
@@ -266,7 +266,7 @@ GLuint SonarPointCloud::getPreviewVAO()
 	return m_glPreviewVAO;
 }
 
-GLsizei SonarPointCloud::getPreviewPointCount()
+unsigned int SonarPointCloud::getPreviewPointCount()
 {
 	return m_nPoints / m_iPreviewReductionFactor;
 }
@@ -312,11 +312,6 @@ void SonarPointCloud::setColorScope(int scope)
 int SonarPointCloud::getColorScope()
 {
 	return colorScope;
-}
-
-std::vector<glm::vec3> SonarPointCloud::getPointPositions()
-{
-	return m_vvec3AdjustedPointsPositions;
 }
 
 float SonarPointCloud::getMinDepthTPU()
@@ -395,46 +390,45 @@ void SonarPointCloud::createAndLoadBuffers()
 	glBindVertexArray(0);
 }
 
-void SonarPointCloud::markPoint(int index, int code)
+void SonarPointCloud::markPoint(unsigned int index, int code)
 {
-	m_vuiPointsMarks[index] = code;			
-	
-	if (code == 1)
+	m_vuiPointsMarks[index] = code;	
+
+	float r, g, b;
+
+	switch (code)
 	{
-		m_vvec4PointsColors[index] = glm::vec4(0.f);
-	}
-	else
-	{
-		float r, g, b;
+	case 0:
 		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
-
-		if (m_vuiPointsMarks[index] == 2)
-		{
-			r = 1.0;
-			g = 0.0;
-			b = 0.0;
-		}
-		if (m_vuiPointsMarks[index] == 3)
-		{
-			r = 0.0;
-			g = 1.0;
-			b = 0.0;
-		}
-		if (m_vuiPointsMarks[index] == 4)
-		{
-			r = 0.0;
-			g = 0.0;
-			b = 1.0;
-		}
-
-		if (m_vuiPointsMarks[index] >= 100)
-		{
-			r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
-			g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
-			b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
-		}
-		m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
+		break;
+	case 1:
+		m_vvec4PointsColors[index] = glm::vec4(0.f);
+		m_vuiRejectedPoints.push_back(index);
+		break;
+	case 2:
+		r = 1.0;
+		g = 0.0;
+		b = 0.0;
+		break;
+	case 3:
+		r = 0.0;
+		g = 1.0;
+		b = 0.0;
+		break;
+	case 4:
+		r = 0.0;
+		g = 0.0;
+		b = 1.0;
+		break;
+	default: // if >= 100
+		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
+		r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		break;
 	}
+
+	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
 	setRefreshNeeded();
 }
@@ -445,7 +439,17 @@ void SonarPointCloud::resetAllMarks()
 		markPoint(i, 0);	
 }
 
-int SonarPointCloud::getPointMark(int index)
+glm::vec3 SonarPointCloud::getAdjustedPointPosition(unsigned int index)
+{
+	return m_vvec3AdjustedPointsPositions[index];
+}
+
+glm::vec3 SonarPointCloud::getRawPointPosition(unsigned int index)
+{
+	return m_vvec3RawPointsPositions[index];
+}
+
+int SonarPointCloud::getPointMark(unsigned int index)
 {
 	return m_vuiPointsMarks[index];
 }

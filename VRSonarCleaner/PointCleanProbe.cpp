@@ -6,10 +6,9 @@
 
 using namespace std::chrono_literals;
 
-PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, SonarPointCloud *pCloud, vr::IVRSystem *pHMD)
+PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD)
 	: ProbeBehavior(controller, pointCloudVolume)
 	, m_bProbeActive(false)
-	, m_pPointCloud(pCloud)
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
@@ -120,6 +119,20 @@ float cylTest(const glm::vec4 & pt1, const glm::vec4 & pt2, float lengthsq, floa
 	}
 }
 
+bool checkAABBtoAABBIntersection(glm::vec3 aabb1Min, glm::vec3 aabb1Max, glm::vec3 aabb2Min, glm::vec3 aabb2Max)
+{
+	return aabb1Max.x > aabb2Min.x && aabb1Min.x < aabb2Max.x &&
+		   aabb1Max.y > aabb2Min.y && aabb1Min.y < aabb2Max.y &&
+		   aabb1Max.z > aabb2Min.z && aabb1Min.z < aabb2Max.z;
+}
+
+bool checkPointInAABB(glm::vec3 point, glm::vec3 aabbMin, glm::vec3 aabbMax)
+{
+	return point.x > aabbMin.x && point.x < aabbMax.x &&
+		   point.y > aabbMin.y && point.y < aabbMax.y &&
+		   point.z > aabbMin.z && point.z < aabbMax.z;
+}
+
 void PointCleanProbe::checkPoints()
 {
 	if (!m_pController || !m_pController->poseValid()) 
@@ -131,89 +144,105 @@ void PointCleanProbe::checkPoints()
 	float cursorRadius = m_fProbeRadius;
 
 	bool clearPoints = m_pController->isTriggerClicked();
-	
-	glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform(m_pDataVolume->getDatasets()[0]);
-	glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform(m_pDataVolume->getDatasets()[0]);
 
-	if (mat4LastVolumeXform == glm::mat4())
-		mat4LastVolumeXform = mat4CurrentVolumeXform;
+	bool anyHits = false;
+
+	float delta = m_msElapsedTime.count() / POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count();
+	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
 
 	glm::vec3 vec3CurrentCursorPos = getPosition();
 	glm::vec3 vec3LastCursorPos = getLastPosition();
 
-	bool performCylTest = true;
-	if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
+	glm::vec3 vec3MinProbeAABB = glm::vec3(
+		(std::min)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - m_fProbeRadius,
+		(std::min)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - m_fProbeRadius,
+		(std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - m_fProbeRadius
+	);
+	glm::vec3 vec3MaxProbeAABB = glm::vec3(
+		(std::max)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + m_fProbeRadius,
+		(std::max)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + m_fProbeRadius,
+		(std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + m_fProbeRadius
+	);
 
-	float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
-		(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
-		(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
-	
-	float delta = m_msElapsedTime.count() / POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count();
-	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
-
-	// POINTS CHECK
-	bool anyHits = false;
-	bool pointsRefresh = false;
-
-	std::vector<glm::vec3> points = m_pPointCloud->getPointPositions();
-
-	for (size_t i = 0ull; i < points.size(); ++i)
+	for (auto &pc : m_pDataVolume->getDatasets())
 	{
-		//skip already marked points
-		if (m_pPointCloud->getPointMark(i) == 1)
-			continue;
+		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(pc);
 
-		glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(points[i].x, points[i].y, points[i].z, 1.f));
+		glm::vec3 cloudMinBound = m_pDataVolume->convertToWorldCoords(cloud, cloud->getAdjustedMinBounds());
+		glm::vec3 cloudMaxBound = m_pDataVolume->convertToWorldCoords(cloud, cloud->getAdjustedMaxBounds());
 
-		// fast point-in-AABB failure test
-		if (thisPt.x < (std::min)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) - m_fProbeRadius ||
-			thisPt.x >(std::max)(vec3CurrentCursorPos.x, vec3LastCursorPos.x) + m_fProbeRadius ||
-			thisPt.y < (std::min)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) - m_fProbeRadius ||
-			thisPt.y >(std::max)(vec3CurrentCursorPos.y, vec3LastCursorPos.y) + m_fProbeRadius ||
-			thisPt.z < (std::min)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) - m_fProbeRadius ||
-			thisPt.z >(std::max)(vec3CurrentCursorPos.z, vec3LastCursorPos.z) + m_fProbeRadius)
+		//if (!checkAABBtoAABBIntersection(vec3MinProbeAABB, vec3MaxProbeAABB, cloudMinBound, cloudMaxBound))
+		//	continue;
+
+		glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform(cloud);
+		glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform(cloud);
+
+		if (mat4LastVolumeXform == glm::mat4())
+			mat4LastVolumeXform = mat4CurrentVolumeXform;
+
+		bool performCylTest = true;
+		if (vec3CurrentCursorPos == vec3LastCursorPos) performCylTest = false;
+
+		float cyl_len_sq = (vec3CurrentCursorPos.x - vec3LastCursorPos.x) * (vec3CurrentCursorPos.x - vec3LastCursorPos.x) +
+			(vec3CurrentCursorPos.y - vec3LastCursorPos.y) * (vec3CurrentCursorPos.y - vec3LastCursorPos.y) +
+			(vec3CurrentCursorPos.z - vec3LastCursorPos.z) * (vec3CurrentCursorPos.z - vec3LastCursorPos.z);
+
+		// POINTS CHECK
+		bool pointsRefresh = false;
+
+		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
-			if (m_pPointCloud->getPointMark(i) != 0)
+			//skip already marked points
+			if (cloud->getPointMark(i) == 1)
+				continue;
+
+			glm::vec3 thisPt = glm::vec3(mat4CurrentVolumeXform * glm::vec4(cloud->getAdjustedPointPosition(i), 1.f));
+
+			// fast point-in-AABB failure test
+			if (!checkPointInAABB(thisPt, vec3MinProbeAABB, vec3MaxProbeAABB))
 			{
-				m_pPointCloud->markPoint(i, 0);
+				if (cloud->getPointMark(i) != 0)
+				{
+					cloud->markPoint(i, 0);
+					pointsRefresh = true;
+				}
+				continue;
+			}
+
+			float radius_sq = m_fProbeRadius * m_fProbeRadius;
+			float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
+				(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
+				(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
+
+			if (current_dist_sq <= radius_sq ||
+				(performCylTest && cylTest(glm::vec4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
+					glm::vec4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
+					cyl_len_sq,
+					radius_sq,
+					glm::vec3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
+				)
+			{
+				if (clearPoints)
+				{
+					anyHits = true;
+					cloud->markPoint(i, 1);
+				}
+				else
+					cloud->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+
 				pointsRefresh = true;
 			}
-			continue;
-		}
-
-		float radius_sq = m_fProbeRadius * m_fProbeRadius;
-		float current_dist_sq = (thisPt.x - vec3CurrentCursorPos.x) * (thisPt.x - vec3CurrentCursorPos.x) +
-			(thisPt.y - vec3CurrentCursorPos.y) * (thisPt.y - vec3CurrentCursorPos.y) +
-			(thisPt.z - vec3CurrentCursorPos.z) * (thisPt.z - vec3CurrentCursorPos.z);
-
-		if (current_dist_sq <= radius_sq ||
-			(performCylTest && cylTest(glm::vec4(vec3CurrentCursorPos.x, vec3CurrentCursorPos.y, vec3CurrentCursorPos.z, 1.f),
-				glm::vec4(vec3LastCursorPos.x, vec3LastCursorPos.y, vec3LastCursorPos.z, 1.f),
-				cyl_len_sq,
-				radius_sq,
-				glm::vec3(thisPt.x, thisPt.y, thisPt.z)) >= 0)
-			)
-		{
-			if (clearPoints)
+			else if (cloud->getPointMark(i) != 0)
 			{
-				anyHits = true;
-				m_pPointCloud->markPoint(i, 1);
+				cloud->markPoint(i, 0);
+				pointsRefresh = true;
 			}
-			else
-				m_pPointCloud->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+		}
 
-			pointsRefresh = true;
-		}
-		else if (m_pPointCloud->getPointMark(i) != 0)
-		{
-			m_pPointCloud->markPoint(i, 0);
-			pointsRefresh = true;
-		}
+		if (pointsRefresh)
+			cloud->setRefreshNeeded();
 	}
-
-	if (pointsRefresh)
-		m_pPointCloud->setRefreshNeeded();
-
+	
 	if (anyHits)
 		m_pHMD->TriggerHapticPulse(m_pController->getIndex(), 0, 2000);
 }

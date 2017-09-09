@@ -11,7 +11,7 @@ class PointCleanProbe :
 	public ProbeBehavior
 {
 public:
-	PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, SonarPointCloud *pCloud, vr::IVRSystem *pHMD);
+	PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD);
 	~PointCleanProbe();
 
 	void update();
@@ -20,8 +20,6 @@ public:
 
 private:
 	bool m_bProbeActive;
-	
-	SonarPointCloud* m_pPointCloud;
 
 	float m_fPtHighlightAmt;
 
