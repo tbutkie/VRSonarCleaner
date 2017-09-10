@@ -4,7 +4,7 @@
 #include <numeric>
 #include <limits>
 
-SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName)
+SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, bool studyfile)
 	: Dataset(false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(20)
@@ -19,7 +19,10 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
 	, m_fMaxDepthTPU(std::numeric_limits<float>::min())
 {
-	loadFromSonarTxt(fileName);
+	if (studyfile)
+		loadStudyData(fileName);
+	else
+		loadFromSonarTxt(fileName);
 }
 
 SonarPointCloud::~SonarPointCloud()
@@ -108,7 +111,6 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 
 bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 {
-	
 	printf("Loading Point Cloud from %s\n", filename.c_str());
 
 	m_strName = filename;
@@ -118,6 +120,7 @@ bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 	if (file == NULL)
 	{
 		printf("ERROR reading file in %s\n", __FUNCTION__);
+		return false;
 	}
 	else
 	{
@@ -187,6 +190,97 @@ bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 
 		fclose(file);
 		
+		adjustPoints();
+
+		setRefreshNeeded();
+
+		createAndLoadBuffers();
+	}
+
+	return true;
+}
+
+bool SonarPointCloud::loadStudyData(std::string filename)
+{
+	printf("Loading Study Point Cloud from %s\n", filename.c_str());
+
+	m_strName = filename;
+
+	bool rejectedDataset = filename.find("reject") != std::string::npos;
+
+	FILE *file;
+	file = fopen(filename.c_str(), "r");
+	if (file == NULL)
+	{
+		printf("ERROR reading file in %s\n", __FUNCTION__);
+	}
+	else
+	{
+		//count points
+		//skip the first linesToSkip lines
+		int skipped = 0;
+		int tries = 0;
+		char tempChar;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+		printf("Skipped %d characters\n", skipped);
+
+		//now count lines of points
+		double x, y, depth;
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+			numPointsInFile++;
+
+		initPoints(numPointsInFile);
+		printf("found %d lines of points\n", numPointsInFile);
+
+		//rewind
+		rewind(file);
+		//skip the first linesToSkip lines
+		skipped = 0;
+		tries = 0;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+
+		//now load lines of points
+		GLuint index = 0u;
+		double averageDepth = 0.0;
+		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+		{
+			float conf = rejectedDataset ? 1.f : 0.f;
+			setUncertaintyPoint(index++, x, y, depth, conf, conf);
+			averageDepth += depth;
+		}
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
+
+		printf("Loaded %d points\n", index);
+
+		printf("Original Min/Maxes:\n");
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("Depth Avg: %f\n", averageDepth);
+
+		fclose(file);
+
 		adjustPoints();
 
 		setRefreshNeeded();
@@ -395,6 +489,7 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 	m_vuiPointsMarks[index] = code;	
 
 	float r, g, b;
+	float a = 1.f;
 
 	switch (code)
 	{
@@ -402,8 +497,7 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
 		break;
 	case 1:
-		m_vvec4PointsColors[index] = glm::vec4(0.f);
-		m_vuiRejectedPoints.push_back(index);
+		a = 0.f;
 		break;
 	case 2:
 		r = 1.0;
@@ -421,14 +515,15 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 		b = 1.0;
 		break;
 	default: // if >= 100
-		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
-		r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
-		g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
-		b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		//m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
+		//r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		//g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		//b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		a = (static_cast<float>(code) - 100.f) / 100.f;
 		break;
 	}
 
-	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
+	m_vvec4PointsColors[index] = glm::vec4(r, g, b, a);
 
 	setRefreshNeeded();
 }

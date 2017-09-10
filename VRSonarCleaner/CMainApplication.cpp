@@ -209,44 +209,31 @@ bool CMainApplication::init()
 
 	if (m_bSonarCleaning)
 	{
-		m_pColorScalerTPU = new ColorScaler();
-		m_pColorScalerTPU->setBiValueScale(1);
-
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt"));
-
-		auto depthCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinDepthTPU() < rhs->getMinDepthTPU(); };
-		auto posCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU(); };
-
-		float minDepthTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), depthCompareFunc))->getMinDepthTPU();
-		float maxDepthTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), depthCompareFunc))->getMaxDepthTPU();
-
-		float minPosTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), posCompareFunc))->getMinPositionalTPU();
-		float maxPosTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), posCompareFunc))->getMaxPositionalTPU();
-
-		m_pColorScalerTPU->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
-		
-		// apply new color scale
-		for (auto &cloud : m_vpClouds)
-			cloud->resetAllMarks();
-
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
 		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
 		
+		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
+
 		glm::vec3 tablePosition = glm::vec3(0.f, 1.1f, 0.f);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
 
+		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
+
 		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = tablePosition;
 
-		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
-		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
+		m_pColorScalerTPU = new ColorScaler();
+		m_pColorScalerTPU->setBiValueScale(1);
+
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt"));
+
 		for (auto const &cloud : m_vpClouds)
 		{
 			m_pTableVolume->add(cloud);
@@ -489,6 +476,55 @@ bool CMainApplication::HandleInput()
 				for (directory_iterator it(herePath); it != directory_iterator(); ++it)
 					if(is_regular_file(*it))
 						std::cout << (*it) << std::endl;
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_l)
+			{
+				using namespace std::experimental::filesystem::v1;
+
+				//path dataset("south_santa_rosa");
+				//path dataset("santa_cruz_south");
+				path dataset("santa_cruz_basin");
+
+				auto basePath = current_path().append(path("data"));
+				std::cout << "Base study data directory: " << basePath << std::endl;
+
+				auto acceptsPath = path(basePath).append(path("accept"));
+				auto rejectsPath = path(basePath).append(path("reject"));
+
+				std::vector<SonarPointCloud*> tmpPointCloudCollection;
+
+				for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+				{
+					if (is_regular_file(*it))
+					{
+						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+						{
+							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
+							m_vpClouds.push_back(tmp);
+							m_pTableVolume->add(tmp);
+							tmpPointCloudCollection.push_back(tmp);
+							break;
+						}
+					}
+				}
+
+				for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
+				{
+					if (is_regular_file(*it))
+					{
+						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+						{
+							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
+							m_vpClouds.push_back(tmp);
+							m_pTableVolume->add(tmp);
+							tmpPointCloudCollection.push_back(tmp);
+							break;
+						}
+					}
+				}
+
+				refreshColorScale(m_pColorScalerTPU, tmpPointCloudCollection);
 			}
 
 			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
@@ -1124,13 +1160,35 @@ bool CMainApplication::editCleaningTableDesktop()
 
 			if (m_pLasso->checkPoint(glm::vec2(out)))
 			{
-				static_cast<SonarPointCloud*>(cloud)->markPoint(i, 1);
-				static_cast<SonarPointCloud*>(cloud)->setRefreshNeeded();
+				cloud->markPoint(i, 1);
 				hit = true;
 			}
 		}
+		if (hit)
+			cloud->setRefreshNeeded();
 	}
 	return hit;
+}
+
+void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
+{
+	if (clouds.size() == 0ull)
+		return;
+
+	auto depthCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinDepthTPU() < rhs->getMinDepthTPU(); };
+	auto posCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU(); };
+
+	float minDepthTPU = (*std::min_element(clouds.begin(), clouds.end(), depthCompareFunc))->getMinDepthTPU();
+	float maxDepthTPU = (*std::max_element(clouds.begin(), clouds.end(), depthCompareFunc))->getMaxDepthTPU();
+
+	float minPosTPU = (*std::min_element(clouds.begin(), clouds.end(), posCompareFunc))->getMinPositionalTPU();
+	float maxPosTPU = (*std::max_element(clouds.begin(), clouds.end(), posCompareFunc))->getMaxPositionalTPU();
+
+	colorScaler->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
+
+	// apply new color scale
+	for (auto &cloud : clouds)
+		cloud->resetAllMarks();
 }
 
 SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)

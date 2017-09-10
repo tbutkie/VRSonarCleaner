@@ -63,6 +63,8 @@ private:
 	void render();
 
 	bool editCleaningTableDesktop();
+
+	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 	
 	DataVolume* m_pWallVolume;
 	DataVolume* m_pTableVolume;
