@@ -223,6 +223,57 @@ glm::vec3 DataVolume::getDimensions()
 	return m_vec3Dimensions;
 }
 
+glm::dvec3 DataVolume::getMinDataBound()
+{
+	return m_dvec3DomainMinBound;
+}
+
+double DataVolume::getMinXDataBound()
+{
+	auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
+	return (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn))->getRawXMin();
+}
+
+double DataVolume::getMinYDataBound()
+{
+	auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
+	return (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn))->getRawYMin();
+}
+
+double DataVolume::getMinZDataBound()
+{
+	auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
+	return (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn))->getRawZMin();
+}
+
+glm::dvec3 DataVolume::getMaxDataBound()
+{
+	return m_dvec3DomainMaxBound;
+}
+
+double DataVolume::getMaxXDataBound()
+{
+	auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
+	return (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn))->getRawXMax();
+}
+
+double DataVolume::getMaxYDataBound()
+{
+	auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
+	return (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn))->getRawYMax();
+}
+
+double DataVolume::getMaxZDataBound()
+{
+	auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
+	return (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn))->getRawZMax();
+}
+
+glm::dvec3 DataVolume::getDataDimensions()
+{
+	return m_dvec3DomainDims;
+}
+
 void DataVolume::drawAxes(float size)
 {
 	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), 1.f);
@@ -247,44 +298,29 @@ void DataVolume::updateTransforms()
 		if (m_vpDatasets.size() == 0u)
 			return;
 
-		auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
-		auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
-		auto minX = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn))->getRawXMin();
-		auto maxX = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn))->getRawXMax();
+		m_dvec3DomainMinBound = glm::dvec3(getMinXDataBound(), getMinYDataBound(), getMinZDataBound());
+		m_dvec3DomainMaxBound = glm::dvec3(getMaxXDataBound(), getMaxYDataBound(), getMaxZDataBound());
+		m_dvec3DomainDims = glm::dvec3(m_dvec3DomainMaxBound - m_dvec3DomainMinBound);
 
-		auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
-		auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
-		auto minY = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn))->getRawYMin();
-		auto maxY = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn))->getRawYMax();
-
-		auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
-		auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
-		auto minZ = (*std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn))->getRawZMin();
-		auto maxZ = (*std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn))->getRawZMax();
-
-		glm::dvec3 domainMinBound(minX, minY, minZ);
-		glm::dvec3 domainMaxBound(maxX, maxY, maxZ);
-		glm::dvec3 domainDims(domainMaxBound - domainMinBound);
-
-		float domainAR = domainDims.x / domainDims.y; // for figuring out how to maintain correct scale in the data volume
+		float domainAR = m_dvec3DomainDims.x / m_dvec3DomainDims.y; // for figuring out how to maintain correct scale in the data volume
 		float volAR = m_vec3Dimensions.x / m_vec3Dimensions.y;
 
 		glm::vec3 domainAdjustedVolumeDims;
 
 		if (volAR > domainAR)
 		{
-			domainAdjustedVolumeDims.x = domainDims.x * (m_vec3Dimensions.y / domainDims.y);
+			domainAdjustedVolumeDims.x = m_dvec3DomainDims.x * (m_vec3Dimensions.y / m_dvec3DomainDims.y);
 			domainAdjustedVolumeDims.y = m_vec3Dimensions.y;
 		}
 		else
 		{
 			domainAdjustedVolumeDims.x = m_vec3Dimensions.x;
-			domainAdjustedVolumeDims.y = domainDims.y * (m_vec3Dimensions.x / domainDims.x);
+			domainAdjustedVolumeDims.y = m_dvec3DomainDims.y * (m_vec3Dimensions.x / m_dvec3DomainDims.x);
 		}
 
 		domainAdjustedVolumeDims.z = m_vec3Dimensions.z;
 		
-		glm::dvec3 combinedDataCenter = domainMinBound + domainDims * 0.5;
+		glm::dvec3 combinedDataCenter = m_dvec3DomainMinBound + m_dvec3DomainDims * 0.5;
 
 		m_mapDataTransformsPrevious = m_mapDataTransforms;
 
@@ -300,7 +336,7 @@ void DataVolume::updateTransforms()
 			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
 				handednessConversion[2][2] = -1.f;
 
-			glm::vec3 scalingFactors = domainAdjustedVolumeDims / glm::vec3(domainDims);
+			glm::vec3 scalingFactors = domainAdjustedVolumeDims / glm::vec3(m_dvec3DomainDims);
 
 			glm::mat4 dataTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation); // 4. Now apply the data volume transform
 			dataTransform *= glm::scale(scalingFactors); // 3. Scaling factors so data to fits in the data volume

@@ -11,8 +11,10 @@
 class Dataset
 {
 public:
-	Dataset(bool coord_sys_right_handed = true);
+	Dataset(std::string name, bool coord_sys_right_handed = true);
 	virtual ~Dataset();
+
+	std::string getName();
 
 	glm::dvec3 getRawMinBounds();
 	double getRawXMin();
@@ -65,6 +67,8 @@ private:
 	void update();
 
 private:
+	std::string m_strName;
+
 	glm::dvec3 m_dvec3RawMinBounds;
 	glm::dvec3 m_dvec3RawMaxBounds;
 	glm::dvec3 m_dvec3RawDimensions;

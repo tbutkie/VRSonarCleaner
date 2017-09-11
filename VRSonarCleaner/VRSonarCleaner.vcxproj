@@ -169,7 +169,6 @@
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="RenderModel.cpp" />
-    <ClCompile Include="CloudCollection.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="CoordinateScaler.cpp" />
@@ -210,7 +209,6 @@
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />
-    <ClInclude Include="CloudCollection.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorsAndSizes.h" />
     <ClInclude Include="ColorScaler.h" />

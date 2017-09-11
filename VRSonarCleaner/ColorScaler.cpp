@@ -1,7 +1,5 @@
 #include "ColorScaler.h"
 
-
-
 ColorScaler::ColorScaler()
 {
 	setToDefaults();
@@ -14,54 +12,72 @@ ColorScaler::~ColorScaler()
 
 void ColorScaler::setToDefaults()
 {
-	colorScale = 2;
-	colorScaleMinMaxSet = false;
-	minColorScaleValue = 0;
-	maxColorScaleValue = 1;
-	rangeColorScaleValue = 1;
+	m_ColorScaleMode = Mode::ColorScale;
 
-	biValueScale = 0;
-	biValueScaleMinMaxSet = false;
-	minVal1 = 0;
-	maxVal1 = 1;
-	rangeVal1 = 1;
-	minVal2 = 0;
-	maxVal2 = 1;
-	rangeVal2 = 1;
+	m_ColorMap = Rainbow;
+	m_bColorScaleMinMaxSet = false;
+	minColorScaleValue = 0.f;
+	maxColorScaleValue = 1.f;
+	rangeColorScaleValue = 1.f;
+
+	m_ColorMap_BiValue = RedBlue;
+	m_bBiValueScaleMinMaxSet = false;
+	minVal1 = 0.f;
+	maxVal1 = 1.f;
+	rangeVal1 = 1.f;
+	minVal2 = 0.f;
+	maxVal2 = 1.f;
+	rangeVal2 = 1.f;
 }
 
 
-void ColorScaler::setColorScale(int index)
+void ColorScaler::setColorMap(ColorMap colorMap)
 {
-	colorScale = index;
+	m_ColorMap = colorMap;
 }
 
-void ColorScaler::getScaledColor(float factor, float *r, float *g, float *b, int scale)
+void ColorScaler::getScaledColor(float factor, float *r, float *g, float *b, ColorMap colorMapEnum)
 {
-	if (scale == 0)
+	switch (colorMapEnum) {
+	case OrangeBrown:
 		getOrangeBrownScaledColor(factor, r, g, b);
-	else if (scale == 1)
+		break;
+	case BlueBanded:
 		getBandedBlueScaledColor(factor, r, g, b);
-	else  if (scale == 2)
+		break;
+	case Rainbow:
 		getRainbowScaledColor(factor, r, g, b);
-	else
+		break;
+	case RainbowBanded:
 		getBandedRainbowScaledColor(factor, r, g, b);
+		break;
+	default:
+		printf("Error: ColorMap %d\n", colorMapEnum);
+		break;
+	}
 }
 
 void ColorScaler::getScaledColor(float factor, float *r, float *g, float *b)
 {
-	if (colorScale == 0)
+	switch (m_ColorMap) {
+	case OrangeBrown:
 		getOrangeBrownScaledColor(factor, r, g, b);
-	else if (colorScale == 1)
+		break;
+	case BlueBanded:
 		getBandedBlueScaledColor(factor, r, g, b);
-	else if (colorScale == 2)
+		break;
+	case Rainbow:
 		getRainbowScaledColor(factor, r, g, b);
-	else
+		break;
+	case RainbowBanded:
 		getBandedRainbowScaledColor(factor, r, g, b);
-
+		break;
+	default:
+		break;
+	}
 }
 
-void ColorScaler::getScaledColorForValue(float value, float *r, float *g, float *b)
+void ColorScaler::getScaledColorForValue(double value, float *r, float *g, float *b)
 {
 	getScaledColor(getColorScaleFactor(value), r, g, b);
 }
@@ -282,13 +298,13 @@ void ColorScaler::getBandedBlueScaledColor(float factor, float *r, float *g, flo
 }
 
 
-void ColorScaler::submitMinMaxForColorScale(float minVal, float maxVal)
+void ColorScaler::submitMinMaxForColorScale(double minVal, double maxVal)
 {
-	if (!colorScaleMinMaxSet)
+	if (!m_bColorScaleMinMaxSet)
 	{
 		minColorScaleValue = minVal;
 		maxColorScaleValue = maxVal;
-		colorScaleMinMaxSet = true;
+		m_bColorScaleMinMaxSet = true;
 	}
 	else
 	{
@@ -301,7 +317,7 @@ void ColorScaler::submitMinMaxForColorScale(float minVal, float maxVal)
 	//printf("Min Max Color Depth is now: %f, %f\n", minColorScaleValue, maxColorScaleValue);
 }
 
-void ColorScaler::resetMinMaxForColorScale(float minVal, float maxVal)
+void ColorScaler::resetMinMaxForColorScale(double minVal, double maxVal)
 {
 	if (minVal < maxVal)
 	{
@@ -314,7 +330,7 @@ void ColorScaler::resetMinMaxForColorScale(float minVal, float maxVal)
 		maxColorScaleValue = minVal;
 	}
 	rangeColorScaleValue = maxColorScaleValue - minColorScaleValue;
-	colorScaleMinMaxSet = true;
+	m_bColorScaleMinMaxSet = true;
 }
 
 float ColorScaler::getColorScaleMin()
@@ -327,26 +343,26 @@ float ColorScaler::getColorScaleMax()
 	return maxColorScaleValue;
 }
 
-float ColorScaler::getColorScaleFactor(float depth)
+float ColorScaler::getColorScaleFactor(double value)
 {
-	if (depth <= minColorScaleValue)
+	if (value <= minColorScaleValue)
 		return 0;
-	else if (depth >= maxColorScaleValue)
+	else if (value >= maxColorScaleValue)
 		return 1;
 	else
-		return ((depth - minColorScaleValue) / rangeColorScaleValue);
+		return ((value - minColorScaleValue) / rangeColorScaleValue);
 }
 
 //BI VALUE SCALER:
-void ColorScaler::submitBiValueScaleMinMax(float MinVal1, float MaxVal1, float MinVal2, float MaxVal2)
+void ColorScaler::submitBiValueScaleMinMax(double MinVal1, double MaxVal1, double MinVal2, double MaxVal2)
 {
-	if (!biValueScaleMinMaxSet)
+	if (!m_bBiValueScaleMinMaxSet)
 	{
 		minVal1 = MinVal1;
 		maxVal1 = MaxVal1;
 		minVal2 = MinVal2;
 		maxVal2 = MaxVal2;
-		colorScaleMinMaxSet = true;
+		m_bBiValueScaleMinMaxSet = true;
 	}
 	else
 	{
@@ -361,10 +377,10 @@ void ColorScaler::submitBiValueScaleMinMax(float MinVal1, float MaxVal1, float M
 	}
 	rangeVal1 = maxVal1 - minVal1;
 	rangeVal2 = maxVal2 - minVal2;
-	biValueScaleMinMaxSet = true;
+	m_bBiValueScaleMinMaxSet = true;
 }
 
-void ColorScaler::resetBiValueScaleMinMax(float MinVal1, float MaxVal1, float MinVal2, float MaxVal2)
+void ColorScaler::resetBiValueScaleMinMax(double MinVal1, double MaxVal1, double MinVal2, double MaxVal2)
 {
 	if (MinVal1 < MaxVal1)
 	{
@@ -388,16 +404,16 @@ void ColorScaler::resetBiValueScaleMinMax(float MinVal1, float MaxVal1, float Mi
 	}
 	rangeVal1 = maxVal1 - minVal1;
 	rangeVal2 = maxVal2 - minVal2;
-	biValueScaleMinMaxSet = true;
+	m_bBiValueScaleMinMaxSet = true;
 }
 
 
-void ColorScaler::setBiValueScale(int scale)
+void ColorScaler::setBiValueColorMap(ColorMap_BiValued biValueColorMapEnum)
 {
-	biValueScale = scale;
+	m_ColorMap_BiValue = biValueColorMapEnum;
 }
 
-void ColorScaler::getBiValueScaledColor(float val1, float val2, float *r, float *g, float *b)
+void ColorScaler::getBiValueScaledColor(double val1, double val2, float *r, float *g, float *b)
 {
 	float factor1, factor2;
 	
@@ -415,79 +431,16 @@ void ColorScaler::getBiValueScaledColor(float val1, float val2, float *r, float 
 	else
 		factor2 = ((val2 - minVal2) / rangeVal2);
 
-	if (biValueScale == 0)
+	switch (m_ColorMap_BiValue)
+	{
+	case RedBlue:
 	{
 		*r = val1;
 		*g = 0;
 		*b = val2;
+		break;
 	}
-	else if (biValueScale == 1) //custom error
-	{
-		if (factor1 < 0.333)
-		{
-			if (factor2 < 0.333)
-			{
-				*r = 1.0;
-				*g = 1.0;
-				*b = 1.0;
-			}
-			else if (factor2 < 0.666)
-			{
-				*r = 1.0;
-				*g = 1.0;
-				*b = 0.65;
-			}
-			else
-			{
-				*r = 1.0;
-				*g = 0.75;
-				*b = 0.45;
-			}
-		}
-		else if (factor1 < 0.666)
-		{
-			if (factor2 < 0.333)
-			{
-				*r = 1.0;
-				*g = 0.85;
-				*b = 0.15;
-			}
-			else if (factor2 < 0.666)
-			{
-				*r = 1.0;
-				*g = 0.75;
-				*b = 0.25;
-			}
-			else
-			{
-				*r = 1.0;
-				*g = 0.50;
-				*b = 0.40;
-			}
-		}
-		else
-		{
-			if (factor2 < 0.333)
-			{
-				*r = 1.0;
-				*g = 0.50;
-				*b = 0.50;
-			}
-			else if (factor2 < 0.666)
-			{
-				*r = 1.0;
-				*g = 0.35;
-				*b = 0.35;
-			}
-			else
-			{
-				*r = 1.0;
-				*g = 0.15;
-				*b = 0.15;
-			}
-		}
-	}
-	else if (biValueScale == 2) //purple/green bimap
+	case PurpleGreen:
 	{
 		if (factor1 < 0.333)
 		{
@@ -552,8 +505,87 @@ void ColorScaler::getBiValueScaledColor(float val1, float val2, float *r, float 
 				*b = 0.68;
 			}
 		}
+		break;
 	}
+	case Custom:
+	{
+		if (factor1 < 0.333)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 1.0;
+				*b = 1.0;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 1.0;
+				*b = 0.65;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.75;
+				*b = 0.45;
+			}
+		}
+		else if (factor1 < 0.666)
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 0.85;
+				*b = 0.15;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 0.75;
+				*b = 0.25;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.50;
+				*b = 0.40;
+			}
+		}
+		else
+		{
+			if (factor2 < 0.333)
+			{
+				*r = 1.0;
+				*g = 0.50;
+				*b = 0.50;
+			}
+			else if (factor2 < 0.666)
+			{
+				*r = 1.0;
+				*g = 0.35;
+				*b = 0.35;
+			}
+			else
+			{
+				*r = 1.0;
+				*g = 0.15;
+				*b = 0.15;
+			}
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
 
+void ColorScaler::setColorMode(Mode mode)
+{
+	m_ColorScaleMode = mode;
+}
 
+ColorScaler::Mode ColorScaler::getColorMode()
+{
+	return m_ColorScaleMode;
 }
 

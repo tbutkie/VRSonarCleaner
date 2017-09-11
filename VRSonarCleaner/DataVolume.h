@@ -47,12 +47,23 @@ public:
 	void setDimensions(glm::vec3 newScale);
 	glm::vec3 getDimensions();
 
+	glm::dvec3 getMinDataBound();
+	glm::dvec3 getMaxDataBound();
+	glm::dvec3 getDataDimensions();
+
 	void drawAxes(float size = 1.f);
 
 	void update();
 
 protected:
 	void updateTransforms();
+	
+	double getMinXDataBound();
+	double getMinYDataBound();
+	double getMinZDataBound();
+	double getMaxXDataBound();
+	double getMaxYDataBound();
+	double getMaxZDataBound();
 
 	std::vector<Dataset*> m_vpDatasets;
 	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
@@ -67,6 +78,10 @@ protected:
 
 	glm::mat4 m_mat4VolumeTransform;         // Volume Position and Orientation Transform
 	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
+
+	glm::dvec3 m_dvec3DomainMinBound;
+	glm::dvec3 m_dvec3DomainMaxBound;
+	glm::dvec3 m_dvec3DomainDims;
 	
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed

@@ -51,9 +51,6 @@
     <ClCompile Include="ColorScaler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CloudCollection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TrackedDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -159,9 +156,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorScaler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CloudCollection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TrackedDevice.h">

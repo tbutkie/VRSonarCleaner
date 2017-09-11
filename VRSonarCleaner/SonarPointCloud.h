@@ -34,11 +34,9 @@ class SonarPointCloud : public Dataset
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
-		bool loadFromSonarTxt(std::string filename);
+		bool loadFromSonarTxt();
 
-		bool loadStudyData(std::string filename);
-
-		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
+		bool loadStudyData();
 
 		int colorScale;
 
@@ -60,13 +58,9 @@ class SonarPointCloud : public Dataset
 		float getMaxDepthTPU();
 		float getMinPositionalTPU();
 		float getMaxPositionalTPU();
-		
-		std::string getName();
-		void setName(std::string n);
 
 	private:
 		//variables
-		std::string m_strName;
 		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 
 		std::vector<glm::dvec3> m_vvec3RawPointsPositions;
@@ -94,6 +88,7 @@ class SonarPointCloud : public Dataset
 		GLuint m_glVAO, m_glVBO, m_glEBO;
 		GLuint m_glPreviewVAO;		
 
+		glm::vec3 getDefaultPointColor(unsigned int index);
 		void adjustPoints();
 		void createAndLoadBuffers();
 };

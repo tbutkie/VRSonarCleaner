@@ -3,7 +3,8 @@
 using namespace std::chrono_literals;
 
 FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
-	: m_fMinTime(-1.f)
+	: Dataset(filename)
+	, m_fMinTime(-1.f)
 	, m_fMaxTime(-1.f)
 	, m_bUsesZInsteadOfDepth(useZInsteadOfDepth)
 {

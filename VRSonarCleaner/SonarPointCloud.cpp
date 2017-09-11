@@ -5,7 +5,7 @@
 #include <limits>
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, bool studyfile)
-	: Dataset(false)
+	: Dataset(fileName, studyfile ? true : false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(20)
 	, m_bPointsAllocated(false)
@@ -15,14 +15,19 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, colorScale(2)
 	, colorScope(1) //0=global 1=dynamic
 	, m_fMinPositionalTPU(std::numeric_limits<float>::max())
-	, m_fMaxPositionalTPU(std::numeric_limits<float>::min())
+	, m_fMaxPositionalTPU(-std::numeric_limits<float>::max())
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
-	, m_fMaxDepthTPU(std::numeric_limits<float>::min())
+	, m_fMaxDepthTPU(-std::numeric_limits<float>::max())
 {
 	if (studyfile)
-		loadStudyData(fileName);
+	{
+		
+		loadStudyData();
+	}
 	else
-		loadFromSonarTxt(fileName);
+	{
+		loadFromSonarTxt();
+	}
 }
 
 SonarPointCloud::~SonarPointCloud()
@@ -109,14 +114,12 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 }
 
 
-bool SonarPointCloud::loadFromSonarTxt(std::string filename)
+bool SonarPointCloud::loadFromSonarTxt()
 {
-	printf("Loading Point Cloud from %s\n", filename.c_str());
-
-	m_strName = filename;
+	printf("Loading Point Cloud from %s\n", getName().c_str());
 		
 	FILE *file;
-	file = fopen(filename.c_str(), "r");
+	file = fopen(getName().c_str(), "r");
 	if (file == NULL)
 	{
 		printf("ERROR reading file in %s\n", __FUNCTION__);
@@ -200,16 +203,14 @@ bool SonarPointCloud::loadFromSonarTxt(std::string filename)
 	return true;
 }
 
-bool SonarPointCloud::loadStudyData(std::string filename)
+bool SonarPointCloud::loadStudyData()
 {
-	printf("Loading Study Point Cloud from %s\n", filename.c_str());
+	printf("Loading Study Point Cloud from %s\n", getName().c_str());
 
-	m_strName = filename;
-
-	bool rejectedDataset = filename.find("reject") != std::string::npos;
+	bool rejectedDataset = getName().find("reject") != std::string::npos;
 
 	FILE *file;
-	file = fopen(filename.c_str(), "r");
+	file = fopen(getName().c_str(), "r");
 	if (file == NULL)
 	{
 		printf("ERROR reading file in %s\n", __FUNCTION__);
@@ -266,6 +267,7 @@ bool SonarPointCloud::loadStudyData(std::string filename)
 			float conf = rejectedDataset ? 1.f : 0.f;
 			setUncertaintyPoint(index++, x, y, depth, conf, conf);
 			averageDepth += depth;
+			assert(depth < 0.);
 		}
 		averageDepth /= m_nPoints;
 
@@ -287,49 +289,6 @@ bool SonarPointCloud::loadStudyData(std::string filename)
 
 		createAndLoadBuffers();
 	}
-
-	return true;
-}
-
-bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, int numPoints)
-{
-	m_strName = "fakeCloud";
-	
-	initPoints(numPoints);
-
-	int index = 0;
-	float randX, randY, randDepth;
-	srand(149124);
-	for (int i = 0; i < numPoints; i++)
-	{
-		if (i == 0)
-		{
-			randX = 0;
-			randY = 0;
-			randDepth = 0;
-		}
-		else if (i == 1)
-		{
-			randX = xSize;
-			randY = ySize;
-			randDepth = zSize;
-		}
-		else if (i < numPoints*0.40)
-		{
-			randX = xSize*((((float)(rand() % 100)) + 450) / 1000);
-			randY = ySize*(((float)(rand() % 1000)) / 1000);
-			randDepth = zSize*(((float)(rand() % 1000)) / 1000);
-		}
-		else
-		{
-			randX = xSize*(((float)(rand() % 1000)) / 1000);
-			randY = ySize*(((float)(rand() % 1000)) / 1000);
-			randDepth = zSize*((((float)(rand() % 100)) + 450) / 1000);
-		}
-		setUncertaintyPoint(i, randX, randY, randDepth, 0.0, 0.0);
-	}
-
-	setRefreshNeeded();
 
 	return true;
 }
@@ -425,14 +384,25 @@ float SonarPointCloud::getMaxPositionalTPU()
 	return m_fMaxPositionalTPU;
 }
 
-std::string SonarPointCloud::getName()
+glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 {
-	return m_strName;
-}
-
-void SonarPointCloud::setName(std::string name)
-{
-	m_strName = name;
+	glm::vec3 col;
+	switch (m_pColorScaler->getColorMode())
+	{
+	case ColorScaler::Mode::ColorScale:
+	{
+		m_pColorScaler->getScaledColorForValue(m_vvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
+		break;
+	}
+	case ColorScaler::Mode::ColorScale_BiValue:
+	{
+		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &col.r, &col.g, &col.b);
+		break;
+	}
+	default:
+		break;
+	}
+	return col;
 }
 
 void SonarPointCloud::adjustPoints()
@@ -488,34 +458,28 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 {
 	m_vuiPointsMarks[index] = code;	
 
-	float r, g, b;
+	glm::vec3 color;
 	float a = 1.f;
 
 	switch (code)
 	{
 	case 0:
-		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
+		color = getDefaultPointColor(index);
 		break;
 	case 1:
 		a = 0.f;
 		break;
 	case 2:
-		r = 1.0;
-		g = 0.0;
-		b = 0.0;
+		color = glm::vec3(1.f, 0.f, 0.f);
 		break;
 	case 3:
-		r = 0.0;
-		g = 1.0;
-		b = 0.0;
+		color = glm::vec3(0.f, 1.f, 0.f);
 		break;
 	case 4:
-		r = 0.0;
-		g = 0.0;
-		b = 1.0;
+		color = glm::vec3(0.f, 0.f, 1.f);
 		break;
 	default: // if >= 100
-		//m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &r, &g, &b);
+		color = getDefaultPointColor(index);
 		//r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		//g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		//b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
@@ -523,7 +487,7 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 		break;
 	}
 
-	m_vvec4PointsColors[index] = glm::vec4(r, g, b, a);
+	m_vvec4PointsColors[index] = glm::vec4(color, a);
 
 	setRefreshNeeded();
 }

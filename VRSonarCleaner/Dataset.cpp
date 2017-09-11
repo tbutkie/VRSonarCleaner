@@ -2,19 +2,25 @@
 
 #include <limits>
 
-Dataset::Dataset(bool coord_sys_right_handed)
-	: m_bRHCoordSys_input(coord_sys_right_handed)
+Dataset::Dataset(std::string name, bool coord_sys_right_handed)
+	: m_strName(name)
+	, m_bRHCoordSys_input(coord_sys_right_handed)
 	, m_bRHCoordSys_output(true)
 	, m_bNeedsUpdate(true)
 	, m_dvec3RawMinBounds(glm::dvec3(std::numeric_limits<double>::max()))
-	, m_dvec3RawMaxBounds(glm::dvec3(std::numeric_limits<double>::min()))
+	, m_dvec3RawMaxBounds(glm::dvec3(-std::numeric_limits<double>::max()))
 	, m_vec3AdjustedMinBounds(glm::vec3(std::numeric_limits<float>::max()))
-	, m_vec3AdjustedMaxBounds(glm::vec3(std::numeric_limits<float>::min()))
+	, m_vec3AdjustedMaxBounds(glm::vec3(-std::numeric_limits<float>::max()))
 {
 }
 
 Dataset::~Dataset()
 {
+}
+
+std::string Dataset::getName()
+{
+	return m_strName;
 }
 
 void Dataset::setRawMinBounds(glm::dvec3 minBounds)
