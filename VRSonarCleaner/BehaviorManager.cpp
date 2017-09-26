@@ -1,7 +1,5 @@
 #include "BehaviorManager.h"
 
-#include "BehaviorList.h"
-
 BehaviorManager::BehaviorManager()
 {
 }
@@ -20,13 +18,9 @@ BehaviorManager::~BehaviorManager()
 
 void BehaviorManager::init()
 {
-	//addBehavior("Advection Probe", new AdvectionProbe());
-	//addBehavior("Dye Probe", new FlowProbe());
-	//addBehavior("Data Volume Manipulation", new ManipulateDataVolumeBehavior());
-	//addBehavior("Point Cleaning Probe", new PointCleanProbe());
 }
 
-bool BehaviorManager::addBehavior(std::string name, BehaviorBase * pBehavior)
+void BehaviorManager::addBehavior(std::string name, BehaviorBase * pBehavior)
 {
 	std::map<std::string, BehaviorBase*>::iterator it = m_mappBehaviors.find(name);
 	if (it != m_mappBehaviors.end())
@@ -39,8 +33,6 @@ bool BehaviorManager::addBehavior(std::string name, BehaviorBase * pBehavior)
 		printf("%s: Adding behavior \"%s\"\n", __FUNCTION__, name);
 
 	m_mappBehaviors[name] = pBehavior;
-
-	return true;
 }
 
 BehaviorBase * BehaviorManager::getBehavior(std::string name)

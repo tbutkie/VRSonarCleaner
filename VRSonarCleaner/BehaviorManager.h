@@ -17,13 +17,13 @@ public:
 	void update();
 	void draw();
 
+	void addBehavior(std::string name, BehaviorBase* pBehavior);
+	BehaviorBase* getBehavior(std::string name);
+	bool removeBehavior(std::string name);
+
 private:
 	BehaviorManager();
 	~BehaviorManager();
-
-	bool addBehavior(std::string name, BehaviorBase* pBehavior);
-	BehaviorBase* getBehavior(std::string name);
-	bool removeBehavior(std::string name);
 
 	std::map<std::string, BehaviorBase*> m_mappBehaviors;
 

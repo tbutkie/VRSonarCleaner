@@ -2,6 +2,7 @@
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
 
+#include "BehaviorManager.h"
 #include "ManipulateDataVolumeBehavior.h"
 #include "FlowProbe.h"
 #include "AdvectionProbe.h"
@@ -15,18 +16,11 @@
 #include <filesystem>
 
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
-ManipulateDataVolumeBehavior*	g_pManipulateDataVolumeBehavior = NULL;
-FlowProbe*						g_pFlowProbeBehavior = NULL;
-AdvectionProbe*					g_pAdvectionProbeBehavior = NULL;
-PointCleanProbe*				g_pPointCleanProbeBehavior = NULL;
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 1000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
-
-
-std::vector<BehaviorBase*> g_vpBehaviors;
 
 //-----------------------------------------------------------------------------
 // Purpose: OpenGL Debug Callback Function
@@ -272,6 +266,8 @@ bool CMainApplication::init()
 		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_vec3BallCenter = m_pFlowVolume->getPosition();
 	}
+
+	BehaviorManager::getInstance().init();
 
 	return true;
 }
@@ -567,14 +563,14 @@ bool CMainApplication::HandleInput()
 				{
 					m_bDemoMode = !m_bDemoMode;
 
-					if (g_pAdvectionProbeBehavior)					
-						m_bDemoMode ? g_pAdvectionProbeBehavior->activateDemoMode() : g_pAdvectionProbeBehavior->deactivateDemoMode();
+					if (BehaviorManager::getInstance().getBehavior("Advection Probe"))				
+						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->deactivateDemoMode();
 
-					if (g_pFlowProbeBehavior)
-						m_bDemoMode ? g_pFlowProbeBehavior->activateDemoMode() : g_pFlowProbeBehavior->deactivateDemoMode();
+					if (BehaviorManager::getInstance().getBehavior("Flow Probe"))
+						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Flow Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->deactivateDemoMode();
 
-					if (g_pPointCleanProbeBehavior)
-						m_bDemoMode ? g_pPointCleanProbeBehavior->activateDemoMode() : g_pPointCleanProbeBehavior->deactivateDemoMode();					
+					if (BehaviorManager::getInstance().getBehavior("Point Clean Probe"))
+						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Point Clean Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Point Clean Probe"))->deactivateDemoMode();
 				}
 			}
 
@@ -791,41 +787,31 @@ void CMainApplication::update()
 	{
 		if (m_bFlowVis)
 		{
-			if (m_pTDM->getPrimaryController() && !g_pFlowProbeBehavior)
-			{
-				g_pFlowProbeBehavior = new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume);
-				g_vpBehaviors.push_back(g_pFlowProbeBehavior);
-			}
-
-			if (m_pTDM->getSecondaryController() && !g_pAdvectionProbeBehavior)
-			{
-				g_pAdvectionProbeBehavior = new AdvectionProbe(m_pTDM->getSecondaryController(), m_pFlowVolume);
-				g_vpBehaviors.push_back(g_pAdvectionProbeBehavior);
-			}
+			if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Flow Probe"))
+				BehaviorManager::getInstance().addBehavior("Flow Probe", new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
+			
+			if (m_pTDM->getSecondaryController() && !BehaviorManager::getInstance().getBehavior("Advection Probe"))
+				BehaviorManager::getInstance().addBehavior("Advection Probe", new AdvectionProbe(m_pTDM->getSecondaryController(), m_pFlowVolume));
 		}
 
 		if (m_bSonarCleaning)
 		{
-			if (m_pTDM->getPrimaryController() && !g_pPointCleanProbeBehavior)
-			{
-				g_pPointCleanProbeBehavior = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD);
-				g_vpBehaviors.push_back(g_pPointCleanProbeBehavior);
-			}
+			if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Point Clean Probe"))
+				BehaviorManager::getInstance().addBehavior("Point Clean Probe", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD));
+
 		}
 
 		// Attach grip & scale behavior when both controllers available
-		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !g_pManipulateDataVolumeBehavior)
+		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Data Volume Manipulate"))
 		{
 			if (m_bSonarCleaning)
-				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume);
+				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume));
 			else if (m_bFlowVis)
-				g_pManipulateDataVolumeBehavior = new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pFlowVolume);
-			g_vpBehaviors.push_back(g_pManipulateDataVolumeBehavior);
+				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pFlowVolume));
 		}
-
-		for (auto const &b : g_vpBehaviors)
-			b->update();
 	}
+
+	BehaviorManager::getInstance().update();
 
 	if (m_bUseDesktop)
 	{
@@ -859,6 +845,8 @@ void CMainApplication::update()
 
 void CMainApplication::drawScene()
 {
+	BehaviorManager::getInstance().draw();
+
 	if (m_bSonarCleaning)
 	{
 		if (m_bUseVR)
@@ -941,9 +929,6 @@ void CMainApplication::drawScene()
 
 		m_pFlowVolume->draw();
 	}
-
-	for (auto const &b : g_vpBehaviors)
-		b->draw();
 
 	if (m_bUseVR)
 	{
