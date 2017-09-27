@@ -132,6 +132,9 @@
     <ClCompile Include="Dataset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SelectAreaBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -253,6 +256,9 @@
     </ClInclude>
     <ClInclude Include="Dataset.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SelectAreaBehavior.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

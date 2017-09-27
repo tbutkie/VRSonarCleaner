@@ -188,6 +188,7 @@
     <ClCompile Include="LightingSystem.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SelectAreaBehavior.cpp" />
     <ClCompile Include="shaderset.cpp" />
     <ClCompile Include="SingleControllerBehavior.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
@@ -230,6 +231,7 @@
     <ClInclude Include="LightingSystem.h" />
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SelectAreaBehavior.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SingleControllerBehavior.h" />

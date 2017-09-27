@@ -4,6 +4,7 @@
 
 #include "BehaviorManager.h"
 #include "ManipulateDataVolumeBehavior.h"
+#include "SelectAreaBehavior.h"
 #include "FlowProbe.h"
 #include "AdvectionProbe.h"
 #include "PointCleanProbe.h"
@@ -805,7 +806,10 @@ void CMainApplication::update()
 		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Data Volume Manipulate"))
 		{
 			if (m_bSonarCleaning)
+			{
+				BehaviorManager::getInstance().addBehavior("Select Area", new SelectAreaBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pWallVolume));
 				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume));
+			}
 			else if (m_bFlowVis)
 				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pFlowVolume));
 		}
