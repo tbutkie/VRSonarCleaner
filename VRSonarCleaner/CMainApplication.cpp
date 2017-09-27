@@ -809,7 +809,7 @@ void CMainApplication::update()
 		{
 			if (m_bSonarCleaning)
 			{
-				BehaviorManager::getInstance().addBehavior("Select Area", new SelectAreaBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pWallVolume));
+				BehaviorManager::getInstance().addBehavior("Select Area", new SelectAreaBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pWallVolume, m_pTableVolume));
 				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume));
 			}
 			else if (m_bFlowVis)

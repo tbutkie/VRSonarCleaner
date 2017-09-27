@@ -29,7 +29,9 @@ public:
 
 	glm::vec3 getOriginalPosition();
 	glm::quat getOriginalOrientation();
-	
+
+	glm::dvec3 convertToRawDomainCoords(glm::vec3 worldPos);
+	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
 	glm::vec3 convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos);
 	bool isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ = true);
@@ -79,6 +81,12 @@ protected:
 
 	glm::mat4 m_mat4VolumeTransform;         // Volume Position and Orientation Transform
 	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
+
+	glm::dmat4 m_dmat4RawDomainToVolumeTransform;		 // The transform from the entire raw data domain to the data volume
+	glm::dmat4 m_dmat4RawDomainToVolumeTransformPrevious; // Previous transform from the entire raw data domain to the data volume
+
+	glm::mat4 m_mat4AdjustedDomainToVolumeTransform;		 // The transform from the entire adjusted data domain to the data volume
+	glm::mat4 m_mat4AdjustedDomainToVolumeTransformPrevious; // Previous transform from the entire adjusted data domain to the data volume
 
 	glm::dvec3 m_dvec3DomainMinBound;
 	glm::dvec3 m_dvec3DomainMaxBound;
