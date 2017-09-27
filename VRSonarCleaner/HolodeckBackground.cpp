@@ -45,8 +45,6 @@ GLuint HolodeckBackground::getVertexCount()
 
 void HolodeckBackground::draw()
 {
-	//DebugDrawer::getInstance().setTransformDefault();
-
 	glm::vec3 majorGridColor(0.15f, 0.21f, 0.31f);
 	glm::vec3 minorGridColor(0.23f, 0.29f, 0.39f);
 

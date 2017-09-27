@@ -17,6 +17,15 @@ public:
 private:
 	DataVolume* m_pDataVolume;
 
+	glm::vec3 m_vec3MinBound;
+	glm::vec3 m_vec3MaxBound;
+
+	bool m_bSelectingArea;
+	float m_fDistanceToPlane;
+	glm::vec3 m_vec3LocationOnPlane;
+
+	glm::vec3 m_vec3CursorSize;
+
 private:
 	void receiveEvent(const int event, void* payloadData);
 };

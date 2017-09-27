@@ -61,6 +61,30 @@ glm::vec3 DataVolume::convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos)
 	return glm::vec3(getCurrentDataTransform(dataset) * glm::vec4(dataPos, 1.f));
 }
 
+bool DataVolume::isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ)
+{
+	for (auto &ds : m_vpDatasets)
+	{
+		glm::vec3 ptXform(glm::inverse(getCurrentDataTransform(ds)) * glm::vec4(worldPt, 1.f));
+
+		if (ptXform.x >= ds->getAdjustedMinBounds().x && ptXform.x <= ds->getAdjustedMaxBounds().x &&
+			ptXform.y >= ds->getAdjustedMinBounds().y && ptXform.y <= ds->getAdjustedMaxBounds().y)
+		{
+			if (checkZ)
+			{
+				if (ptXform.z >= ds->getAdjustedMinBounds().z && ptXform.z <= ds->getAdjustedMaxBounds().z)
+					return true;
+			}
+			else
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void DataVolume::drawBBox(glm::vec4 color, float padPct)
 {
 	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));

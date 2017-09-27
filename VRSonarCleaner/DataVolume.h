@@ -32,6 +32,7 @@ public:
 	
 	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
 	glm::vec3 convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos);
+	bool isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ = true);
 	
 	glm::mat4 getCurrentDataTransform(Dataset* dataset);
 	glm::mat4 getLastDataTransform(Dataset* dataset);
