@@ -30,7 +30,7 @@ void BehaviorManager::addBehavior(std::string name, BehaviorBase * pBehavior)
 		it->second = NULL;
 	}
 	else
-		printf("%s: Adding behavior \"%s\"\n", __FUNCTION__, name);
+		printf("%s: Adding behavior \"%s\"\n", __FUNCTION__, name.c_str());
 
 	m_mappBehaviors[name] = pBehavior;
 }

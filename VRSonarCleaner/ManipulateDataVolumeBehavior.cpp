@@ -4,14 +4,12 @@
 
 ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume)
 	: DualControllerBehavior(gripController, scaleController)
-	, m_pGripController(gripController)
-	, m_pScaleController(scaleController)
 	, m_pDataVolume(dataVolume)
+	, m_bPreGripping(false)
 	, m_bGripping(false)
 	, m_bScaling(false)
 	, m_bRotationInProgress(false)
 {
-	scaleController->attach(this);
 }
 
 
@@ -26,6 +24,11 @@ void ManipulateDataVolumeBehavior::update()
 		float currentDist = controllerDistance();
 		float delta = currentDist - m_fInitialDistance;
 		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
+	}
+
+	if (m_bPreGripping)
+	{
+		preRotation(m_pPrimaryController->getTriggerPullAmount());
 	}
 	
 	if (m_bGripping)
@@ -42,11 +45,33 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 {
 	switch (event)
 	{
+	case BroadcastSystem::EVENT::VIVE_TRIGGER_ENGAGE:
+	{
+		BroadcastSystem::Payload::Trigger* payload;
+		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
+		if (payload->m_pSelf == m_pPrimaryController)
+		{
+			m_bPreGripping = true;
+		}
+
+		break;
+	}
+	case BroadcastSystem::EVENT::VIVE_TRIGGER_DISENGAGE:
+	{
+		BroadcastSystem::Payload::Trigger* payload;
+		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
+		if (payload->m_pSelf == m_pPrimaryController)
+		{
+			m_bPreGripping = false;
+		}
+
+		break;
+	}
 	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
 	{
 		BroadcastSystem::Payload::Trigger* payload;
 		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pGripController)
+		if (payload->m_pSelf == m_pPrimaryController)
 		{
 			startRotation();
 			m_bGripping = true;
@@ -58,7 +83,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 	{
 		BroadcastSystem::Payload::Trigger* payload;
 		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pGripController)
+		if (payload->m_pSelf == m_pPrimaryController)
 		{
 			endRotation();
 			m_bGripping = false;
@@ -72,8 +97,8 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 		ViveController* payload;
 		memcpy(&payload, &payloadData, sizeof(ViveController*));
 
-		if (payload == m_pGripController && m_pScaleController->isGripButtonPressed() ||
-			payload == m_pScaleController && m_pGripController->isGripButtonPressed())
+		if (payload == m_pPrimaryController && m_pSecondaryController->isGripButtonPressed() ||
+			payload == m_pSecondaryController && m_pPrimaryController->isGripButtonPressed())
 		{
 			m_bScaling = true;
 
@@ -100,7 +125,7 @@ void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadD
 
 float ManipulateDataVolumeBehavior::controllerDistance()
 {
-	return glm::length(m_pGripController->getDeviceToWorldTransform()[3] - m_pScaleController->getDeviceToWorldTransform()[3]);
+	return glm::length(m_pPrimaryController->getDeviceToWorldTransform()[3] - m_pSecondaryController->getDeviceToWorldTransform()[3]);
 }
 
 
@@ -123,20 +148,37 @@ void ManipulateDataVolumeBehavior::continueRotation()
 
 	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
 
-	m_pDataVolume->setPosition(glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform)[3]));
-	m_pDataVolume->setOrientation(glm::quat_cast(mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform));
+	glm::mat4 newVolTrans = mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform;
+	glm::vec3 newVolPos((mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform)[3]);
 
-	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(
-		glm::vec3(m_mat4ControllerPoseAtRotationStart[3]),
-		glm::vec3(m_mat4DataVolumePoseAtRotationStart[3]),
-		glm::vec4(0.f, 1.f, 0.f, 1.f)
-	);
-	DebugDrawer::getInstance().drawLine(
-		glm::vec3(mat4ControllerPoseCurrent[3]), 
-		glm::vec3(m_pDataVolume->getCurrentVolumeTransform()[3]),
-		glm::vec4(1.f, 0.f, 0.f, 1.f)
-	);
+	m_pDataVolume->setPosition(newVolPos);
+	m_pDataVolume->setOrientation(glm::quat_cast(newVolTrans));
+
+	float cylThickness = 0.001f;
+
+	glm::vec4 wStart = m_mat4DataVolumePoseAtRotationStart[3] - m_mat4ControllerPoseAtRotationStart[3];
+	glm::vec4 uStart = glm::vec4(glm::cross(glm::vec3(0.f, 1.f, 0.f), glm::normalize(glm::vec3(wStart))), 0.f);
+	glm::vec4 vStart = glm::vec4(glm::cross(glm::normalize(glm::vec3(wStart)), glm::vec3(uStart)), 0.f);
+
+	glm::mat4 transStart;
+	transStart[0] = uStart * cylThickness;
+	transStart[1] = vStart * cylThickness;
+	transStart[2] = wStart;
+	transStart[3] = m_mat4ControllerPoseAtRotationStart[3];
+
+	Renderer::getInstance().drawPrimitive("cylinder", transStart, glm::vec4(0.f, 1.f, 0.f, 0.5f), glm::vec4(1.f), 32.f);
+
+	glm::vec4 wCurrent = glm::vec4(newVolPos, 1.f) - mat4ControllerPoseCurrent[3];
+	glm::vec4 uCurrent = glm::vec4(glm::cross(glm::vec3(0.f, 1.f, 0.f), glm::normalize(glm::vec3(wCurrent))), 0.f);
+	glm::vec4 vCurrent = glm::vec4(glm::cross(glm::normalize(glm::vec3(wCurrent)), glm::vec3(uCurrent)), 0.f);
+
+	glm::mat4 transCurrent;
+	transCurrent[0] = uCurrent * cylThickness;
+	transCurrent[1] = vCurrent * cylThickness;
+	transCurrent[2] = wCurrent;
+	transCurrent[3] = mat4ControllerPoseCurrent[3];
+
+	Renderer::getInstance().drawPrimitive("cylinder", transCurrent, glm::vec4(1.f, 0.f, 0.f, 0.5f), glm::vec4(1.f), 32.f);
 }
 
 void ManipulateDataVolumeBehavior::endRotation()
@@ -148,4 +190,23 @@ void ManipulateDataVolumeBehavior::endRotation()
 bool ManipulateDataVolumeBehavior::isBeingRotated()
 {
 	return m_bRotationInProgress;
+}
+
+void ManipulateDataVolumeBehavior::preRotation(float ratio)
+{
+	float cylThickness = 0.01f * (1.f - ratio);
+
+	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
+	
+	glm::vec4 wCurrent = glm::vec4(m_pDataVolume->getPosition(), 1.f) - mat4ControllerPoseCurrent[3];
+	glm::vec4 uCurrent = glm::vec4(glm::cross(glm::vec3(0.f, 1.f, 0.f), glm::normalize(glm::vec3(wCurrent))), 0.f);
+	glm::vec4 vCurrent = glm::vec4(glm::cross(glm::normalize(glm::vec3(wCurrent)), glm::vec3(uCurrent)), 0.f);
+
+	glm::mat4 transCurrent;
+	transCurrent[0] = uCurrent * cylThickness;
+	transCurrent[1] = vCurrent * cylThickness;
+	transCurrent[2] = wCurrent * ratio;
+	transCurrent[3] = mat4ControllerPoseCurrent[3];
+
+	Renderer::getInstance().drawPrimitive("cylinder", transCurrent, glm::vec4(1.f, 1.f, 1.f, 0.5f), glm::vec4(1.f), 32.f);
 }

@@ -16,9 +16,8 @@ public:
 
 private:
 	DataVolume* m_pDataVolume;
-	ViveController* m_pGripController;
-	ViveController* m_pScaleController;
 
+	bool m_bPreGripping;
 	bool m_bGripping;
 	bool m_bScaling;
 	float m_fInitialDistance;
@@ -38,5 +37,7 @@ private:
 	void continueRotation();
 	void endRotation();
 	bool isBeingRotated();
+
+	void preRotation(float ratio);
 };
 

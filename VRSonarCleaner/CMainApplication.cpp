@@ -437,6 +437,8 @@ void CMainApplication::Shutdown()
 			SDL_DestroyWindow(m_pVRCompanionWindow);
 			m_pVRCompanionWindow = NULL;
 		}
+		
+
 	}
 
 	fclose(stdout);
