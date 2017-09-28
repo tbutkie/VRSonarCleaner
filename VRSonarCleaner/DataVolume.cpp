@@ -14,6 +14,7 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_qOriginalOrientation(orientation)
 	, m_vec3OriginalDimensions(dimensions)
 	, m_bFirstRun(true)
+	, m_bUseCustomBounds(false)
 {
 	updateTransforms();
 }
@@ -73,22 +74,19 @@ glm::vec3 DataVolume::convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos)
 
 bool DataVolume::isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ)
 {
-	for (auto &ds : m_vpDatasets)
-	{
-		glm::vec3 ptXform(glm::inverse(getCurrentDataTransform(ds)) * glm::vec4(worldPt, 1.f));
+	glm::dvec3 ptXform(glm::inverse(m_dmat4RawDomainToVolumeTransform) * glm::dvec4(worldPt, 1.));
 
-		if (ptXform.x >= ds->getAdjustedMinBounds().x && ptXform.x <= ds->getAdjustedMaxBounds().x &&
-			ptXform.y >= ds->getAdjustedMinBounds().y && ptXform.y <= ds->getAdjustedMaxBounds().y)
+	if (ptXform.x >= getMinXDataBound() && ptXform.x <= getMaxXDataBound() &&
+		ptXform.y >= getMinYDataBound() && ptXform.y <= getMaxYDataBound())
+	{
+		if (checkZ)
 		{
-			if (checkZ)
-			{
-				if (ptXform.z >= ds->getAdjustedMinBounds().z && ptXform.z <= ds->getAdjustedMaxBounds().z)
-					return true;
-			}
-			else
-			{
+			if (ptXform.z >= getMinZDataBound() && ptXform.z <= getMaxZDataBound())
 				return true;
-			}
+		}
+		else
+		{
+			return true;
 		}
 	}
 
@@ -206,12 +204,12 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 
 glm::mat4 DataVolume::getCurrentDataTransform(Dataset* dataset)
 {
-	return m_mapDataTransforms[dataset];
+	return m_bUseCustomBounds ? m_mapCustomDataTransforms[dataset] : m_mapDataTransforms[dataset];
 }
 
 glm::mat4 DataVolume::getLastDataTransform(Dataset* dataset)
 {
-	return m_mapDataTransformsPrevious[dataset];
+	return m_bUseCustomBounds ? m_mapCustomDataTransformsPrevious[dataset] : m_mapDataTransformsPrevious[dataset];
 }
 
 glm::mat4 DataVolume::getCurrentVolumeTransform()
@@ -308,6 +306,34 @@ glm::dvec3 DataVolume::getDataDimensions()
 	return m_dvec3DomainDims;
 }
 
+void DataVolume::setCustomBounds(glm::dvec3 minBound, glm::dvec3 maxBound)
+{
+	m_dvec3CustomDomainMinBound = minBound;
+	m_dvec3CustomDomainMaxBound = maxBound;
+	m_dvec3CustomDomainDims = maxBound - minBound;
+	m_bDirty = true;
+}
+
+glm::dvec3 DataVolume::getCustomMinBound()
+{
+	return m_dvec3CustomDomainMinBound;
+}
+
+glm::dvec3 DataVolume::getCustomMaxBound()
+{
+	return m_dvec3CustomDomainMaxBound;
+}
+
+void DataVolume::useCustomBounds(bool yesno)
+{
+	m_bUseCustomBounds = yesno;
+}
+
+bool DataVolume::getUseCustomBounds()
+{
+	return m_bUseCustomBounds;
+}
+
 void DataVolume::drawAxes(float size)
 {
 	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), 1.f);
@@ -360,25 +386,32 @@ void DataVolume::updateTransforms()
 		m_dvec3DomainDims = glm::dvec3(m_dvec3DomainMaxBound - m_dvec3DomainMinBound);
 
 		glm::vec3 domainAdjustedVolumeDims = getAspectAdjustedDimensions(m_dvec3DomainDims, m_vec3Dimensions);
-		
 		glm::dvec3 combinedDataCenter = m_dvec3DomainMinBound + m_dvec3DomainDims * 0.5;
-
 		m_mapDataTransformsPrevious = m_mapDataTransforms;
-
 		glm::vec3 scalingFactors = domainAdjustedVolumeDims / glm::vec3(m_dvec3DomainDims);
-
-		m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
-		m_dmat4RawDomainToVolumeTransform = glm::translate(glm::dmat4(), glm::dvec3(m_vec3Position)) * glm::dmat4(glm::mat4(m_qOrientation)) * glm::scale(glm::dvec3(scalingFactors)) * glm::translate(glm::dmat4(), -combinedDataCenter);
-
-		// Apply data volume transform and aspect-corrected scaling do data fits inside volume
+		// Apply data volume transform and aspect-corrected scaling so data fits inside volume
 		m_mat4AdjustedDomainToVolumeTransformPrevious = m_mat4AdjustedDomainToVolumeTransform;
 		m_mat4AdjustedDomainToVolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(scalingFactors);
+
+
+		glm::vec3 domainCustomAdjustedVolumeDims = getAspectAdjustedDimensions(m_dvec3CustomDomainDims, m_vec3Dimensions);
+		glm::dvec3 combinedCustomDataCenter = m_dvec3CustomDomainMinBound + m_dvec3CustomDomainDims * 0.5;
+		m_mapCustomDataTransformsPrevious = m_mapCustomDataTransforms;
+		glm::vec3 customScalingFactors = domainCustomAdjustedVolumeDims / glm::vec3(m_dvec3CustomDomainDims);
+		glm::mat4 customDomainToVolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(customScalingFactors);
+
+
+		// calculate the transform from the entire raw domain to the world space
+		m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
+		m_dmat4RawDomainToVolumeTransform = glm::translate(glm::dmat4(), glm::dvec3(m_vec3Position)) * glm::dmat4(glm::mat4(m_qOrientation)) * glm::scale(glm::dvec3(scalingFactors)) * glm::translate(glm::dmat4(), -combinedDataCenter);
+		
 
 		for (auto &dataset : m_vpDatasets)
 		{
 			glm::dvec3 dataCenterRaw = dataset->getRawMinBounds() + dataset->getRawDimensions() * 0.5;
 
 			glm::vec3 dataPositionOffsetInVolume = dataCenterRaw - combinedDataCenter;
+			glm::vec3 dataPositionOffsetInCustomVolume = dataCenterRaw - combinedCustomDataCenter;
 
 			glm::vec3 dataCenteringOffset = -(dataset->getAdjustedMinBounds() + dataset->getAdjustedDimensions() * 0.5f);
 
@@ -392,11 +425,20 @@ void DataVolume::updateTransforms()
 			trans *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
 
 			m_mapDataTransforms[dataset] = trans;
+
+			// custom domain calcs
+			glm::mat4 customTrans = customDomainToVolumeTransform;
+			customTrans *= handednessConversion;
+			customTrans *= glm::translate(glm::mat4(), dataPositionOffsetInCustomVolume);
+			customTrans *= glm::translate(glm::mat4(), dataCenteringOffset);
+
+			m_mapCustomDataTransforms[dataset] = customTrans;
 		}
 
 		if (m_bFirstRun)
 		{
 			m_mapDataTransformsPrevious = m_mapDataTransforms;
+			m_mapCustomDataTransformsPrevious = m_mapCustomDataTransforms;
 			m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
 			m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
 			m_mat4AdjustedDomainToVolumeTransformPrevious = m_mat4AdjustedDomainToVolumeTransform;

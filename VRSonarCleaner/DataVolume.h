@@ -54,6 +54,13 @@ public:
 	glm::dvec3 getMaxDataBound();
 	glm::dvec3 getDataDimensions();
 
+	void setCustomBounds(glm::dvec3 minBound, glm::dvec3 maxBound);
+	glm::dvec3 getCustomMinBound();
+	glm::dvec3 getCustomMaxBound();
+
+	void useCustomBounds(bool yesno);
+	bool getUseCustomBounds();
+
 	void drawAxes(float size = 1.f);
 
 	void update();
@@ -96,7 +103,10 @@ protected:
 	glm::dvec3 m_dvec3CustomDomainMinBound;
 	glm::dvec3 m_dvec3CustomDomainMaxBound;
 	glm::dvec3 m_dvec3CustomDomainDims;
+	std::map<Dataset*, glm::mat4> m_mapCustomDataTransforms;
+	std::map<Dataset*, glm::mat4> m_mapCustomDataTransformsPrevious;
 	
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed
+	bool m_bUseCustomBounds;
 };
