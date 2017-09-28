@@ -412,6 +412,8 @@ bool CMainApplication::initDesktop()
 //-----------------------------------------------------------------------------
 void CMainApplication::Shutdown()
 {
+	BehaviorManager::getInstance().shutdown();
+
 	if (m_bUseVR)
 	{
 		delete m_pLeftEyeFramebuffer;
@@ -440,6 +442,9 @@ void CMainApplication::Shutdown()
 		
 
 	}
+
+	DebugDrawer::getInstance().shutdown();
+	Renderer::getInstance().shutdown();
 
 	fclose(stdout);
 	FreeConsole();

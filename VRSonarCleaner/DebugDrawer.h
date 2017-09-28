@@ -232,6 +232,11 @@ public:
 		m_vTriangleVertices.clear();
 		m_vusTriangleIndices.clear();
 	}
+	
+	void shutdown()
+	{
+		// todo: release OpenGL resources
+	}
 
 private:
 	struct DebugVertex {

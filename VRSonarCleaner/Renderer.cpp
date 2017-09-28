@@ -20,10 +20,9 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
-	Shutdown();
 }
 
-void Renderer::Shutdown()
+void Renderer::shutdown()
 {
 	glDeleteBuffers(1, &m_glFullscreenTextureVBO);
 	glDeleteBuffers(1, &m_glFullscreenTextureEBO);

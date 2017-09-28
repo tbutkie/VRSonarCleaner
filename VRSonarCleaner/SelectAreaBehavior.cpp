@@ -92,10 +92,11 @@ void SelectAreaBehavior::draw()
 		Renderer::getInstance().drawPrimitive("icosphere", trans, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f), 10.f);
 	}
 
-	//if (m_pDataVolumeDisplay->getUseCustomBounds())
-	//{
-	//	Renderer::getInstance().drawFlatPrimitive("bbox", m_pDataVolumeSelection->)
-	//}
+	if (m_pDataVolumeDisplay->getUseCustomBounds())
+	{
+
+		//Renderer::getInstance().drawFlatPrimitive("bbox", m_pDataVolumeSelection->);
+	}
 }
 
 void SelectAreaBehavior::receiveEvent(const int event, void * payloadData)

@@ -72,3 +72,11 @@ void BehaviorManager::draw()
 	for (auto &b : m_mappBehaviors)
 		b.second->draw();
 }
+
+void BehaviorManager::shutdown()
+{
+	for (auto &b : m_mappBehaviors)
+		delete b.second;
+
+	m_mappBehaviors.clear();
+}
