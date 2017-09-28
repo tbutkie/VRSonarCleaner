@@ -69,8 +69,6 @@ protected:
 	double getMaxZDataBound();
 
 	std::vector<Dataset*> m_vpDatasets;
-	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
-	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
 
 	glm::vec3 m_vec3OriginalPosition;        // Original Data Volume Position	
 	glm::vec3 m_vec3Position;
@@ -78,6 +76,9 @@ protected:
 	glm::quat m_qOrientation;
 	glm::vec3 m_vec3OriginalDimensions;           // Original Data Volume Orientation
 	glm::vec3 m_vec3Dimensions;
+
+	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
+	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
 
 	glm::mat4 m_mat4VolumeTransform;         // Volume Position and Orientation Transform
 	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
@@ -91,6 +92,10 @@ protected:
 	glm::dvec3 m_dvec3DomainMinBound;
 	glm::dvec3 m_dvec3DomainMaxBound;
 	glm::dvec3 m_dvec3DomainDims;
+
+	glm::dvec3 m_dvec3CustomDomainMinBound;
+	glm::dvec3 m_dvec3CustomDomainMaxBound;
+	glm::dvec3 m_dvec3CustomDomainDims;
 	
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed

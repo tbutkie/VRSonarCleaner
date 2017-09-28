@@ -320,6 +320,29 @@ void DataVolume::update()
 	updateTransforms();
 }
 
+glm::vec3 getAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims)
+{
+	float fromAR = fromDims.x / fromDims.y; // for figuring out how to maintain correct scale in the data volume
+	float toAR = toDims.x / toDims.y;
+
+	glm::vec3 adjustedDims;
+
+	if (toAR > fromAR)
+	{
+		adjustedDims.x = fromDims.x * (toDims.y / fromDims.y);
+		adjustedDims.y = toDims.y;
+	}
+	else
+	{
+		adjustedDims.x = toDims.x;
+		adjustedDims.y = fromDims.y * (toDims.x / fromDims.x);
+	}
+
+	adjustedDims.z = toDims.z;
+
+	return adjustedDims;
+}
+
 void DataVolume::updateTransforms()
 {
 	if (m_bDirty)
@@ -336,23 +359,7 @@ void DataVolume::updateTransforms()
 		m_dvec3DomainMaxBound = glm::dvec3(getMaxXDataBound(), getMaxYDataBound(), getMaxZDataBound());
 		m_dvec3DomainDims = glm::dvec3(m_dvec3DomainMaxBound - m_dvec3DomainMinBound);
 
-		float domainAR = m_dvec3DomainDims.x / m_dvec3DomainDims.y; // for figuring out how to maintain correct scale in the data volume
-		float volAR = m_vec3Dimensions.x / m_vec3Dimensions.y;
-
-		glm::vec3 domainAdjustedVolumeDims;
-
-		if (volAR > domainAR)
-		{
-			domainAdjustedVolumeDims.x = m_dvec3DomainDims.x * (m_vec3Dimensions.y / m_dvec3DomainDims.y);
-			domainAdjustedVolumeDims.y = m_vec3Dimensions.y;
-		}
-		else
-		{
-			domainAdjustedVolumeDims.x = m_vec3Dimensions.x;
-			domainAdjustedVolumeDims.y = m_dvec3DomainDims.y * (m_vec3Dimensions.x / m_dvec3DomainDims.x);
-		}
-
-		domainAdjustedVolumeDims.z = m_vec3Dimensions.z;
+		glm::vec3 domainAdjustedVolumeDims = getAspectAdjustedDimensions(m_dvec3DomainDims, m_vec3Dimensions);
 		
 		glm::dvec3 combinedDataCenter = m_dvec3DomainMinBound + m_dvec3DomainDims * 0.5;
 
