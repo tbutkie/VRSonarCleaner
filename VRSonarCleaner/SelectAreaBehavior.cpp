@@ -21,7 +21,7 @@ SelectAreaBehavior::~SelectAreaBehavior()
 
 void SelectAreaBehavior::update()
 {
-	glm::vec3 planeOrigin = m_pDataVolumeSelection->getPosition() + glm::rotate(m_pDataVolumeSelection->getOrientation(), glm::vec3(0.f, 0.f, 0.5f)) * m_pDataVolumeSelection->getDimensions().z;
+	glm::vec3 planeOrigin = m_pDataVolumeSelection->getPosition() + glm::rotate(m_pDataVolumeSelection->getOrientation(), glm::vec3(0.f, 0.f, 1.f)) * m_pDataVolumeSelection->getDimensions().z * 0.5f;
 	glm::vec3 planeNormal = glm::rotate(m_pDataVolumeSelection->getOrientation(), glm::vec3(0.f, 0.f, 1.f));
 	glm::vec3 rayOrigin = glm::vec3(m_pPrimaryController->getPose()[3]);
 	glm::vec3 rayDirection = glm::normalize(glm::vec3(-m_pPrimaryController->getPose()[2]));
@@ -89,7 +89,19 @@ void SelectAreaBehavior::draw()
 	{
 		glm::mat4 trans(glm::translate(glm::mat4(), m_vec3CurrentLocationOnPlane) * glm::scale(glm::mat4(), m_vec3CursorSize));
 
-		Renderer::getInstance().drawPrimitive("icosphere", trans, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f), 10.f);
+		Renderer::getInstance().drawPrimitive("icosphere", trans, glm::vec4(1.f), glm::vec4(1.f), 10.f);
+
+		float connectorRadius = 0.005f;
+
+		glm::vec3 controllerToCursorVec = m_vec3CurrentLocationOnPlane - glm::vec3(m_pPrimaryController->getPose()[3]);
+
+		glm::quat rot = glm::rotation(glm::vec3(0.f, 0.f, 1.f), glm::normalize(controllerToCursorVec));
+
+		glm::mat4 rotMat = glm::mat4_cast(rot);
+
+		trans = glm::translate(glm::mat4(), glm::vec3(m_pPrimaryController->getPose()[3])) * rotMat * glm::scale(glm::mat4(), glm::vec3(connectorRadius, connectorRadius, glm::length(controllerToCursorVec)));
+
+		Renderer::getInstance().drawPrimitive("cylinder", trans, glm::vec4(1.f, 1.f, 1.f, 0.25f), glm::vec4(1.f), 10.f);
 	}
 
 	if (m_pDataVolumeDisplay->getUseCustomBounds())

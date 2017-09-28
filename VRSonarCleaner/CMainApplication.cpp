@@ -439,8 +439,6 @@ void CMainApplication::Shutdown()
 			SDL_DestroyWindow(m_pVRCompanionWindow);
 			m_pVRCompanionWindow = NULL;
 		}
-		
-
 	}
 
 	DebugDrawer::getInstance().shutdown();
