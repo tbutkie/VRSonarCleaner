@@ -101,6 +101,7 @@ private: // SDL bookkeeping
 
 	bool m_bLeftMouseDown;
 	bool m_bRightMouseDown;
+	bool m_bMiddleMouseDown;
 
 private: // OpenGL bookkeeping
 	void createVRViews();

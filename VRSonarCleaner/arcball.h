@@ -53,6 +53,7 @@ public:
 	void setZoom(float radius, glm::vec3 eye, glm::vec3 up);
 	void start(int mx, int my);
 	void move(int mx, int my);
+	void center(int mx, int my);
 	glm::mat4 getRotation();
 	void setViewport(glm::vec4 vp);
 	void setProjectionMatrix(glm::mat4 projMat);

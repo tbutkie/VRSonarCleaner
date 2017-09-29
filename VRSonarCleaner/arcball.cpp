@@ -165,6 +165,13 @@ void Arcball::move(int mx, int my)
 	}
 }
 
+void Arcball::center(int mx, int my)
+{
+	glm::vec3 window(mx, my, 0.f);
+
+	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
+}
+
 void Arcball::setViewport(glm::vec4 vp)
 {
 	m_vec4Viewport = vp;

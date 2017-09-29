@@ -104,6 +104,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_bGLInitialized(false)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
+	, m_bMiddleMouseDown(false)
 	, m_pVRCompanionWindow(NULL)
 	, m_pGLContext(NULL)
 	, m_pDesktopWindow(NULL)
@@ -691,6 +692,10 @@ bool CMainApplication::HandleInput()
 					if (!m_bLeftMouseDown)
 						m_pLasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
 				}
+				if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+				{
+					m_bMiddleMouseDown = true;
+				}
 
 			}//end mouse down 
 			else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
@@ -704,6 +709,10 @@ bool CMainApplication::HandleInput()
 				{
 					m_bRightMouseDown = false;
 					m_pLasso->end();
+				}
+				if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+				{
+					m_bMiddleMouseDown = false;
 				}
 
 			}//end mouse up
