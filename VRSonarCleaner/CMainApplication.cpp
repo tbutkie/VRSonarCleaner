@@ -694,7 +694,12 @@ bool CMainApplication::HandleInput()
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
 				{
+					if (m_bRightMouseDown)
+					{
+						m_pLasso->end();
+					}
 					m_bMiddleMouseDown = true;
+					m_Arcball.center(sdlEvent.button.x, sdlEvent.button.y);
 				}
 
 			}//end mouse down 
