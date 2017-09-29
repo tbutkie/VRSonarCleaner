@@ -33,7 +33,7 @@ public:
 	glm::dvec3 convertToRawDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
-	glm::vec3 convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos);
+	glm::vec3 convertToWorldCoords(glm::vec3 dataPos);
 	bool isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ = true);
 	
 	glm::mat4 getCurrentDataTransform(Dataset* dataset);
@@ -57,6 +57,9 @@ public:
 	void setCustomBounds(glm::dvec3 minBound, glm::dvec3 maxBound);
 	glm::dvec3 getCustomMinBound();
 	glm::dvec3 getCustomMaxBound();
+	glm::dvec3 getCustomDomainDimensions();
+
+	static glm::vec3 calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims);
 
 	void useCustomBounds(bool yesno);
 	bool getUseCustomBounds();

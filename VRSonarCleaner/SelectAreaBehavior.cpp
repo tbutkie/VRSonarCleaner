@@ -99,15 +99,24 @@ void SelectAreaBehavior::draw()
 
 		glm::mat4 rotMat = glm::mat4_cast(rot);
 
-		trans = glm::translate(glm::mat4(), glm::vec3(m_pPrimaryController->getPose()[3])) * rotMat * glm::scale(glm::mat4(), glm::vec3(connectorRadius, connectorRadius, glm::length(controllerToCursorVec)));
+		trans = glm::translate(glm::mat4(), glm::vec3(m_pPrimaryController->getPose()[3]));
+		trans *= rotMat;
+		trans *= glm::scale(glm::mat4(), glm::vec3(connectorRadius, connectorRadius, glm::length(controllerToCursorVec)));
 
 		Renderer::getInstance().drawPrimitive("cylinder", trans, glm::vec4(1.f, 1.f, 1.f, 0.25f), glm::vec4(1.f), 10.f);
 	}
 
 	if (m_pDataVolumeDisplay->getUseCustomBounds())
 	{
+		glm::dvec3 midPt = m_pDataVolumeSelection->convertToWorldCoords(m_pDataVolumeDisplay->getCustomMinBound() + m_pDataVolumeDisplay->getCustomDomainDimensions() * 0.5);
 
-		//Renderer::getInstance().drawFlatPrimitive("bbox", m_pDataVolumeSelection->);
+		glm::vec3 tmp = m_pDataVolumeDisplay->getCustomDomainDimensions() / m_pDataVolumeSelection->getDataDimensions();
+
+		glm::vec3 domainCustomAdjustedVolumeDims = DataVolume::calcAspectAdjustedDimensions(m_pDataVolumeSelection->getDataDimensions(), m_pDataVolumeSelection->getDimensions());
+		glm::vec3 customScalingFactors = domainCustomAdjustedVolumeDims * tmp;
+
+		glm::mat4 trans = glm::translate(glm::mat4(), glm::vec3(midPt)) * glm::mat4_cast(m_pDataVolumeSelection->getOrientation()) * glm::scale(glm::mat4(), customScalingFactors);
+		Renderer::getInstance().drawFlatPrimitive("bbox_lines", trans, glm::vec4(0.f, 1.f, 1.f, 1.f));
 	}
 }
 

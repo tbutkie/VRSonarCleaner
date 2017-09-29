@@ -1155,7 +1155,7 @@ bool CMainApplication::editCleaningTableDesktop()
 
 		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
-			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud, cloud->getAdjustedPointPosition(i));
+			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud->getAdjustedPointPosition(i));
 			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 
 			if (m_pLasso->checkPoint(glm::vec2(out)))

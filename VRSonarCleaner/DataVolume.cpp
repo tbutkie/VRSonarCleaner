@@ -76,12 +76,12 @@ glm::vec3 DataVolume::convertToDataCoords(Dataset* dataset, glm::vec3 worldPos)
 		return glm::vec3(glm::inverse(getCurrentDataTransform(dataset)) * glm::vec4(worldPos, 1.f));
 }
 
-glm::vec3 DataVolume::convertToWorldCoords(Dataset* dataset, glm::vec3 dataPos)
+glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 dataPos)
 {
 	if (m_vpDatasets.size() == 0u)
 		return glm::vec3();
 	else
-		return glm::vec3(getCurrentDataTransform(dataset) * glm::vec4(dataPos, 1.f));
+		return glm::vec3(m_dmat4RawDomainToVolumeTransform * glm::vec4(dataPos, 1.f));
 }
 
 bool DataVolume::isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ)
@@ -372,6 +372,11 @@ glm::dvec3 DataVolume::getCustomMaxBound()
 	return m_dvec3CustomDomainMaxBound;
 }
 
+glm::dvec3 DataVolume::getCustomDomainDimensions()
+{
+	return m_dvec3CustomDomainDims;
+}
+
 void DataVolume::useCustomBounds(bool yesno)
 {
 	m_bUseCustomBounds = yesno;
@@ -394,7 +399,7 @@ void DataVolume::update()
 	updateTransforms();
 }
 
-glm::vec3 getAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims)
+glm::vec3 DataVolume::calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims)
 {
 	float fromAR = fromDims.x / fromDims.y; // for figuring out how to maintain correct scale in the data volume
 	float toAR = toDims.x / toDims.y;
@@ -433,7 +438,7 @@ void DataVolume::updateTransforms()
 		m_dvec3DomainMaxBound = glm::dvec3(getMaxXDataBound(), getMaxYDataBound(), getMaxZDataBound());
 		m_dvec3DomainDims = glm::dvec3(m_dvec3DomainMaxBound - m_dvec3DomainMinBound);
 
-		glm::vec3 domainAdjustedVolumeDims = getAspectAdjustedDimensions(m_dvec3DomainDims, m_vec3Dimensions);
+		glm::vec3 domainAdjustedVolumeDims = calcAspectAdjustedDimensions(m_dvec3DomainDims, m_vec3Dimensions);
 		glm::dvec3 combinedDataCenter = m_dvec3DomainMinBound + m_dvec3DomainDims * 0.5;
 		m_mapDataTransformsPrevious = m_mapDataTransforms;
 		glm::vec3 scalingFactors = domainAdjustedVolumeDims / glm::vec3(m_dvec3DomainDims);
@@ -442,7 +447,7 @@ void DataVolume::updateTransforms()
 		m_mat4AdjustedDomainToVolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(scalingFactors);
 
 
-		glm::vec3 domainCustomAdjustedVolumeDims = getAspectAdjustedDimensions(m_dvec3CustomDomainDims, m_vec3Dimensions);
+		glm::vec3 domainCustomAdjustedVolumeDims = calcAspectAdjustedDimensions(m_dvec3CustomDomainDims, m_vec3Dimensions);
 		glm::dvec3 combinedCustomDataCenter = m_dvec3CustomDomainMinBound + m_dvec3CustomDomainDims * 0.5;
 		m_mapCustomDataTransformsPrevious = m_mapCustomDataTransforms;
 		glm::vec3 customScalingFactors = domainCustomAdjustedVolumeDims / glm::vec3(m_dvec3CustomDomainDims);
