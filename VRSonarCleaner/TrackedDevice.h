@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include <openvr.h>
 
@@ -40,13 +41,14 @@ protected:
 		uint32_t							m_unComponentIndex;
 		std::string							m_strComponentName;
 		std::string							m_strComponentRenderModelName;
+		std::vector<vr::EVRButtonId>		m_vButtonsAssociated;
 		vr::RenderModel_ComponentState_t	m_State;
 		vr::RenderModel_ComponentState_t	m_LastState;
 		bool								m_bInitialized;
 		bool								m_bHasRenderModel;
 
 		TrackedDeviceComponent()
-			: m_unComponentIndex			(0)
+			: m_unComponentIndex			(0u)
 			, m_strComponentName			("No name")
 			, m_strComponentRenderModelName	("No render model name")
 			, m_bInitialized				(false)
@@ -70,7 +72,7 @@ protected:
 		bool isStatic()			{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic) > 0; }
 	};
 
-	std::vector<TrackedDeviceComponent> m_vComponents;
+	std::vector<TrackedDeviceComponent*> m_vpComponents;
 
 protected:
 	virtual bool update(vr::TrackedDevicePose_t pose);
@@ -88,6 +90,8 @@ protected:
 	
 	char m_ClassChar;   // for each device, a character representing its class
 	
+	std::map<vr::EVRButtonId, std::vector<TrackedDeviceComponent*>> m_mapButtonToComponentMap;
+
 	vr::TrackedDevicePose_t m_Pose;
 
 	glm::mat4 m_mat4DeviceToWorldTransform;

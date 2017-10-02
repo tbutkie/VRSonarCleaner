@@ -53,6 +53,8 @@ class SonarPointCloud : public Dataset
 		glm::vec3 getAdjustedPointPosition(unsigned int index);
 		glm::vec3 getRawPointPosition(unsigned int index);
 		int getPointMark(unsigned int index);
+		float getPointDepthTPU(unsigned int index);
+		float getPointPositionTPU(unsigned int index);
 
 		float getMinDepthTPU();
 		float getMaxDepthTPU();

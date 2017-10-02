@@ -258,17 +258,17 @@ void TrackedDeviceManager::draw()
 			!m_rpTrackedDevices[unTrackedDevice]->poseValid())
 			continue;
 
-		size_t nComponents = m_rpTrackedDevices[unTrackedDevice]->m_vComponents.size();
+		size_t nComponents = m_rpTrackedDevices[unTrackedDevice]->m_vpComponents.size();
 
 		if (nComponents > 0u)
 		{
 			for (size_t i = 0; i < nComponents; ++i)
-				if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_bHasRenderModel &&
-					m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].isVisible())
+				if (m_rpTrackedDevices[unTrackedDevice]->m_vpComponents[i]->m_bHasRenderModel &&
+					m_rpTrackedDevices[unTrackedDevice]->m_vpComponents[i]->isVisible())
 				{
 					glm::mat4 matModel;
 
-					if (m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].isStatic())
+					if (m_rpTrackedDevices[unTrackedDevice]->m_vpComponents[i]->isStatic())
 					{
 						matModel = m_rpTrackedDevices[unTrackedDevice]->getDeviceToWorldTransform();
 					}
@@ -278,12 +278,12 @@ void TrackedDeviceManager::draw()
 						m_pHMD->ApplyTransform(
 							&p, 
 							&(m_rpTrackedDevices[unTrackedDevice]->m_Pose), 
-							&(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_State.mTrackingToComponentRenderModel)
+							&(m_rpTrackedDevices[unTrackedDevice]->m_vpComponents[i]->m_State.mTrackingToComponentRenderModel)
 						);
 						matModel = m_rpTrackedDevices[unTrackedDevice]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 					}
 
-					RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_vComponents[i].m_strComponentRenderModelName.c_str());
+					RenderModel* rm = findOrLoadRenderModel(m_rpTrackedDevices[unTrackedDevice]->m_vpComponents[i]->m_strComponentRenderModelName.c_str());
 					
 					if (rm->ready())
 					{
@@ -336,9 +336,9 @@ glm::mat4 & TrackedDeviceManager::getHMDToWorldTransform()
 // Returns vr::k_unTrackedDeviceIndexInvalid if not found
 uint32_t TrackedDeviceManager::getDeviceComponentID(uint32_t deviceID, std::string componentName)
 {
-	for (auto c : m_rpTrackedDevices[deviceID]->m_vComponents)
-		if (c.m_strComponentName.compare(componentName) == 0)
-			return c.m_unComponentIndex;
+	for (auto c : m_rpTrackedDevices[deviceID]->m_vpComponents)
+		if (c->m_strComponentName.compare(componentName) == 0)
+			return c->m_unComponentIndex;
 
 	return vr::k_unTrackedDeviceIndexInvalid;
 }
@@ -349,7 +349,7 @@ glm::mat4 TrackedDeviceManager::getDeviceComponentPose(uint32_t deviceID, uint32
 	m_pHMD->ApplyTransform(
 		&p,
 		&(m_rpTrackedDevices[deviceID]->m_Pose),
-		&(m_rpTrackedDevices[deviceID]->m_vComponents[componentID].m_State.mTrackingToComponentLocal)
+		&(m_rpTrackedDevices[deviceID]->m_vpComponents[componentID]->m_State.mTrackingToComponentLocal)
 	);
 	return m_rpTrackedDevices[deviceID]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
 }

@@ -196,6 +196,7 @@
     <ClCompile Include="InfoBoxManager.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
+    <ClCompile Include="TutorialBehavior.cpp" />
     <ClCompile Include="ViveController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -239,6 +240,7 @@
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
+    <ClInclude Include="TutorialBehavior.h" />
     <ClInclude Include="ViveController.h" />
   </ItemGroup>
   <ItemGroup>

@@ -38,58 +38,8 @@ bool InfoBoxManager::removeInfoBox(std::string name)
 InfoBoxManager::InfoBoxManager()
 	: m_pTDM(NULL)
 {
-	createTutorial();
-	
-	addInfoBox(
-		"Editing Label",
-		"editctrlrlabel.png",
-		0.1f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
-	addInfoBox(
-		"Activate Label (Primary)",
-		"activaterightlabel.png",
-		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(-0.04f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
-	addInfoBox(
-		"Manipulation Label",
-		"manipctrlrlabel.png",
-		0.1f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::SECONDARY_CONTROLLER,
-		false);
-	addInfoBox(
-		"Activate Label (Secondary)",
-		"activateleftlabel.png",
-		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(0.04f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		RELATIVE_TO::SECONDARY_CONTROLLER,
-		false);
 
-	//addInfoBox(
-	//	"Test 1",
-	//	"cube_texture.png",
-	//	1.f,
-	//	glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
-	//	RELATIVE_TO::HMD,
-	//	false);
-	//addInfoBox(
-	//	"Test 2",
-	//	"test.png",
-	//	1.f,
-	//	glm::translate(glm::mat4(), glm::vec3(1.f, 2.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)),
-	//	RELATIVE_TO::WORLD,
-	//	true);
-	//addInfoBox(
-	//	"Test 3",
-	//	"test.png",
-	//	2.f,
-	//	glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f)),
-	//	RELATIVE_TO::HMD,
-	//	false);
+
 }
 
 InfoBoxManager::~InfoBoxManager()
@@ -170,8 +120,4 @@ bool InfoBoxManager::updateInfoBoxSize(std::string infoBoxName, float size)
 
 	std::get<IBIndex::SIZE_METERS>(m_mapInfoBoxes[infoBoxName]) = size;
 	return true;
-}
-
-void InfoBoxManager::createTutorial()
-{
 }

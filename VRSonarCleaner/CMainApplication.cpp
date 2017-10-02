@@ -3,6 +3,7 @@
 #include "InfoBoxManager.h"
 
 #include "BehaviorManager.h"
+#include "TutorialBehavior.h"
 #include "ManipulateDataVolumeBehavior.h"
 #include "SelectAreaBehavior.h"
 #include "FlowProbe.h"
@@ -546,14 +547,7 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
-				if (m_pTableVolume)
-				{
-					for (auto &dataset : m_pTableVolume->getDatasets())
-					{
-						glm::vec3 tmp = m_pTableVolume->convertToDataCoords(dataset, m_pTableVolume->getPosition());
-						std::cout << "(" << tmp.x << ", " << tmp.y << ", " << tmp.z << ")" << std::endl;
-					}
-				}
+				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pTableVolume));
 			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)
@@ -1087,7 +1081,7 @@ void CMainApplication::savePoints()
 
 		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
-			outFile << cloud->getRawPointPosition(i).x << "," << cloud->getRawPointPosition(i).y << "," << cloud->getRawPointPosition(i).z << "," << (cloud->getPointMark(i) == 1 ? "1" : "0") << std::endl;
+			outFile << cloud->getRawPointPosition(i).x << "," << cloud->getRawPointPosition(i).y << "," << cloud->getRawPointPosition(i).z << "," << (cloud->getPointPositionTPU(i) == 1.f ? "1" : "0") << std::endl;
 		}
 	}
 

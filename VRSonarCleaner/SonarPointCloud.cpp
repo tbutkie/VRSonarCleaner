@@ -512,3 +512,13 @@ int SonarPointCloud::getPointMark(unsigned int index)
 {
 	return m_vuiPointsMarks[index];
 }
+
+float SonarPointCloud::getPointDepthTPU(unsigned int index)
+{
+	return m_vfPointsDepthTPU[index];
+}
+
+float SonarPointCloud::getPointPositionTPU(unsigned int index)
+{
+	return m_vfPointsPositionTPU[index];
+}

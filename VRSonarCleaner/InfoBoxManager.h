@@ -52,8 +52,6 @@ private:
 	InfoBoxManager();
 	~InfoBoxManager();
 
-	void createTutorial();
-
 	typedef std::tuple<GLTexture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
 	typedef std::map<std::string, InfoBoxT> IBMapT;
 

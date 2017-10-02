@@ -135,6 +135,9 @@
     <ClCompile Include="SelectAreaBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
+    <ClCompile Include="TutorialBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -258,6 +261,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SelectAreaBehavior.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="TutorialBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>

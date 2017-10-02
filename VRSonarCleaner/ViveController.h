@@ -50,11 +50,6 @@ protected:
 	vr::VRControllerState_t m_LastControllerState;
 	vr::RenderModel_ControllerMode_State_t m_ControllerScrollModeState;
 
-	bool m_bSystemButtonClicked;
-	bool m_bMenuButtonClicked;
-	bool m_bGripButtonClicked;
-	bool m_bTouchpadTouched;
-	bool m_bTouchpadClicked;
 	glm::vec2 m_vec2TouchpadInitialTouchPoint;
 	glm::vec2 m_vec2TouchpadCurrentTouchPoint;
 	bool m_bTriggerEngaged;

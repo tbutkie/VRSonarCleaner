@@ -15,11 +15,6 @@ const glm::vec4 ViveController::c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bStateInitialized(false)
-	, m_bSystemButtonClicked(false)
-	, m_bMenuButtonClicked(false)
-	, m_bGripButtonClicked(false)
-	, m_bTouchpadTouched(false)
-	, m_bTouchpadClicked(false)
 	, m_vec2TouchpadInitialTouchPoint(glm::vec2(0.f, 0.f))
 	, m_vec2TouchpadCurrentTouchPoint(glm::vec2(0.f, 0.f))
 	, m_bTriggerEngaged(false)
@@ -34,7 +29,9 @@ ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr
 
 ViveController::~ViveController()
 {
-	m_vComponents.clear();
+	for (auto &c : m_vpComponents)
+		delete c;
+	m_vpComponents.clear();
 }
 
 bool ViveController::BInit()
@@ -67,8 +64,8 @@ bool ViveController::BInit()
 	// Loop over model components and add them to the tracked device
 	for (uint32_t i = 0; i < nModelComponents; ++i)
 	{
-		TrackedDevice::TrackedDeviceComponent component;
-		component.m_unComponentIndex = i;
+		TrackedDevice::TrackedDeviceComponent *component = new TrackedDevice::TrackedDeviceComponent();
+		component->m_unComponentIndex = i;
 
 		uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, NULL, 0);
 		if (unRequiredBufferLen == 0)
@@ -79,40 +76,52 @@ bool ViveController::BInit()
 		{
 			char *pchBuffer1 = new char[unRequiredBufferLen];
 			unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, pchBuffer1, unRequiredBufferLen);
-			component.m_strComponentName = pchBuffer1;
+			component->m_strComponentName = pchBuffer1;
 			delete[] pchBuffer1;
 
-			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), NULL, 0);
+			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), NULL, 0);
 			if (unRequiredBufferLen == 0)
-				component.m_bHasRenderModel = false;
+				component->m_bHasRenderModel = false;
 			else
 			{
 				char *pchBuffer2 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-				component.m_strComponentRenderModelName = pchBuffer2;
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+				component->m_strComponentRenderModelName = pchBuffer2;
 
 				delete[] pchBuffer2;
 
-				component.m_bHasRenderModel = true;
+				component->m_bHasRenderModel = true;
 
 				vr::RenderModel_ControllerMode_State_t controllerModeState;
 				m_pRenderModels->GetComponentState(
 					m_strRenderModelName.c_str(),
-					component.m_strComponentRenderModelName.c_str(),
+					component->m_strComponentRenderModelName.c_str(),
 					&m_ControllerState,
 					&controllerModeState,
-					&(component.m_State)
+					&(component->m_State)
 				);
 
-				component.m_LastState = component.m_State;
+				component->m_LastState = component->m_State;
 			}
 
+			uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component->m_strComponentName.c_str());
 
-			component.m_bInitialized = true;
+			for (int i = 0; i != vr::EVRButtonId::k_EButton_Max; ++i)
+			{
+				if (vr::ButtonMaskFromId((vr::EVRButtonId)i) & buttonMask)
+				{
+					m_mapButtonToComponentMap[(vr::EVRButtonId)i].push_back(component);
+					component->m_vButtonsAssociated.push_back((vr::EVRButtonId)i);
+				}
+			}
 
-			m_vComponents.push_back(component);
+			component->m_bInitialized = true;
 
-			std::cout << "\t" << (component.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component.m_strComponentName.c_str() << std::endl;
+			m_vpComponents.push_back(component);
+
+			std::cout << "\t" << (component->m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component->m_strComponentName.c_str();
+			for (auto &b : component->m_vButtonsAssociated) std::cout << " |->(" << m_pHMD->GetButtonIdNameFromEnum(b) << ")";
+			std::cout << std::endl;
 		}
 	}
 
@@ -166,90 +175,82 @@ bool ViveController::updateControllerState()
 	m_ControllerState = tempCtrllrState;
 
 	// Update the controller components
-	for (auto &component : m_vComponents)
+	for (auto &component : m_vpComponents)
 	{
-		component.m_LastState = component.m_State;
-		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component.m_State);
-
-		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component.m_strComponentName.c_str());
+		component->m_LastState = component->m_State;
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component->m_State);
 
 		// Find buttons associated with component and handle state changes/events
 
-		if (vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu) & buttonMask)
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_ApplicationMenu) != component->m_vButtonsAssociated.end())
 		{
 			// Button pressed
-			if (component.justPressed())
+			if (component->justPressed())
 			{
-				m_bMenuButtonClicked = true;
 				notify(BroadcastSystem::EVENT::VIVE_MENU_BUTTON_DOWN, this);
 			}
 
 			// Button unpressed
-			if (component.justUnpressed())
+			if (component->justUnpressed())
 			{
-				m_bMenuButtonClicked = false;
 				notify(BroadcastSystem::EVENT::VIVE_MENU_BUTTON_UP, this);
 			}
 		}
 
-		if (vr::ButtonMaskFromId(vr::k_EButton_System) & buttonMask)
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_System) != component->m_vButtonsAssociated.end())
 		{
 			// Button pressed
-			if (component.justPressed())
+			if (component->justPressed())
 			{
-				m_bSystemButtonClicked = true;
 				notify(BroadcastSystem::EVENT::VIVE_SYSTEM_BUTTON_DOWN, this);
 			}
 
 			// Button unpressed
-			if (component.justUnpressed())
+			if (component->justUnpressed())
 			{
-				m_bSystemButtonClicked = false;
 				notify(BroadcastSystem::EVENT::VIVE_SYSTEM_BUTTON_UP, this);
 			}
 		}
 
-		if (vr::ButtonMaskFromId(vr::k_EButton_Grip) & buttonMask)
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_Grip) != component->m_vButtonsAssociated.end())
 		{
 			// Button pressed
-			if (component.justPressed())
+			if (component->justPressed())
 			{
-				m_bGripButtonClicked = true;
 				notify(BroadcastSystem::EVENT::VIVE_GRIP_DOWN, this);
 			}
 
 			// Button unpressed
-			if (component.justUnpressed())
+			if (component->justUnpressed())
 			{
-				m_bGripButtonClicked = false;
 				notify(BroadcastSystem::EVENT::VIVE_GRIP_UP, this);
 			}
 		}
 
-		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger) & buttonMask)
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_SteamVR_Trigger) != component->m_vButtonsAssociated.end())
 		{
 			float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
 
 			// Trigger pressed
-			if (component.justPressed())
+			if (component->justPressed())
 			{
 				//printf("(VR Event) Controller (device %u) trigger pressed.\n", m_unDeviceID);
 			}
 
 			// Trigger unpressed
-			if (component.justUnpressed())
+			if (component->justUnpressed())
 			{
 				//printf("(VR Event) Controller (device %u) trigger unpressed.\n", m_unDeviceID);
 			}
 
 			// Trigger touched
-			if (component.justTouched())
+			if (component->justTouched())
 			{
 				//printf("(VR Event) Controller (device %u) trigger touched.\n", m_unDeviceID);
 			}
 
 			// Trigger untouched
-			if (component.justUntouched())
+			if (component->justUntouched())
 			{
 				//printf("(VR Event) Controller (device %u) trigger untouched.\n", m_unDeviceID);
 			}
@@ -306,32 +307,27 @@ bool ViveController::updateControllerState()
 			}
 		}
 
-		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad) & buttonMask)
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_SteamVR_Touchpad) != component->m_vButtonsAssociated.end())
 		{
 			glm::vec2 touchPoint = glm::vec2(m_ControllerState.rAxis[m_nTouchpadAxis].x, m_ControllerState.rAxis[m_nTouchpadAxis].y);
 
 			// Touchpad pressed
-			if (component.justPressed())
+			if (component->justPressed())
 			{
-				m_bTouchpadClicked = true;
-
 				BroadcastSystem::Payload::Touchpad payload = { this, m_vec2TouchpadInitialTouchPoint, touchPoint };
 				notify(BroadcastSystem::EVENT::VIVE_TOUCHPAD_DOWN, &payload);
 			}
 
 			// Touchpad unpressed
-			if (component.justUnpressed())
+			if (component->justUnpressed())
 			{
-				m_bTouchpadClicked = false;
-
 				BroadcastSystem::Payload::Touchpad payload = { this, m_vec2TouchpadInitialTouchPoint, touchPoint };
 				notify(BroadcastSystem::EVENT::VIVE_TOUCHPAD_UP, &payload);
 			}
 
 			// Touchpad touched
-			if (component.justTouched())
+			if (component->justTouched())
 			{
-				m_bTouchpadTouched = true;
 				m_vec2TouchpadInitialTouchPoint = touchPoint;
 				m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
 
@@ -340,10 +336,8 @@ bool ViveController::updateControllerState()
 			}
 
 			// Touchpad untouched
-			if (component.justUntouched())
+			if (component->justUntouched())
 			{
-				m_bTouchpadTouched = false;
-
 				BroadcastSystem::Payload::Touchpad payload = { this, m_vec2TouchpadInitialTouchPoint, touchPoint };
 				notify(BroadcastSystem::EVENT::VIVE_TOUCHPAD_DISENGAGE, &payload);
 
@@ -352,7 +346,7 @@ bool ViveController::updateControllerState()
 			}
 
 			// Touchpad being touched
-			if (component.continueTouch())
+			if (component->continueTouch())
 			{
 				m_vec2TouchpadCurrentTouchPoint = touchPoint;
 
@@ -373,17 +367,29 @@ bool ViveController::updateControllerState()
 
 bool ViveController::isSystemButtonPressed()
 {
-	return m_bSystemButtonClicked;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_System])
+		if (!c->isPressed())
+			return false;
+
+	return true;
 }
 
 bool ViveController::isMenuButtonPressed()
 {
-	return m_bMenuButtonClicked;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
+		if (!c->isPressed())
+			return false;
+
+	return true;
 }
 
 bool ViveController::isGripButtonPressed()
 {
-	return m_bGripButtonClicked;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_Grip])
+		if (!c->isPressed())
+			return false;
+
+	return true;
 }
 
 bool ViveController::isTriggerEngaged()
@@ -422,14 +428,14 @@ void ViveController::setScrollWheelVisibility(bool visible)
 {
 	m_ControllerScrollModeState.bScrollWheelVisible = visible;
 
-	for (auto &component : m_vComponents)
+	for (auto &component : m_vpComponents)
 	{
-		if (component.m_strComponentName.compare("scroll_wheel") == 0 ||
-			component.m_strComponentName.compare("touchpad") == 0 ||
-			component.m_strComponentName.compare("touchpad_scroll_cut") == 0)
+		if (component->m_strComponentName.compare("scroll_wheel") == 0 ||
+			component->m_strComponentName.compare("touchpad") == 0 ||
+			component->m_strComponentName.compare("touchpad_scroll_cut") == 0)
 		{
-			component.m_LastState = component.m_State;
-			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component.m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component.m_State);
+			component->m_LastState = component->m_State;
+			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component->m_State);
 		}
 	}
 }
@@ -443,12 +449,20 @@ bool ViveController::readyToRender()
 
 bool ViveController::isTouchpadTouched()
 {
-	return m_bTouchpadTouched;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->isTouched())
+			return false;
+
+	return true;
 }
 
 bool ViveController::isTouchpadClicked()
 {
-	return m_bTouchpadClicked;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->isPressed())
+			return false;
+
+	return true;
 }
 
 glm::mat4 ViveController::getLastDeviceToWorldTransform()

@@ -1,6 +1,6 @@
 #include "ManipulateDataVolumeBehavior.h"
 
-#include "DebugDrawer.h"
+#include "Renderer.h"
 
 ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume)
 	: DualControllerBehavior(gripController, scaleController)
