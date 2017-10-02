@@ -19,6 +19,8 @@ ManipulateDataVolumeBehavior::~ManipulateDataVolumeBehavior()
 
 void ManipulateDataVolumeBehavior::update()
 {
+	updateState();
+
 	if (m_bScaling)
 	{
 		float currentDist = controllerDistance();
@@ -41,86 +43,38 @@ void ManipulateDataVolumeBehavior::draw()
 {
 }
 
-void ManipulateDataVolumeBehavior::receiveEvent(const int event, void * payloadData)
+void ManipulateDataVolumeBehavior::updateState()
 {
-	switch (event)
+	if (m_pPrimaryController->isTriggerEngaged())		
+		m_bPreGripping = true;		
+	else
+		m_bPreGripping = false;
+
+
+	if (m_pPrimaryController->justClickedTrigger())
 	{
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_ENGAGE:
+		startRotation();
+		m_bGripping = true;
+	}
+
+	if (m_pPrimaryController->justUnclickedTrigger())
 	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			m_bPreGripping = true;
-		}
-
-		break;
+		endRotation();
+		m_bGripping = false;
+		m_bScaling = false;
 	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_DISENGAGE:
+	
+	if (m_pPrimaryController->justPressedGrip() && m_pSecondaryController->isGripButtonPressed() ||
+		m_pSecondaryController->justPressedGrip() && m_pPrimaryController->isGripButtonPressed())
 	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			m_bPreGripping = false;
-		}
+		m_bScaling = true;
 
-		break;
+		m_fInitialDistance = controllerDistance();
+		m_vec3InitialDimensions = m_pDataVolume->getDimensions();
 	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
-	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			startRotation();
-			m_bGripping = true;
-		}
 
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
-	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			endRotation();
-			m_bGripping = false;
-			m_bScaling = false;
-		}
-
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_GRIP_DOWN:
-	{
-		ViveController* payload;
-		memcpy(&payload, &payloadData, sizeof(ViveController*));
-
-		if (payload == m_pPrimaryController && m_pSecondaryController->isGripButtonPressed() ||
-			payload == m_pSecondaryController && m_pPrimaryController->isGripButtonPressed())
-		{
-			m_bScaling = true;
-
-			m_fInitialDistance = controllerDistance();
-			m_vec3InitialDimensions = m_pDataVolume->getDimensions();
-		}
-		
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_GRIP_UP:
-	{
-		ViveController* payload;
-		memcpy(&payload, &payloadData, sizeof(ViveController*));
-
-		if (m_bScaling)
-			m_bScaling = false;
-
-		break;
-	}
-	default:
-		break;
-	}
+	if (!m_pPrimaryController->isGripButtonPressed() || m_pSecondaryController->isGripButtonPressed())
+		m_bScaling = false;
 }
 
 float ManipulateDataVolumeBehavior::controllerDistance()

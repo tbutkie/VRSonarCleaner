@@ -26,6 +26,8 @@ SelectAreaBehavior::~SelectAreaBehavior()
 
 void SelectAreaBehavior::update()
 {
+	updateState();
+
 	glm::vec3 hitPt = calcHits();
 
 	if (m_bRayHitPlane)
@@ -225,45 +227,20 @@ void SelectAreaBehavior::reset()
 	m_bMovingArea = false;
 }
 
-void SelectAreaBehavior::receiveEvent(const int event, void * payloadData)
+void SelectAreaBehavior::updateState()
 {
-	switch (event)
+	if (m_pPrimaryController->justClickedTrigger())
 	{
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
-	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			m_bActive = true;
-		}
-
-		break;
+		m_bActive = true;
 	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
+	if (m_pPrimaryController->justUnclickedTrigger())
 	{
-		BroadcastSystem::Payload::Trigger* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Trigger*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			m_bActive = false;
-		}
-
-		break;
+		m_bActive = false;
 	}
-	case BroadcastSystem::EVENT::VIVE_TOUCHPAD_DOWN:
+
+	if (m_pPrimaryController->justPressedTouchpad())
 	{
-		BroadcastSystem::Payload::Touchpad* payload;
-		memcpy(&payload, &payloadData, sizeof(BroadcastSystem::Payload::Touchpad*));
-		if (payload->m_pSelf == m_pPrimaryController)
-		{
-			reset();
-		}
-
-		break;
-	}
-	default:
-		break;
+		reset();
 	}
 }
 

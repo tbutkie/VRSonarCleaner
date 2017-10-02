@@ -30,7 +30,8 @@ private:
 	glm::mat4 m_mat4ControllerToVolumeTransform; // Transformation from Controller Space to Data Volume Space
 
 private:
-	void receiveEvent(const int event, void* payloadData);
+	void updateState();
+
 	float controllerDistance();
 
 	void startRotation();

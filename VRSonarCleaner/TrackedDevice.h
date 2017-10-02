@@ -7,11 +7,9 @@
 
 #include <GL/glew.h>
 
-#include "BroadcastSystem.h"
-
 #include <shared/glm/glm.hpp>
 
-class TrackedDevice : public BroadcastSystem::Broadcaster
+class TrackedDevice
 {
 	friend class TrackedDeviceManager;
 

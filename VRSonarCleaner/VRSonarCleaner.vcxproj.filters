@@ -206,9 +206,6 @@
     <ClInclude Include="LassoTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BroadcastSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LightingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -37,15 +37,6 @@ void TutorialBehavior::draw()
 {
 }
 
-void TutorialBehavior::receiveEvent(const int event, void * payloadData)
-{
-	switch (event)
-	{
-	default:
-		break;
-	}
-}
-
 void TutorialBehavior::createTutorialQueue()
 {
 	InitFunc tf = [&]() {

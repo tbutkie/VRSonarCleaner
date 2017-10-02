@@ -413,13 +413,13 @@ float ViveController::getHairTriggerThreshold()
 }
 
 // In model coordinates
-glm::vec3 ViveController::getCurrentTouchpadTouchPoint()
+glm::vec3 ViveController::getCurrentTouchpadTouchPointModelCoords()
 {
 	return glm::vec3(transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint));
 }
 
 // In model coordinates
-glm::vec3 ViveController::getInitialTouchpadTouchPoint()
+glm::vec3 ViveController::getInitialTouchpadTouchPointModelCoords()
 {
 	return glm::vec3(transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint));
 }

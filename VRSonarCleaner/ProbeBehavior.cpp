@@ -64,6 +64,94 @@ glm::mat4 ProbeBehavior::getLastProbeToWorldTransform()
 
 void ProbeBehavior::update()
 {
+	if (m_pController->isTouchpadTouched())
+	{
+		glm::vec2 delta = m_pController->getCurrentTouchpadTouchPoint() - m_pController->getInitialTouchpadTouchPoint();
+
+		if (!(m_bVerticalSwipeMode || m_bHorizontalSwipeMode) &&
+			glm::length(delta) > c_fTouchDeltaThreshold)
+		{
+			m_vec2InitialMeasurementPoint = m_pController->getCurrentTouchpadTouchPoint();
+
+			if (abs(delta.x) > abs(delta.y))
+			{
+				m_bHorizontalSwipeMode = true;
+				m_fProbeRadiusInitial = m_fProbeRadius;
+			}
+			else
+			{
+				m_bVerticalSwipeMode = true;
+				m_pController->setScrollWheelVisibility(true);
+				m_fProbeInitialOffset = m_fProbeOffset;
+			}
+		}
+
+		assert(!(m_bVerticalSwipeMode && m_bHorizontalSwipeMode));
+
+		glm::vec2 measuredOffset = m_pController->getCurrentTouchpadTouchPoint() - m_vec2InitialMeasurementPoint;
+
+		if (m_bVerticalSwipeMode)
+		{
+			m_fProbeOffset = measuredOffset.y;
+
+			float dy = measuredOffset.y;
+
+			float range = m_fProbeOffsetMax - m_fProbeOffsetMin;
+
+			m_fProbeOffset = m_fProbeInitialOffset + dy * range * 0.5f;
+
+			if (m_fProbeOffset > m_fProbeOffsetMax)
+			{
+				m_fProbeOffset = m_fProbeOffsetMax;
+				m_fProbeInitialOffset = m_fProbeOffsetMax;
+				m_vec2InitialMeasurementPoint.y = m_pController->getCurrentTouchpadTouchPoint().y;
+			}
+			else if (m_fProbeOffset < m_fProbeOffsetMin)
+			{
+				m_fProbeOffset = m_fProbeOffsetMin;
+				m_fProbeInitialOffset = m_fProbeOffsetMin;
+				m_vec2InitialMeasurementPoint.y = m_pController->getCurrentTouchpadTouchPoint().y;
+			}
+		}
+
+		if (m_bHorizontalSwipeMode)
+		{
+			float dx = m_pController->getCurrentTouchpadTouchPoint().x - m_vec2InitialMeasurementPoint.x;
+
+			float range = m_fProbeRadiusMax - m_fProbeRadiusMin;
+
+			m_fProbeRadius = m_fProbeRadiusInitial + dx * range;
+
+			if (m_fProbeRadius > m_fProbeRadiusMax)
+			{
+				m_fProbeRadius = m_fProbeRadiusMax;
+				m_fProbeRadiusInitial = m_fProbeRadiusMax;
+				m_vec2InitialMeasurementPoint.x = m_pController->getCurrentTouchpadTouchPoint().x;
+			}
+			else if (m_fProbeRadius < m_fProbeRadiusMin)
+			{
+				m_fProbeRadius = m_fProbeRadiusMin;
+				m_fProbeRadiusInitial = m_fProbeRadiusMin;
+				m_vec2InitialMeasurementPoint.x = m_pController->getCurrentTouchpadTouchPoint().x;
+			}
+		}
+	}
+
+	if (m_pController->justUntouchedTouchpad())
+	{
+		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
+		m_pController->setScrollWheelVisibility(false);
+	}
+
+	if (m_pController->justClickedTrigger())
+	{
+		activateProbe();
+	}
+
+	if (m_pController->justUnclickedTrigger())
+	{
+		deactivateProbe();
+	}
 }
 
 void ProbeBehavior::drawProbe(float length)
@@ -90,114 +178,5 @@ void ProbeBehavior::drawProbe(float length)
 		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
-	}
-}
-
-void ProbeBehavior::receiveEvent(const int event, void * payloadData)
-{
-	switch (event)
-	{
-	case BroadcastSystem::EVENT::VIVE_TOUCHPAD_ENGAGE:
-	{
-		BroadcastSystem::Payload::Touchpad* payload;
-		memcpy(&payload, &payloadData, sizeof(payload));
-		
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_TOUCHPAD_TOUCH:
-	{
-		BroadcastSystem::Payload::Touchpad* payload;
-		memcpy(&payload, &payloadData, sizeof(payload));
-		
-		glm::vec2 delta = payload->m_vec2CurrentTouch - payload->m_vec2InitialTouch;
-
-		if (!(m_bVerticalSwipeMode || m_bHorizontalSwipeMode) &&
-			glm::length(delta) > c_fTouchDeltaThreshold)
-		{
-			m_vec2InitialMeasurementPoint = payload->m_vec2CurrentTouch;
-
-			if (abs(delta.x) > abs(delta.y))
-			{
-				m_bHorizontalSwipeMode = true;
-				m_fProbeRadiusInitial = m_fProbeRadius;
-			}
-			else
-			{
-				m_bVerticalSwipeMode = true;
-				m_pController->setScrollWheelVisibility(true);
-				m_fProbeInitialOffset = m_fProbeOffset;
-			}
-		}
-
-		assert(!(m_bVerticalSwipeMode && m_bHorizontalSwipeMode));
-
-		glm::vec2 measuredOffset = payload->m_vec2CurrentTouch - m_vec2InitialMeasurementPoint;
-
-		if (m_bVerticalSwipeMode)
-		{
-			m_fProbeOffset = measuredOffset.y;
-
-			float dy = measuredOffset.y;
-
-			float range = m_fProbeOffsetMax - m_fProbeOffsetMin;
-
-			m_fProbeOffset = m_fProbeInitialOffset + dy * range * 0.5f;
-			
-			if (m_fProbeOffset > m_fProbeOffsetMax)
-			{
-				m_fProbeOffset = m_fProbeOffsetMax;
-				m_fProbeInitialOffset = m_fProbeOffsetMax;
-				m_vec2InitialMeasurementPoint.y = payload->m_vec2CurrentTouch.y;
-			}
-			else if (m_fProbeOffset < m_fProbeOffsetMin)
-			{
-				m_fProbeOffset = m_fProbeOffsetMin;
-				m_fProbeInitialOffset = m_fProbeOffsetMin;
-				m_vec2InitialMeasurementPoint.y = payload->m_vec2CurrentTouch.y;
-			}
-		}
-
-		if (m_bHorizontalSwipeMode)
-		{
-			float dx = payload->m_vec2CurrentTouch.x - m_vec2InitialMeasurementPoint.x;
-
-			float range = m_fProbeRadiusMax - m_fProbeRadiusMin;
-
-			m_fProbeRadius = m_fProbeRadiusInitial + dx * range;
-
-			if (m_fProbeRadius > m_fProbeRadiusMax)
-			{
-				m_fProbeRadius = m_fProbeRadiusMax;
-				m_fProbeRadiusInitial = m_fProbeRadiusMax;
-				m_vec2InitialMeasurementPoint.x = payload->m_vec2CurrentTouch.x;
-			}
-			else if (m_fProbeRadius < m_fProbeRadiusMin)
-			{ 
-				m_fProbeRadius = m_fProbeRadiusMin;
-				m_fProbeRadiusInitial = m_fProbeRadiusMin;
-				m_vec2InitialMeasurementPoint.x = payload->m_vec2CurrentTouch.x;
-			}
-		}
-
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_TOUCHPAD_DISENGAGE:
-	{
-		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
-		m_pController->setScrollWheelVisibility(false);
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_DOWN:
-	{
-		activateProbe();
-		break;
-	}
-	case BroadcastSystem::EVENT::VIVE_TRIGGER_UP:
-	{
-		deactivateProbe();
-		break;
-	}
-	default:
-		break;
 	}
 }

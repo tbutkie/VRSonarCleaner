@@ -207,7 +207,6 @@
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BehaviorList.h" />
     <ClInclude Include="BehaviorManager.h" />
-    <ClInclude Include="BroadcastSystem.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />

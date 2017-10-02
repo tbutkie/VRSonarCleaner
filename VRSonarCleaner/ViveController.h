@@ -27,12 +27,25 @@ public:
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
+	bool justClickedTrigger();
+	bool justUnclickedTrigger();
+
+	bool justPressedGrip();
+	bool justUnpressedGrip();
+
+	bool justTouchedTouchpad();
+	bool justUntouchedTouchpad();
+	bool justPressedTouchpad();
+	bool justUpressedTouchpad();
+
 	glm::mat4 getLastDeviceToWorldTransform();
 
 	float getTriggerPullAmount();
 	float getHairTriggerThreshold();
-	glm::vec3 getCurrentTouchpadTouchPoint();
-	glm::vec3 getInitialTouchpadTouchPoint();
+	glm::vec2 getCurrentTouchpadTouchPoint();
+	glm::vec2 getInitialTouchpadTouchPoint();
+	glm::vec3 getCurrentTouchpadTouchPointModelCoords();
+	glm::vec3 getInitialTouchpadTouchPointModelCoords();
 
 	void setScrollWheelVisibility(bool visible);
 

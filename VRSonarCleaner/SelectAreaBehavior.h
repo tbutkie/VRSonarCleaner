@@ -45,8 +45,7 @@ private:
 	glm::vec3 m_vec3CursorSize;
 
 private:
-	void receiveEvent(const int event, void* payloadData);
-
+	void updateState();
 	glm::vec3 calcHits();
 	bool castRay(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3 planeOrigin, glm::vec3 planeNormal, glm::vec3* locationOnPlane);
 };

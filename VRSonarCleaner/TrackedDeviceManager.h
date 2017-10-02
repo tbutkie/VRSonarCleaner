@@ -4,7 +4,6 @@
 
 #include "TrackedDevice.h"
 #include "ViveController.h"
-#include "BroadcastSystem.h"
 #include "RenderModel.h"
 
 #include <shared/glm/glm.hpp>
@@ -13,7 +12,7 @@
 
 #include <future>
 
-class TrackedDeviceManager : public BroadcastSystem::Broadcaster
+class TrackedDeviceManager
 {
 public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);

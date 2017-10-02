@@ -47,7 +47,6 @@ protected:
 	float m_fProbeRadiusInitial;
 
 protected:
-	virtual void receiveEvent(const int event, void* payloadData);
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;
 

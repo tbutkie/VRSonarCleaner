@@ -1,8 +1,6 @@
 #pragma once
 
-#include "BroadcastSystem.h"
-
-class BehaviorBase : public BroadcastSystem::Listener
+class BehaviorBase
 {
 public:
 	BehaviorBase() {};
@@ -11,8 +9,5 @@ public:
 	virtual void update() = 0;
 
 	virtual void draw() = 0;
-
-protected:
-	virtual void receiveEvent(const int event, void* payloadData) = 0;
 };
 
