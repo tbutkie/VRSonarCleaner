@@ -11,7 +11,6 @@ TrackedDevice::TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, v
 	, m_strRenderModelName("No model name")
 	, m_bHasRenderModel(false)
 	, m_ClassChar(0)
-	, m_bShowAxes(false)
 	, m_bHidden(false)
 {	
 }
@@ -41,7 +40,6 @@ bool TrackedDevice::BInit()
 	if (m_ClassChar == 'T')
 		m_bHidden = true;
 	
-
 	return true;
 }
 
@@ -59,16 +57,6 @@ void TrackedDevice::setRenderModelName(std::string renderModelName)
 bool TrackedDevice::hasRenderModel()
 {
 	return m_bHasRenderModel;
-}
-
-bool TrackedDevice::toggleAxes()
-{
-	return m_bShowAxes = !m_bShowAxes;
-}
-
-bool TrackedDevice::axesActive()
-{
-	return m_bShowAxes;
 }
 
 bool TrackedDevice::poseValid()

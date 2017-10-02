@@ -64,8 +64,8 @@ void ManipulateDataVolumeBehavior::updateState()
 		m_bScaling = false;
 	}
 	
-	if (m_pPrimaryController->justPressedGrip() && m_pSecondaryController->isGripButtonPressed() ||
-		m_pSecondaryController->justPressedGrip() && m_pPrimaryController->isGripButtonPressed())
+	if ((m_pPrimaryController->justPressedGrip() && m_pSecondaryController->isGripButtonPressed()) ||
+		(m_pSecondaryController->justPressedGrip() && m_pPrimaryController->isGripButtonPressed()))
 	{
 		m_bScaling = true;
 
@@ -73,7 +73,7 @@ void ManipulateDataVolumeBehavior::updateState()
 		m_vec3InitialDimensions = m_pDataVolume->getDimensions();
 	}
 
-	if (!m_pPrimaryController->isGripButtonPressed() || m_pSecondaryController->isGripButtonPressed())
+	if (!m_pPrimaryController->isGripButtonPressed() || !m_pSecondaryController->isGripButtonPressed())
 		m_bScaling = false;
 }
 

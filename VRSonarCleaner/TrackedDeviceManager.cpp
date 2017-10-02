@@ -139,13 +139,6 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	
 	m_rpTrackedDevices[unTrackedDeviceIndex] = thisDevice;
 
-	if (thisDevice->getClassChar() == 'C')
-	{
-		// attach listeners to controller
-		for (auto &l : m_vpListeners)
-			thisDevice->attach(l);
-	}
-
 	return true;
 }
 
@@ -158,21 +151,11 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 	{
 		if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pPrimaryController->getIndex())
 		{
-			m_pPrimaryController->detach(&InfoBoxManager::getInstance());
-
-			for (auto &l : m_vpListeners)
-				m_pPrimaryController->detach(l);
-
 			delete m_pPrimaryController;
 			m_pPrimaryController = NULL;
 		}
 		else if (m_rpTrackedDevices[unTrackedDeviceIndex]->getIndex() == m_pSecondaryController->getIndex())
 		{
-			m_pSecondaryController->detach(&InfoBoxManager::getInstance());
-
-			for (auto &l : m_vpListeners)
-				m_pSecondaryController->detach(l);
-
 			delete m_pSecondaryController;
 			m_pSecondaryController = NULL;
 		}

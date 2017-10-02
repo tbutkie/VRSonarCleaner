@@ -46,26 +46,6 @@ InfoBoxManager::~InfoBoxManager()
 {
 }
 
-void InfoBoxManager::receiveEvent(const int event, void* data)
-{
-	switch (event)
-	{
-	//case BroadcastSystem::EVENT::EDIT_TRIGGER_CLICKED:
-	//	updateInfoBoxSize("Test 1", 0.1f);
-	//	removeInfoBox("Test 2");
-	//	break;
-	case BroadcastSystem::EVENT::EXIT_PLAY_AREA:
-		updateInfoBoxSize("Test 3", 10.0f);
-		break;
-	case BroadcastSystem::EVENT::ENTER_PLAY_AREA:
-		updateInfoBoxSize("Test 3", 10.f);
-		break;
-	default:
-		break;
-	}
-	
-}
-
 void InfoBoxManager::draw()
 {
 	glm::mat4 HMDXform = m_pTDM->getHMDToWorldTransform();

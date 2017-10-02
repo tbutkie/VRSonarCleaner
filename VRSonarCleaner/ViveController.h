@@ -52,6 +52,26 @@ public:
 	bool readyToRender();
 
 protected:
+	struct CustomState {
+		glm::vec2 m_vec2TouchpadInitialTouchPoint;
+		glm::vec2 m_vec2TouchpadCurrentTouchPoint;
+		bool m_bTriggerEngaged;
+		bool m_bTriggerClicked;
+		float m_fTriggerPull;
+
+		CustomState()
+			: m_vec2TouchpadInitialTouchPoint(glm::vec2(0.f, 0.f))
+			, m_vec2TouchpadCurrentTouchPoint(glm::vec2(0.f, 0.f))
+			, m_bTriggerEngaged(false)
+			, m_bTriggerClicked(false)
+			, m_fTriggerPull(0.f)
+		{}
+	};
+
+	CustomState m_CustomState;
+	CustomState m_LastCustomState;
+
+protected:
 	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 
 	bool m_bStateInitialized;
@@ -63,14 +83,10 @@ protected:
 	vr::VRControllerState_t m_LastControllerState;
 	vr::RenderModel_ControllerMode_State_t m_ControllerScrollModeState;
 
-	glm::vec2 m_vec2TouchpadInitialTouchPoint;
-	glm::vec2 m_vec2TouchpadCurrentTouchPoint;
-	bool m_bTriggerEngaged;
-	bool m_bTriggerClicked;
-	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
-	float m_fTriggerPull;
 	int32_t m_nTriggerAxis;
 	int32_t m_nTouchpadAxis;
+
+	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
 
 	static const glm::vec4 c_vec4TouchPadCenter;
 	static const glm::vec4 c_vec4TouchPadLeft;

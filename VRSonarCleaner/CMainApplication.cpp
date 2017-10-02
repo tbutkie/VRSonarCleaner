@@ -358,7 +358,6 @@ bool CMainApplication::initVR()
 	}
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
-	m_pTDM->attach(&InfoBoxManager::getInstance());
 
 	createVRViews();
 

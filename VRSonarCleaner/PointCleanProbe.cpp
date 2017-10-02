@@ -23,6 +23,8 @@ PointCleanProbe::~PointCleanProbe()
 
 void PointCleanProbe::update()
 {	
+	ProbeBehavior::update();
+
 	// Update time vars
 	auto tick = std::chrono::high_resolution_clock::now();
 	m_msElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastTime);

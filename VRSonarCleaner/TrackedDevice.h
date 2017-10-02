@@ -23,9 +23,6 @@ public:
 	void setRenderModelName(std::string renderModelName);
 	bool hasRenderModel();
 
-	bool toggleAxes();
-	bool axesActive();
-
 	bool poseValid();
 	glm::mat4 getPose();
 
@@ -94,7 +91,6 @@ protected:
 
 	glm::mat4 m_mat4DeviceToWorldTransform;
 
-	bool m_bShowAxes;
 	bool m_bHasRenderModel;
 	bool m_bHidden;
 };
