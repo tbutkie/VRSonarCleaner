@@ -1,12 +1,12 @@
 #pragma once
-#include "SingleControllerBehavior.h"
-
+#include "BehaviorBase.h"
+#include "ViveController.h"
 #include "DataVolume.h"
 
 #include <chrono>
 
 class ProbeBehavior :
-	public SingleControllerBehavior
+	public BehaviorBase
 {
 public:
 	ProbeBehavior(ViveController* controller, DataVolume* dataVolume);
@@ -25,6 +25,7 @@ public:
 	void draw() = 0;
 
 protected:
+	ViveController *m_pController;
 	DataVolume* m_pDataVolume;
 
 	bool m_bShowProbe;

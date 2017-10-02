@@ -5,7 +5,7 @@
 #include "Renderer.h"
 
 ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
-	: SingleControllerBehavior(controller)
+	: m_pController(controller)
 	, m_pDataVolume(dataVolume)
 	, c_fTouchDeltaThreshold(0.2f)
 	, m_bShowProbe(true)

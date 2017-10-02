@@ -3,7 +3,8 @@
 #include "Renderer.h"
 
 ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume)
-	: DualControllerBehavior(gripController, scaleController)
+	: m_pGripController(gripController)
+	, m_pScaleController(scaleController)
 	, m_pDataVolume(dataVolume)
 	, m_bPreGripping(false)
 	, m_bGripping(false)
@@ -16,6 +17,8 @@ ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripC
 ManipulateDataVolumeBehavior::~ManipulateDataVolumeBehavior()
 {
 }
+
+
 
 void ManipulateDataVolumeBehavior::update()
 {
@@ -30,7 +33,7 @@ void ManipulateDataVolumeBehavior::update()
 
 	if (m_bPreGripping)
 	{
-		preRotation(m_pPrimaryController->getTriggerPullAmount());
+		preRotation(m_pGripController->getTriggerPullAmount());
 	}
 	
 	if (m_bGripping)
@@ -45,27 +48,27 @@ void ManipulateDataVolumeBehavior::draw()
 
 void ManipulateDataVolumeBehavior::updateState()
 {
-	if (m_pPrimaryController->isTriggerEngaged())		
+	if (m_pGripController->isTriggerEngaged())
 		m_bPreGripping = true;		
 	else
 		m_bPreGripping = false;
 
 
-	if (m_pPrimaryController->justClickedTrigger())
+	if (m_pGripController->justClickedTrigger())
 	{
 		startRotation();
 		m_bGripping = true;
 	}
 
-	if (m_pPrimaryController->justUnclickedTrigger())
+	if (m_pGripController->justUnclickedTrigger())
 	{
 		endRotation();
 		m_bGripping = false;
 		m_bScaling = false;
 	}
 	
-	if ((m_pPrimaryController->justPressedGrip() && m_pSecondaryController->isGripButtonPressed()) ||
-		(m_pSecondaryController->justPressedGrip() && m_pPrimaryController->isGripButtonPressed()))
+	if ((m_pGripController->justPressedGrip() && m_pScaleController->isGripButtonPressed()) ||
+		(m_pScaleController->justPressedGrip() && m_pGripController->isGripButtonPressed()))
 	{
 		m_bScaling = true;
 
@@ -73,19 +76,19 @@ void ManipulateDataVolumeBehavior::updateState()
 		m_vec3InitialDimensions = m_pDataVolume->getDimensions();
 	}
 
-	if (!m_pPrimaryController->isGripButtonPressed() || !m_pSecondaryController->isGripButtonPressed())
+	if (!m_pGripController->isGripButtonPressed() || !m_pScaleController->isGripButtonPressed())
 		m_bScaling = false;
 }
 
 float ManipulateDataVolumeBehavior::controllerDistance()
 {
-	return glm::length(m_pPrimaryController->getDeviceToWorldTransform()[3] - m_pSecondaryController->getDeviceToWorldTransform()[3]);
+	return glm::length(m_pGripController->getDeviceToWorldTransform()[3] - m_pScaleController->getDeviceToWorldTransform()[3]);
 }
 
 
 void ManipulateDataVolumeBehavior::startRotation()
 {
-	m_mat4ControllerPoseAtRotationStart = m_pPrimaryController->getDeviceToWorldTransform();
+	m_mat4ControllerPoseAtRotationStart = m_pGripController->getDeviceToWorldTransform();
 	//m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4_cast(m_qOrientation);
 	m_mat4DataVolumePoseAtRotationStart = glm::translate(glm::mat4(), m_pDataVolume->getPosition()) * glm::mat4_cast(m_pDataVolume->getOrientation());
 
@@ -100,7 +103,7 @@ void ManipulateDataVolumeBehavior::continueRotation()
 	if (!m_bRotationInProgress)
 		return;
 
-	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
+	glm::mat4 mat4ControllerPoseCurrent = m_pGripController->getDeviceToWorldTransform();
 
 	glm::mat4 newVolTrans = mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform;
 	glm::vec3 newVolPos((mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform)[3]);
@@ -150,7 +153,7 @@ void ManipulateDataVolumeBehavior::preRotation(float ratio)
 {
 	float cylThickness = 0.01f * (1.f - ratio);
 
-	glm::mat4 mat4ControllerPoseCurrent = m_pPrimaryController->getDeviceToWorldTransform();
+	glm::mat4 mat4ControllerPoseCurrent = m_pGripController->getDeviceToWorldTransform();
 	
 	glm::vec4 wCurrent = glm::vec4(m_pDataVolume->getPosition(), 1.f) - mat4ControllerPoseCurrent[3];
 	glm::vec4 uCurrent = glm::vec4(glm::cross(glm::vec3(0.f, 1.f, 0.f), glm::normalize(glm::vec3(wCurrent))), 0.f);

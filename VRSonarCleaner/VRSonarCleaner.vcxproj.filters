@@ -102,16 +102,10 @@
     <ClCompile Include="AdvectionProbe.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
-    <ClCompile Include="DualControllerBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="FlowProbe.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
     <ClCompile Include="ProbeBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
-    <ClCompile Include="SingleControllerBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
     <ClCompile Include="ManipulateDataVolumeBehavior.cpp">
@@ -137,6 +131,9 @@
     </ClCompile>
     <ClCompile Include="TutorialBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
+    <ClCompile Include="WelcomeBehavior.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -221,9 +218,6 @@
     <ClInclude Include="GLSLpreamble.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SingleControllerBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="ProbeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
@@ -231,9 +225,6 @@
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="FlowProbe.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
-    <ClInclude Include="DualControllerBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="BehaviorBase.h">
@@ -262,6 +253,9 @@
     </ClInclude>
     <ClInclude Include="TutorialBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="WelcomeBehavior.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

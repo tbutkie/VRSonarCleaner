@@ -173,7 +173,6 @@
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="CoordinateScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
-    <ClCompile Include="DualControllerBehavior.cpp" />
     <ClCompile Include="FlowGrid.cpp" />
     <ClCompile Include="FlowProbe.cpp" />
     <ClCompile Include="FlowVolume.cpp" />
@@ -190,7 +189,6 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SelectAreaBehavior.cpp" />
     <ClCompile Include="shaderset.cpp" />
-    <ClCompile Include="SingleControllerBehavior.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
@@ -198,6 +196,7 @@
     <ClCompile Include="TrackedDeviceManager.cpp" />
     <ClCompile Include="TutorialBehavior.cpp" />
     <ClCompile Include="ViveController.cpp" />
+    <ClCompile Include="WelcomeBehavior.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h" />
@@ -216,7 +215,6 @@
     <ClInclude Include="CoordinateScaler.h" />
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="DebugDrawer.h" />
-    <ClInclude Include="DualControllerBehavior.h" />
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
@@ -234,13 +232,13 @@
     <ClInclude Include="SelectAreaBehavior.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />
-    <ClInclude Include="SingleControllerBehavior.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="TutorialBehavior.h" />
     <ClInclude Include="ViveController.h" />
+    <ClInclude Include="WelcomeBehavior.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\windowtexture.frag" />

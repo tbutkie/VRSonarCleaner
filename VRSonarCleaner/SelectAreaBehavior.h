@@ -1,10 +1,10 @@
 #pragma once
-#include "DualControllerBehavior.h"
-
+#include "BehaviorBase.h"
+#include "ViveController.h"
 #include "DataVolume.h"
 
 class SelectAreaBehavior :
-	public DualControllerBehavior
+	public BehaviorBase
 {
 public:
 	SelectAreaBehavior(ViveController* primaryController, ViveController* secondaryController, DataVolume* selectionVolume, DataVolume* displayVolume);
@@ -17,6 +17,8 @@ public:
 	void reset();
 
 private:
+	ViveController *m_pPrimaryController;
+	ViveController *m_pSecondaryController;
 	DataVolume* m_pDataVolumeSelection;
 	DataVolume* m_pDataVolumeDisplay;
 

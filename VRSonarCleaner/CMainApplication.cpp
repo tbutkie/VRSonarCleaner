@@ -546,7 +546,7 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
-				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pTableVolume));
+				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)

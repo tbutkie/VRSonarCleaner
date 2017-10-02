@@ -5,7 +5,8 @@
 #include <limits>
 
 SelectAreaBehavior::SelectAreaBehavior(ViveController* primaryController, ViveController* secondaryController, DataVolume* selectionVolume, DataVolume* displayVolume)
-	: DualControllerBehavior(primaryController, secondaryController)
+	: m_pPrimaryController(primaryController)
+	, m_pSecondaryController(secondaryController)
 	, m_pDataVolumeSelection(selectionVolume)
 	, m_pDataVolumeDisplay(displayVolume)
 	, m_bActive(false)

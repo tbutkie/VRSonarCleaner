@@ -1,10 +1,11 @@
 #pragma once
-#include "DualControllerBehavior.h"
 
+#include "BehaviorBase.h"
+#include "ViveController.h"
 #include "DataVolume.h"
 
 class ManipulateDataVolumeBehavior :
-	public DualControllerBehavior
+	public BehaviorBase
 {
 public:
 	ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume);
@@ -15,6 +16,7 @@ public:
 	void draw();
 
 private:
+	ViveController *m_pGripController, *m_pScaleController;
 	DataVolume* m_pDataVolume;
 
 	bool m_bPreGripping;
