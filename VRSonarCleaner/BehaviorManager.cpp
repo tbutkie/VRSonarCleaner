@@ -46,26 +46,27 @@ BehaviorBase * BehaviorManager::getBehavior(std::string name)
 
 bool BehaviorManager::removeBehavior(std::string name)
 {
-	std::map<std::string, BehaviorBase*>::iterator it = m_mappBehaviors.find(name);
-	if (it == m_mappBehaviors.end())
+	BehaviorBase * toDelete = getBehavior(name);
+
+	if (toDelete == NULL)
 	{
 		printf("%s: Tried to remove behavior \"%s\" which doesn't exist!\n", __FUNCTION__, name);
 		return false;
 	}
 	else
 	{
-		delete it->second;
-		it->second = NULL;
-		m_mappBehaviors.erase(it);
+		printf("%s: Removing behavior \"%s\"\n", __FUNCTION__, name.c_str());
+		delete toDelete;
+		m_mappBehaviors.erase(name);
 		return true;
 	}
 }
 
 void BehaviorManager::clearBehaviors()
 {
-	for (auto &b : m_mappBehaviors)
-		delete b.second;
-
+	auto mapCopy = m_mappBehaviors;
+	for (auto &b : mapCopy)
+		removeBehavior(b.first);
 	m_mappBehaviors.clear();
 }
 

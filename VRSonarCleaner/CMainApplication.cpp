@@ -4,11 +4,7 @@
 
 #include "BehaviorManager.h"
 #include "TutorialBehavior.h"
-#include "ManipulateDataVolumeBehavior.h"
-#include "SelectAreaBehavior.h"
-#include "FlowProbe.h"
-#include "AdvectionProbe.h"
-#include "PointCleanProbe.h"
+#include "DemoBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -227,8 +223,8 @@ bool CMainApplication::init()
 		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
 		m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
-		// m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
-		// m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
@@ -546,8 +542,14 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
-				BehaviorManager::getInstance().clearBehaviors();
 				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+			}
+			if (sdlEvent.key.keysym.sym == SDLK_y)
+			{
+				m_bDemoMode = true;
+				//BehaviorManager::getInstance().removeBehavior("Demo");
+				BehaviorManager::getInstance().clearBehaviors();
+				BehaviorManager::getInstance().addBehavior("Demo", new DemoBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)
@@ -559,19 +561,6 @@ bool CMainApplication::HandleInput()
 						m_bUseDesktop = true;
 						initDesktop();
 					}
-				}
-				else
-				{
-					m_bDemoMode = !m_bDemoMode;
-
-					if (BehaviorManager::getInstance().getBehavior("Advection Probe"))				
-						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->deactivateDemoMode();
-
-					if (BehaviorManager::getInstance().getBehavior("Flow Probe"))
-						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Flow Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Advection Probe"))->deactivateDemoMode();
-
-					if (BehaviorManager::getInstance().getBehavior("Point Clean Probe"))
-						m_bDemoMode ? static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Point Clean Probe"))->activateDemoMode() : static_cast<AdvectionProbe*>(BehaviorManager::getInstance().getBehavior("Point Clean Probe"))->deactivateDemoMode();
 				}
 			}
 
@@ -797,37 +786,6 @@ void CMainApplication::RunMainLoop()
 
 void CMainApplication::update()
 {
-	if (m_bUseVR)
-	{
-		if (m_bFlowVis)
-		{
-			if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Flow Probe"))
-				BehaviorManager::getInstance().addBehavior("Flow Probe", new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
-			
-			if (m_pTDM->getSecondaryController() && !BehaviorManager::getInstance().getBehavior("Advection Probe"))
-				BehaviorManager::getInstance().addBehavior("Advection Probe", new AdvectionProbe(m_pTDM->getSecondaryController(), m_pFlowVolume));
-		}
-
-		if (m_bSonarCleaning)
-		{
-			if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Point Clean Probe"))
-				BehaviorManager::getInstance().addBehavior("Point Clean Probe", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD));
-
-		}
-
-		// Attach grip & scale behavior when both controllers available
-		if (m_pTDM->getSecondaryController() && m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("Data Volume Manipulate"))
-		{
-			if (m_bSonarCleaning)
-			{
-				BehaviorManager::getInstance().addBehavior("Select Area", new SelectAreaBehavior(m_pTDM->getPrimaryController(), m_pTDM->getSecondaryController(), m_pWallVolume, m_pTableVolume));
-				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pTableVolume));
-			}
-			else if (m_bFlowVis)
-				BehaviorManager::getInstance().addBehavior("Data Volume Manipulate", new ManipulateDataVolumeBehavior(m_pTDM->getSecondaryController(), m_pTDM->getPrimaryController(), m_pFlowVolume));
-		}
-	}
-
 	BehaviorManager::getInstance().update();
 
 	if (m_bUseDesktop)
@@ -1185,17 +1143,11 @@ void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<
 	if (clouds.size() == 0ull)
 		return;
 
-	auto depthTPUMinCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinDepthTPU() < rhs->getMinDepthTPU(); };
-	auto depthTPUMaxCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMaxDepthTPU() < rhs->getMaxDepthTPU(); };
+	float minDepthTPU = (*std::min_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcDepthTPUMinCompare))->getMinDepthTPU();
+	float maxDepthTPU = (*std::max_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcDepthTPUMaxCompare))->getMaxDepthTPU();
 
-	float minDepthTPU = (*std::min_element(clouds.begin(), clouds.end(), depthTPUMinCompareFunc))->getMinDepthTPU();
-	float maxDepthTPU = (*std::max_element(clouds.begin(), clouds.end(), depthTPUMaxCompareFunc))->getMaxDepthTPU();
-
-	auto posTPUMinCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU(); };
-	auto posTPUMaxCompareFunc = [](SonarPointCloud* &lhs, SonarPointCloud* &rhs) { return lhs->getMaxPositionalTPU() < rhs->getMaxPositionalTPU(); };
-
-	float minPosTPU = (*std::min_element(clouds.begin(), clouds.end(), posTPUMinCompareFunc))->getMinPositionalTPU();
-	float maxPosTPU = (*std::max_element(clouds.begin(), clouds.end(), posTPUMaxCompareFunc))->getMaxPositionalTPU();
+	float minPosTPU = (*std::min_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcPosTPUMinCompare))->getMinPositionalTPU();
+	float maxPosTPU = (*std::max_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcPosTPUMaxCompare))->getMaxPositionalTPU();
 
 	colorScaler->resetMinMaxForColorScale(m_pTableVolume->getMinDataBound().z, m_pTableVolume->getMaxDataBound().z);
 	colorScaler->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);

@@ -8,7 +8,7 @@ class AdvectionProbe :
 {
 public:
 	AdvectionProbe(ViveController* controller, FlowVolume* flowVolume);
-	~AdvectionProbe();
+	virtual ~AdvectionProbe();
 
 	void update();
 

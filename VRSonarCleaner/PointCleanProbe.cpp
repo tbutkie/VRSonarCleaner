@@ -144,7 +144,9 @@ bool checkPointInAABB(glm::vec3 point, glm::vec3 aabbMin, glm::vec3 aabbMax)
 
 void PointCleanProbe::checkPoints()
 {
-	return;
+	if (!m_bActive)
+		return;
+
 	if (!m_pController || !m_pController->poseValid()) 
 		return;
 

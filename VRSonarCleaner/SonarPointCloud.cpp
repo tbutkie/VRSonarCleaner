@@ -384,6 +384,26 @@ float SonarPointCloud::getMaxPositionalTPU()
 	return m_fMaxPositionalTPU;
 }
 
+bool SonarPointCloud::s_funcDepthTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs)
+{
+	return lhs->getMinDepthTPU() < rhs->getMinDepthTPU();
+}
+
+bool SonarPointCloud::s_funcDepthTPUMaxCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMaxDepthTPU() < rhs->getMaxDepthTPU();
+}
+
+bool SonarPointCloud::s_funcPosTPUMinCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU();
+}
+
+bool SonarPointCloud::s_funcPosTPUMaxCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMaxPositionalTPU() < rhs->getMaxPositionalTPU();
+}
+
 glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 {
 	glm::vec3 col;

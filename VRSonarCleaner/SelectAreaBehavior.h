@@ -8,7 +8,7 @@ class SelectAreaBehavior :
 {
 public:
 	SelectAreaBehavior(ViveController* primaryController, ViveController* secondaryController, DataVolume* selectionVolume, DataVolume* displayVolume);
-	~SelectAreaBehavior();
+	virtual ~SelectAreaBehavior();
 
 	void update();
 

@@ -166,7 +166,9 @@
     <ClCompile Include="AdvectionProbe.cpp" />
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="BehaviorManager.cpp" />
+    <ClCompile Include="CloudEditControllerTutorial.cpp" />
     <ClCompile Include="Dataset.cpp" />
+    <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
@@ -207,7 +209,9 @@
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BehaviorList.h" />
     <ClInclude Include="BehaviorManager.h" />
+    <ClInclude Include="CloudEditControllerTutorial.h" />
     <ClInclude Include="Dataset.h" />
+    <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />
     <ClInclude Include="CMainApplication.h" />

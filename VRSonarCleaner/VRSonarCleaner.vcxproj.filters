@@ -25,6 +25,12 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{9f399a18-8975-4a7b-b4a4-60e740fc18d5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interactions &amp; Behaviors\demo">
+      <UniqueIdentifier>{4429e54a-d5a5-4aeb-88c6-d41634b16d94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interactions &amp; Behaviors\tutorial">
+      <UniqueIdentifier>{ecf261b2-dc4e-413a-827f-80db2a92db12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -129,14 +135,20 @@
     <ClCompile Include="SelectAreaBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
-    <ClCompile Include="TutorialBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="WelcomeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
+    <ClCompile Include="TutorialBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
     <ClCompile Include="TutorialIntroduction.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="DemoBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\demo</Filter>
+    </ClCompile>
+    <ClCompile Include="CloudEditControllerTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -254,14 +266,20 @@
     <ClInclude Include="SelectAreaBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
-    <ClInclude Include="TutorialBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="WelcomeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="TutorialIntroduction.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="TutorialBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="DemoBehavior.h">
+      <Filter>Interactions &amp; Behaviors\demo</Filter>
+    </ClInclude>
+    <ClInclude Include="CloudEditControllerTutorial.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

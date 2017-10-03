@@ -148,7 +148,7 @@ void ProbeBehavior::update()
 		activateProbe();
 	}
 
-	if (m_pController->justUnclickedTrigger())
+	if (!m_pController->isTriggerClicked())
 	{
 		deactivateProbe();
 	}

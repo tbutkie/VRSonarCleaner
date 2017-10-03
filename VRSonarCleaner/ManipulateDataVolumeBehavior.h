@@ -9,7 +9,7 @@ class ManipulateDataVolumeBehavior :
 {
 public:
 	ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume);
-	~ManipulateDataVolumeBehavior();
+	virtual ~ManipulateDataVolumeBehavior();
 
 	void update();
 

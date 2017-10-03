@@ -8,7 +8,7 @@ class WelcomeBehavior :
 {
 public:
 	WelcomeBehavior(TrackedDeviceManager* pTDM);
-	~WelcomeBehavior();
+	virtual ~WelcomeBehavior();
 
 	void init();
 

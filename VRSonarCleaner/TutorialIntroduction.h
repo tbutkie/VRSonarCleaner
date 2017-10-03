@@ -9,7 +9,7 @@ class TutorialIntroduction :
 {
 public:
 	TutorialIntroduction(TrackedDeviceManager* pTDM, DataVolume* tableVolume);
-	~TutorialIntroduction();
+	virtual ~TutorialIntroduction();
 
 	void init();
 	

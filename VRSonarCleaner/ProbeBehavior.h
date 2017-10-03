@@ -22,7 +22,7 @@ public:
 
 	virtual void update();
 
-	void draw() = 0;
+	virtual void draw() = 0;
 
 protected:
 	ViveController *m_pController;

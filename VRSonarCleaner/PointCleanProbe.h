@@ -12,11 +12,11 @@ class PointCleanProbe :
 {
 public:
 	PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD);
-	~PointCleanProbe();
+	virtual ~PointCleanProbe();
 
-	void update();
+	virtual void update();
 
-	void draw();
+	virtual void draw();
 
 private:
 	bool m_bProbeActive;

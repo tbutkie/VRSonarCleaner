@@ -8,13 +8,13 @@
 
 
 
-class TutorialBehavior :
+class DemoBehavior :
 	public BehaviorBase
 {
 
 public:
-	TutorialBehavior(TrackedDeviceManager* m_pTDM, DataVolume* TableVolume, DataVolume* WallVolume);
-	virtual ~TutorialBehavior();
+	DemoBehavior(TrackedDeviceManager* m_pTDM, DataVolume* TableVolume, DataVolume* WallVolume);
+	virtual ~DemoBehavior();
 
 	void update();
 
@@ -28,6 +28,6 @@ private:
 	std::queue<InitializableBehavior*> m_qTutorialQueue;
 
 private:
-	void createTutorialQueue();
+	void createDemoQueue();
 };
 

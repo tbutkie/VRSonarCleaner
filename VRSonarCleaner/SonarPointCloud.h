@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
+#include <functional>
 #include "Dataset.h"
 #include "ColorScaler.h"
 
@@ -60,6 +61,12 @@ class SonarPointCloud : public Dataset
 		float getMaxDepthTPU();
 		float getMinPositionalTPU();
 		float getMaxPositionalTPU();
+
+		static bool s_funcDepthTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
+		static bool s_funcDepthTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
+
+		static bool s_funcPosTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
+		static bool s_funcPosTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 
 	private:
 		//variables

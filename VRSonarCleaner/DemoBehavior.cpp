@@ -1,29 +1,34 @@
-#include "TutorialBehavior.h"
+#include "DemoBehavior.h"
 
 #include "InfoBoxManager.h"
 #include "BehaviorManager.h"
 #include "Renderer.h"
 
 #include "WelcomeBehavior.h"
-#include "TutorialIntroduction.h"
+#include "CloudEditControllerTutorial.h"
 
-TutorialBehavior::TutorialBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
+DemoBehavior::DemoBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
 	: m_pTDM(pTDM)
 	, m_pTableVolume(tableVolume)
 	, m_pWallVolume(wallVolume)
 {
-	createTutorialQueue();
+	createDemoQueue();
 	tableVolume->setVisible(false);
 	wallVolume->setVisible(false);
 	m_qTutorialQueue.front()->init();
 }
 
 
-TutorialBehavior::~TutorialBehavior()
+DemoBehavior::~DemoBehavior()
 {
+	while (m_qTutorialQueue.size() > 0u)
+	{
+		delete m_qTutorialQueue.front();
+		m_qTutorialQueue.pop();
+	}
 }
 
-void TutorialBehavior::update()
+void DemoBehavior::update()
 {
 	if (m_qTutorialQueue.size() == 0u)
 		return;
@@ -38,18 +43,19 @@ void TutorialBehavior::update()
 		if (m_qTutorialQueue.size() > 0u)
 			m_qTutorialQueue.front()->init();
 	}
+	
 }
 
-void TutorialBehavior::draw()
+void DemoBehavior::draw()
 {
 	if (m_qTutorialQueue.size() > 0u)
 		m_qTutorialQueue.front()->draw();
 }
 
-void TutorialBehavior::createTutorialQueue()
+void DemoBehavior::createDemoQueue()
 {
 	m_qTutorialQueue.push(new WelcomeBehavior(m_pTDM));
-	m_qTutorialQueue.push(new TutorialIntroduction(m_pTDM, m_pTableVolume));
+	m_qTutorialQueue.push(new CloudEditControllerTutorial(m_pTDM));
 
 	//
 
