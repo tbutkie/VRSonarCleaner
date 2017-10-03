@@ -5,6 +5,7 @@
 #include "Renderer.h"
 
 #include "WelcomeBehavior.h"
+#include "TutorialIntroduction.h"
 
 TutorialBehavior::TutorialBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
 	: m_pTDM(pTDM)
@@ -12,6 +13,8 @@ TutorialBehavior::TutorialBehavior(TrackedDeviceManager* pTDM, DataVolume* table
 	, m_pWallVolume(wallVolume)
 {
 	createTutorialQueue();
+	tableVolume->setVisible(false);
+	wallVolume->setVisible(false);
 	m_qTutorialQueue.front()->init();
 }
 
@@ -46,38 +49,12 @@ void TutorialBehavior::draw()
 void TutorialBehavior::createTutorialQueue()
 {
 	m_qTutorialQueue.push(new WelcomeBehavior(m_pTDM));
+	m_qTutorialQueue.push(new TutorialIntroduction(m_pTDM, m_pTableVolume));
+
+	//
 
 	/*
 
-	m_qTutorialQueue.push(TutorialEntry(tf, uf, cf));
-
-	tf = [&]() {
-		InfoBoxManager::getInstance().addInfoBox(
-			"Editing Label",
-			"editctrlrlabel.png",
-			0.1f,
-			glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-			InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-			false);
-		InfoBoxManager::getInstance().addInfoBox(
-			"Manipulation Label",
-			"manipctrlrlabel.png",
-			0.1f,
-			glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-			InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
-			false);
-	};
-
-	uf = [&]() -> bool {
-		if (m_pPrimaryController->isTriggerClicked() && m_pSecondaryController->isTriggerClicked())
-			return false;
-		else
-			return true;
-	};
-
-	cf = [&]() {
-		InfoBoxManager::getInstance().removeInfoBox("Test 1");
-	};
 
 	m_qTutorialQueue.push(TutorialEntry(tf, uf, cf));
 

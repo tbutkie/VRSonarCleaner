@@ -1,5 +1,5 @@
 #include "ManipulateDataVolumeBehavior.h"
-
+#include "InfoBoxManager.h"
 #include "Renderer.h"
 
 ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume)
@@ -11,11 +11,19 @@ ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(ViveController* gripC
 	, m_bScaling(false)
 	, m_bRotationInProgress(false)
 {
+	InfoBoxManager::getInstance().addInfoBox(
+		"Manipulation Label",
+		"manipctrlrlabel.png",
+		0.1f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
+		false);
 }
 
 
 ManipulateDataVolumeBehavior::~ManipulateDataVolumeBehavior()
 {
+	InfoBoxManager::getInstance().removeInfoBox("Manipulation Label");
 }
 
 

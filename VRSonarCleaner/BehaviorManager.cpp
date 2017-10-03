@@ -61,6 +61,14 @@ bool BehaviorManager::removeBehavior(std::string name)
 	}
 }
 
+void BehaviorManager::clearBehaviors()
+{
+	for (auto &b : m_mappBehaviors)
+		delete b.second;
+
+	m_mappBehaviors.clear();
+}
+
 void BehaviorManager::update()
 {
 	for (auto &b : m_mappBehaviors)

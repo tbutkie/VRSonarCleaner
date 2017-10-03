@@ -23,6 +23,8 @@ public:
 	BehaviorBase* getBehavior(std::string name);
 	bool removeBehavior(std::string name);
 
+	void clearBehaviors();
+
 private:
 	BehaviorManager();
 	~BehaviorManager();

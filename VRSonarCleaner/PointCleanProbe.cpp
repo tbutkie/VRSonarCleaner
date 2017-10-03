@@ -1,7 +1,6 @@
 #include "PointCleanProbe.h"
 
-#include "GLSLpreamble.h"
-
+#include "InfoBoxManager.h"
 #include "Renderer.h"
 
 using namespace std::chrono_literals;
@@ -14,11 +13,19 @@ PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCl
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
 {
+	InfoBoxManager::getInstance().addInfoBox(
+		"Editing Label",
+		"editctrlrlabel.png",
+		0.1f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
+		false);
 }
 
 
 PointCleanProbe::~PointCleanProbe()
 {
+	InfoBoxManager::getInstance().removeInfoBox("Editing Label");
 }
 
 void PointCleanProbe::update()

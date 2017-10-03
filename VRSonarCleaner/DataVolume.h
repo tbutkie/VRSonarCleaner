@@ -68,6 +68,9 @@ public:
 
 	void update();
 
+	bool isVisible();
+	void setVisible(bool yesno);
+
 protected:
 	void updateTransforms();
 	
@@ -109,7 +112,9 @@ protected:
 	std::map<Dataset*, glm::mat4> m_mapCustomDataTransforms;
 	std::map<Dataset*, glm::mat4> m_mapCustomDataTransformsPrevious;
 	
+	bool m_bVisible;
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed
 	bool m_bUseCustomBounds;
+
 };

@@ -13,6 +13,7 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_vec3OriginalPosition(pos)
 	, m_qOriginalOrientation(orientation)
 	, m_vec3OriginalDimensions(dimensions)
+	, m_bVisible(true)
 	, m_bFirstRun(true)
 	, m_bUseCustomBounds(false)
 {
@@ -397,6 +398,16 @@ void DataVolume::drawAxes(float size)
 void DataVolume::update()
 {
 	updateTransforms();
+}
+
+bool DataVolume::isVisible()
+{
+	return m_bVisible;
+}
+
+void DataVolume::setVisible(bool yesno)
+{
+	m_bVisible = yesno;
 }
 
 glm::vec3 DataVolume::calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims)

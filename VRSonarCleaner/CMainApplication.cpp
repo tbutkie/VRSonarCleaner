@@ -546,6 +546,7 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
+				BehaviorManager::getInstance().clearBehaviors();
 				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
 
@@ -918,6 +919,8 @@ void CMainApplication::drawScene()
 
 		for (auto &dv : m_vpDataVolumes)
 		{
+			if (!dv->isVisible()) continue;
+
 			dv->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 			//dv->drawAxes();

@@ -30,14 +30,15 @@ void WelcomeBehavior::init()
 		"Activate Label (Primary)",
 		"activaterightlabel.png",
 		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(-0.04f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		glm::translate(glm::mat4(), glm::vec3(-0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
+
 	InfoBoxManager::getInstance().addInfoBox(
 		"Activate Label (Secondary)",
 		"activateleftlabel.png",
 		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(0.04f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		glm::translate(glm::mat4(), glm::vec3(0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 }

@@ -133,7 +133,10 @@
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
     <ClCompile Include="WelcomeBehavior.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
+    <ClCompile Include="TutorialIntroduction.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -255,7 +258,10 @@
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="WelcomeBehavior.h">
-      <Filter>Header Files</Filter>
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="TutorialIntroduction.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
