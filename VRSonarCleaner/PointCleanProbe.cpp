@@ -5,8 +5,8 @@
 
 using namespace std::chrono_literals;
 
-PointCleanProbe::PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD)
-	: ProbeBehavior(controller, pointCloudVolume)
+PointCleanProbe::PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD)
+	: ProbeBehavior(pTDM, pointCloudVolume)
 	, m_bProbeActive(false)
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
@@ -42,16 +42,16 @@ void PointCleanProbe::update()
 
 void PointCleanProbe::draw()
 {
-	if (!m_pController->readyToRender())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->readyToRender())
 		return;
 
 	drawProbe(m_fProbeOffset - m_fProbeRadius);	
 
-	long long rate_ms_per_rev = 2000ll / (1.f + 10.f * m_pController->getTriggerPullAmount());
+	float rate_ms_per_rev = POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count() / (1.f + 10.f * m_pTDM->getPrimaryController()->getTriggerPullAmount());
 	
 
 	// Update rotation angle
-	float angleNeeded = (360.f) * fmodf(m_msElapsedTime.count(), POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count()) / POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count();
+	float angleNeeded = (360.f) * fmodf(m_msElapsedTime.count(), rate_ms_per_rev) / rate_ms_per_rev;
 	m_fCursorHoopAngle += angleNeeded;
 
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
@@ -147,7 +147,7 @@ void PointCleanProbe::checkPoints()
 	if (!m_bActive)
 		return;
 
-	if (!m_pController || !m_pController->poseValid()) 
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->poseValid()) 
 		return;
 
 	glm::mat4 currentCursorPose = getProbeToWorldTransform();
@@ -155,7 +155,7 @@ void PointCleanProbe::checkPoints()
 
 	float cursorRadius = m_fProbeRadius;
 
-	bool clearPoints = m_pController->isTriggerClicked();
+	bool clearPoints = m_pTDM->getPrimaryController()->isTriggerClicked();
 
 	bool anyHits = false;
 
@@ -256,5 +256,5 @@ void PointCleanProbe::checkPoints()
 	}
 	
 	if (anyHits)
-		m_pHMD->TriggerHapticPulse(m_pController->getIndex(), 0, 2000);
+		m_pHMD->TriggerHapticPulse(m_pTDM->getPrimaryController()->getIndex(), 0, 2000);
 }

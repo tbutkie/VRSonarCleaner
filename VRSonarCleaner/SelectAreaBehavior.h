@@ -1,13 +1,13 @@
 #pragma once
 #include "BehaviorBase.h"
-#include "ViveController.h"
+#include "TrackedDeviceManager.h"
 #include "DataVolume.h"
 
 class SelectAreaBehavior :
 	public BehaviorBase
 {
 public:
-	SelectAreaBehavior(ViveController* primaryController, ViveController* secondaryController, DataVolume* selectionVolume, DataVolume* displayVolume);
+	SelectAreaBehavior(TrackedDeviceManager* pTDM, DataVolume* selectionVolume, DataVolume* displayVolume);
 	virtual ~SelectAreaBehavior();
 
 	void update();
@@ -17,8 +17,7 @@ public:
 	void reset();
 
 private:
-	ViveController *m_pPrimaryController;
-	ViveController *m_pSecondaryController;
+	TrackedDeviceManager* m_pTDM;
 	DataVolume* m_pDataVolumeSelection;
 	DataVolume* m_pDataVolumeDisplay;
 

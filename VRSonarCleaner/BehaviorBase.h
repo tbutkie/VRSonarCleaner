@@ -20,9 +20,14 @@ class InitializableBehavior
 	: public BehaviorBase
 {
 public:
-	InitializableBehavior() {}
+	InitializableBehavior() : m_bInitialized(false) {}
 	virtual ~InitializableBehavior() {}
 
 	virtual void init() = 0;
+
+	bool isInitialized() { return m_bInitialized; }
+
+protected:
+	bool m_bInitialized;
 };
 

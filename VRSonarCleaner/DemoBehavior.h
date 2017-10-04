@@ -25,7 +25,7 @@ private:
 	DataVolume* m_pTableVolume;
 	DataVolume* m_pWallVolume;
 
-	std::queue<InitializableBehavior*> m_qTutorialQueue;
+	std::queue<std::pair<std::string, InitializableBehavior*>> m_qTutorialQueue;
 
 private:
 	void createDemoQueue();

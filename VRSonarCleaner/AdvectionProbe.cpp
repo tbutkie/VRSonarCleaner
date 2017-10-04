@@ -4,8 +4,8 @@
 #include "Renderer.h"
 #include <shared/glm/gtc/matrix_transform.hpp>
 
-AdvectionProbe::AdvectionProbe(ViveController* controller, FlowVolume* flowVolume)
-	: ProbeBehavior(controller, flowVolume)
+AdvectionProbe::AdvectionProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
+	: ProbeBehavior(pTDM, flowVolume)
 	, m_pFlowVolume(flowVolume)
 	, m_glIcoSphereVAO(0)
 {
@@ -36,7 +36,7 @@ void AdvectionProbe::update()
 
 	//Renderer::getInstance().addToDynamicRenderQueue(rs);
 
-	if (!m_pController->readyToRender())
+	if (!m_pTDM->getPrimaryController()->readyToRender())
 		return;
 
 	glm::vec3 cursorPos(getPosition());
@@ -61,7 +61,7 @@ void AdvectionProbe::update()
 
 void AdvectionProbe::draw()
 {
-	if (!m_pController->readyToRender())
+	if (!m_pTDM->getPrimaryController()->readyToRender())
 		return;
 
 	drawProbe(m_fProbeOffset);

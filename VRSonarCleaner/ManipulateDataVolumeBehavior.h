@@ -1,14 +1,14 @@
 #pragma once
 
 #include "BehaviorBase.h"
-#include "ViveController.h"
+#include "TrackedDeviceManager.h"
 #include "DataVolume.h"
 
 class ManipulateDataVolumeBehavior :
 	public BehaviorBase
 {
 public:
-	ManipulateDataVolumeBehavior(ViveController* gripController, ViveController* scaleController, DataVolume* dataVolume);
+	ManipulateDataVolumeBehavior(TrackedDeviceManager* m_pTDM, DataVolume* dataVolume);
 	virtual ~ManipulateDataVolumeBehavior();
 
 	void update();
@@ -16,7 +16,7 @@ public:
 	void draw();
 
 private:
-	ViveController *m_pGripController, *m_pScaleController;
+	TrackedDeviceManager* m_pTDM;
 	DataVolume* m_pDataVolume;
 
 	bool m_bPreGripping;

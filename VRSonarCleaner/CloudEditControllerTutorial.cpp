@@ -15,16 +15,20 @@ CloudEditControllerTutorial::CloudEditControllerTutorial(TrackedDeviceManager* p
 
 CloudEditControllerTutorial::~CloudEditControllerTutorial()
 {
-	for (auto &cloud : m_vpClouds)
-		delete cloud;
+	if (m_bInitialized)
+	{
+		for (auto &cloud : m_vpClouds)
+			delete cloud;
 
-	delete m_pDemoVolume;
-	delete m_pColorScaler;
+		delete m_pDemoVolume;
+		
+		delete m_pColorScaler;
 
-	BehaviorManager::getInstance().removeBehavior("Editing");
-	InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
-	InfoBoxManager::getInstance().removeInfoBox("Activate Label");
-	InfoBoxManager::getInstance().removeInfoBox("Reset Label");
+		BehaviorManager::getInstance().removeBehavior("Editing");
+		InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
+		InfoBoxManager::getInstance().removeInfoBox("Activate Label");
+		InfoBoxManager::getInstance().removeInfoBox("Reset Label");
+	}
 }
 
 void CloudEditControllerTutorial::init()
@@ -77,13 +81,16 @@ void CloudEditControllerTutorial::init()
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
 	
-	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDemoVolume, vr::VRSystem()));
+	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem()));
 	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
+
+	m_bInitialized = true;
 }
 
 void CloudEditControllerTutorial::update()
 {
-	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->update();
+	if (!m_pTDM->getPrimaryController())
+		return;
 
 	for (auto &cloud : m_vpClouds)
 	{

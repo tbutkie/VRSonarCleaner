@@ -547,7 +547,6 @@ bool CMainApplication::HandleInput()
 			if (sdlEvent.key.keysym.sym == SDLK_y)
 			{
 				m_bDemoMode = true;
-				//BehaviorManager::getInstance().removeBehavior("Demo");
 				BehaviorManager::getInstance().clearBehaviors();
 				BehaviorManager::getInstance().addBehavior("Demo", new DemoBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}

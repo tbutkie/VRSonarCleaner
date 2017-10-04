@@ -4,8 +4,8 @@
 
 #include "Renderer.h"
 
-ProbeBehavior::ProbeBehavior(ViveController* controller, DataVolume* dataVolume)
-	: m_pController(controller)
+ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
+	: m_pTDM(pTDM)
 	, m_pDataVolume(dataVolume)
 	, c_fTouchDeltaThreshold(0.2f)
 	, m_bShowProbe(true)
@@ -44,34 +44,37 @@ void ProbeBehavior::deactivateDemoMode()
 
 glm::vec3 ProbeBehavior::getPosition()
 {
-	return glm::vec3((m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
+	return glm::vec3((m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
 }
 
 glm::vec3 ProbeBehavior::getLastPosition()
 {
-	return glm::vec3((m_pController->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
+	return glm::vec3((m_pTDM->getPrimaryController()->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
 }
 
 glm::mat4 ProbeBehavior::getProbeToWorldTransform()
 {
-	return m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
+	return m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
 glm::mat4 ProbeBehavior::getLastProbeToWorldTransform()
 {
-	return m_pController->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
+	return m_pTDM->getPrimaryController()->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
 void ProbeBehavior::update()
 {
-	if (m_pController->isTouchpadTouched())
+	if (!m_pTDM->getPrimaryController())
+		return;
+
+	if (m_pTDM->getPrimaryController()->isTouchpadTouched())
 	{
-		glm::vec2 delta = m_pController->getCurrentTouchpadTouchPoint() - m_pController->getInitialTouchpadTouchPoint();
+		glm::vec2 delta = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint() - m_pTDM->getPrimaryController()->getInitialTouchpadTouchPoint();
 
 		if (!(m_bVerticalSwipeMode || m_bHorizontalSwipeMode) &&
 			glm::length(delta) > c_fTouchDeltaThreshold)
 		{
-			m_vec2InitialMeasurementPoint = m_pController->getCurrentTouchpadTouchPoint();
+			m_vec2InitialMeasurementPoint = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint();
 
 			if (abs(delta.x) > abs(delta.y))
 			{
@@ -81,14 +84,14 @@ void ProbeBehavior::update()
 			else
 			{
 				m_bVerticalSwipeMode = true;
-				m_pController->setScrollWheelVisibility(true);
+				m_pTDM->getPrimaryController()->setScrollWheelVisibility(true);
 				m_fProbeInitialOffset = m_fProbeOffset;
 			}
 		}
 
 		assert(!(m_bVerticalSwipeMode && m_bHorizontalSwipeMode));
 
-		glm::vec2 measuredOffset = m_pController->getCurrentTouchpadTouchPoint() - m_vec2InitialMeasurementPoint;
+		glm::vec2 measuredOffset = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint() - m_vec2InitialMeasurementPoint;
 
 		if (m_bVerticalSwipeMode)
 		{
@@ -104,19 +107,19 @@ void ProbeBehavior::update()
 			{
 				m_fProbeOffset = m_fProbeOffsetMax;
 				m_fProbeInitialOffset = m_fProbeOffsetMax;
-				m_vec2InitialMeasurementPoint.y = m_pController->getCurrentTouchpadTouchPoint().y;
+				m_vec2InitialMeasurementPoint.y = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint().y;
 			}
 			else if (m_fProbeOffset < m_fProbeOffsetMin)
 			{
 				m_fProbeOffset = m_fProbeOffsetMin;
 				m_fProbeInitialOffset = m_fProbeOffsetMin;
-				m_vec2InitialMeasurementPoint.y = m_pController->getCurrentTouchpadTouchPoint().y;
+				m_vec2InitialMeasurementPoint.y = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint().y;
 			}
 		}
 
 		if (m_bHorizontalSwipeMode)
 		{
-			float dx = m_pController->getCurrentTouchpadTouchPoint().x - m_vec2InitialMeasurementPoint.x;
+			float dx = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint().x - m_vec2InitialMeasurementPoint.x;
 
 			float range = m_fProbeRadiusMax - m_fProbeRadiusMin;
 
@@ -126,29 +129,29 @@ void ProbeBehavior::update()
 			{
 				m_fProbeRadius = m_fProbeRadiusMax;
 				m_fProbeRadiusInitial = m_fProbeRadiusMax;
-				m_vec2InitialMeasurementPoint.x = m_pController->getCurrentTouchpadTouchPoint().x;
+				m_vec2InitialMeasurementPoint.x = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint().x;
 			}
 			else if (m_fProbeRadius < m_fProbeRadiusMin)
 			{
 				m_fProbeRadius = m_fProbeRadiusMin;
 				m_fProbeRadiusInitial = m_fProbeRadiusMin;
-				m_vec2InitialMeasurementPoint.x = m_pController->getCurrentTouchpadTouchPoint().x;
+				m_vec2InitialMeasurementPoint.x = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint().x;
 			}
 		}
 	}
 
-	if (m_pController->justUntouchedTouchpad())
+	if (m_pTDM->getPrimaryController()->justUntouchedTouchpad())
 	{
 		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
-		m_pController->setScrollWheelVisibility(false);
+		m_pTDM->getPrimaryController()->setScrollWheelVisibility(false);
 	}
 
-	if (m_pController->justClickedTrigger())
+	if (m_pTDM->getPrimaryController()->justClickedTrigger())
 	{
 		activateProbe();
 	}
 
-	if (!m_pController->isTriggerClicked())
+	if (!m_pTDM->getPrimaryController()->isTriggerClicked())
 	{
 		deactivateProbe();
 	}
@@ -156,14 +159,14 @@ void ProbeBehavior::update()
 
 void ProbeBehavior::drawProbe(float length)
 {
-	if (!m_pController->readyToRender())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->readyToRender())
 		return;
 
 	if (m_bShowProbe)
 	{	
 		// Set color
 		glm::vec4 diffColor, specColor;
-		if (m_pController->isTriggerClicked())
+		if (m_pTDM->getPrimaryController()->isTriggerClicked())
 		{
 			diffColor = glm::vec4(0.502f, 0.125f, 0.125f, 1.f);
 			specColor = glm::vec4(0.f, 0.f, 1.f, 1.f);
@@ -175,7 +178,7 @@ void ProbeBehavior::drawProbe(float length)
 		}
 		float specExp(30.f);
 
-		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
+		glm::mat4 matCyl = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
 	}

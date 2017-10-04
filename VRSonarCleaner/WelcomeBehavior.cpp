@@ -11,9 +11,12 @@ WelcomeBehavior::WelcomeBehavior(TrackedDeviceManager* pTDM)
 
 WelcomeBehavior::~WelcomeBehavior()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Welcome");
-	InfoBoxManager::getInstance().removeInfoBox("Activate Label (Primary)");
-	InfoBoxManager::getInstance().removeInfoBox("Activate Label (Secondary)");
+	if (m_bInitialized)
+	{
+		InfoBoxManager::getInstance().removeInfoBox("Welcome");
+		InfoBoxManager::getInstance().removeInfoBox("Activate Label (Primary)");
+		InfoBoxManager::getInstance().removeInfoBox("Activate Label (Secondary)");
+	}
 }
 
 void WelcomeBehavior::init()
@@ -41,10 +44,15 @@ void WelcomeBehavior::init()
 		glm::translate(glm::mat4(), glm::vec3(0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
+
+	m_bInitialized = true;
 }
 
 void WelcomeBehavior::update()
 {
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
+		return;
+
 	if ((m_pTDM->getPrimaryController()->justClickedTrigger() && m_pTDM->getSecondaryController()->isTriggerClicked()) ||
 		(m_pTDM->getSecondaryController()->justClickedTrigger() && m_pTDM->getPrimaryController()->isTriggerClicked()))
 		m_bActive = false;

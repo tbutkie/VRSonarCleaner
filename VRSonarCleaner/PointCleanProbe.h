@@ -11,7 +11,7 @@ class PointCleanProbe :
 	public ProbeBehavior
 {
 public:
-	PointCleanProbe(ViveController* controller, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD);
+	PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD);
 	virtual ~PointCleanProbe();
 
 	virtual void update();

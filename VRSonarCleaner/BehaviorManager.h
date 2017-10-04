@@ -31,6 +31,8 @@ private:
 
 	std::map<std::string, BehaviorBase*> m_mappBehaviors;
 
+	bool m_bClearing;
+
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 	BehaviorManager(BehaviorManager const&) = delete;

@@ -1,19 +1,17 @@
 #include "BehaviorManager.h"
 
+#include <iostream>
+#include <string>
+
 BehaviorManager::BehaviorManager()
+	: m_bClearing(false)
 {
 }
 
 
 BehaviorManager::~BehaviorManager()
 {
-	for (auto &b : m_mappBehaviors)
-	{
-		delete b.second;
-		b.second = NULL;
-	}
-
-	m_mappBehaviors.clear();
+	clearBehaviors();
 }
 
 void BehaviorManager::init()
@@ -25,7 +23,7 @@ void BehaviorManager::addBehavior(std::string name, BehaviorBase * pBehavior)
 	std::map<std::string, BehaviorBase*>::iterator it = m_mappBehaviors.find(name);
 	if (it != m_mappBehaviors.end())
 	{
-		printf("%s: Replacing existing behavior \"%s\" with new\n", __FUNCTION__, name);
+		printf("%s: Replacing existing behavior \"%s\" with new\n", __FUNCTION__, name.c_str());
 		delete it->second;
 		it->second = NULL;
 	}
@@ -50,24 +48,26 @@ bool BehaviorManager::removeBehavior(std::string name)
 
 	if (toDelete == NULL)
 	{
-		printf("%s: Tried to remove behavior \"%s\" which doesn't exist!\n", __FUNCTION__, name);
+		if (!m_bClearing)
+			std::cout << __FUNCTION__ << ": Tried to remove behavior \"" << name << "\" which doesn't exist!\n";
 		return false;
 	}
 	else
 	{
-		printf("%s: Removing behavior \"%s\"\n", __FUNCTION__, name.c_str());
-		delete toDelete;
+		std::cout << __FUNCTION__ << ": Removing behavior \"" << name << "\"\n";
 		m_mappBehaviors.erase(name);
+		delete toDelete;
 		return true;
 	}
 }
 
 void BehaviorManager::clearBehaviors()
 {
+	m_bClearing = true;
 	auto mapCopy = m_mappBehaviors;
-	for (auto &b : mapCopy)
-		removeBehavior(b.first);
-	m_mappBehaviors.clear();
+	while (m_mappBehaviors.size() > 0u)
+		removeBehavior(m_mappBehaviors.begin()->first);
+	m_bClearing = false;
 }
 
 void BehaviorManager::update()
@@ -84,8 +84,5 @@ void BehaviorManager::draw()
 
 void BehaviorManager::shutdown()
 {
-	for (auto &b : m_mappBehaviors)
-		delete b.second;
-
-	m_mappBehaviors.clear();
+	clearBehaviors();
 }

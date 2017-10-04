@@ -12,7 +12,10 @@ TutorialIntroduction::TutorialIntroduction(TrackedDeviceManager* pTDM, DataVolum
 
 TutorialIntroduction::~TutorialIntroduction()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Intro");
+	if (m_bInitialized)
+	{
+		InfoBoxManager::getInstance().removeInfoBox("Intro");
+	}
 }
 
 void TutorialIntroduction::init()
@@ -24,6 +27,8 @@ void TutorialIntroduction::init()
 		glm::translate(glm::mat4(), glm::vec3(0.f, 1.5f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::WORLD,
 		true);
+
+	m_bInitialized = true;
 }
 
 void TutorialIntroduction::update()

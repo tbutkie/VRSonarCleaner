@@ -7,7 +7,7 @@ class FlowProbe :
 	public ProbeBehavior
 {
 public:
-	FlowProbe(ViveController* controller, FlowVolume* flowVolume);
+	FlowProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume);
 	~FlowProbe();
 
 	void update();

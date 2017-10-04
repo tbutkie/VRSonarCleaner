@@ -31,6 +31,15 @@
     <Filter Include="Interactions &amp; Behaviors\tutorial">
       <UniqueIdentifier>{ecf261b2-dc4e-413a-827f-80db2a92db12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interactions &amp; Behaviors\base">
+      <UniqueIdentifier>{34797330-c76f-49ac-a999-82bc7fb54fb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interactions &amp; Behaviors\point">
+      <UniqueIdentifier>{8d9c4c9c-2b57-4195-9955-030b7ec25c39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interactions &amp; Behaviors\flow">
+      <UniqueIdentifier>{f6399f2b-5859-4e29-88b7-58258f3182d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -105,15 +114,6 @@
     <ClCompile Include="shaderset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AdvectionProbe.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
-    <ClCompile Include="FlowProbe.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
-    <ClCompile Include="ProbeBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="ManipulateDataVolumeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
@@ -122,9 +122,6 @@
     </ClCompile>
     <ClCompile Include="RenderModel.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PointCleanProbe.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
     <ClCompile Include="BehaviorManager.cpp">
       <Filter>Source Files</Filter>
@@ -149,6 +146,18 @@
     </ClCompile>
     <ClCompile Include="CloudEditControllerTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="ProbeBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\base</Filter>
+    </ClCompile>
+    <ClCompile Include="FlowProbe.cpp">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
+    <ClCompile Include="AdvectionProbe.cpp">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
+    <ClCompile Include="PointCleanProbe.cpp">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -233,32 +242,14 @@
     <ClInclude Include="GLSLpreamble.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ProbeBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="ManipulateDataVolumeBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
-    <ClInclude Include="FlowProbe.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
-    <ClInclude Include="BehaviorBase.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
-    <ClInclude Include="AdvectionProbe.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="RenderModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PointCleanProbe.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="BehaviorManager.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BehaviorList.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="Dataset.h">
       <Filter>Header Files</Filter>
@@ -280,6 +271,24 @@
     </ClInclude>
     <ClInclude Include="CloudEditControllerTutorial.h">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="ProbeBehavior.h">
+      <Filter>Interactions &amp; Behaviors\base</Filter>
+    </ClInclude>
+    <ClInclude Include="BehaviorList.h">
+      <Filter>Interactions &amp; Behaviors\base</Filter>
+    </ClInclude>
+    <ClInclude Include="BehaviorBase.h">
+      <Filter>Interactions &amp; Behaviors\base</Filter>
+    </ClInclude>
+    <ClInclude Include="FlowProbe.h">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="AdvectionProbe.h">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="PointCleanProbe.h">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

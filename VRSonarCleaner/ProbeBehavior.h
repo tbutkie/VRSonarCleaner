@@ -1,6 +1,6 @@
 #pragma once
 #include "BehaviorBase.h"
-#include "ViveController.h"
+#include "TrackedDeviceManager.h"
 #include "DataVolume.h"
 
 #include <chrono>
@@ -9,23 +9,18 @@ class ProbeBehavior :
 	public BehaviorBase
 {
 public:
-	ProbeBehavior(ViveController* controller, DataVolume* dataVolume);
+	ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume);
 	virtual ~ProbeBehavior();
 
 	void activateDemoMode();
 	void deactivateDemoMode();
-
-	glm::vec3 getPosition();
-	glm::vec3 getLastPosition();
-	glm::mat4 getProbeToWorldTransform();
-	glm::mat4 getLastProbeToWorldTransform();
 
 	virtual void update();
 
 	virtual void draw() = 0;
 
 protected:
-	ViveController *m_pController;
+	TrackedDeviceManager* m_pTDM;
 	DataVolume* m_pDataVolume;
 
 	bool m_bShowProbe;
@@ -48,6 +43,11 @@ protected:
 	float m_fProbeRadiusInitial;
 
 protected:
+	glm::vec3 getPosition();
+	glm::vec3 getLastPosition();
+	glm::mat4 getProbeToWorldTransform();
+	glm::mat4 getLastProbeToWorldTransform();
+
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;
 
