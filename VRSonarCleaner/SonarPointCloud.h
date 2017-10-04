@@ -52,7 +52,7 @@ class SonarPointCloud : public Dataset
 		void resetAllMarks();
 
 		glm::vec3 getAdjustedPointPosition(unsigned int index);
-		glm::vec3 getRawPointPosition(unsigned int index);
+		glm::dvec3 getRawPointPosition(unsigned int index);
 		int getPointMark(unsigned int index);
 		float getPointDepthTPU(unsigned int index);
 		float getPointPositionTPU(unsigned int index);
@@ -72,7 +72,7 @@ class SonarPointCloud : public Dataset
 		//variables
 		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 
-		std::vector<glm::dvec3> m_vvec3RawPointsPositions;
+		std::vector<glm::dvec3> m_vdvec3RawPointsPositions;
 		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
 		std::vector<glm::vec4> m_vvec4PointsColors;
 		std::vector<GLuint> m_vuiIndicesFull;

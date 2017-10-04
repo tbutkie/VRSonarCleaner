@@ -5,10 +5,14 @@
 #include "PointCleanProbe.h"
 #include <shared/glm/gtc/matrix_transform.hpp>
 #include "Renderer.h"
+#include "TaskCompleteBehavior.h"
 
 CloudEditControllerTutorial::CloudEditControllerTutorial(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
 	, m_pDemoVolume(NULL)
+	, m_dvec4BadPointPos1(glm::dvec4(62474))
+	, m_dvec4BadPointPos2(glm::dvec4(14274))
+	, m_dvec4BadPointPos3(glm::dvec4(1540))
 {
 }
 
@@ -17,17 +21,16 @@ CloudEditControllerTutorial::~CloudEditControllerTutorial()
 {
 	if (m_bInitialized)
 	{
-		for (auto &cloud : m_vpClouds)
-			delete cloud;
+		delete m_pDemoCloud;
 
 		delete m_pDemoVolume;
 		
 		delete m_pColorScaler;
 
 		BehaviorManager::getInstance().removeBehavior("Editing");
-		InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
-		InfoBoxManager::getInstance().removeInfoBox("Activate Label");
-		InfoBoxManager::getInstance().removeInfoBox("Reset Label");
+		BehaviorManager::getInstance().removeBehavior("Done");
+
+		cleanupBadDataLabels();
 	}
 }
 
@@ -35,42 +38,26 @@ void CloudEditControllerTutorial::init()
 {
 	glm::vec3 tablePosition = glm::vec3(0.f, 1.1f, 0.f);
 	glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-	glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
+	glm::vec3 tableSize = glm::vec3(1.f, 1.f, 0.5f);
 
 	m_pDemoVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
 	
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
-	//m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale);
-	//m_pColorScaler->setColorMap(ColorScaler::ColorMap::Rainbow);
 
-	m_vpClouds.push_back(new SonarPointCloud(m_pColorScaler, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt"));
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
 
-	for (auto const &cloud : m_vpClouds)
-		m_pDemoVolume->add(cloud);
+	m_pDemoVolume->add(m_pDemoCloud);
 	
 	refreshColorScale();
 
 	InfoBoxManager::getInstance().addInfoBox(
 		"Cloud Editing Tutorial",
 		"editpointstut.png",
-		3.5f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 2.f, -2.9f)),
-		InfoBoxManager::RELATIVE_TO::WORLD,
-		false);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Activate Label",
-		"activaterightlabel.png",
-		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(-0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
+		0.25f,
+		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 
 	InfoBoxManager::getInstance().addInfoBox(
@@ -80,6 +67,8 @@ void CloudEditControllerTutorial::init()
 		glm::translate(glm::mat4(), glm::vec3(0.052f, 0.008f, 0.052f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
+
+	makeBadDataLabels();
 	
 	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem()));
 	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
@@ -92,46 +81,130 @@ void CloudEditControllerTutorial::update()
 	if (!m_pTDM->getPrimaryController())
 		return;
 
-	for (auto &cloud : m_vpClouds)
-	{
-		if (m_pTDM->getPrimaryController()->justPressedTouchpad())
-			cloud->resetAllMarks();
+	if (m_pTDM->getPrimaryController()->justPressedTouchpad())
+		m_pDemoCloud->resetAllMarks();
 
-		cloud->update();
+	m_pDemoCloud->update();
+
+	BehaviorBase* done = BehaviorManager::getInstance().getBehavior("Done");
+	if (done)
+	{
+		done->update();
+		if (!done->isActive())
+			m_bActive = false;
 	}
+	else if (m_pTDM->getPrimaryController()->isTriggerClicked() || m_pTDM->getPrimaryController()->justUnclickedTrigger())
+	{
+		double minZ = std::numeric_limits<double>::max();
+		double maxZ = -std::numeric_limits<double>::max();
+
+		for (int i = 0; i < m_pDemoCloud->getPointCount(); ++i)
+		{
+			if (m_pDemoCloud->getPointMark(i) != 1)
+			{
+				minZ = m_pDemoCloud->getRawPointPosition(i).z < minZ ? m_pDemoCloud->getRawPointPosition(i).z : minZ;
+				maxZ = m_pDemoCloud->getRawPointPosition(i).z > maxZ ? m_pDemoCloud->getRawPointPosition(i).z : maxZ;
+			}
+		}
+		if (minZ >= 19.731 && maxZ <= 22.89)
+		{
+			BehaviorManager::getInstance().removeBehavior("Editing");
+
+			cleanupBadDataLabels();
+			InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
+			InfoBoxManager::getInstance().removeInfoBox("Reset Label");
+
+			TaskCompleteBehavior* tcb = new TaskCompleteBehavior(m_pTDM);
+			tcb->init();
+			BehaviorManager::getInstance().addBehavior("Done", tcb);
+		}
+	}
+
+	std::cout.precision(std::numeric_limits<double>::max_digits10);
+
+	if (m_pTDM->getSecondaryController()->isTouchpadClicked())
+		for (int i = 0; i < m_pDemoCloud->getPointCount(); ++i)
+			if (m_pDemoCloud->getPointMark(i) >= 100)
+				std::cout << i << ": (" << m_pDemoCloud->getRawPointPosition(i).x << ", " << m_pDemoCloud->getRawPointPosition(i).y << ", " << m_pDemoCloud->getRawPointPosition(i).z << ")" << std::endl;
 }
 
 void CloudEditControllerTutorial::draw()
 {
+	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
+	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+
 	Renderer::RendererSubmission rs;
 	rs.glPrimitiveType = GL_POINTS;
 	rs.shaderName = "flat";
+	rs.VAO = m_pDemoCloud->getVAO();
+	rs.vertCount = m_pDemoCloud->getPointCount();
 	rs.indexType = GL_UNSIGNED_INT;
+	rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
 
-	for (auto &cloud : m_vpClouds)
-	{
-		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-		rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
-		rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(cloud);
-		Renderer::getInstance().addToDynamicRenderQueue(rs);
-	}
+	Renderer::getInstance().addToDynamicRenderQueue(rs);
+	
 }
 
 void CloudEditControllerTutorial::refreshColorScale()
 {
-	if (m_vpClouds.size() == 0ull)
+	if (!m_pDemoCloud)
 		return;
 
-	float minDepthTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), SonarPointCloud::s_funcDepthTPUMinCompare))->getMinDepthTPU();
-	float maxDepthTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), SonarPointCloud::s_funcDepthTPUMaxCompare))->getMaxDepthTPU();
-
-	float minPosTPU = (*std::min_element(m_vpClouds.begin(), m_vpClouds.end(), SonarPointCloud::s_funcPosTPUMinCompare))->getMinPositionalTPU();
-	float maxPosTPU = (*std::max_element(m_vpClouds.begin(), m_vpClouds.end(), SonarPointCloud::s_funcPosTPUMaxCompare))->getMaxPositionalTPU();
-
 	m_pColorScaler->resetMinMaxForColorScale(m_pDemoVolume->getMinDataBound().z, m_pDemoVolume->getMaxDataBound().z);
-	m_pColorScaler->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
+	m_pColorScaler->resetBiValueScaleMinMax(
+		m_pDemoCloud->getMinDepthTPU(),
+		m_pDemoCloud->getMaxDepthTPU(),
+		m_pDemoCloud->getMinPositionalTPU(),
+		m_pDemoCloud->getMaxPositionalTPU()
+	);
 
 	// apply new color scale
-	for (auto &cloud : m_vpClouds)
-		cloud->resetAllMarks();
+	m_pDemoCloud->resetAllMarks();
+}
+
+void CloudEditControllerTutorial::makeBadDataLabels()
+{
+	glm::dmat4 dataXform = m_pDemoVolume->getRawDomainToVolumeTransform();
+
+	glm::vec3 tmp(dataXform * m_dvec4BadPointPos1);
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Bad Data Label 1",
+		"baddataleftlabel.png",
+		0.25f,
+		glm::translate(glm::mat4(), tmp),// *glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::WORLD,
+		false);
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Bad Data Label 2",
+		"baddatarightlabel.png",
+		0.25f,
+		glm::translate(glm::mat4(), tmp) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::WORLD,
+		false);
+
+	//InfoBoxManager::getInstance().addInfoBox(
+	//	"Bad Data Label 3",
+	//	"baddatarightlabel.png",
+	//	0.25f,
+	//	glm::translate(glm::mat4(), glm::vec3(-0.825f, 1.475f, 0.525f)),
+	//	InfoBoxManager::RELATIVE_TO::WORLD,
+	//	false);
+	//
+	//InfoBoxManager::getInstance().addInfoBox(
+	//	"Bad Data Label 4",
+	//	"baddataleftlabel.png",
+	//	0.25f,
+	//	glm::translate(glm::mat4(), glm::vec3(-0.825f, 1.475f, 0.525f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)),
+	//	InfoBoxManager::RELATIVE_TO::WORLD,
+	//	false);
+}
+
+void CloudEditControllerTutorial::cleanupBadDataLabels()
+{
+	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 1");
+	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 2");
+	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 3");
+	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 4");
 }

@@ -228,6 +228,16 @@ glm::mat4 DataVolume::getLastDataTransform(Dataset* dataset)
 	return m_bUseCustomBounds ? m_mapCustomDataTransformsPrevious[dataset] : m_mapDataTransformsPrevious[dataset];
 }
 
+glm::dmat4 DataVolume::getRawDomainToVolumeTransform()
+{
+	return m_dmat4RawDomainToVolumeTransform;
+}
+
+glm::dmat4 DataVolume::getLastRawDomainToVolumeTransform()
+{
+	return m_dmat4RawDomainToVolumeTransformPrevious;
+}
+
 glm::mat4 DataVolume::getCurrentVolumeTransform()
 {
 	return m_mat4VolumeTransform;

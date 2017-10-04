@@ -20,7 +20,7 @@ public:
 
 private:
 	bool m_bProbeActive;
-
+	bool m_bWaitForTriggerRelease;
 	float m_fPtHighlightAmt;
 
 	vr::IVRSystem *m_pHMD;

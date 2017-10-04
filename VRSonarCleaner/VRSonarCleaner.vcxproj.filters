@@ -162,6 +162,9 @@
     <ClCompile Include="ScaleDataVolumeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
+    <ClCompile Include="TaskCompleteBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="ScaleDataVolumeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskCompleteBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

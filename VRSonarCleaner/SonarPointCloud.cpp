@@ -39,7 +39,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	m_nPoints = numPointsToAllocate;
 	if (m_bPointsAllocated)
 	{
-		m_vvec3RawPointsPositions.clear();
+		m_vdvec3RawPointsPositions.clear();
 		m_vvec3AdjustedPointsPositions.clear();
 		m_vvec4PointsColors.clear();
 		m_vuiPointsMarks.clear();
@@ -48,7 +48,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 		m_vuiIndicesFull.clear();
 	}
 
-	m_vvec3RawPointsPositions.resize(m_nPoints);
+	m_vdvec3RawPointsPositions.resize(m_nPoints);
 	m_vvec3AdjustedPointsPositions.resize(m_nPoints);
 	m_vvec4PointsColors.resize(m_nPoints);
 	m_vuiPointsMarks.resize(m_nPoints);
@@ -62,7 +62,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
 {
 	glm::dvec3 pt(lonX, latY, depth);
-	m_vvec3RawPointsPositions[index] = pt;
+	m_vdvec3RawPointsPositions[index] = pt;
 	
 	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
@@ -77,7 +77,7 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU)
 {
 	glm::dvec3 pt(lonX, latY, depth); 
-	m_vvec3RawPointsPositions[index] = pt;
+	m_vdvec3RawPointsPositions[index] = pt;
 
 	float r, g, b;
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
@@ -104,7 +104,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b)
 {
-	m_vvec3RawPointsPositions[index] = glm::vec3(lonX, latY, depth);
+	m_vdvec3RawPointsPositions[index] = glm::dvec3(lonX, latY, depth);
 
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
@@ -411,7 +411,7 @@ glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 	{
 	case ColorScaler::Mode::ColorScale:
 	{
-		m_pColorScaler->getScaledColorForValue(m_vvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
+		m_pColorScaler->getScaledColorForValue(m_vdvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
 		break;
 	}
 	case ColorScaler::Mode::ColorScale_BiValue:
@@ -430,7 +430,7 @@ void SonarPointCloud::adjustPoints()
 	glm::dvec3 adjustment = getDataCenteringAdjustments();
 
 	for (int i = 0; i < m_nPoints; ++i)
-		m_vvec3AdjustedPointsPositions[i] = m_vvec3RawPointsPositions[i] + adjustment;		
+		m_vvec3AdjustedPointsPositions[i] = m_vdvec3RawPointsPositions[i] + adjustment;
 }
 
 void SonarPointCloud::createAndLoadBuffers()
@@ -499,8 +499,7 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 		color = glm::vec3(0.f, 0.f, 1.f);
 		break;
 	default: // if >= 100
-		color = getDefaultPointColor(index);
-		//r = (1.f / r) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		color = (1.f / getDefaultPointColor(index)) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		//g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		//b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
 		a = (static_cast<float>(code) - 100.f) / 100.f;
@@ -523,9 +522,9 @@ glm::vec3 SonarPointCloud::getAdjustedPointPosition(unsigned int index)
 	return m_vvec3AdjustedPointsPositions[index];
 }
 
-glm::vec3 SonarPointCloud::getRawPointPosition(unsigned int index)
+glm::dvec3 SonarPointCloud::getRawPointPosition(unsigned int index)
 {
-	return m_vvec3RawPointsPositions[index];
+	return m_vdvec3RawPointsPositions[index];
 }
 
 int SonarPointCloud::getPointMark(unsigned int index)

@@ -10,10 +10,18 @@ GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataV
 	, m_bRotationInProgress(false)
 {
 	InfoBoxManager::getInstance().addInfoBox(
-		"Grab Label",
+		"Grab Label Controller",
 		"manipctrlrlabel.png",
 		0.1f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
+		false);
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Grab Label Trigger",
+		"grableftlabel.png",
+		0.075f,
+		glm::translate(glm::mat4(), glm::vec3(0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 }
@@ -21,7 +29,8 @@ GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataV
 
 GrabDataVolumeBehavior::~GrabDataVolumeBehavior()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Grab Label");
+	InfoBoxManager::getInstance().removeInfoBox("Grab Label Controller");
+	InfoBoxManager::getInstance().removeInfoBox("Grab Label Trigger");
 }
 
 
@@ -42,6 +51,8 @@ void GrabDataVolumeBehavior::update()
 	{
 		continueRotation();
 	}
+
+	m_pDataVolume->update();
 }
 
 void GrabDataVolumeBehavior::draw()

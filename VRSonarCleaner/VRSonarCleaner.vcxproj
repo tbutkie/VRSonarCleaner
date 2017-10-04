@@ -195,6 +195,7 @@
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="TaskCompleteBehavior.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
     <ClCompile Include="TutorialBehavior.cpp" />
@@ -241,6 +242,7 @@
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
+    <ClInclude Include="TaskCompleteBehavior.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="TutorialBehavior.h" />

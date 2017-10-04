@@ -8,10 +8,18 @@ ScaleDataVolumeBehavior::ScaleDataVolumeBehavior(TrackedDeviceManager* pTDM, Dat
 	, m_bScaling(false)
 {
 	InfoBoxManager::getInstance().addInfoBox(
-		"Scale Label",
-		"scalelabel.png",
-		0.1f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		"Scale Label Left",
+		"scalerightlabel.png",
+		0.045f,
+		glm::translate(glm::mat4(), glm::vec3(-0.045f, -0.015f, 0.085f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
+		false);
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Scale Label Right",
+		"scaleleftlabel.png",
+		0.045f,
+		glm::translate(glm::mat4(), glm::vec3(0.045f, -0.015f, 0.085f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 }
@@ -19,7 +27,8 @@ ScaleDataVolumeBehavior::ScaleDataVolumeBehavior(TrackedDeviceManager* pTDM, Dat
 
 ScaleDataVolumeBehavior::~ScaleDataVolumeBehavior()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Scale Label");
+	InfoBoxManager::getInstance().removeInfoBox("Scale Label Left");
+	InfoBoxManager::getInstance().removeInfoBox("Scale Label Right");
 }
 
 
@@ -36,6 +45,7 @@ void ScaleDataVolumeBehavior::update()
 		float currentDist = controllerDistance();
 		float delta = currentDist - m_fInitialDistance;
 		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
+		m_pDataVolume->update();
 	}
 }
 
@@ -47,12 +57,7 @@ void ScaleDataVolumeBehavior::updateState()
 {
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
-	
-	if (m_pTDM->getSecondaryController()->justUnclickedTrigger())
-	{
-		m_bScaling = false;
-	}
-	
+		
 	if ((m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getPrimaryController()->isGripButtonPressed()) ||
 		(m_pTDM->getPrimaryController()->justPressedGrip() && m_pTDM->getSecondaryController()->isGripButtonPressed()))
 	{

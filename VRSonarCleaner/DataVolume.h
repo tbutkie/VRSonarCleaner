@@ -38,6 +38,8 @@ public:
 	
 	glm::mat4 getCurrentDataTransform(Dataset* dataset);
 	glm::mat4 getLastDataTransform(Dataset* dataset);
+	glm::dmat4 getRawDomainToVolumeTransform();
+	glm::dmat4 getLastRawDomainToVolumeTransform();
 	glm::mat4 getCurrentVolumeTransform();
 	glm::mat4 getLastVolumeTransform();
 

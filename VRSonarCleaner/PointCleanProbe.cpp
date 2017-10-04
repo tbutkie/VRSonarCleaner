@@ -13,11 +13,21 @@ PointCleanProbe::PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCl
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
 {
+	m_bWaitForTriggerRelease = m_pTDM->getPrimaryController()->isTriggerClicked() ? true : false;
+
 	InfoBoxManager::getInstance().addInfoBox(
 		"Editing Label",
 		"editctrlrlabel.png",
 		0.1f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
+		false);
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Clean Label",
+		"cleanrightlabel.png",
+		0.075f,
+		glm::translate(glm::mat4(), glm::vec3(-0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
 }
@@ -26,18 +36,23 @@ PointCleanProbe::PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCl
 PointCleanProbe::~PointCleanProbe()
 {
 	InfoBoxManager::getInstance().removeInfoBox("Editing Label");
+	InfoBoxManager::getInstance().removeInfoBox("Clean Label");
 }
 
 void PointCleanProbe::update()
 {	
 	ProbeBehavior::update();
 
+	if (m_bWaitForTriggerRelease && !m_pTDM->getPrimaryController()->isTriggerClicked())
+		m_bWaitForTriggerRelease = false;
+
 	// Update time vars
 	auto tick = std::chrono::high_resolution_clock::now();
 	m_msElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastTime);
 	m_tpLastTime = tick;
 
-	checkPoints();
+	if (!m_bWaitForTriggerRelease)
+		checkPoints();
 }
 
 void PointCleanProbe::draw()

@@ -26,9 +26,16 @@ private:
 	TrackedDeviceManager *m_pTDM;
 	DataVolume *m_pDemoVolume;
 
-	std::vector<SonarPointCloud*> m_vpClouds;
+	SonarPointCloud* m_pDemoCloud;
 	ColorScaler* m_pColorScaler;
 
+	glm::dvec4 m_dvec4BadPointPos1;
+	glm::dvec4 m_dvec4BadPointPos2;
+	glm::dvec4 m_dvec4BadPointPos3;
+
 	void refreshColorScale();
+
+	void makeBadDataLabels();
+	void cleanupBadDataLabels();
 };
 
