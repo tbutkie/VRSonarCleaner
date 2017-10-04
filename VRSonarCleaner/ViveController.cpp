@@ -171,36 +171,17 @@ bool ViveController::updateControllerState()
 
 		if (triggerPull >= getHairTriggerThreshold())
 		{
-			// TRIGGER ENGAGED
-			if (!isTriggerEngaged())
-			{
-				m_CustomState.m_bTriggerEngaged = true;
-				m_CustomState.m_fTriggerPull = triggerPull;
-			}
+			m_CustomState.m_fTriggerPull = triggerPull;
 
-			// TRIGGER BEING PULLED
-			if (!isTriggerClicked())
-			{
-				m_CustomState.m_fTriggerPull = triggerPull;
-			}
+			m_CustomState.m_bTriggerEngaged = true;			
 
-			// TRIGGER CLICKED
-			if (triggerPull >= 1.f && !isTriggerClicked())
-			{
-				m_CustomState.m_bTriggerClicked = true;
-				m_CustomState.m_fTriggerPull = 1.f;
-			}
-			// TRIGGER UNCLICKED
-			if (triggerPull < 1.f && isTriggerClicked())
-			{
-				m_CustomState.m_bTriggerClicked = false;
-				m_CustomState.m_fTriggerPull = triggerPull;
-			}
+			m_CustomState.m_bTriggerClicked = triggerPull >= 1.f;
 		}
 		// TRIGGER DISENGAGED
-		else if (isTriggerEngaged())
+		else
 		{
 			m_CustomState.m_bTriggerEngaged = false;
+			m_CustomState.m_bTriggerClicked = false;
 			m_CustomState.m_fTriggerPull = 0.f;
 		}
 		

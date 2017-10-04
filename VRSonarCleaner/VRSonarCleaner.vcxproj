@@ -169,6 +169,7 @@
     <ClCompile Include="CloudEditControllerTutorial.cpp" />
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
+    <ClCompile Include="GrabDataVolumeBehavior.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
@@ -178,7 +179,6 @@
     <ClCompile Include="FlowGrid.cpp" />
     <ClCompile Include="FlowProbe.cpp" />
     <ClCompile Include="FlowVolume.cpp" />
-    <ClCompile Include="ManipulateDataVolumeBehavior.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="IllustrativeDyePole.cpp" />
@@ -189,6 +189,7 @@
     <ClCompile Include="LightingSystem.cpp" />
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="ScaleDataVolumeBehavior.cpp" />
     <ClCompile Include="SelectAreaBehavior.cpp" />
     <ClCompile Include="shaderset.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
@@ -212,6 +213,7 @@
     <ClInclude Include="CloudEditControllerTutorial.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DemoBehavior.h" />
+    <ClInclude Include="GrabDataVolumeBehavior.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />
     <ClInclude Include="CMainApplication.h" />
@@ -224,7 +226,6 @@
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
     <ClInclude Include="GLSLpreamble.h" />
-    <ClInclude Include="ManipulateDataVolumeBehavior.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />
     <ClInclude Include="IllustrativeParticle.h" />
@@ -234,6 +235,7 @@
     <ClInclude Include="LightingSystem.h" />
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ScaleDataVolumeBehavior.h" />
     <ClInclude Include="SelectAreaBehavior.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />

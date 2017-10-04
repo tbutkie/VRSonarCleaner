@@ -1,17 +1,16 @@
-#include "ManipulateDataVolumeBehavior.h"
+#include "GrabDataVolumeBehavior.h"
 #include "InfoBoxManager.h"
 #include "Renderer.h"
 
-ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
+GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
 	, m_pDataVolume(dataVolume)
 	, m_bPreGripping(false)
 	, m_bGripping(false)
-	, m_bScaling(false)
 	, m_bRotationInProgress(false)
 {
 	InfoBoxManager::getInstance().addInfoBox(
-		"Manipulation Label",
+		"Grab Label",
 		"manipctrlrlabel.png",
 		0.1f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
@@ -20,26 +19,19 @@ ManipulateDataVolumeBehavior::ManipulateDataVolumeBehavior(TrackedDeviceManager*
 }
 
 
-ManipulateDataVolumeBehavior::~ManipulateDataVolumeBehavior()
+GrabDataVolumeBehavior::~GrabDataVolumeBehavior()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Manipulation Label");
+	InfoBoxManager::getInstance().removeInfoBox("Grab Label");
 }
 
 
 
-void ManipulateDataVolumeBehavior::update()
+void GrabDataVolumeBehavior::update()
 {
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
 
 	updateState();
-
-	if (m_bScaling)
-	{
-		float currentDist = controllerDistance();
-		float delta = currentDist - m_fInitialDistance;
-		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
-	}
 
 	if (m_bPreGripping)
 	{
@@ -52,11 +44,11 @@ void ManipulateDataVolumeBehavior::update()
 	}
 }
 
-void ManipulateDataVolumeBehavior::draw()
+void GrabDataVolumeBehavior::draw()
 {
 }
 
-void ManipulateDataVolumeBehavior::updateState()
+void GrabDataVolumeBehavior::updateState()
 {
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
@@ -77,29 +69,10 @@ void ManipulateDataVolumeBehavior::updateState()
 	{
 		endRotation();
 		m_bGripping = false;
-		m_bScaling = false;
 	}
-	
-	if ((m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getPrimaryController()->isGripButtonPressed()) ||
-		(m_pTDM->getPrimaryController()->justPressedGrip() && m_pTDM->getSecondaryController()->isGripButtonPressed()))
-	{
-		m_bScaling = true;
-
-		m_fInitialDistance = controllerDistance();
-		m_vec3InitialDimensions = m_pDataVolume->getDimensions();
-	}
-
-	if (!m_pTDM->getSecondaryController()->isGripButtonPressed() || !m_pTDM->getPrimaryController()->isGripButtonPressed())
-		m_bScaling = false;
 }
 
-float ManipulateDataVolumeBehavior::controllerDistance()
-{
-	return glm::length(m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3] - m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]);
-}
-
-
-void ManipulateDataVolumeBehavior::startRotation()
+void GrabDataVolumeBehavior::startRotation()
 {
 	if (!m_pTDM->getSecondaryController())
 		return;
@@ -114,7 +87,7 @@ void ManipulateDataVolumeBehavior::startRotation()
 	m_bRotationInProgress = true;
 }
 
-void ManipulateDataVolumeBehavior::continueRotation()
+void GrabDataVolumeBehavior::continueRotation()
 {
 	if (!m_pTDM->getSecondaryController() || !m_bRotationInProgress)
 		return;
@@ -154,18 +127,18 @@ void ManipulateDataVolumeBehavior::continueRotation()
 	Renderer::getInstance().drawPrimitive("cylinder", transCurrent, glm::vec4(1.f, 0.f, 0.f, 0.5f), glm::vec4(1.f), 32.f);
 }
 
-void ManipulateDataVolumeBehavior::endRotation()
+void GrabDataVolumeBehavior::endRotation()
 {
 	m_bRotationInProgress = false;
 	//could revert to old starting position and orientation here to have it always snap back in place
 }
 
-bool ManipulateDataVolumeBehavior::isBeingRotated()
+bool GrabDataVolumeBehavior::isBeingRotated()
 {
 	return m_bRotationInProgress;
 }
 
-void ManipulateDataVolumeBehavior::preRotation(float ratio)
+void GrabDataVolumeBehavior::preRotation(float ratio)
 {
 	float cylThickness = 0.01f * (1.f - ratio);
 

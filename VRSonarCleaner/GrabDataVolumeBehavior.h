@@ -4,12 +4,12 @@
 #include "TrackedDeviceManager.h"
 #include "DataVolume.h"
 
-class ManipulateDataVolumeBehavior :
+class GrabDataVolumeBehavior :
 	public BehaviorBase
 {
 public:
-	ManipulateDataVolumeBehavior(TrackedDeviceManager* m_pTDM, DataVolume* dataVolume);
-	virtual ~ManipulateDataVolumeBehavior();
+	GrabDataVolumeBehavior(TrackedDeviceManager* m_pTDM, DataVolume* dataVolume);
+	virtual ~GrabDataVolumeBehavior();
 
 	void update();
 
@@ -21,9 +21,6 @@ private:
 
 	bool m_bPreGripping;
 	bool m_bGripping;
-	bool m_bScaling;
-	float m_fInitialDistance;
-	glm::vec3 m_vec3InitialDimensions;
 
 	//rotate action
 	bool m_bRotationInProgress; // Data Volume Rotating
@@ -33,8 +30,6 @@ private:
 
 private:
 	void updateState();
-
-	float controllerDistance();
 
 	void startRotation();
 	void continueRotation();

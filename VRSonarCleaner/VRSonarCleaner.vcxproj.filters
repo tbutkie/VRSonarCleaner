@@ -114,9 +114,6 @@
     <ClCompile Include="shaderset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ManipulateDataVolumeBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="LassoTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -158,6 +155,12 @@
     </ClCompile>
     <ClCompile Include="PointCleanProbe.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClCompile>
+    <ClCompile Include="GrabDataVolumeBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClCompile>
+    <ClCompile Include="ScaleDataVolumeBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -242,9 +245,6 @@
     <ClInclude Include="GLSLpreamble.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ManipulateDataVolumeBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="RenderModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -289,6 +289,12 @@
     </ClInclude>
     <ClInclude Include="PointCleanProbe.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClInclude>
+    <ClInclude Include="GrabDataVolumeBehavior.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="ScaleDataVolumeBehavior.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
