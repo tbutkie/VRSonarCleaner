@@ -29,13 +29,14 @@ private:
 	SonarPointCloud* m_pDemoCloud;
 	ColorScaler* m_pColorScaler;
 
-	glm::dvec4 m_dvec4BadPointPos1;
-	glm::dvec4 m_dvec4BadPointPos2;
-	glm::dvec4 m_dvec4BadPointPos3;
+	unsigned int m_uiBadPoint1;
+	unsigned int m_uiBadPoint2;
+	unsigned int m_uiBadPoint3;
+	unsigned int m_uiBadPoint4;
 
 	void refreshColorScale();
 
-	void makeBadDataLabels();
+	void makeBadDataLabels(float width);
 	void cleanupBadDataLabels();
 };
 

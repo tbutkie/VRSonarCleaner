@@ -77,12 +77,12 @@ glm::vec3 DataVolume::convertToDataCoords(Dataset* dataset, glm::vec3 worldPos)
 		return glm::vec3(glm::inverse(getCurrentDataTransform(dataset)) * glm::vec4(worldPos, 1.f));
 }
 
-glm::vec3 DataVolume::convertToWorldCoords(glm::vec3 dataPos)
+glm::vec3 DataVolume::convertToWorldCoords(glm::dvec3 rawDataPos)
 {
 	if (m_vpDatasets.size() == 0u)
 		return glm::vec3();
 	else
-		return glm::vec3(m_dmat4RawDomainToVolumeTransform * glm::vec4(dataPos, 1.f));
+		return glm::vec3(m_dmat4RawDomainToVolumeTransform * glm::dvec4(rawDataPos, 1.f));
 }
 
 bool DataVolume::isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ)
