@@ -1,4 +1,4 @@
-#include "GrabTutorial.h"
+#include "ScaleTutorial.h"
 
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
@@ -7,9 +7,8 @@
 #include <shared/glm/gtc/random.hpp>
 #include "Renderer.h"
 #include "TaskCompleteBehavior.h"
-#include <algorithm>
 
-GrabTutorial::GrabTutorial(TrackedDeviceManager* pTDM)
+ScaleTutorial::ScaleTutorial(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
 	, m_pDemoVolume(NULL)
 	, m_pGoalVolume(NULL)
@@ -18,7 +17,7 @@ GrabTutorial::GrabTutorial(TrackedDeviceManager* pTDM)
 }
 
 
-GrabTutorial::~GrabTutorial()
+ScaleTutorial::~ScaleTutorial()
 {
 	if (m_bInitialized)
 	{
@@ -29,13 +28,12 @@ GrabTutorial::~GrabTutorial()
 			delete m_pGoalVolume;
 
 		InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
-		InfoBoxManager::getInstance().removeInfoBox("Grab Tut Goal");
 		BehaviorManager::getInstance().removeBehavior("Grab");
 		BehaviorManager::getInstance().removeBehavior("Done");
 	}
 }
 
-void GrabTutorial::init()
+void ScaleTutorial::init()
 {
 	glm::vec3 grabVolPosition = glm::vec3(0.f, 1.1f, 0.f);
 	glm::quat grabVolOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
@@ -56,21 +54,13 @@ void GrabTutorial::init()
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Grab Tut Goal",
-		"grabtutgoal.png",
-		1.f,
-		glm::translate(glm::mat4(), goalVolPosition + 1.f * glm::vec3(0.f, 1.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::WORLD,
-		true);
 	
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 
 	m_bInitialized = true;
 }
 
-void GrabTutorial::update()
+void ScaleTutorial::update()
 {
 	if (!m_pTDM->getSecondaryController())
 		return;
@@ -94,7 +84,6 @@ void GrabTutorial::update()
 		{
 			BehaviorManager::getInstance().removeBehavior("Grab");
 			InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
-			InfoBoxManager::getInstance().removeInfoBox("Grab Tut Goal");
 
 			TaskCompleteBehavior* tcb = new TaskCompleteBehavior(m_pTDM);
 			tcb->init();
@@ -103,7 +92,7 @@ void GrabTutorial::update()
 	}
 }
 
-void GrabTutorial::draw()
+void ScaleTutorial::draw()
 {
 	glm::vec4 goalVolBackingColor;
 
@@ -129,7 +118,7 @@ void GrabTutorial::draw()
 	
 }
 
-bool GrabTutorial::checkVolBounds()
+bool ScaleTutorial::checkVolBounds()
 {
 	glm::vec4 bbMin(glm::vec3(-0.5f), 1.f);
 	glm::vec4 bbMax(glm::vec3(0.5f), 1.f);

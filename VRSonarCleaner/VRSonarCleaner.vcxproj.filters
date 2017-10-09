@@ -168,6 +168,9 @@
     <ClCompile Include="GrabTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClCompile>
+    <ClCompile Include="ScaleTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -306,6 +309,9 @@
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClInclude>
     <ClInclude Include="GrabTutorial.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="ScaleTutorial.h">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
     </ClInclude>
   </ItemGroup>

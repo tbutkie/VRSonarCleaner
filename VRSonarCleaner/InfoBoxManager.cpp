@@ -76,9 +76,15 @@ void InfoBoxManager::draw()
 
 		if (std::get<IBIndex::BILLBOARDED>(ib.second))
 		{
-			infoBoxMat[0] = HMDXform[0];
-			infoBoxMat[1] = HMDXform[1];
-			infoBoxMat[2] = HMDXform[2];
+			glm::vec3 up(0.f, 1.f, 0.f);
+			glm::vec3 IBtoHMDVec_n = glm::normalize(glm::vec3(HMDXform[3] - infoBoxMat[3]));
+			glm::vec3 u = glm::normalize(glm::cross(up, IBtoHMDVec_n));
+			glm::vec3 v = up;
+			glm::vec3 w = glm::normalize(glm::cross(u, v));
+
+			infoBoxMat[0] = glm::vec4(u, 0.f);
+			infoBoxMat[1] = glm::vec4(v, 0.f);
+			infoBoxMat[2] = glm::vec4(w, 0.f);
 		}
 
 		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;

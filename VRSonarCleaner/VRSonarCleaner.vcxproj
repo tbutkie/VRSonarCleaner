@@ -191,6 +191,7 @@
     <ClCompile Include="ProbeBehavior.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="ScaleDataVolumeBehavior.cpp" />
+    <ClCompile Include="ScaleTutorial.cpp" />
     <ClCompile Include="SelectAreaBehavior.cpp" />
     <ClCompile Include="shaderset.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
@@ -239,6 +240,7 @@
     <ClInclude Include="ProbeBehavior.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="ScaleDataVolumeBehavior.h" />
+    <ClInclude Include="ScaleTutorial.h" />
     <ClInclude Include="SelectAreaBehavior.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />

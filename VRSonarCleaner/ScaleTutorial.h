@@ -6,12 +6,12 @@
 #include "TrackedDeviceManager.h"
 #include "DataVolume.h"
 
-class GrabTutorial :
+class ScaleTutorial :
 	public InitializableBehavior
 {
 public:
-	GrabTutorial(TrackedDeviceManager* pTDM);
-	virtual ~GrabTutorial();
+	ScaleTutorial(TrackedDeviceManager* pTDM);
+	virtual ~ScaleTutorial();
 
 	void init();
 	
