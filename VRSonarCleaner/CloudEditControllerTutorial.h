@@ -37,6 +37,7 @@ private:
 	void refreshColorScale();
 
 	void makeBadDataLabels(float width);
+	void updateBadDataLabels(float width);
 	void cleanupBadDataLabels();
 };
 

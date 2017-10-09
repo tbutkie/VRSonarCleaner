@@ -2,6 +2,7 @@
 
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
+#include "ScaleDataVolumeBehavior.h"
 #include "GrabDataVolumeBehavior.h"
 #include <shared/glm/gtc/matrix_transform.hpp>
 #include <shared/glm/gtc/random.hpp>
@@ -27,8 +28,10 @@ ScaleTutorial::~ScaleTutorial()
 		if (m_pGoalVolume)
 			delete m_pGoalVolume;
 
-		InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
+		InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
+		InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
 		BehaviorManager::getInstance().removeBehavior("Grab");
+		BehaviorManager::getInstance().removeBehavior("Scale");
 		BehaviorManager::getInstance().removeBehavior("Done");
 	}
 }
@@ -43,29 +46,38 @@ void ScaleTutorial::init()
 
 	glm::vec3 goalVolPosition = glm::vec3(1.f, 1.1f, 0.f);
 	glm::quat goalVolOrientation = glm::angleAxis(glm::radians(glm::linearRand(0.f, 180.f)), glm::sphericalRand(1.f));
-	glm::vec3 goalVolSize = glm::vec3(0.75f);
+	glm::vec3 goalVolSize = glm::vec3(0.25f);
 	
 	m_pGoalVolume = new DataVolume(goalVolPosition, goalVolOrientation, goalVolSize);
 
 	InfoBoxManager::getInstance().addInfoBox(
-		"Grab Tut",
-		"grabinstructions.png",
+		"Scale Tut",
+		"scalinginstructions.png",
 		0.25f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
 		false);
-	
+
+	InfoBoxManager::getInstance().addInfoBox(
+		"Scale Tut Goal",
+		"scaletutgoal.png",
+		1.f,
+		glm::translate(glm::mat4(), goalVolPosition + 1.f * glm::vec3(0.f, 1.f, 0.f)),
+		InfoBoxManager::RELATIVE_TO::WORLD,
+		true);
+
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
+	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 
 	m_bInitialized = true;
 }
 
 void ScaleTutorial::update()
 {
-	if (!m_pTDM->getSecondaryController())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
 
-	if (m_bWaitForTriggerRelease && !m_pTDM->getSecondaryController()->isTriggerEngaged())
+	if (m_bWaitForTriggerRelease && !m_pTDM->getSecondaryController()->isTriggerEngaged() && !m_pTDM->getPrimaryController()->isGripButtonPressed() && !m_pTDM->getSecondaryController()->isGripButtonPressed())
 		m_bWaitForTriggerRelease = false;
 
 	m_pDemoVolume->update();
@@ -78,12 +90,14 @@ void ScaleTutorial::update()
 		if (!done->isActive())
 			m_bActive = false;
 	}
-	else if (!m_bWaitForTriggerRelease && m_pTDM->getSecondaryController()->justUnclickedTrigger())
+	else if (!m_bWaitForTriggerRelease && (m_pTDM->getSecondaryController()->justUnclickedTrigger() || m_pTDM->getSecondaryController()->justUnpressedGrip() || m_pTDM->getPrimaryController()->justUnpressedGrip()))
 	{
 		if (checkVolBounds())
 		{
 			BehaviorManager::getInstance().removeBehavior("Grab");
-			InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
+			BehaviorManager::getInstance().removeBehavior("Scale");
+			InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
+			InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
 
 			TaskCompleteBehavior* tcb = new TaskCompleteBehavior(m_pTDM);
 			tcb->init();
@@ -98,7 +112,7 @@ void ScaleTutorial::draw()
 
 	if (BehaviorManager::getInstance().getBehavior("Done"))
 		goalVolBackingColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.f);
-	else if (!m_bWaitForTriggerRelease && m_pTDM->getSecondaryController()->isTriggerClicked())
+	else if (!m_bWaitForTriggerRelease && (m_pTDM->getSecondaryController()->isTriggerClicked() || (m_pTDM->getPrimaryController()->isGripButtonPressed() && m_pTDM->getSecondaryController()->isGripButtonPressed())))
 	{
 		if (checkVolBounds())
 			goalVolBackingColor = glm::vec4(0.2f, 0.8f, 0.2f, 1.f);
