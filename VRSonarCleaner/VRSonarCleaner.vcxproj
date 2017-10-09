@@ -197,11 +197,11 @@
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="StudyIntroBehavior.cpp" />
+    <ClCompile Include="StudyTutorialBehavior.cpp" />
     <ClCompile Include="TaskCompleteBehavior.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
-    <ClCompile Include="TutorialBehavior.cpp" />
-    <ClCompile Include="TutorialIntroduction.cpp" />
     <ClCompile Include="ViveController.cpp" />
     <ClCompile Include="WelcomeBehavior.cpp" />
   </ItemGroup>
@@ -246,11 +246,11 @@
     <ClInclude Include="HolodeckBackground.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
+    <ClInclude Include="StudyIntroBehavior.h" />
+    <ClInclude Include="StudyTutorialBehavior.h" />
     <ClInclude Include="TaskCompleteBehavior.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
-    <ClInclude Include="TutorialBehavior.h" />
-    <ClInclude Include="TutorialIntroduction.h" />
     <ClInclude Include="ViveController.h" />
     <ClInclude Include="WelcomeBehavior.h" />
   </ItemGroup>

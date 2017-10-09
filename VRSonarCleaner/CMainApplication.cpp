@@ -3,7 +3,7 @@
 #include "InfoBoxManager.h"
 
 #include "BehaviorManager.h"
-#include "TutorialBehavior.h"
+#include "StudyTutorialBehavior.h"
 #include "DemoBehavior.h"
 #include "HolodeckBackground.h"
 
@@ -542,7 +542,7 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
-				BehaviorManager::getInstance().addBehavior("Tutorial", new TutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_y)
 			{

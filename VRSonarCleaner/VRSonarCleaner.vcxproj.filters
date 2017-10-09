@@ -40,6 +40,9 @@
     <Filter Include="Interactions &amp; Behaviors\flow">
       <UniqueIdentifier>{f6399f2b-5859-4e29-88b7-58258f3182d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interactions &amp; Behaviors\study">
+      <UniqueIdentifier>{47902574-bc59-450d-ad59-56a96a985500}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -132,12 +135,6 @@
     <ClCompile Include="WelcomeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
-    <ClCompile Include="TutorialBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
-    <ClCompile Include="TutorialIntroduction.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
     <ClCompile Include="DemoBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClCompile>
@@ -170,6 +167,12 @@
     </ClCompile>
     <ClCompile Include="ScaleTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTutorialBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyIntroBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -269,12 +272,6 @@
     <ClInclude Include="WelcomeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
-    <ClInclude Include="TutorialIntroduction.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
-    <ClInclude Include="TutorialBehavior.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
     <ClInclude Include="DemoBehavior.h">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClInclude>
@@ -313,6 +310,12 @@
     </ClInclude>
     <ClInclude Include="ScaleTutorial.h">
       <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTutorialBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyIntroBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

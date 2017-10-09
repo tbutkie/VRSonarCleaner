@@ -2,23 +2,23 @@
 #include "BehaviorBase.h"
 
 #include "TrackedDeviceManager.h"
-#include "DataVolume.h"
 
-class TutorialIntroduction :
+class StudyIntroBehavior :
 	public InitializableBehavior
 {
 public:
-	TutorialIntroduction(TrackedDeviceManager* pTDM, DataVolume* tableVolume);
-	virtual ~TutorialIntroduction();
+	StudyIntroBehavior(TrackedDeviceManager* pTDM);
+	virtual ~StudyIntroBehavior();
 
 	void init();
-	
+
 	void update();
 
 	void draw();
 
 private:
 	TrackedDeviceManager *m_pTDM;
-	DataVolume *m_pTableVolume;
+
+	bool m_bWaitForTriggerRelease;
 };
 
