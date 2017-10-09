@@ -259,7 +259,7 @@ glm::vec3 SelectAreaBehavior::calcHits()
 	glm::vec3 ptOnPlane;
 
 	m_bRayHitPlane = castRay(rayOrigin, rayDirection, planeOrigin, planeNormal, &ptOnPlane);
-	m_bRayHitDomain = m_bRayHitPlane ? m_pDataVolumeSelection->isWorldCoordPointInBounds(ptOnPlane, false) : false;
+	m_bRayHitDomain = m_bRayHitPlane ? m_pDataVolumeSelection->isWorldCoordPointInDomainBounds(ptOnPlane, false) : false;
 
 	if (m_bRayHitDomain)
 	{

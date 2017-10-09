@@ -34,7 +34,7 @@ public:
 	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
 	glm::vec3 convertToWorldCoords(glm::dvec3 rawDataPos);
-	bool isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ = true);
+	bool isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ = true);
 	
 	glm::mat4 getCurrentDataTransform(Dataset* dataset);
 	glm::mat4 getLastDataTransform(Dataset* dataset);

@@ -8,13 +8,12 @@ using namespace std::chrono_literals;
 PointCleanProbe::PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD)
 	: ProbeBehavior(pTDM, pointCloudVolume)
 	, m_bProbeActive(false)
+	, m_bWaitForTriggerRelease(true)
 	, m_pHMD(pHMD)
 	, m_fPtHighlightAmt(1.f)
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
 {
-	m_bWaitForTriggerRelease = m_pTDM->getPrimaryController()->isTriggerClicked() ? true : false;
-
 	InfoBoxManager::getInstance().addInfoBox(
 		"Editing Label",
 		"editctrlrlabel.png",
@@ -43,7 +42,7 @@ void PointCleanProbe::update()
 {	
 	ProbeBehavior::update();
 
-	if (m_bWaitForTriggerRelease && !m_pTDM->getPrimaryController()->isTriggerClicked())
+	if (m_bWaitForTriggerRelease && !m_pTDM->getPrimaryController()->isTriggerEngaged())
 		m_bWaitForTriggerRelease = false;
 
 	// Update time vars

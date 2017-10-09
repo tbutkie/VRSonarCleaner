@@ -15,6 +15,7 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_vec3OriginalDimensions(dimensions)
 	, m_bVisible(true)
 	, m_bFirstRun(true)
+	, m_bDirty(true)
 	, m_bUseCustomBounds(false)
 {
 	updateTransforms();
@@ -85,7 +86,7 @@ glm::vec3 DataVolume::convertToWorldCoords(glm::dvec3 rawDataPos)
 		return glm::vec3(m_dmat4RawDomainToVolumeTransform * glm::dvec4(rawDataPos, 1.f));
 }
 
-bool DataVolume::isWorldCoordPointInBounds(glm::vec3 worldPt, bool checkZ)
+bool DataVolume::isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ)
 {
 	if (m_vpDatasets.size() == 0u)
 		return false;

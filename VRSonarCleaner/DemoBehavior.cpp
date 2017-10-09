@@ -5,6 +5,7 @@
 #include "Renderer.h"
 
 #include "WelcomeBehavior.h"
+#include "GrabTutorial.h"
 #include "CloudEditControllerTutorial.h"
 
 DemoBehavior::DemoBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
@@ -61,6 +62,7 @@ void DemoBehavior::draw()
 void DemoBehavior::createDemoQueue()
 {
 	m_qTutorialQueue.push(std::make_pair("Welcome", new WelcomeBehavior(m_pTDM)));
+	m_qTutorialQueue.push(std::make_pair("Grab Tut", new GrabTutorial(m_pTDM)));
 	m_qTutorialQueue.push(std::make_pair("Edit Tut", new CloudEditControllerTutorial(m_pTDM)));
 
 	//
