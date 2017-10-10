@@ -138,9 +138,6 @@
     <ClCompile Include="DemoBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClCompile>
-    <ClCompile Include="CloudEditControllerTutorial.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
     <ClCompile Include="ProbeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\base</Filter>
     </ClCompile>
@@ -172,6 +169,12 @@
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
     <ClCompile Include="StudyIntroBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="CloudEditControllerTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyEditTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
   </ItemGroup>
@@ -275,9 +278,6 @@
     <ClInclude Include="DemoBehavior.h">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClInclude>
-    <ClInclude Include="CloudEditControllerTutorial.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
     <ClInclude Include="ProbeBehavior.h">
       <Filter>Interactions &amp; Behaviors\base</Filter>
     </ClInclude>
@@ -315,6 +315,12 @@
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
     <ClInclude Include="StudyIntroBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="CloudEditControllerTutorial.h">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyEditTutorial.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>

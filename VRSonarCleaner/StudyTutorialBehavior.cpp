@@ -8,7 +8,7 @@
 #include "StudyIntroBehavior.h"
 #include "GrabTutorial.h"
 #include "ScaleTutorial.h"
-#include "CloudEditControllerTutorial.h"
+#include "StudyEditTutorial.h"
 
 StudyTutorialBehavior::StudyTutorialBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
 	: m_pTDM(pTDM)
@@ -67,5 +67,5 @@ void StudyTutorialBehavior::createDemoQueue()
 	m_qTutorialQueue.push(std::make_pair("Intro", new StudyIntroBehavior(m_pTDM)));
 	m_qTutorialQueue.push(std::make_pair("Grab Tut", new GrabTutorial(m_pTDM)));
 	m_qTutorialQueue.push(std::make_pair("Scale Tut", new ScaleTutorial(m_pTDM)));
-	//m_qTutorialQueue.push(std::make_pair("Edit Tut", new StudyCloudEditTutorial(m_pTDM)));
+	m_qTutorialQueue.push(std::make_pair("Edit Tut", new StudyEditTutorial(m_pTDM)));
 }
