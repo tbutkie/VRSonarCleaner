@@ -34,6 +34,8 @@ private:
 	unsigned int m_uiBadPoint3;
 	unsigned int m_uiBadPoint4;
 
+	bool loadPoints(std::string fileName);
+
 	void refreshColorScale();
 
 	void makeBadDataLabels(float width);

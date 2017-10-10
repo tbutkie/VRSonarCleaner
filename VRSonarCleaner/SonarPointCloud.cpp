@@ -4,8 +4,8 @@
 #include <numeric>
 #include <limits>
 
-SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, bool studyfile)
-	: Dataset(fileName, studyfile ? true : false)
+SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
+	: Dataset(fileName, (filetype == XYZF) ? true : false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
@@ -19,7 +19,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
 	, m_fMaxDepthTPU(-std::numeric_limits<float>::max())
 {
-	if (studyfile)
+	if (filetype == XYZF)
 	{
 		
 		loadStudyData();

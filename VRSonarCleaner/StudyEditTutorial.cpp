@@ -1,5 +1,8 @@
 #include "StudyEditTutorial.h"
 
+#include <fstream>
+#include <sstream>
+
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -54,7 +57,7 @@ void StudyEditTutorial::init()
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "saved_points_2017-10-10_15-42-15.csv", SonarPointCloud::XYZF);
 
 	m_pDemoVolume->add(m_pDemoCloud);
 	
@@ -76,7 +79,7 @@ void StudyEditTutorial::init()
 		InfoBoxManager::RELATIVE_TO::WORLD,
 		true);
 
-	makeBadDataLabels(0.25f);
+	//makeBadDataLabels(0.25f);
 
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
@@ -94,7 +97,7 @@ void StudyEditTutorial::update()
 	m_pDemoVolume->update();
 	m_pDemoCloud->update();
 
-	updateBadDataLabels(0.25f);
+	//updateBadDataLabels(0.25f);
 
 	BehaviorBase* done = BehaviorManager::getInstance().getBehavior("Done");
 	if (done)
@@ -283,4 +286,65 @@ void StudyEditTutorial::cleanupBadDataLabels()
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 6");
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 7");
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 8");
+}
+
+bool StudyEditTutorial::loadPoints(std::string fileName)
+{
+	std::ifstream inFile(fileName);
+
+	if (inFile.is_open())
+	{
+		std::cout << "Opened file " << fileName << " for reading" << std::endl;
+	}
+	else
+	{
+		std::cout << "Error opening file " << fileName << " for reading" << std::endl;
+		return false;
+	}
+
+	std::string line;
+
+	if (!std::getline(inFile, line))
+	{
+		std::cout << "Empty file; aborting..." << std::endl;
+		return false;
+	}
+
+	//make sure header is correct before proceeding
+	if (line.compare("x,y,z,flag"))
+	{
+		std::cout << "Unrecognized file header (expected: x,y,z,flag); aborting..." << std::endl;
+		return false;
+	}
+
+	std::vector<glm::vec3> points;
+	std::vector<int> flags;
+
+	int lineNo = 2; // already checked header at line 1
+	while (std::getline(inFile, line))
+	{
+		std::istringstream iss(line);
+		std::string xStr, yStr, zStr, flagStr;
+
+		if (!std::getline(iss, xStr, ',')
+			|| !std::getline(iss, yStr, ',')
+			|| !std::getline(iss, zStr, ',')
+			|| !std::getline(iss, flagStr, ',')
+			)
+		{
+			std::cout << "Error reading line " << lineNo << " from file " << fileName << std::endl;
+			return false;
+		}
+
+		points.push_back(glm::vec3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
+		flags.push_back(std::stoi(flagStr));
+
+		lineNo++;
+	}
+
+	inFile.close();
+
+	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
+
+	return true;
 }

@@ -13,6 +13,7 @@
 #include <string>
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 
 glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 
@@ -508,7 +509,7 @@ bool CMainApplication::HandleInput()
 					{
 						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
 						{
-							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
+							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
 							m_vpClouds.push_back(tmp);
 							m_pTableVolume->add(tmp);
 							m_pWallVolume->add(tmp);
@@ -524,7 +525,7 @@ bool CMainApplication::HandleInput()
 					{
 						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
 						{
-							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
+							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
 							m_vpClouds.push_back(tmp);
 							m_pTableVolume->add(tmp);
 							m_pWallVolume->add(tmp);
@@ -1038,6 +1039,8 @@ void CMainApplication::savePoints()
 	}
 	else
 		std::cout << "Error opening file " << outFileName << " for writing output" << std::endl;
+
+	outFile.precision(std::numeric_limits<double>::max_digits10);
 
 	for (auto &ds : m_pTableVolume->getDatasets())
 	{

@@ -51,7 +51,7 @@ void CloudEditControllerTutorial::init()
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt");
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SAMPLE);
 
 	m_pDemoVolume->add(m_pDemoCloud);
 	

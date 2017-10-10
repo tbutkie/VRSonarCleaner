@@ -15,8 +15,15 @@
 
 class SonarPointCloud : public Dataset
 {
+public:
+	enum SONAR_FILETYPE {
+		SAMPLE,
+		XYZF,
+		QIMERA
+	};
+
 	public:
-		SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, bool studyfile = false);
+		SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype);
 		~SonarPointCloud();
 		
 		bool getRefreshNeeded();
