@@ -6,6 +6,7 @@
 #include "GrabDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
 #include <shared/glm/gtc/matrix_transform.hpp>
+#include <shared/glm/gtc/random.hpp>
 #include "Renderer.h"
 #include "TaskCompleteBehavior.h"
 
@@ -36,6 +37,8 @@ StudyEditTutorial::~StudyEditTutorial()
 		BehaviorManager::getInstance().removeBehavior("Done");
 
 		cleanupBadDataLabels();
+		InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
+		InfoBoxManager::getInstance().removeInfoBox("Edit Tool Info");
 	}
 }
 
@@ -58,20 +61,20 @@ void StudyEditTutorial::init()
 	refreshColorScale();
 	
 	InfoBoxManager::getInstance().addInfoBox(
-		"Cloud Editing Tutorial",
-		"studyeditpointstut.png",
+		"Edit Tool Info",
+		"studyedittoolinstructions.png",
 		0.25f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
 		false);
 
 	InfoBoxManager::getInstance().addInfoBox(
-		"Reset Label",
-		"resetleftlabel.png",
-		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(0.052f, 0.008f, 0.052f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
+		"Cloud Editing Tutorial",
+		"studyeditpointstut.png",
+		1.5f,
+		glm::translate(glm::mat4(), glm::vec3(2.f, m_pTDM->getHMDToWorldTransform()[3].y, 0.f)),
+		InfoBoxManager::RELATIVE_TO::WORLD,
+		true);
 
 	makeBadDataLabels(0.25f);
 
@@ -87,10 +90,7 @@ void StudyEditTutorial::update()
 {
 	if (!m_pTDM->getPrimaryController())
 		return;
-
-	if (m_pTDM->getPrimaryController()->justPressedTouchpad())
-		m_pDemoCloud->resetAllMarks();
-
+	
 	m_pDemoVolume->update();
 	m_pDemoCloud->update();
 
@@ -124,7 +124,7 @@ void StudyEditTutorial::update()
 
 			cleanupBadDataLabels();
 			InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
-			InfoBoxManager::getInstance().removeInfoBox("Reset Label");
+			InfoBoxManager::getInstance().removeInfoBox("Edit Tool Info");
 
 			m_pDemoVolume->resetPositionAndOrientation();
 

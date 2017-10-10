@@ -24,7 +24,7 @@ void StudyIntroBehavior::init()
 {
 	InfoBoxManager::getInstance().addInfoBox(
 		"Study Intro",
-		"test.png",
+		"studyintro.png",
 		1.f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, m_pTDM->getHMDToWorldTransform()[3].y, 0.f)),
 		InfoBoxManager::RELATIVE_TO::WORLD,

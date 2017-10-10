@@ -15,6 +15,7 @@ GrabTutorial::GrabTutorial(TrackedDeviceManager* pTDM)
 	, m_pGoalVolume(NULL)
 	, m_bWaitForTriggerRelease(true)
 {
+	srand(time(NULL));
 }
 
 

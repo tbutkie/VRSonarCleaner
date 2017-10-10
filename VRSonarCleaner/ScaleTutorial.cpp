@@ -15,6 +15,7 @@ ScaleTutorial::ScaleTutorial(TrackedDeviceManager* pTDM)
 	, m_pGoalVolume(NULL)
 	, m_bWaitForTriggerRelease(true)
 {
+	srand(time(NULL));
 }
 
 

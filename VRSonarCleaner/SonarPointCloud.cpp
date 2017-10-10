@@ -7,7 +7,7 @@
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, bool studyfile)
 	: Dataset(fileName, studyfile ? true : false)
 	, m_pColorScaler(colorScaler)
-	, m_iPreviewReductionFactor(20)
+	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
 	, refreshNeeded(true)
 	, previewRefreshNeeded(true)
@@ -295,12 +295,13 @@ bool SonarPointCloud::loadStudyData()
 
 void SonarPointCloud::update()
 {
-	if (refreshNeeded)
+	if (refreshNeeded || previewRefreshNeeded)
 	{
 		// Sub buffer data for colors...
 		glNamedBufferSubData(m_glVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
 		refreshNeeded = false;
+		previewRefreshNeeded = false;
 	}
 }
 

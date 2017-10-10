@@ -5,6 +5,7 @@
 #include "BehaviorManager.h"
 #include "StudyTutorialBehavior.h"
 #include "DemoBehavior.h"
+#include "SelectAreaBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -218,10 +219,10 @@ bool CMainApplication::init()
 		m_vec3BallCenter = tablePosition;
 
 		m_pColorScalerTPU = new ColorScaler();
-		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
-		//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
-		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
-		m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
+		m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
+		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
+		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
@@ -484,6 +485,9 @@ bool CMainApplication::HandleInput()
 
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
+				if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+					BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+
 				using namespace std::experimental::filesystem::v1;
 
 				//path dataset("south_santa_rosa");
@@ -514,20 +518,21 @@ bool CMainApplication::HandleInput()
 					}
 				}
 
-				//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
-				//{
-				//	if (is_regular_file(*it))
-				//	{
-				//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-				//		{
-				//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
-				//			m_vpClouds.push_back(tmp);
-				//			m_pTableVolume->add(tmp);
-				//			tmpPointCloudCollection.push_back(tmp);
-				//			break;
-				//		}
-				//	}
-				//}
+				for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
+				{
+					if (is_regular_file(*it))
+					{
+						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+						{
+							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), true);
+							m_vpClouds.push_back(tmp);
+							m_pTableVolume->add(tmp);
+							m_pWallVolume->add(tmp);
+							tmpPointCloudCollection.push_back(tmp);
+							break;
+						}
+					}
+				}
 
 				refreshColorScale(m_pColorScalerTPU, m_vpClouds);
 			}
@@ -890,8 +895,8 @@ void CMainApplication::drawScene()
 
 			for (auto &cloud : dv->getDatasets())
 			{
-				rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-				rs.vertCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
+				rs.vertCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
@@ -1040,6 +1045,9 @@ void CMainApplication::savePoints()
 
 		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
+			if (cloud->getPointMark(i) == 1u)
+				continue;
+
 			outFile << cloud->getRawPointPosition(i).x << "," << cloud->getRawPointPosition(i).y << "," << cloud->getRawPointPosition(i).z << "," << (cloud->getPointPositionTPU(i) == 1.f ? "1" : "0") << std::endl;
 		}
 	}
