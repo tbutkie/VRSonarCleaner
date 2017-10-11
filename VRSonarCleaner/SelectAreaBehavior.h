@@ -25,6 +25,7 @@ private:
 	bool m_bShowCursor; // show the cursor?
 	bool m_bSelectingArea; // is an area currently being selected?
 	bool m_bMovingArea; // is the custom area currently being moved around?
+	bool m_bNudgingArea; // is the custom area currently being moved around?
 	bool m_bCustomAreaSet; // has a custom domain been set?
 	bool m_bRayHitPlane;
 	bool m_bRayHitDomain;
@@ -44,6 +45,8 @@ private:
 	glm::dvec3 m_dvec3MaxBoundAtDragStart;
 	
 	glm::vec3 m_vec3CursorSize;
+
+	double m_dMaxBoxMovement;
 
 private:
 	void updateState();

@@ -38,9 +38,6 @@ public:
 	void RunMainLoop();
 	bool HandleInput();
 	
-	void savePoints();
-	bool loadPoints(std::string fileName);
-	
 private:
 	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msVRUpdateTime, m_msDrawTime, m_msRenderTime;
 

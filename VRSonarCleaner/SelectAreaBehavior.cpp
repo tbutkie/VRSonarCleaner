@@ -12,10 +12,12 @@ SelectAreaBehavior::SelectAreaBehavior(TrackedDeviceManager* pTDM, DataVolume* s
 	, m_bShowCursor(false)
 	, m_bSelectingArea(false)
 	, m_bMovingArea(false)
+	, m_bNudgingArea(false)
 	, m_bCustomAreaSet(false)
 	, m_bRayHitPlane(false)
 	, m_bRayHitDomain(false)
 	, m_vec3CursorSize(glm::vec3(0.01f, 0.01f, 0.001f))
+	, m_dMaxBoxMovement(25.)
 {
 }
 
@@ -45,6 +47,14 @@ void SelectAreaBehavior::update()
 		m_bShowCursor = false;
 	}
 
+	if (m_bNudgingArea)
+	{
+		glm::vec2 touchPt = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint();
+
+		touchPt *= m_dMaxBoxMovement;
+		m_dvec3MinBound += glm::dvec3(touchPt, 0.);
+		m_dvec3MaxBound += glm::dvec3(touchPt, 0.);
+	}
 
 	if (m_bActive)
 	{
@@ -93,40 +103,7 @@ void SelectAreaBehavior::update()
 
 				m_dvec3MaxBound.x = m_dvec3MaxBoundAtDragStart.x + offset.x;
 				m_dvec3MaxBound.y = m_dvec3MaxBoundAtDragStart.y + offset.y;
-
-				glm::vec3 markerOffsets = m_vec3CurrentLocationOnPlane - m_vec3BeginDragOnPlane;
-				m_pDataVolumeSelection->convertToRawDomainCoords(m_dvec3MinBoundAtDragStart);
-				m_pDataVolumeSelection->convertToRawDomainCoords(m_dvec3MaxBoundAtDragStart);
-			}	
-
-			m_dvec3MinBound.z = std::numeric_limits<double>::max();
-			m_dvec3MaxBound.z = -std::numeric_limits<double>::max();
-
-			for (auto & ds : m_pDataVolumeDisplay->getDatasets())
-			{
-				SonarPointCloud* pc = static_cast<SonarPointCloud*>(ds);
-				for (unsigned int i = 0; i < pc->getPointCount(); ++i)
-				{
-					glm::dvec3 thisRawPt = pc->getRawPointPosition(i);
-
-					if (thisRawPt.x < m_dvec3MinBound.x || thisRawPt.x > m_dvec3MaxBound.x ||
-						thisRawPt.y < m_dvec3MinBound.y || thisRawPt.y > m_dvec3MaxBound.y)
-					{
-						pc->markPoint(i, 1);
-					}
-					else
-					{
-						pc->markPoint(i, 0);
-						if (pc->getRawPointPosition(i).z < m_dvec3MinBound.z)
-							m_dvec3MinBound.z = pc->getRawPointPosition(i).z;
-						else if (pc->getRawPointPosition(i).z > m_dvec3MaxBound.z)
-							m_dvec3MaxBound.z = pc->getRawPointPosition(i).z;
-					}
-				}
-			}
-
-			m_pDataVolumeDisplay->setCustomBounds(m_dvec3MinBound, m_dvec3MaxBound);
-			m_pDataVolumeDisplay->useCustomBounds(true);					
+			}			
 
 			m_vec3LastSelectedLocationOnPlaneWithinDomain = m_vec3CurrentLocationOnPlane;
 		}
@@ -135,6 +112,38 @@ void SelectAreaBehavior::update()
 	{
 		m_bSelectingArea = false;
 		m_bMovingArea = false;
+	}
+
+	if (m_bMovingArea || m_bNudgingArea || m_bSelectingArea)
+	{
+		m_dvec3MinBound.z = std::numeric_limits<double>::max();
+		m_dvec3MaxBound.z = -std::numeric_limits<double>::max();
+
+		for (auto & ds : m_pDataVolumeDisplay->getDatasets())
+		{
+			SonarPointCloud* pc = static_cast<SonarPointCloud*>(ds);
+			for (unsigned int i = 0; i < pc->getPointCount(); ++i)
+			{
+				glm::dvec3 thisRawPt = pc->getRawPointPosition(i);
+
+				if (thisRawPt.x < m_dvec3MinBound.x || thisRawPt.x > m_dvec3MaxBound.x ||
+					thisRawPt.y < m_dvec3MinBound.y || thisRawPt.y > m_dvec3MaxBound.y)
+				{
+					pc->markPoint(i, 1);
+				}
+				else
+				{
+					pc->markPoint(i, 0);
+					if (pc->getRawPointPosition(i).z < m_dvec3MinBound.z)
+						m_dvec3MinBound.z = pc->getRawPointPosition(i).z;
+					else if (pc->getRawPointPosition(i).z > m_dvec3MaxBound.z)
+						m_dvec3MaxBound.z = pc->getRawPointPosition(i).z;
+				}
+			}
+		}
+
+		m_pDataVolumeDisplay->setCustomBounds(m_dvec3MinBound, m_dvec3MaxBound);
+		m_pDataVolumeDisplay->useCustomBounds(true);
 	}
 }
 
@@ -194,7 +203,7 @@ void SelectAreaBehavior::draw()
 		
 		if (m_bSelectingArea)
 			bboxColor = glm::vec4(0.f, 1.f, 1.f, 1.f);
-		else if (m_bRayHitCustomDomain)
+		else if (m_bRayHitCustomDomain || m_bMovingArea || m_bNudgingArea)
 			bboxColor = glm::vec4(0.f, 1.f, 0.f, 1.f);
 		else
 			bboxColor = glm::vec4(1.f, 1.f, 0.f, 1.f);
@@ -243,6 +252,8 @@ void SelectAreaBehavior::updateState()
 	{
 		m_bActive = false;
 	}
+
+	m_bNudgingArea = m_pTDM->getPrimaryController()->isTouchpadTouched() && m_bCustomAreaSet;
 
 	if (m_pTDM->getPrimaryController()->justPressedTouchpad())
 	{

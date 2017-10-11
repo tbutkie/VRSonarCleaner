@@ -20,6 +20,7 @@ public:
 	virtual ~DataVolume();
 
 	void add(Dataset* data);
+	void remove(Dataset* data);
 
 	std::vector<Dataset*> getDatasets();
 

@@ -177,6 +177,9 @@
     <ClCompile Include="StudyEditTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
+    <ClCompile Include="CurateStudyDataBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -321,6 +324,9 @@
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
     <ClInclude Include="StudyEditTutorial.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="CurateStudyDataBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>

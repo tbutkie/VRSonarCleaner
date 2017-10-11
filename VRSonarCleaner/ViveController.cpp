@@ -386,9 +386,27 @@ bool ViveController::justPressedTouchpad()
 	return true;
 }
 
-bool ViveController::justUpressedTouchpad()
+bool ViveController::justUnpressedTouchpad()
 {
 	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->justUnpressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justPressedMenu()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
+		if (!c->justPressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justUnpressedMenu()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
 		if (!c->justUnpressed())
 			return false;
 

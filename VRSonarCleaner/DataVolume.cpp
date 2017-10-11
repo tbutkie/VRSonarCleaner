@@ -27,7 +27,18 @@ DataVolume::~DataVolume()
 
 void DataVolume::add(Dataset * data)
 {
-	m_vpDatasets.push_back(data);
+	// Only add if not already in collection
+	if (std::find(m_vpDatasets.begin(), m_vpDatasets.end(), data) == m_vpDatasets.end())
+	{
+		m_vpDatasets.push_back(data);
+		m_bDirty = true;
+		updateTransforms();
+	}
+}
+
+void DataVolume::remove(Dataset * data)
+{
+	m_vpDatasets.erase(std::remove(m_vpDatasets.begin(), m_vpDatasets.end(), data), m_vpDatasets.end());
 	m_bDirty = true;
 	updateTransforms();
 }

@@ -36,7 +36,10 @@ public:
 	bool justTouchedTouchpad();
 	bool justUntouchedTouchpad();
 	bool justPressedTouchpad();
-	bool justUpressedTouchpad();
+	bool justUnpressedTouchpad();
+
+	bool justPressedMenu();
+	bool justUnpressedMenu();
 
 	glm::mat4 getLastDeviceToWorldTransform();
 

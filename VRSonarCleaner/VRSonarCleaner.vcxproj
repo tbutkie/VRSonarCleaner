@@ -167,6 +167,7 @@
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="BehaviorManager.cpp" />
     <ClCompile Include="CloudEditControllerTutorial.cpp" />
+    <ClCompile Include="CurateStudyDataBehavior.cpp" />
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="GrabDataVolumeBehavior.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="BehaviorList.h" />
     <ClInclude Include="BehaviorManager.h" />
     <ClInclude Include="CloudEditControllerTutorial.h" />
+    <ClInclude Include="CurateStudyDataBehavior.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="GrabDataVolumeBehavior.h" />

@@ -8,6 +8,7 @@
 #include "SelectAreaBehavior.h"
 #include "GrabDataVolumeBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
+#include "CurateStudyDataBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -562,6 +563,10 @@ bool CMainApplication::HandleInput()
 				BehaviorManager::getInstance().clearBehaviors();
 				BehaviorManager::getInstance().addBehavior("Demo", new DemoBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_u)
+			{
+				BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)
 			{
@@ -587,10 +592,6 @@ bool CMainApplication::HandleInput()
 			
 			if (m_bSonarCleaning)
 			{
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
-				{
-					savePoints();
-				}
 				if (sdlEvent.key.keysym.sym == SDLK_r)
 				{
 					printf("Pressed r, resetting marks\n");
@@ -985,146 +986,6 @@ void CMainApplication::render()
 	Renderer::getInstance().clearDynamicRenderQueue();
 	Renderer::getInstance().clearUIRenderQueue();
 	DebugDrawer::getInstance().flushLines();
-}
-
-
-bool fileExists(const std::string &fname)
-{
-	struct stat buffer;
-	return (stat(fname.c_str(), &buffer) == 0);
-}
-
-std::string intToString(int i, unsigned int pad_to_magnitude)
-{
-	if (pad_to_magnitude < 1)
-		return std::to_string(i);
-
-	std::string ret;
-
-	int mag = i == 0 ? 0 : (int)log10(i);
-
-	for (int j = pad_to_magnitude - mag; j > 0; --j)
-		ret += std::to_string(0);
-
-	ret += std::to_string(i);
-
-	return ret;
-}
-
-std::string getTimeString()
-{
-	time_t t = time(0);   // get time now
-	struct tm *now = localtime(&t);
-
-	return 	  /*** DATE ***/
-		      intToString(now->tm_year + 1900, 3) + // year
-		"-" + intToString(now->tm_mon + 1, 1) +     // month
-		"-" + intToString(now->tm_mday, 1) +        // day
-		      /*** TIME ***/
-		"_" + intToString(now->tm_hour, 1) +        // hour
-		"-" + intToString(now->tm_min, 1) +         // minute
-		"-" + intToString(now->tm_sec, 1);          // second
-}
-
-void CMainApplication::savePoints()
-{
-	// construct filename
-	std::string outFileName("saved_points_" + getTimeString() + ".csv");
-
-	// if file exists, keep trying until we find a filename that doesn't already exist
-	for (int i = 0; fileExists(outFileName); ++i)
-		outFileName = std::string("saved_points_" + getTimeString() + "_" + "(" + std::to_string(i + 1) + ")" + ".csv");
-	
-	std::ofstream outFile;
-	outFile.open(outFileName);
-
-	if (outFile.is_open())
-	{
-		std::cout << "Opened file " << outFileName << " for writing output" << std::endl;
-		outFile << "x,y,z,flag" << std::endl;
-	}
-	else
-		std::cout << "Error opening file " << outFileName << " for writing output" << std::endl;
-
-	outFile.precision(std::numeric_limits<double>::max_digits10);
-
-	for (auto &ds : m_pTableVolume->getDatasets())
-	{
-		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(ds);
-
-		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
-		{
-			if (cloud->getPointMark(i) == 1u)
-				continue;
-
-			outFile << cloud->getRawPointPosition(i).x << "," << cloud->getRawPointPosition(i).y << "," << cloud->getRawPointPosition(i).z << "," << (cloud->getPointPositionTPU(i) == 1.f ? "1" : "0") << std::endl;
-		}
-	}
-
-	outFile.close();
-
-	std::cout << "File " << outFileName << " successfully written" << std::endl;
-}
-
-bool CMainApplication::loadPoints(std::string fileName)
-{
-	std::ifstream inFile(fileName);
-
-	if (inFile.is_open())
-	{
-		std::cout << "Opened file " << fileName << " for reading" << std::endl;
-	}
-	else
-	{
-		std::cout << "Error opening file " << fileName << " for reading" << std::endl;
-		return false;
-	}
-
-	std::string line;
-
-	if (!std::getline(inFile, line))
-	{
-		std::cout << "Empty file; aborting..." << std::endl;
-		return false;
-	}
-
-	//make sure header is correct before proceeding
-	if (line.compare("x,y,z,flag"))
-	{
-		std::cout << "Unrecognized file header (expected: x,y,z,flag); aborting..." << std::endl;
-		return false;
-	}
-	
-	std::vector<glm::vec3> points;
-	std::vector<int> flags;
-
-	int lineNo = 2; // already checked header at line 1
-	while (std::getline(inFile, line))
-	{
-		std::istringstream iss(line);
-		std::string xStr, yStr, zStr, flagStr;
-
-		if (!std::getline(iss, xStr, ',')
-			|| !std::getline(iss, yStr, ',')
-			|| !std::getline(iss, zStr, ',')
-			|| !std::getline(iss, flagStr, ',')
-			)
-		{
-			std::cout << "Error reading line " << lineNo << " from file " << fileName << std::endl;
-			return false;
-		}
-
-		points.push_back(glm::vec3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
-		flags.push_back(std::stoi(flagStr));
-
-		lineNo++;
-	}
-
-	inFile.close();
-
-	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
-
-	return true;
 }
 
 bool CMainApplication::editCleaningTableDesktop()
