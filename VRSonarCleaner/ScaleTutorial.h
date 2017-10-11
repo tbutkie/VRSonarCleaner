@@ -26,6 +26,8 @@ private:
 
 	bool m_bWaitForTriggerRelease;
 
+	void cleanup();
+
 	bool checkVolBounds();
 };
 

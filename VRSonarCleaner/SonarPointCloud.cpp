@@ -1,11 +1,15 @@
 #include "SonarPointCloud.h"
 
 #include "GLSLpreamble.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <numeric>
 #include <limits>
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
-	: Dataset(fileName, (filetype == XYZF) ? true : false)
+	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
@@ -19,14 +23,26 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
 	, m_fMaxDepthTPU(-std::numeric_limits<float>::max())
 {
+	switch (filetype)
+	{
+	case SonarPointCloud::SAMPLE:
+		loadCARISTxt();
+		break;
+	case SonarPointCloud::XYZF:
+		loadStudyCSV();
+		break;
+	case SonarPointCloud::QIMERA:
+		loadQimeraTxt();
+		break;
+	default:
+		break;
+	}
 	if (filetype == XYZF)
 	{
 		
-		loadStudyData();
 	}
 	else
 	{
-		loadFromSonarTxt();
 	}
 }
 
@@ -114,7 +130,7 @@ void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, doubl
 }
 
 
-bool SonarPointCloud::loadFromSonarTxt()
+bool SonarPointCloud::loadCARISTxt()
 {
 	printf("Loading Point Cloud from %s\n", getName().c_str());
 		
@@ -203,7 +219,7 @@ bool SonarPointCloud::loadFromSonarTxt()
 	return true;
 }
 
-bool SonarPointCloud::loadStudyData()
+bool SonarPointCloud::loadQimeraTxt()
 {
 	printf("Loading Study Point Cloud from %s\n", getName().c_str());
 
@@ -266,6 +282,99 @@ bool SonarPointCloud::loadStudyData()
 		{
 			float conf = rejectedDataset ? 1.f : 0.f;
 			setUncertaintyPoint(index++, x, y, depth, conf, conf);
+			averageDepth += depth;
+			assert(depth < 0.);
+		}
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
+
+		printf("Loaded %d points\n", index);
+
+		printf("Original Min/Maxes:\n");
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("Depth Avg: %f\n", averageDepth);
+
+		fclose(file);
+
+		adjustPoints();
+
+		setRefreshNeeded();
+
+		createAndLoadBuffers();
+	}
+
+	return true;
+}
+
+
+
+bool SonarPointCloud::loadStudyCSV()
+{
+	printf("Loading Study Point Cloud from %s\n", getName().c_str());
+
+	bool rejectedDataset = getName().find("reject") != std::string::npos;
+
+	FILE *file;
+	file = fopen(getName().c_str(), "r");
+	if (file == NULL)
+	{
+		printf("ERROR reading file in %s\n", __FUNCTION__);
+	}
+	else
+	{
+		//count points
+		//skip the first linesToSkip lines
+		int skipped = 0;
+		int tries = 0;
+		char tempChar;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+		printf("Skipped %d characters\n", skipped);
+
+		//now count lines of points
+		double x, y, depth;
+		int flag;
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf,%lf,%lf,%i\n", &x, &y, &depth, &flag) != EOF)  //while another valid entry to load
+			numPointsInFile++;
+
+		initPoints(numPointsInFile);
+		printf("found %d lines of points\n", numPointsInFile);
+
+		//rewind
+		rewind(file);
+		//skip the first linesToSkip lines
+		skipped = 0;
+		tries = 0;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+
+		//now load lines of points
+		GLuint index = 0u;
+		double averageDepth = 0.0;
+		while (fscanf(file, "%lf,%lf,%lf,%i\n", &x, &y, &depth, &flag) != EOF)  //while another valid entry to load
+		{
+			float tpu = flag == 1 ? 1.f : 0.f;
+			setUncertaintyPoint(index++, x, y, depth, tpu, tpu);
 			averageDepth += depth;
 			assert(depth < 0.);
 		}

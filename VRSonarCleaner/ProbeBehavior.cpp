@@ -16,7 +16,7 @@ ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	, m_fProbeOffsetMin(0.1f)
 	, m_fProbeOffsetMax(2.f)
 	, m_fProbeRadius(0.05f)
-	, m_fProbeRadiusMin(0.01f)
+	, m_fProbeRadiusMin(0.005f)
 	, m_fProbeRadiusMax(0.5f)
 {
 }

@@ -21,20 +21,7 @@ ScaleTutorial::ScaleTutorial(TrackedDeviceManager* pTDM)
 
 ScaleTutorial::~ScaleTutorial()
 {
-	if (m_bInitialized)
-	{
-		if (m_pDemoVolume)
-			delete m_pDemoVolume;
-		
-		if (m_pGoalVolume)
-			delete m_pGoalVolume;
-
-		InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
-		InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
-		BehaviorManager::getInstance().removeBehavior("Grab");
-		BehaviorManager::getInstance().removeBehavior("Scale");
-		BehaviorManager::getInstance().removeBehavior("Done");
-	}
+	cleanup();
 }
 
 void ScaleTutorial::init()
@@ -90,6 +77,11 @@ void ScaleTutorial::update()
 		done->update();
 		if (!done->isActive())
 			m_bActive = false;
+		if (static_cast<TaskCompleteBehavior*>(done)->restartRequested())
+		{
+			cleanup();
+			init();
+		}
 	}
 	else if (!m_bWaitForTriggerRelease && (m_pTDM->getSecondaryController()->justUnclickedTrigger() || m_pTDM->getSecondaryController()->justUnpressedGrip() || m_pTDM->getPrimaryController()->justUnpressedGrip()))
 	{
@@ -131,6 +123,26 @@ void ScaleTutorial::draw()
 	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
 	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 	
+}
+
+void ScaleTutorial::cleanup()
+{
+	if (m_bInitialized)
+	{
+		if (m_pDemoVolume)
+			delete m_pDemoVolume;
+
+		if (m_pGoalVolume)
+			delete m_pGoalVolume;
+
+		InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
+		InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
+		BehaviorManager::getInstance().removeBehavior("Grab");
+		BehaviorManager::getInstance().removeBehavior("Scale");
+		BehaviorManager::getInstance().removeBehavior("Done");
+
+		m_bInitialized = false;
+	}
 }
 
 bool ScaleTutorial::checkVolBounds()

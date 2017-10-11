@@ -1,8 +1,5 @@
 #include "StudyEditTutorial.h"
 
-#include <fstream>
-#include <sstream>
-
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -26,23 +23,7 @@ StudyEditTutorial::StudyEditTutorial(TrackedDeviceManager* pTDM)
 
 StudyEditTutorial::~StudyEditTutorial()
 {
-	if (m_bInitialized)
-	{
-		delete m_pDemoCloud;
-
-		delete m_pDemoVolume;
-		
-		delete m_pColorScaler;
-
-		BehaviorManager::getInstance().removeBehavior("Scale");
-		BehaviorManager::getInstance().removeBehavior("Grab");
-		BehaviorManager::getInstance().removeBehavior("Editing");
-		BehaviorManager::getInstance().removeBehavior("Done");
-
-		cleanupBadDataLabels();
-		InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
-		InfoBoxManager::getInstance().removeInfoBox("Edit Tool Info");
-	}
+	cleanup();
 }
 
 void StudyEditTutorial::init()
@@ -57,7 +38,7 @@ void StudyEditTutorial::init()
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "saved_points_2017-10-10_15-42-15.csv", SonarPointCloud::XYZF);
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "saved_points_2017-10-10_18-14-15.csv", SonarPointCloud::XYZF);
 
 	m_pDemoVolume->add(m_pDemoCloud);
 	
@@ -84,7 +65,7 @@ void StudyEditTutorial::init()
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem()));
-	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
+	//static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
 
 	m_bInitialized = true;
 }
@@ -105,21 +86,25 @@ void StudyEditTutorial::update()
 		done->update();
 		if (!done->isActive())
 			m_bActive = false;
+		if (static_cast<TaskCompleteBehavior*>(done)->restartRequested())
+		{
+			cleanup();
+			init();
+		}
 	}
 	else if (m_pTDM->getPrimaryController()->isTriggerClicked() || m_pTDM->getPrimaryController()->justUnclickedTrigger())
 	{
-		double minZ = std::numeric_limits<double>::max();
-		double maxZ = -std::numeric_limits<double>::max();
+		bool allDone = true;
 
 		for (int i = 0; i < m_pDemoCloud->getPointCount(); ++i)
 		{
-			if (m_pDemoCloud->getPointMark(i) != 1)
+			if (m_pDemoCloud->getPointDepthTPU(i) == 1.f && m_pDemoCloud->getPointMark(i) != 1)
 			{
-				minZ = m_pDemoCloud->getRawPointPosition(i).z < minZ ? m_pDemoCloud->getRawPointPosition(i).z : minZ;
-				maxZ = m_pDemoCloud->getRawPointPosition(i).z > maxZ ? m_pDemoCloud->getRawPointPosition(i).z : maxZ;
+				allDone = false;
+				break;
 			}
 		}
-		if (minZ >= 19.731 && maxZ <= 22.89)
+		if (allDone)
 		{
 			BehaviorManager::getInstance().removeBehavior("Scale");
 			BehaviorManager::getInstance().removeBehavior("Grab");
@@ -160,6 +145,29 @@ void StudyEditTutorial::draw()
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
 	
+}
+
+void StudyEditTutorial::cleanup()
+{
+	if (m_bInitialized)
+	{
+		delete m_pDemoCloud;
+
+		delete m_pDemoVolume;
+
+		delete m_pColorScaler;
+
+		BehaviorManager::getInstance().removeBehavior("Scale");
+		BehaviorManager::getInstance().removeBehavior("Grab");
+		BehaviorManager::getInstance().removeBehavior("Editing");
+		BehaviorManager::getInstance().removeBehavior("Done");
+
+		cleanupBadDataLabels();
+		InfoBoxManager::getInstance().removeInfoBox("Cloud Editing Tutorial");
+		InfoBoxManager::getInstance().removeInfoBox("Edit Tool Info");
+
+		m_bInitialized = false;
+	}
 }
 
 void StudyEditTutorial::refreshColorScale()
@@ -286,65 +294,4 @@ void StudyEditTutorial::cleanupBadDataLabels()
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 6");
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 7");
 	InfoBoxManager::getInstance().removeInfoBox("Bad Data Label 8");
-}
-
-bool StudyEditTutorial::loadPoints(std::string fileName)
-{
-	std::ifstream inFile(fileName);
-
-	if (inFile.is_open())
-	{
-		std::cout << "Opened file " << fileName << " for reading" << std::endl;
-	}
-	else
-	{
-		std::cout << "Error opening file " << fileName << " for reading" << std::endl;
-		return false;
-	}
-
-	std::string line;
-
-	if (!std::getline(inFile, line))
-	{
-		std::cout << "Empty file; aborting..." << std::endl;
-		return false;
-	}
-
-	//make sure header is correct before proceeding
-	if (line.compare("x,y,z,flag"))
-	{
-		std::cout << "Unrecognized file header (expected: x,y,z,flag); aborting..." << std::endl;
-		return false;
-	}
-
-	std::vector<glm::vec3> points;
-	std::vector<int> flags;
-
-	int lineNo = 2; // already checked header at line 1
-	while (std::getline(inFile, line))
-	{
-		std::istringstream iss(line);
-		std::string xStr, yStr, zStr, flagStr;
-
-		if (!std::getline(iss, xStr, ',')
-			|| !std::getline(iss, yStr, ',')
-			|| !std::getline(iss, zStr, ',')
-			|| !std::getline(iss, flagStr, ',')
-			)
-		{
-			std::cout << "Error reading line " << lineNo << " from file " << fileName << std::endl;
-			return false;
-		}
-
-		points.push_back(glm::vec3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
-		flags.push_back(std::stoi(flagStr));
-
-		lineNo++;
-	}
-
-	inFile.close();
-
-	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
-
-	return true;
 }

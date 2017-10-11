@@ -21,19 +21,7 @@ GrabTutorial::GrabTutorial(TrackedDeviceManager* pTDM)
 
 GrabTutorial::~GrabTutorial()
 {
-	if (m_bInitialized)
-	{
-		if (m_pDemoVolume)
-			delete m_pDemoVolume;
-		
-		if (m_pGoalVolume)
-			delete m_pGoalVolume;
-
-		InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
-		InfoBoxManager::getInstance().removeInfoBox("Grab Tut Goal");
-		BehaviorManager::getInstance().removeBehavior("Grab");
-		BehaviorManager::getInstance().removeBehavior("Done");
-	}
+	cleanup();
 }
 
 void GrabTutorial::init()
@@ -46,7 +34,7 @@ void GrabTutorial::init()
 
 	glm::vec3 goalVolPosition = glm::vec3(1.f, 1.1f, 0.f);
 	glm::quat goalVolOrientation = glm::angleAxis(glm::radians(glm::linearRand(0.f, 180.f)), glm::sphericalRand(1.f));
-	glm::vec3 goalVolSize = glm::vec3(0.75f);
+	glm::vec3 goalVolSize = glm::vec3(0.65f);
 	
 	m_pGoalVolume = new DataVolume(goalVolPosition, goalVolOrientation, goalVolSize);
 
@@ -88,6 +76,11 @@ void GrabTutorial::update()
 		done->update();
 		if (!done->isActive())
 			m_bActive = false;
+		if (static_cast<TaskCompleteBehavior*>(done)->restartRequested())
+		{
+			cleanup();
+			init();
+		}
 	}
 	else if (!m_bWaitForTriggerRelease && m_pTDM->getSecondaryController()->justUnclickedTrigger())
 	{
@@ -128,6 +121,25 @@ void GrabTutorial::draw()
 	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
 	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 	
+}
+
+void GrabTutorial::cleanup()
+{
+	if (m_bInitialized)
+	{
+		if (m_pDemoVolume)
+			delete m_pDemoVolume;
+
+		if (m_pGoalVolume)
+			delete m_pGoalVolume;
+
+		InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
+		InfoBoxManager::getInstance().removeInfoBox("Grab Tut Goal");
+		BehaviorManager::getInstance().removeBehavior("Grab");
+		BehaviorManager::getInstance().removeBehavior("Done");
+
+		m_bInitialized = false;
+	}
 }
 
 bool GrabTutorial::checkVolBounds()

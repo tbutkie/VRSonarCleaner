@@ -42,9 +42,6 @@ public:
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
-		bool loadFromSonarTxt();
-
-		bool loadStudyData();
 
 		int colorScale;
 
@@ -103,6 +100,10 @@ public:
 		//OpenGL
 		GLuint m_glVAO, m_glVBO, m_glEBO;
 		GLuint m_glPreviewVAO;		
+
+		bool loadCARISTxt();
+		bool loadQimeraTxt();
+		bool loadStudyCSV();
 
 		glm::vec3 getDefaultPointColor(unsigned int index);
 		void adjustPoints();

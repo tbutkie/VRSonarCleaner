@@ -22,7 +22,13 @@ public:
 
 	void draw();
 
+	bool restartRequested();
+
 private:
 	TrackedDeviceManager *m_pTDM;
+
+	bool m_bTriggersReady;
+	bool m_bTouchpadReady;
+	bool m_bRestart;
 };
 

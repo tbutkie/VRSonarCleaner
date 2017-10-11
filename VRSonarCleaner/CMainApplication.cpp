@@ -6,6 +6,8 @@
 #include "StudyTutorialBehavior.h"
 #include "DemoBehavior.h"
 #include "SelectAreaBehavior.h"
+#include "GrabDataVolumeBehavior.h"
+#include "ScaleDataVolumeBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -488,6 +490,10 @@ bool CMainApplication::HandleInput()
 			{
 				if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
 					BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+				if (!BehaviorManager::getInstance().getBehavior("grab"))
+					BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				if (!BehaviorManager::getInstance().getBehavior("scale"))
+					BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
 				using namespace std::experimental::filesystem::v1;
 
