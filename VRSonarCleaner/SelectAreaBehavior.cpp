@@ -17,7 +17,7 @@ SelectAreaBehavior::SelectAreaBehavior(TrackedDeviceManager* pTDM, DataVolume* s
 	, m_bRayHitPlane(false)
 	, m_bRayHitDomain(false)
 	, m_vec3CursorSize(glm::vec3(0.01f, 0.01f, 0.001f))
-	, m_dMaxBoxMovement(25.)
+	, m_dMaxBoxMovementSpeed(25.)
 {
 }
 
@@ -49,11 +49,11 @@ void SelectAreaBehavior::update()
 
 	if (m_bNudgingArea)
 	{
-		glm::vec2 touchPt = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint();
+		glm::vec2 touchVec = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint() - m_pTDM->getPrimaryController()->getInitialTouchpadTouchPoint();
 
-		touchPt *= m_dMaxBoxMovement;
-		m_dvec3MinBound += glm::dvec3(touchPt, 0.);
-		m_dvec3MaxBound += glm::dvec3(touchPt, 0.);
+		touchVec *= m_dMaxBoxMovementSpeed;
+		m_dvec3SelectionMinBound += glm::dvec3(touchVec, 0.);
+		m_dvec3SelectionMaxBound += glm::dvec3(touchVec, 0.);
 	}
 
 	if (m_bActive)
@@ -65,8 +65,8 @@ void SelectAreaBehavior::update()
 				if (m_bRayHitCustomDomain)
 				{
 					m_vec3BeginDragOnPlane = m_vec3CurrentLocationOnPlane;
-					m_dvec3MinBoundAtDragStart = m_dvec3MinBound;
-					m_dvec3MaxBoundAtDragStart = m_dvec3MaxBound;
+					m_dvec3MinBoundAtDragStart = m_dvec3SelectionMinBound;
+					m_dvec3MaxBoundAtDragStart = m_dvec3SelectionMaxBound;
 					m_bMovingArea = true;
 				}
 				else
@@ -83,11 +83,11 @@ void SelectAreaBehavior::update()
 				glm::dvec3 domainCoordsStart = m_pDataVolumeSelection->convertToRawDomainCoords(m_vec3BeginBoundOnPlane);
 				glm::dvec3 domainCoordsNow = m_pDataVolumeSelection->convertToRawDomainCoords(m_vec3EndBoundOnPlane);
 
-				m_dvec3MinBound.x = std::min(domainCoordsStart.x, domainCoordsNow.x);
-				m_dvec3MinBound.y = std::min(domainCoordsStart.y, domainCoordsNow.y);
+				m_dvec3SelectionMinBound.x = std::min(domainCoordsStart.x, domainCoordsNow.x);
+				m_dvec3SelectionMinBound.y = std::min(domainCoordsStart.y, domainCoordsNow.y);
 
-				m_dvec3MaxBound.x = std::max(domainCoordsStart.x, domainCoordsNow.x);
-				m_dvec3MaxBound.y = std::max(domainCoordsStart.y, domainCoordsNow.y);
+				m_dvec3SelectionMaxBound.x = std::max(domainCoordsStart.x, domainCoordsNow.x);
+				m_dvec3SelectionMaxBound.y = std::max(domainCoordsStart.y, domainCoordsNow.y);
 
 				m_bCustomAreaSet = true;
 			}
@@ -98,11 +98,11 @@ void SelectAreaBehavior::update()
 				glm::dvec3 domainCoordsNow = m_pDataVolumeSelection->convertToRawDomainCoords(m_vec3CurrentLocationOnPlane);
 				glm::dvec3 offset = domainCoordsNow - domainCoordsStart;
 
-				m_dvec3MinBound.x = m_dvec3MinBoundAtDragStart.x + offset.x;
-				m_dvec3MinBound.y = m_dvec3MinBoundAtDragStart.y + offset.y;
+				m_dvec3SelectionMinBound.x = m_dvec3MinBoundAtDragStart.x + offset.x;
+				m_dvec3SelectionMinBound.y = m_dvec3MinBoundAtDragStart.y + offset.y;
 
-				m_dvec3MaxBound.x = m_dvec3MaxBoundAtDragStart.x + offset.x;
-				m_dvec3MaxBound.y = m_dvec3MaxBoundAtDragStart.y + offset.y;
+				m_dvec3SelectionMaxBound.x = m_dvec3MaxBoundAtDragStart.x + offset.x;
+				m_dvec3SelectionMaxBound.y = m_dvec3MaxBoundAtDragStart.y + offset.y;
 			}			
 
 			m_vec3LastSelectedLocationOnPlaneWithinDomain = m_vec3CurrentLocationOnPlane;
@@ -116,8 +116,8 @@ void SelectAreaBehavior::update()
 
 	if (m_bMovingArea || m_bNudgingArea || m_bSelectingArea)
 	{
-		m_dvec3MinBound.z = std::numeric_limits<double>::max();
-		m_dvec3MaxBound.z = -std::numeric_limits<double>::max();
+		m_dvec3SelectionMinBound.z = std::numeric_limits<double>::max();
+		m_dvec3SelectionMaxBound.z = -std::numeric_limits<double>::max();
 
 		for (auto & ds : m_pDataVolumeDisplay->getDatasets())
 		{
@@ -126,23 +126,23 @@ void SelectAreaBehavior::update()
 			{
 				glm::dvec3 thisRawPt = pc->getRawPointPosition(i);
 
-				if (thisRawPt.x < m_dvec3MinBound.x || thisRawPt.x > m_dvec3MaxBound.x ||
-					thisRawPt.y < m_dvec3MinBound.y || thisRawPt.y > m_dvec3MaxBound.y)
+				if (thisRawPt.x < m_dvec3SelectionMinBound.x || thisRawPt.x > m_dvec3SelectionMaxBound.x ||
+					thisRawPt.y < m_dvec3SelectionMinBound.y || thisRawPt.y > m_dvec3SelectionMaxBound.y)
 				{
 					pc->markPoint(i, 1);
 				}
 				else
 				{
 					pc->markPoint(i, 0);
-					if (pc->getRawPointPosition(i).z < m_dvec3MinBound.z)
-						m_dvec3MinBound.z = pc->getRawPointPosition(i).z;
-					else if (pc->getRawPointPosition(i).z > m_dvec3MaxBound.z)
-						m_dvec3MaxBound.z = pc->getRawPointPosition(i).z;
+					if (pc->getRawPointPosition(i).z < m_dvec3SelectionMinBound.z)
+						m_dvec3SelectionMinBound.z = pc->getRawPointPosition(i).z;
+					else if (pc->getRawPointPosition(i).z > m_dvec3SelectionMaxBound.z)
+						m_dvec3SelectionMaxBound.z = pc->getRawPointPosition(i).z;
 				}
 			}
 		}
 
-		m_pDataVolumeDisplay->setCustomBounds(m_dvec3MinBound, m_dvec3MaxBound);
+		m_pDataVolumeDisplay->setCustomBounds(m_dvec3SelectionMinBound, m_dvec3SelectionMaxBound);
 		m_pDataVolumeDisplay->useCustomBounds(true);
 	}
 }
@@ -222,8 +222,8 @@ void SelectAreaBehavior::draw()
 
 void SelectAreaBehavior::reset()
 {
-	m_dvec3MinBound = glm::dvec3(std::numeric_limits<double>::max());
-	m_dvec3MaxBound = glm::dvec3(-std::numeric_limits<double>::max());
+	m_dvec3SelectionMinBound = glm::dvec3(std::numeric_limits<double>::max());
+	m_dvec3SelectionMaxBound = glm::dvec3(-std::numeric_limits<double>::max());
 
 	for (auto & ds : m_pDataVolumeDisplay->getDatasets())
 	{
@@ -232,11 +232,12 @@ void SelectAreaBehavior::reset()
 			pc->markPoint(i, 0);
 	}
 
-	m_pDataVolumeDisplay->setCustomBounds(m_dvec3MinBound, m_dvec3MaxBound);
+	m_pDataVolumeDisplay->setCustomBounds(m_dvec3SelectionMinBound, m_dvec3SelectionMaxBound);
 	m_pDataVolumeDisplay->useCustomBounds(false);
 	m_bCustomAreaSet = false;
 	m_bSelectingArea = false;
 	m_bMovingArea = false;
+	m_bNudgingArea = false;
 }
 
 void SelectAreaBehavior::updateState()
@@ -253,7 +254,7 @@ void SelectAreaBehavior::updateState()
 		m_bActive = false;
 	}
 
-	m_bNudgingArea = m_pTDM->getPrimaryController()->isTouchpadTouched() && m_bCustomAreaSet;
+	m_bNudgingArea = m_pTDM->getPrimaryController()->isTouchpadTouched() && !m_pTDM->getPrimaryController()->isTouchpadClicked() && m_bCustomAreaSet;
 
 	if (m_pTDM->getPrimaryController()->justPressedTouchpad())
 	{
@@ -278,8 +279,8 @@ glm::vec3 SelectAreaBehavior::calcHits()
 		{
 			glm::dvec3 hitPtDataCoords = m_pDataVolumeSelection->convertToRawDomainCoords(ptOnPlane);
 
-			if (hitPtDataCoords.x > m_dvec3MinBound.x && hitPtDataCoords.x < m_dvec3MaxBound.x &&
-				hitPtDataCoords.y > m_dvec3MinBound.y && hitPtDataCoords.y < m_dvec3MaxBound.y)
+			if (hitPtDataCoords.x > m_dvec3SelectionMinBound.x && hitPtDataCoords.x < m_dvec3SelectionMaxBound.x &&
+				hitPtDataCoords.y > m_dvec3SelectionMinBound.y && hitPtDataCoords.y < m_dvec3SelectionMaxBound.y)
 				m_bRayHitCustomDomain = true;
 			else
 				m_bRayHitCustomDomain = false;

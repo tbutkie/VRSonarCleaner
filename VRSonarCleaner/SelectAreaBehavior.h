@@ -34,8 +34,8 @@ private:
 	glm::vec3 m_vec3CurrentLocationOnPlane; // world pos of cursor on plane
 	glm::vec3 m_vec3LastSelectedLocationOnPlaneWithinDomain;
 
-	glm::dvec3 m_dvec3MinBound; // raw data coordinated for min boundary
-	glm::dvec3 m_dvec3MaxBound; // raw data coordinated for max boundary
+	glm::dvec3 m_dvec3SelectionMinBound; // raw data coordinated for min boundary
+	glm::dvec3 m_dvec3SelectionMaxBound; // raw data coordinated for max boundary
 
 	glm::vec3 m_vec3BeginBoundOnPlane; // world pos of bbox start on selection plane
 	glm::vec3 m_vec3EndBoundOnPlane; // world pos of current bbox bound on selection plane
@@ -46,7 +46,7 @@ private:
 	
 	glm::vec3 m_vec3CursorSize;
 
-	double m_dMaxBoxMovement;
+	double m_dMaxBoxMovementSpeed;
 
 private:
 	void updateState();
