@@ -17,7 +17,7 @@ class SonarPointCloud : public Dataset
 {
 public:
 	enum SONAR_FILETYPE {
-		SAMPLE,
+		CARIS,
 		XYZF,
 		QIMERA
 	};

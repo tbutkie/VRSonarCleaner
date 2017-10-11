@@ -15,6 +15,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, m_bPointsAllocated(false)
 	, refreshNeeded(true)
 	, previewRefreshNeeded(true)
+	, m_nPoints(0)
 	, colorMode(1) //0=predefined 1=scaled
 	, colorScale(2)
 	, colorScope(1) //0=global 1=dynamic
@@ -25,8 +26,8 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 {
 	switch (filetype)
 	{
-	case SonarPointCloud::SAMPLE:
 		loadCARISTxt();
+	case SonarPointCloud::CARIS:
 		break;
 	case SonarPointCloud::XYZF:
 		loadStudyCSV();
@@ -36,13 +37,6 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 		break;
 	default:
 		break;
-	}
-	if (filetype == XYZF)
-	{
-		
-	}
-	else
-	{
 	}
 }
 

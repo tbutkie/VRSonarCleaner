@@ -55,8 +55,6 @@ private:
 	IBMapT m_mapInfoBoxes;
 
 	TrackedDeviceManager* m_pTDM;
-
-	std::queue<std::vector<InfoBoxT>> m_Tutorial;
 		
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:
