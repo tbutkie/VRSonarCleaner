@@ -9,6 +9,7 @@
 #include "GrabDataVolumeBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
 #include "CurateStudyDataBehavior.h"
+#include "RunStudyBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -566,6 +567,15 @@ bool CMainApplication::HandleInput()
 			if (sdlEvent.key.keysym.sym == SDLK_u)
 			{
 				BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+			}
+			if (sdlEvent.key.keysym.sym == SDLK_i)
+			{
+				m_pWallVolume->setVisible(false);
+				m_pTableVolume->setVisible(false);
+				BehaviorManager::getInstance().clearBehaviors();
+				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM);
+				BehaviorManager::getInstance().addBehavior("Study", rsb);
+				rsb->init();
 			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_d)
