@@ -40,6 +40,9 @@ PointCleanProbe::~PointCleanProbe()
 
 void PointCleanProbe::update()
 {	
+	if (!m_pTDM->getPrimaryController())
+		return;
+
 	ProbeBehavior::update();
 
 	if (m_bWaitForTriggerRelease && !m_pTDM->getPrimaryController()->isTriggerEngaged())

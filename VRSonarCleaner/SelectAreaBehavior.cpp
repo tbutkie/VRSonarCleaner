@@ -149,7 +149,7 @@ void SelectAreaBehavior::update()
 
 void SelectAreaBehavior::draw()
 {
-	if (!m_pTDM->getPrimaryController() || m_bShowCursor)
+	if (m_pTDM->getPrimaryController() && m_bShowCursor)
 	{
 		glm::vec4 pointerColor;
 		
