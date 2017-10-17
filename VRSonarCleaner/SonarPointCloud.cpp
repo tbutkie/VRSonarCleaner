@@ -309,8 +309,6 @@ bool SonarPointCloud::loadStudyCSV()
 {
 	printf("Loading Study Point Cloud from %s\n", getName().c_str());
 
-	bool rejectedDataset = getName().find("reject") != std::string::npos;
-
 	FILE *file;
 	file = fopen(getName().c_str(), "r");
 	if (file == NULL)

@@ -13,6 +13,7 @@ SelectAreaBehavior::SelectAreaBehavior(TrackedDeviceManager* pTDM, DataVolume* s
 	, m_bSelectingArea(false)
 	, m_bMovingArea(false)
 	, m_bNudgingArea(false)
+	, m_bResizingArea(false)
 	, m_bCustomAreaSet(false)
 	, m_bRayHitPlane(false)
 	, m_bRayHitDomain(false)
@@ -54,6 +55,32 @@ void SelectAreaBehavior::update()
 		touchVec *= m_dMaxBoxMovementSpeed;
 		m_dvec3SelectionMinBound += glm::dvec3(touchVec, 0.);
 		m_dvec3SelectionMaxBound += glm::dvec3(touchVec, 0.);
+	}
+
+	if (m_bResizingArea)
+	{
+		glm::vec2 touchPt = m_pTDM->getSecondaryController()->getCurrentTouchpadTouchPoint();
+
+		if (touchPt.x < 0.5f && touchPt.x > -0.5f && touchPt.y > 0.5f)
+		{
+			m_dvec3SelectionMinBound.y -= 1.;
+			m_dvec3SelectionMaxBound.y += 1.;
+		}
+		if (touchPt.x < 0.5f && touchPt.x > -0.5f && touchPt.y < -0.5f)
+		{
+			m_dvec3SelectionMinBound.y += 1.;
+			m_dvec3SelectionMaxBound.y -= 1.;
+		}
+		if (touchPt.y < 0.5f && touchPt.y > -0.5f && touchPt.x > 0.5f)
+		{
+			m_dvec3SelectionMinBound.x -= 1.;
+			m_dvec3SelectionMaxBound.x += 1.;
+		}
+		if (touchPt.y < 0.5f && touchPt.y > -0.5f && touchPt.x < -0.5f)
+		{
+			m_dvec3SelectionMinBound.x += 1.;
+			m_dvec3SelectionMaxBound.x -= 1.;
+		}
 	}
 
 	if (m_bActive)
@@ -114,7 +141,7 @@ void SelectAreaBehavior::update()
 		m_bMovingArea = false;
 	}
 
-	if (m_bMovingArea || m_bNudgingArea || m_bSelectingArea)
+	if (m_bMovingArea || m_bNudgingArea || m_bSelectingArea || m_bResizingArea)
 	{
 		m_dvec3SelectionMinBound.z = std::numeric_limits<double>::max();
 		m_dvec3SelectionMaxBound.z = -std::numeric_limits<double>::max();
@@ -238,6 +265,7 @@ void SelectAreaBehavior::reset()
 	m_bSelectingArea = false;
 	m_bMovingArea = false;
 	m_bNudgingArea = false;
+	m_bResizingArea = false;
 }
 
 void SelectAreaBehavior::updateState()
@@ -254,7 +282,9 @@ void SelectAreaBehavior::updateState()
 		m_bActive = false;
 	}
 
-	m_bNudgingArea = m_pTDM->getPrimaryController()->isTouchpadTouched() && !m_pTDM->getPrimaryController()->isTouchpadClicked() && m_bCustomAreaSet;
+	m_bNudgingArea = m_bCustomAreaSet && m_pTDM->getPrimaryController()->isTouchpadTouched() && !m_pTDM->getPrimaryController()->isTouchpadClicked();
+
+	m_bResizingArea = m_bCustomAreaSet && m_pTDM->getSecondaryController()->isTouchpadTouched();
 
 	if (m_pTDM->getPrimaryController()->justPressedTouchpad())
 	{

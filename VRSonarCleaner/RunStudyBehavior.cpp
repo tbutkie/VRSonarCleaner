@@ -32,16 +32,16 @@ void RunStudyBehavior::init()
 		}
 	}
 
-	std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
-
-	for (auto const &ds : m_vStudyDatasets)
-		m_qTrials.push(StudyTrialBehavior(m_pTDM, ds.string(), m_DataLog));
-
-	m_bTrialsLoaded = true;
-	m_qTrials.front().init();
-
 	DataLogger::getInstance().setLogDirectory("data");
 	m_DataLog = DataLogger::getInstance().openLog("study", true);
+
+	//std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
+
+	for (auto const &ds : m_vStudyDatasets)
+		m_qTrials.push(new StudyTrialBehavior(m_pTDM, ds.string(), m_DataLog));
+
+	m_bTrialsLoaded = true;
+	m_qTrials.front()->init();
 }
 
 void RunStudyBehavior::update()
@@ -49,21 +49,22 @@ void RunStudyBehavior::update()
 	if (!m_bTrialsLoaded || m_qTrials.size() == 0u)
 		return;
 
-	if (!m_qTrials.front().isActive())
+	if (!m_qTrials.front()->isActive())
 	{
+		delete m_qTrials.front();
 		m_qTrials.pop();
 
 		if (m_qTrials.size() > 0u)
-			m_qTrials.front().init();
+			m_qTrials.front()->init();
 		else
 			DataLogger::getInstance().closeLog(m_DataLog);
 	}
 	else
-		m_qTrials.front().update();
+		m_qTrials.front()->update();
 }
 
 void RunStudyBehavior::draw()
 {
 	if (m_bTrialsLoaded && m_qTrials.size() > 0u)
-		m_qTrials.front().draw();
+		m_qTrials.front()->draw();
 }

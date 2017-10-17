@@ -15,9 +15,9 @@ DataLogger::LogHandle DataLogger::openLog(std::string logName, bool appendTimest
 	std::string filename = appendTimestampToLogname ? logName + getTimeString() : logName;
 	std::ofstream ofs;
 	ofs.open(std::string(m_LogDirectory.string() + filename));
-	LogHandle thisHandle = m_sCurrentHandle++;
-	m_mapLogs.emplace(std::make_pair(thisHandle, ofs));
-	return thisHandle;
+	//LogHandle thisHandle = m_sCurrentHandle++;
+	//m_mapLogs.emplace(std::make_pair(thisHandle, ofs));
+	return 0;
 }
 
 void DataLogger::closeLog(LogHandle handle)
@@ -42,7 +42,7 @@ DataLogger::~DataLogger()
 
 
 
-std::string intToString(int i, unsigned int pad_to_magnitude)
+std::string int2String(int i, unsigned int pad_to_magnitude)
 {
 	if (pad_to_magnitude < 1)
 		return std::to_string(i);
@@ -66,11 +66,11 @@ std::string DataLogger::getTimeString()
 	struct tm *now = localtime(&t);
 
 	return 	  /*** DATE ***/
-		intToString(now->tm_year + 1900, 3) + // year
-		"-" + intToString(now->tm_mon + 1, 1) +     // month
-		"-" + intToString(now->tm_mday, 1) +        // day
+		int2String(now->tm_year + 1900, 3) + // year
+		"-" + int2String(now->tm_mon + 1, 1) +     // month
+		"-" + int2String(now->tm_mday, 1) +        // day
 													/*** TIME ***/
-		"_" + intToString(now->tm_hour, 1) +        // hour
-		"-" + intToString(now->tm_min, 1) +         // minute
-		"-" + intToString(now->tm_sec, 1);          // second
+		"_" + int2String(now->tm_hour, 1) +        // hour
+		"-" + int2String(now->tm_min, 1) +         // minute
+		"-" + int2String(now->tm_sec, 1);          // second
 }

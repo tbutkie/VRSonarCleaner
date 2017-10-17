@@ -25,7 +25,8 @@ private:
 	bool m_bShowCursor; // show the cursor?
 	bool m_bSelectingArea; // is an area currently being selected?
 	bool m_bMovingArea; // is the custom area currently being moved around?
-	bool m_bNudgingArea; // is the custom area currently being moved around?
+	bool m_bNudgingArea; // is the custom area currently being nudged?
+	bool m_bResizingArea; // is the custom area currently being resized?
 	bool m_bCustomAreaSet; // has a custom domain been set?
 	bool m_bRayHitPlane;
 	bool m_bRayHitDomain;
