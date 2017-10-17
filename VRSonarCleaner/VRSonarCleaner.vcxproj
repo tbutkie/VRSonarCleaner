@@ -168,6 +168,7 @@
     <ClCompile Include="BehaviorManager.cpp" />
     <ClCompile Include="CloudEditControllerTutorial.cpp" />
     <ClCompile Include="CurateStudyDataBehavior.cpp" />
+    <ClCompile Include="DataLogger.cpp" />
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="GrabDataVolumeBehavior.cpp" />
@@ -219,6 +220,7 @@
     <ClInclude Include="BehaviorManager.h" />
     <ClInclude Include="CloudEditControllerTutorial.h" />
     <ClInclude Include="CurateStudyDataBehavior.h" />
+    <ClInclude Include="DataLogger.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="GrabDataVolumeBehavior.h" />

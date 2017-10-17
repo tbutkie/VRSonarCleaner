@@ -6,8 +6,9 @@
 #include "Renderer.h"
 
 
-StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName)
+StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, DataLogger::LogHandle log)
 	: m_pTDM(pTDM)
+	, m_Log(log)
 {
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -31,6 +32,14 @@ StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string f
 
 StudyTrialBehavior::~StudyTrialBehavior()
 {
+	if (m_pPointCloud)
+		delete m_pPointCloud;
+
+	if (m_pDataVolume)
+		delete m_pDataVolume;
+
+	if (m_pColorScaler)
+		delete m_pColorScaler;
 }
 
 void StudyTrialBehavior::init()

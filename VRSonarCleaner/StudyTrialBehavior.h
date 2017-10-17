@@ -3,12 +3,13 @@
 #include "SonarPointCloud.h"
 #include "DataVolume.h"
 #include "TrackedDeviceManager.h"
+#include "DataLogger.h"
 
 class StudyTrialBehavior :
 	public InitializableBehavior
 {
 public:
-	StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName);
+	StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, DataLogger::LogHandle log);
 	~StudyTrialBehavior();
 
 	void init();
@@ -22,5 +23,7 @@ private:
 	ColorScaler* m_pColorScaler;
 	SonarPointCloud* m_pPointCloud;
 	DataVolume* m_pDataVolume;
+
+	DataLogger::LogHandle m_Log;
 };
 

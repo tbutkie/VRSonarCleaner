@@ -34,21 +34,18 @@ void RunStudyBehavior::init()
 
 	std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 
-	//m_Future = std::async(std::launch::async, [&] {
-		for (auto const &ds : m_vStudyDatasets)
-			m_qTrials.push(StudyTrialBehavior(m_pTDM, ds.string()));
+	for (auto const &ds : m_vStudyDatasets)
+		m_qTrials.push(StudyTrialBehavior(m_pTDM, ds.string(), m_DataLog));
 
-		m_bTrialsLoaded = true;
-		m_qTrials.front().init();
-	//});
+	m_bTrialsLoaded = true;
+	m_qTrials.front().init();
+
+	DataLogger::getInstance().setLogDirectory("data");
+	m_DataLog = DataLogger::getInstance().openLog("study", true);
 }
 
 void RunStudyBehavior::update()
-{
-	if (!m_bTrialsLoaded && m_Future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-	{
-	}
-	
+{	
 	if (!m_bTrialsLoaded || m_qTrials.size() == 0u)
 		return;
 
@@ -58,6 +55,8 @@ void RunStudyBehavior::update()
 
 		if (m_qTrials.size() > 0u)
 			m_qTrials.front().init();
+		else
+			DataLogger::getInstance().closeLog(m_DataLog);
 	}
 	else
 		m_qTrials.front().update();
