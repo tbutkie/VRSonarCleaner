@@ -869,9 +869,12 @@ void Renderer::setupText()
 
 void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color, TextAnchor anchor)
 {
+	float lineSpacing = m_uiFontPointSize * 1.f;
+
 	// cursor origin is at beginning of text baseline
 	glm::vec2 cursor(0.f);
-	glm::vec2 textDims;
+	glm::vec2 textDims(0.f);
+	GLuint numLines = 1u;
 	
 	// Iterate through all characters to find layout space requirements
 	std::string::const_iterator c;
@@ -880,9 +883,7 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 		if (*c == '\n')
 		{
 			cursor.x = 0.f;
-			cursor.y += m_uiFontPointSize;
-			if (cursor.y > textDims.y)
-				textDims.y = cursor.y;
+			numLines++;
 			continue;
 		}
 
@@ -890,10 +891,46 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 		if (cursor.x > textDims.x)
 			textDims.x = cursor.x;
 	}
-
-	cursor = glm::vec2(0.f);
-	
+	textDims.y = numLines * lineSpacing;
+		
 	GLfloat scale = width_meters / textDims.x;
+	
+	glm::vec2 anchorPt;
+
+	switch (anchor)
+	{
+	case Renderer::CENTER:
+		anchorPt = textDims * 0.5f;
+		break;
+	case Renderer::CENTER_TOP:
+		anchorPt = glm::vec2(textDims.x * 0.5f, textDims.y);
+		break;
+	case Renderer::CENTER_BOTTOM:
+		anchorPt = glm::vec2(textDims.x * 0.5f, 0.f);
+		break;
+	case Renderer::CENTER_LEFT:
+		anchorPt = glm::vec2(0.f, textDims.y * 0.5f);
+		break;
+	case Renderer::CENTER_RIGHT:
+		anchorPt = glm::vec2(textDims.x, textDims.y * 0.5f);
+		break;
+	case Renderer::TOP_LEFT:
+		anchorPt = glm::vec2(0.f, textDims.y);
+		break;
+	case Renderer::TOP_RIGHT:
+		anchorPt = glm::vec2(textDims.x, textDims.y);
+		break;
+	case Renderer::BOTTOM_LEFT:
+		anchorPt = glm::vec2(0.f, 0.f);
+		break;
+	case Renderer::BOTTOM_RIGHT:
+		anchorPt = glm::vec2(textDims.x, 0.f);
+		break;
+	default:
+		break;
+	}
+
+	cursor = glm::vec2(0.f, -m_uiFontPointSize) * scale;
 
 	for (c = text.begin(); c != text.end(); c++)
 	{
@@ -909,8 +946,10 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 
 		Character ch = m_arrCharacters[*c];
 
-		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x) * scale;
-		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y) * scale;
+		glm::vec2 anchorToCursorOffset(0.f);
+
+		GLfloat xpos = (cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x) - anchorToCursorOffset.x) * scale;
+		GLfloat ypos = (cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y) - anchorToCursorOffset.y) * scale;
 
 		GLfloat w = ch.Size.x * scale;
 		GLfloat h = ch.Size.y * scale;
