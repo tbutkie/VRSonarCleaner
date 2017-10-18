@@ -33,6 +33,15 @@ public:
 		load(data);
 	}
 
+	GLTexture(std::string name, unsigned short width, unsigned short height, GLuint texID, bool hasTransparency)
+		: m_uiID(texID)
+		, m_strName(name)
+		, m_uiWidth(width)
+		, m_uiHeight(height)
+		, m_bTransparency(hasTransparency)
+	{
+	}
+
 	GLTexture(std::string png_filename, bool hasTransparency)
 		: m_uiID(0)
 		, m_uiWidth(0)

@@ -65,7 +65,7 @@ void StudyTrialBehavior::update()
 			break;
 		}
 	}
-	if (allDone || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
+	if (allDone)// || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
 	{
 		BehaviorManager::getInstance().removeBehavior("scale");
 		BehaviorManager::getInstance().removeBehavior("grab");

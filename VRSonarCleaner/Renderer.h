@@ -116,6 +116,7 @@ public:
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
+	void drawText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec4 color);
 
 	void toggleWireframe();
 
@@ -127,6 +128,7 @@ public:
 	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
 	void RenderUI(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
 	void RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait = false);
+
 
 	void shutdown();
 
@@ -147,6 +149,8 @@ private:
 	void generatePlane();
 	void generateBBox();
 
+	void setupText();
+
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
 	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
@@ -158,6 +162,15 @@ private:
 		glm::vec4 c; // color
 		glm::vec2 t; // texture coord
 	};
+
+	struct Character {
+		GLuint TextureID;   // ID handle of the glyph texture
+		glm::ivec2 Size;    // Size of glyph
+		glm::ivec2 Bearing;  // Offset from baseline to left/top of glyph
+		GLuint Advance;    // Horizontal offset to advance to next glyph
+	};
+
+	Character m_arrCharacters[128];
 
 	LightingSystem* m_pLighting;
 
@@ -183,6 +196,7 @@ private:
 	GLuint m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
 	GLuint m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;
 	GLuint m_glBBoxVAO, m_glBBoxVBO, m_glBBoxEBO;
+	GLuint m_glTextVAO, m_glTextVBO, m_glTextEBO;
 
 	GLuint m_glFrameUBO;
 	

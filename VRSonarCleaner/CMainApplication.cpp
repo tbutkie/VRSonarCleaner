@@ -554,6 +554,10 @@ bool CMainApplication::HandleInput()
 					initVR();
 				}
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_b)
+			{
+				Renderer::getInstance().drawText("", 0.f, 0.f, 1.f, glm::vec4(1.f, 1.f, 0.f, 0.9f));
+			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
 				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
