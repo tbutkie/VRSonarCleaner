@@ -5,7 +5,7 @@
 #include "ScaleDataVolumeBehavior.h"
 #include "GrabDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/matrix_transform.hpp>
 #include "Renderer.h"
 #include "TaskCompleteBehavior.h"
 

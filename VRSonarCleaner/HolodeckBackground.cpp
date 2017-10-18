@@ -1,6 +1,6 @@
 #include "HolodeckBackground.h"
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include "Renderer.h"
 

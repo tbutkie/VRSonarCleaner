@@ -7,7 +7,7 @@
 
 #include <GL/glew.h>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 class TrackedDevice
 {

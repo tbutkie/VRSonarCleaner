@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include "Renderer.h"
 

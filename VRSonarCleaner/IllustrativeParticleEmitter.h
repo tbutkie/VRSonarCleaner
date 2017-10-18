@@ -10,7 +10,7 @@
 #include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 class IllustrativeParticleEmitter
 {

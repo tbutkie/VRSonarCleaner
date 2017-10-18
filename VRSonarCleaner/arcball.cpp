@@ -8,8 +8,8 @@
 
 #include "arcball.h"
 
-#include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
-#include <shared/glm/gtc/matrix_transform.hpp> // glm::unproject
+#include <gtc/type_ptr.hpp> // glm::value_ptr
+#include <gtc/matrix_transform.hpp> // glm::unproject
 
 Arcball::Arcball(bool usePlanar)
 	: m_fZoom(1.f)

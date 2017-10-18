@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <vector>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 class HolodeckBackground
 {

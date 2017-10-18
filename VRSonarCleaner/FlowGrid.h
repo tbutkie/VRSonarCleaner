@@ -8,7 +8,7 @@
 #include <vector>
 #include <chrono>
 #include <GL/glew.h>
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 #include "CoordinateScaler.h"
 #include "Dataset.h"
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <chrono>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include "FlowGrid.h"
 

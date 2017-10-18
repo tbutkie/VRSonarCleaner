@@ -2,9 +2,9 @@
 
 #include <GL/glew.h>
 
-#include <shared/glm/glm.hpp>
-#include <shared/glm/gtc/quaternion.hpp>
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <glm.hpp>
+#include <gtc/quaternion.hpp>
+#include <gtc/matrix_transform.hpp>
 
 #include <string>
 

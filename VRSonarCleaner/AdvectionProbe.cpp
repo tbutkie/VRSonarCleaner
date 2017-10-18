@@ -2,7 +2,7 @@
 #include "DebugDrawer.h"
 #include "Icosphere.h"
 #include "Renderer.h"
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/matrix_transform.hpp>
 
 AdvectionProbe::AdvectionProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
 	: ProbeBehavior(pTDM, flowVolume)

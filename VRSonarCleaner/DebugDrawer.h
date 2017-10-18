@@ -5,9 +5,9 @@
 // GL Includes
 #define GLEW_STATIC      // use static GLEW libs
 #include <GL/glew.h> // Contains all the necessery OpenGL includes
-#include <shared/glm/glm.hpp>
-#include <shared/glm/gtc/matrix_transform.hpp>
-#include <shared/glm/gtc/type_ptr.hpp>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
 
 #include <algorithm>
 #include <iterator>

@@ -1,7 +1,7 @@
 #include "StudyIntroBehavior.h"
 
 #include "InfoBoxManager.h"
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/matrix_transform.hpp>
 
 StudyIntroBehavior::StudyIntroBehavior(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)

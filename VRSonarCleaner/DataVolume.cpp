@@ -1,7 +1,7 @@
 #include "DataVolume.h"
 #include "Renderer.h"
 
-#include "shared/glm/gtx/transform.hpp"
+#include <gtx/transform.hpp>
 
 #include <iostream>
 #include <math.h>

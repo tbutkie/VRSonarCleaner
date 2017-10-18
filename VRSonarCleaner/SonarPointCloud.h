@@ -9,9 +9,9 @@
 #include "Dataset.h"
 #include "ColorScaler.h"
 
-#include "../thirdparty/OpenNS_1.6.0/include/bag.h"
+#include <bag.h>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 class SonarPointCloud : public Dataset
 {

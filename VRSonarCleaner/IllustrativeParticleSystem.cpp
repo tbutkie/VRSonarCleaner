@@ -2,7 +2,7 @@
 
 //NOTE: modified from VTT4D to use x,z lat/long and y as depth dimension!
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 #include <map>
 
 using namespace std::chrono_literals;

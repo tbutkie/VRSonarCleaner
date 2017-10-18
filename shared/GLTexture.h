@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
-#include "shared/lodepng.h"
+#include <lodepng.h>
 
 class GLTexture
 {

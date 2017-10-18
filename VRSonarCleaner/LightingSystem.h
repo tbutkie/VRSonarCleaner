@@ -6,7 +6,7 @@
 #include "Icosphere.h"
 #include "GLSLpreamble.h"
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 #include <GL\glew.h>
 
 class LightingSystem

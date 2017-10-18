@@ -7,9 +7,9 @@
 #include <vector>
 #include <map>
 #include "Dataset.h"
-#include "../shared/glm/gtc/quaternion.hpp"
-#include "../shared/glm/gtx/quaternion.hpp"
-#include "../shared//glm/gtc/type_ptr.hpp"
+#include <gtc/quaternion.hpp>
+#include <gtx/quaternion.hpp>
+#include <gtc/type_ptr.hpp>
 //#include <string>
 //#include <cstdlib>
 

@@ -1,8 +1,8 @@
 #include "TrackedDeviceManager.h"
 #include "InfoBoxManager.h"
 #include "Renderer.h"
-#include <shared/glm/gtc/type_ptr.hpp>
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtc/matrix_transform.hpp>
 
 TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 : m_pHMD(pHMD)

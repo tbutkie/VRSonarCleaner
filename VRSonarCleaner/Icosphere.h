@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include <GL/glew.h>
 

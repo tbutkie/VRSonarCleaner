@@ -1,6 +1,6 @@
 #include "InfoBoxManager.h"
-#include <shared\glm\gtc\type_ptr.hpp>
-#include <shared\glm\gtc\matrix_transform.hpp>
+#include <gtc\type_ptr.hpp>
+#include <gtc\matrix_transform.hpp>
 
 #include "GLSLpreamble.h"
 

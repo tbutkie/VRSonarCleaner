@@ -6,7 +6,7 @@
 #include "ViveController.h"
 #include "RenderModel.h"
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include <map>
 

@@ -1,6 +1,6 @@
 #include "ProbeBehavior.h"
 
-#include "shared/glm/gtc/matrix_transform.hpp" // for translate()
+#include <gtc/matrix_transform.hpp> // for translate()
 
 #include "Renderer.h"
 

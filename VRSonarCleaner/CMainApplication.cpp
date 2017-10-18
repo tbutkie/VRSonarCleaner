@@ -224,10 +224,10 @@ bool CMainApplication::init()
 		m_vec3BallCenter = tablePosition;
 
 		m_pColorScalerTPU = new ColorScaler();
-		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
-		m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
-		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
-		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
+		//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
+		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
+		m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
@@ -527,21 +527,21 @@ bool CMainApplication::HandleInput()
 					}
 				}
 
-				for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
-				{
-					if (is_regular_file(*it))
-					{
-						if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-						{
-							SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-							m_vpClouds.push_back(tmp);
-							m_pTableVolume->add(tmp);
-							m_pWallVolume->add(tmp);
-							tmpPointCloudCollection.push_back(tmp);
-							break;
-						}
-					}
-				}
+				//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
+				//{
+				//	if (is_regular_file(*it))
+				//	{
+				//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+				//		{
+				//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+				//			m_vpClouds.push_back(tmp);
+				//			m_pTableVolume->add(tmp);
+				//			m_pWallVolume->add(tmp);
+				//			tmpPointCloudCollection.push_back(tmp);
+				//			break;
+				//		}
+				//	}
+				//}
 
 				refreshColorScale(m_pColorScalerTPU, m_vpClouds);
 			}
@@ -556,7 +556,7 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_b)
 			{
-				Renderer::getInstance().drawText("", 0.f, 0.f, 1.f, glm::vec4(1.f, 1.f, 0.f, 0.9f));
+				Renderer::getInstance().drawText("Testing line widths!\n1234...\nMultiple Lines\nCapable of being anchored in any corner or center.", 1.f, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{

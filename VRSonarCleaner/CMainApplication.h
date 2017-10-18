@@ -17,7 +17,7 @@
 #include "SonarPointCloud.h"
 #include "ColorScaler.h"
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 //-----------------------------------------------------------------------------
 // Purpose:

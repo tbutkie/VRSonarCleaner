@@ -5,8 +5,8 @@
 #include <queue>
 #include <openvr.h>
 
-#include <shared/glm/glm.hpp>
-#include <shared/GLTexture.h>
+#include <glm.hpp>
+#include <GLTexture.h>
 
 #include "TrackedDeviceManager.h"
 

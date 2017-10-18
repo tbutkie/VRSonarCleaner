@@ -2,9 +2,9 @@
 
 #include <vector>
 #include <numeric>
-#include <shared/glm/glm.hpp>
-#include <shared/glm/gtc/type_ptr.hpp>
-#include <shared/glm/gtx/norm.hpp>
+#include <glm.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtx/norm.hpp>
 
 #include <string>
 #include <ft2build.h>
@@ -19,6 +19,7 @@ Renderer::Renderer()
 	, m_glFrameUBO(0)
 	, m_glFullscreenTextureVAO(0)
 	, m_bShowWireframe(false)
+	, m_uiFontPointSize(144u)
 {
 }
 
@@ -801,7 +802,7 @@ void Renderer::setupText()
 		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
 	// Set size to load glyphs as
-	FT_Set_Pixel_Sizes(face, 0, 48);
+	FT_Set_Pixel_Sizes(face, 0, m_uiFontPointSize);
 
 	// Disable byte-alignment restriction
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -831,8 +832,8 @@ void Renderer::setupText()
 			face->glyph->bitmap.buffer
 		);
 		// Set texture options
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		// Now store character for later use
@@ -840,7 +841,7 @@ void Renderer::setupText()
 			texture,
 			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
 			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			face->glyph->advance.x
+			glm::ivec2(face->glyph->advance.x, face->glyph->advance.y)
 		};
 		m_arrCharacters[c] = character;
 		char tmp[2];
@@ -866,56 +867,72 @@ void Renderer::setupText()
 	glBindVertexArray(0);
 }
 
-void Renderer::drawText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec4 color)
+void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color, TextAnchor anchor)
 {
-	RendererSubmission rs;
-	rs.glPrimitiveType = GL_TRIANGLES;
-	rs.shaderName = "text";
-	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f));
-	rs.VAO = m_mapPrimitives["quaddouble"].first;
-	rs.vertCount = m_mapPrimitives["quaddouble"].second;
-	rs.indexType = GL_UNSIGNED_SHORT;
-	rs.diffuseTexName = "A";
-	rs.diffuseColor = color;
-
-	addToStaticRenderQueue(rs);
-	/*
-	// Iterate through all characters
+	// cursor origin is at beginning of text baseline
+	glm::vec2 cursor(0.f);
+	glm::vec2 textDims;
+	
+	// Iterate through all characters to find layout space requirements
 	std::string::const_iterator c;
 	for (c = text.begin(); c != text.end(); c++)
 	{
+		if (*c == '\n')
+		{
+			cursor.x = 0.f;
+			cursor.y += m_uiFontPointSize;
+			if (cursor.y > textDims.y)
+				textDims.y = cursor.y;
+			continue;
+		}
+
+		cursor.x += (m_arrCharacters[*c].Advance.x >> 6);
+		if (cursor.x > textDims.x)
+			textDims.x = cursor.x;
+	}
+
+	cursor = glm::vec2(0.f);
+	
+	GLfloat scale = width_meters / textDims.x;
+
+	for (c = text.begin(); c != text.end(); c++)
+	{
+		if (*c == '\n')
+		{
+			if (cursor.x > textDims.x)
+				textDims.x = cursor.x;
+
+			cursor.x = 0.f;
+			cursor.y -= m_uiFontPointSize * scale;
+			continue;
+		}
+
 		Character ch = m_arrCharacters[*c];
 
-		GLfloat xpos = x + ch.Bearing.x * scale;
-		GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x) * scale;
+		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y) * scale;
 
 		GLfloat w = ch.Size.x * scale;
 		GLfloat h = ch.Size.y * scale;
-		// Update VBO for each character
-		GLfloat vertices[6][4] = {
-			{ xpos,     ypos + h,   0.0, 0.0 },
-			{ xpos,     ypos,       0.0, 1.0 },
-			{ xpos + w, ypos,       1.0, 1.0 },
 
-			{ xpos,     ypos + h,   0.0, 0.0 },
-			{ xpos + w, ypos,       1.0, 1.0 },
-			{ xpos + w, ypos + h,   1.0, 0.0 }
-		};
-		// Render glyph texture over quad
-		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-		// Update content of VBO memory
-		glBindBuffer(GL_ARRAY_BUFFER, m_glTextVBO);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // Be sure to use glBufferSubData and not glBufferData
+		glm::mat4 trans = glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)) * glm::scale(glm::mat4(), glm::vec3(w, h, 1.f));
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		// Render quad
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		RendererSubmission rs;
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "text";
+		rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * trans;
+		rs.VAO = m_mapPrimitives["quaddouble"].first;
+		rs.vertCount = m_mapPrimitives["quaddouble"].second;
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.diffuseTexName = *c;
+		rs.diffuseColor = color;
+
+		addToStaticRenderQueue(rs);
+
 		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-		x += (ch.Advance >> 6) * scale; // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-	}
-	glBindVertexArray(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	*/
+		cursor.x += (ch.Advance.x >> 6) * scale; // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+	}	
 }
 
 //-----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #include "TrackedDevice.h"
 
-#include <shared/glm/gtc/type_ptr.hpp>
+#include <gtc/type_ptr.hpp>
 
 #include <iostream>
 

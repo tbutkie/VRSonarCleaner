@@ -9,7 +9,7 @@
 #include <chrono>
 #include <future>
 
-#include <shared/glm/glm.hpp>
+#include <glm.hpp>
 
 #include "HolodeckBackground.h"
 #include "DataVolume.h"

@@ -3,8 +3,8 @@
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
 #include "GrabDataVolumeBehavior.h"
-#include <shared/glm/gtc/matrix_transform.hpp>
-#include <shared/glm/gtc/random.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/random.hpp>
 #include "Renderer.h"
 #include "TaskCompleteBehavior.h"
 #include <algorithm>

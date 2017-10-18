@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <shared/glm/gtc/type_ptr.hpp>
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtc/matrix_transform.hpp>
 
 
 const glm::vec4 ViveController::c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f));

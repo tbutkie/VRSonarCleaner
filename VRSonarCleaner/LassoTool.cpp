@@ -1,7 +1,7 @@
 #include "LassoTool.h"
 
-#include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
-#include <shared/glm/gtc/matrix_transform.hpp> // glm::project
+#include <gtc/type_ptr.hpp> // glm::value_ptr
+#include <gtc/matrix_transform.hpp> // glm::project
 
 #include <GL/glew.h>
 

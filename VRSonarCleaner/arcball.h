@@ -41,8 +41,8 @@
 
 #include <GL/glew.h>
 
-#include <shared/glm/glm.hpp>
-#include <shared/glm/gtc/quaternion.hpp>
+#include <glm.hpp>
+#include <gtc/quaternion.hpp>
 
 class Arcball
 {

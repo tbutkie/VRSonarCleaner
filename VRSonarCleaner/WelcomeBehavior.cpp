@@ -1,7 +1,7 @@
 #include "WelcomeBehavior.h"
 
 #include "InfoBoxManager.h"
-#include <shared/glm/gtc/matrix_transform.hpp>
+#include <gtc/matrix_transform.hpp>
 
 WelcomeBehavior::WelcomeBehavior(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)

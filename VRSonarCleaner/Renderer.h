@@ -2,7 +2,7 @@
 
 #include <GL/glew.h>
 #include <SDL.h>
-#include <shared/GLTexture.h>
+#include <GLTexture.h>
 #include "LightingSystem.h"
 #include "shaderset.h"
 
@@ -102,6 +102,18 @@ public:
 		static Renderer s_instance;
 		return s_instance;
 	}
+
+	enum TextAnchor {
+		CENTER,
+		CENTER_TOP,
+		CENTER_BOTTOM,
+		CENTER_LEFT,
+		CENTER_RIGHT,
+		TOP_LEFT,
+		TOP_RIGHT,
+		BOTTOM_LEFT,
+		BOTTOM_RIGHT
+	};
 	
 	bool init();
 
@@ -116,7 +128,7 @@ public:
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
-	void drawText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec4 color);
+	void drawText(std::string text, GLfloat width_meters, glm::vec4 color, TextAnchor anchor = CENTER);
 
 	void toggleWireframe();
 
@@ -167,10 +179,11 @@ private:
 		GLuint TextureID;   // ID handle of the glyph texture
 		glm::ivec2 Size;    // Size of glyph
 		glm::ivec2 Bearing;  // Offset from baseline to left/top of glyph
-		GLuint Advance;    // Horizontal offset to advance to next glyph
+		glm::ivec2 Advance;    // Horizontal offset to advance to next glyph
 	};
 
 	Character m_arrCharacters[128];
+	unsigned int m_uiFontPointSize;
 
 	LightingSystem* m_pLighting;
 
