@@ -103,6 +103,16 @@ public:
 		return s_instance;
 	}
 
+	/* 
+	   *--------*--------*
+	   |				 |
+	   |				 |
+	   *		*		 *
+	   |				 |
+	   |				 |
+	   *--------*--------*
+	   Where * = an anchor point for the text box
+	*/
 	enum TextAnchor {
 		CENTER,
 		CENTER_TOP,
@@ -113,6 +123,11 @@ public:
 		TOP_RIGHT,
 		BOTTOM_LEFT,
 		BOTTOM_RIGHT
+	};
+
+	enum TextSizeDim {
+		WIDTH,
+		HEIGHT
 	};
 	
 	bool init();
@@ -128,7 +143,7 @@ public:
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
-	void drawText(std::string text, GLfloat width_meters, glm::vec4 color, TextAnchor anchor = CENTER);
+	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAnchor anchor = CENTER);
 
 	void toggleWireframe();
 

@@ -214,7 +214,7 @@ bool CMainApplication::init()
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 
-		glm::vec3 tablePosition = glm::vec3(0.f, 1.1f, 0.f);
+		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, 0.f);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
 
@@ -556,7 +556,15 @@ bool CMainApplication::HandleInput()
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_b)
 			{
-				Renderer::getInstance().drawText("Testing line widths!\n1234...\nMultiple Lines\nCapable of being anchored in any corner or center.", 1.f, glm::vec4(1.f, 1.f, 0.f, 0.75f));
+				Renderer::getInstance().drawText(
+					"Testing!\n1234...",
+					glm::vec4(1.f, 0.f, 1.f, 0.75f),
+					glm::vec3(1.125f, 1.f, 0.f),
+					glm::rotation(glm::vec3(0.f, 0.f, 1.f), glm::vec3(1.f, 0.f, 0.f)),
+					0.75f,
+					Renderer::TextSizeDim::HEIGHT,
+					Renderer::TextAnchor::CENTER
+				);
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{

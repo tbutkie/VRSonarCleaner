@@ -867,14 +867,16 @@ void Renderer::setupText()
 	glBindVertexArray(0);
 }
 
-void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color, TextAnchor anchor)
+void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAnchor anchor)
 {
 	float lineSpacing = m_uiFontPointSize * 1.f;
 
 	// cursor origin is at beginning of text baseline
-	glm::vec2 cursor(0.f);
-	glm::vec2 textDims(0.f);
-	GLuint numLines = 1u;
+	int cursorDistOnBaseline = 0;
+	int maxCursorDist = 0;
+	int numLines = 1;
+	int firstLineMaxHeight = 0;
+	int lastLinePadding = 0;
 	
 	// Iterate through all characters to find layout space requirements
 	std::string::const_iterator c;
@@ -882,18 +884,26 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 	{
 		if (*c == '\n')
 		{
-			cursor.x = 0.f;
+			cursorDistOnBaseline = 0;
 			numLines++;
+			lastLinePadding = 0;
 			continue;
 		}
 
-		cursor.x += (m_arrCharacters[*c].Advance.x >> 6);
-		if (cursor.x > textDims.x)
-			textDims.x = cursor.x;
+		if (numLines == 1 && m_arrCharacters[*c].Bearing.y > firstLineMaxHeight)
+			firstLineMaxHeight = m_arrCharacters[*c].Bearing.y;
+
+		int padding = m_arrCharacters[*c].Size.y - m_arrCharacters[*c].Bearing.y;
+		if (padding > lastLinePadding)
+			lastLinePadding = padding;
+
+		cursorDistOnBaseline += (m_arrCharacters[*c].Advance.x >> 6);
+		if (cursorDistOnBaseline > maxCursorDist)
+			maxCursorDist = cursorDistOnBaseline;
 	}
-	textDims.y = numLines * lineSpacing;
+	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
 		
-	GLfloat scale = width_meters / textDims.x;
+	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
 	
 	glm::vec2 anchorPt;
 
@@ -930,37 +940,31 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 		break;
 	}
 
-	cursor = glm::vec2(0.f, -m_uiFontPointSize) * scale;
+	glm::vec2 cursor = (glm::vec2(0.f, lineSpacing * (numLines - 1) + lastLinePadding) - anchorPt);
 
 	for (c = text.begin(); c != text.end(); c++)
 	{
 		if (*c == '\n')
 		{
-			if (cursor.x > textDims.x)
-				textDims.x = cursor.x;
-
-			cursor.x = 0.f;
-			cursor.y -= m_uiFontPointSize * scale;
+			cursor.x = -anchorPt.x;
+			cursor.y -= lineSpacing;
 			continue;
 		}
 
 		Character ch = m_arrCharacters[*c];
 
-		glm::vec2 anchorToCursorOffset(0.f);
+		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x);
+		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y);
 
-		GLfloat xpos = (cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x) - anchorToCursorOffset.x) * scale;
-		GLfloat ypos = (cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y) - anchorToCursorOffset.y) * scale;
+		GLfloat w = ch.Size.x;
+		GLfloat h = ch.Size.y;
 
-		GLfloat w = ch.Size.x * scale;
-		GLfloat h = ch.Size.y * scale;
-
-		glm::mat4 trans = glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)) * glm::scale(glm::mat4(), glm::vec3(w, h, 1.f));
-
+		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
 
 		RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
-		rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * trans;
+		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4_cast(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
 		rs.VAO = m_mapPrimitives["quaddouble"].first;
 		rs.vertCount = m_mapPrimitives["quaddouble"].second;
 		rs.indexType = GL_UNSIGNED_SHORT;
@@ -970,7 +974,7 @@ void Renderer::drawText(std::string text, GLfloat width_meters, glm::vec4 color,
 		addToStaticRenderQueue(rs);
 
 		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-		cursor.x += (ch.Advance.x >> 6) * scale; // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+		cursor.x += (ch.Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}	
 }
 
