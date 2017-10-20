@@ -26,14 +26,14 @@ void RunStudyBehavior::init()
 	{
 		if (is_regular_file(*it))
 		{
-			std::cout << __FUNCTION__ << ": Found study file " << *it << std::endl;
+			std::cout << __FUNCTION__ << ": Found study file " << (*it).path().filename() << std::endl;
 
 			m_vStudyDatasets.push_back(*it);
 		}
 	}
 
-	DataLogger::getInstance().setLogDirectory("data");
-	m_DataLog = DataLogger::getInstance().openLog("study", true);
+	//DataLogger::getInstance().setLogDirectory("data");
+	//m_DataLog = DataLogger::getInstance().openLog("study", true);
 
 	//std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 

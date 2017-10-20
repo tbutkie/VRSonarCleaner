@@ -147,6 +147,8 @@ public:
 	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAnchor anchor = CENTER);
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
 
+	static glm::mat4 getBillBoardTransform(const glm::vec3 &pos, const glm::vec3 &viewPos, const glm::vec3 &up, bool lockToUpVector);
+
 	void toggleWireframe();
 
 	GLTexture* getTexture(std::string texName);

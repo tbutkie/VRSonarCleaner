@@ -75,17 +75,7 @@ void InfoBoxManager::draw()
 		glm::mat4 scaleMat = glm::scale(glm::mat4(), glm::vec3(sizeM, sizeM / ar, 1.f));
 
 		if (std::get<IBIndex::BILLBOARDED>(ib.second))
-		{
-			glm::vec3 up(0.f, 1.f, 0.f);
-			glm::vec3 IBtoHMDVec_n = glm::normalize(glm::vec3(HMDXform[3] - infoBoxMat[3]));
-			glm::vec3 u = glm::normalize(glm::cross(up, IBtoHMDVec_n));
-			glm::vec3 v = up;
-			glm::vec3 w = glm::normalize(glm::cross(u, v));
-
-			infoBoxMat[0] = glm::vec4(u, 0.f);
-			infoBoxMat[1] = glm::vec4(v, 0.f);
-			infoBoxMat[2] = glm::vec4(w, 0.f);
-		}
+			infoBoxMat = Renderer::getBillBoardTransform(glm::vec3(infoBoxMat[3]), glm::vec3(HMDXform[3]), glm::vec3(0.f, 1.f, 0.f), true);
 
 		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;
 		Renderer::getInstance().drawPrimitive("quad", modelTransform, std::get<IBIndex::TEXTURE>(ib.second)->getName(), "black", 0.f);

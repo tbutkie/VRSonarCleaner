@@ -5,6 +5,7 @@
 #include "PointCleanProbe.h"
 #include "Renderer.h"
 
+#include <filesystem>
 
 StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, DataLogger::LogHandle log)
 	: m_pTDM(pTDM)
@@ -44,7 +45,8 @@ StudyTrialBehavior::~StudyTrialBehavior()
 
 void StudyTrialBehavior::init()
 {
-	std::cout << "Starting trials for " << m_pPointCloud->getName() << std::endl;
+	using namespace std::experimental::filesystem::v1;
+	std::cout << "Starting trials for " << path(m_pPointCloud->getName()).filename() << std::endl;
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM, m_pDataVolume, vr::VRSystem()));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));

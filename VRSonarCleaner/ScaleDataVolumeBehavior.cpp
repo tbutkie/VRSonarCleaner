@@ -104,6 +104,7 @@ void ScaleDataVolumeBehavior::draw()
 
 			float thickness = 0.0025f;
 
+			// attachment points are the inner grip buttons
 			glm::vec3 primConAttachPt = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(rightHanded ? -0.015f : 0.015f, -0.015f, 0.085f)))[3];
 			glm::vec3 secConAttachPt = (m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(rightHanded ? 0.015f : -0.015f, -0.015f, 0.085f)))[3];
 

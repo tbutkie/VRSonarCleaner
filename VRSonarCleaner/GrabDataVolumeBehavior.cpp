@@ -56,18 +56,6 @@ void GrabDataVolumeBehavior::draw()
 			glm::vec4(1.f, 1.f, 1.f, 0.75f)
 		);
 
-		//glm::mat4 controllerTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-		//
-		//Renderer::getInstance().drawText(
-		//	"Grab",
-		//	glm::vec4(0.77f, 0.77f, 0.3f, 1.f),
-		//	controllerTextAnchorTrans[3],
-		//	glm::quat(controllerTextAnchorTrans),
-		//	0.05f,
-		//	Renderer::TextSizeDim::HEIGHT,
-		//	Renderer::TextAnchor::CENTER_TOP
-		//);
-
 		if (m_bPreGripping)
 		{
 			float cylThickness = 0.02f * (1.f - m_pTDM->getSecondaryController()->getTriggerPullAmount());

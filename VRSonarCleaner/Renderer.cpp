@@ -1040,6 +1040,27 @@ glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim 
 	return textDims * scale;
 }
 
+glm::mat4 Renderer::getBillBoardTransform(const glm::vec3 & pos, const glm::vec3 & at, const glm::vec3 &up, bool lockToUpVector)
+{
+	glm::vec3 f(glm::normalize(at - pos));
+	glm::vec3 s(glm::normalize(cross(up, f)));
+	glm::vec3 u(glm::cross(f, s));
+
+	if (lockToUpVector)
+	{
+		u = up;
+		f = glm::normalize(glm::cross(s, u));
+	}
+
+	glm::mat4 result;
+	result[0] = glm::vec4(s, 0.f);
+	result[1] = glm::vec4(u, 0.f);
+	result[2] = glm::vec4(f, 0.f);
+	result[3] = glm::vec4(pos, 1.f);
+
+	return result;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
