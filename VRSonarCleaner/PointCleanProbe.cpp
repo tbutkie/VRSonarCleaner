@@ -13,29 +13,13 @@ PointCleanProbe::PointCleanProbe(TrackedDeviceManager* pTDM, DataVolume* pointCl
 	, m_fPtHighlightAmt(1.f)
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)
+	, m_nPointsSelected(0u)
 {
-	InfoBoxManager::getInstance().addInfoBox(
-		"Editing Label",
-		"editctrlrlabel.png",
-		0.1f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Clean Label",
-		"cleanrightlabel.png",
-		0.075f,
-		glm::translate(glm::mat4(), glm::vec3(-0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
 }
 
 
 PointCleanProbe::~PointCleanProbe()
 {
-	InfoBoxManager::getInstance().removeInfoBox("Editing Label");
-	InfoBoxManager::getInstance().removeInfoBox("Clean Label");
 }
 
 void PointCleanProbe::update()
@@ -54,7 +38,7 @@ void PointCleanProbe::update()
 	m_tpLastTime = tick;
 
 	if (!m_bWaitForTriggerRelease)
-		checkPoints();
+		m_nPointsSelected = checkPoints();
 }
 
 void PointCleanProbe::draw()
@@ -74,7 +58,7 @@ void PointCleanProbe::draw()
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
 	glm::mat4 rot;
 
-	glm::vec4 diffCol = m_bProbeActive ? glm::vec4(0.502f, 0.125f, 0.125f, 1.f) : glm::vec4(0.125f, 0.125f, 0.125f, 1.f);
+	glm::vec4 diffCol = glm::mix(glm::vec4(0.125f, 0.125f, 0.125f, 1.f), glm::vec4(0.502f, 0.125f, 0.125f, 1.f), m_pTDM->getPrimaryController()->getTriggerPullAmount());
 	glm::vec4 specColor = m_bProbeActive ? glm::vec4(0.f, 0.f, 1.f, 1.f) : glm::vec4(1.f);
 	float specExp = 130.f;
 
@@ -92,9 +76,61 @@ void PointCleanProbe::draw()
 		Renderer::getInstance().drawPrimitive("torus", torusToWorldTransform, diffCol, specColor, specExp);
 	}
 
-	//glm::mat4 matSphere = getProbeToWorldTransform() * glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
-	//
-	//Renderer::getInstance().drawPrimitive("inverse_icosphere", matSphere, diffCol, diffCol, 0.f);
+	// Trigger label and connector
+	glm::mat4 triggerTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+	Renderer::getInstance().drawText(
+		"Clean Points",
+		glm::mix(glm::vec4(1.f), glm::vec4(0.502f, 0.125f, 0.125f, 1.f), m_pTDM->getPrimaryController()->getTriggerPullAmount()),
+		triggerTextAnchorTrans[3],
+		glm::quat(triggerTextAnchorTrans),
+		0.0075f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_RIGHT
+	);
+
+	Renderer::getInstance().drawConnector(
+		triggerTextAnchorTrans[3],
+		(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.03f, 0.05f)))[3],
+		0.001f,
+		glm::vec4(1.f, 1.f, 1.f, 0.75f)
+	);
+
+	// Point Count Label
+	glm::mat4 statusTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+	Renderer::getInstance().drawText(
+		std::to_string(m_nPointsSelected),
+		glm::vec4(0.8f, 1.f, 0.8f, 1.f),
+		statusTextAnchorTrans[3],
+		glm::quat(statusTextAnchorTrans),
+		0.02f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_BOTTOM
+	);
+
+	Renderer::getInstance().drawText(
+		std::string("Points Selected"),
+		glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+		statusTextAnchorTrans[3],
+		glm::quat(statusTextAnchorTrans),
+		0.0075f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_TOP
+	);
+
+	// Edit label
+	glm::mat4 controllerTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+	Renderer::getInstance().drawText(
+		"Edit",
+		glm::vec4(0.502f, 0.125f, 0.125f, 1.f),
+		controllerTextAnchorTrans[3],
+		glm::quat(controllerTextAnchorTrans),
+		0.05f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_TOP
+	);
 }
 
 void PointCleanProbe::activateProbe()
@@ -159,13 +195,13 @@ bool checkPointInAABB(glm::vec3 point, glm::vec3 aabbMin, glm::vec3 aabbMax)
 		   point.z > aabbMin.z && point.z < aabbMax.z;
 }
 
-void PointCleanProbe::checkPoints()
+unsigned int PointCleanProbe::checkPoints()
 {
 	if (!m_bActive)
-		return;
+		return 0u;
 
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->poseValid()) 
-		return;
+		return 0u;
 
 	glm::mat4 currentCursorPose = getProbeToWorldTransform();
 	glm::mat4 lastCursorPose = getLastProbeToWorldTransform();
@@ -175,6 +211,8 @@ void PointCleanProbe::checkPoints()
 	bool clearPoints = m_pTDM->getPrimaryController()->isTriggerClicked();
 
 	bool anyHits = false;
+
+	unsigned int selectedPoints(0u);
 
 	float delta = m_msElapsedTime.count() / POINT_CLOUD_HIGHLIGHT_BLINK_RATE.count();
 	m_fPtHighlightAmt = fmodf(m_fPtHighlightAmt + delta, 1.f);
@@ -257,7 +295,10 @@ void PointCleanProbe::checkPoints()
 					cloud->markPoint(i, 1);
 				}
 				else
+				{
 					cloud->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+					selectedPoints++;
+				}
 
 				pointsRefresh = true;
 			}
@@ -274,4 +315,6 @@ void PointCleanProbe::checkPoints()
 	
 	if (anyHits)
 		m_pHMD->TriggerHapticPulse(m_pTDM->getPrimaryController()->getIndex(), 0, 2000);
+
+	return selectedPoints;
 }

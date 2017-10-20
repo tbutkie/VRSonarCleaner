@@ -22,6 +22,7 @@ private:
 	bool m_bProbeActive;
 	bool m_bWaitForTriggerRelease;
 	float m_fPtHighlightAmt;
+	unsigned int m_nPointsSelected;
 
 	vr::IVRSystem *m_pHMD;
 	
@@ -34,6 +35,6 @@ private:
 	void activateProbe();
 	void deactivateProbe();
 
-	void checkPoints();
+	unsigned int checkPoints();
 };
 

@@ -35,7 +35,5 @@ private:
 	void continueRotation();
 	void endRotation();
 	bool isBeingRotated();
-
-	void preRotation(float ratio);
 };
 

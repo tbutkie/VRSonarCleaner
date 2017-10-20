@@ -204,6 +204,27 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 	return true;
 }
 
+void Renderer::drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color)
+{
+	float connectorRadius = thickness * 0.5f;
+	glm::vec3 w = to - from;
+
+	glm::vec3 u, v;
+	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
+	if (glm::length2(u) == 0.f)
+		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
+	
+	u = glm::normalize(u);
+	v = glm::normalize(glm::cross(w, u));
+
+	glm::mat4 trans;
+	trans[0] = glm::vec4(u * connectorRadius, 0.f);
+	trans[1] = glm::vec4(v * connectorRadius, 0.f);
+	trans[2] = glm::vec4(w, 0.f);
+	trans[3] = glm::vec4(from, 1.f);
+	Renderer::getInstance().drawFlatPrimitive("cylinder", trans, color);
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -964,18 +985,59 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
-		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4_cast(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
+		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
 		rs.VAO = m_mapPrimitives["quaddouble"].first;
 		rs.vertCount = m_mapPrimitives["quaddouble"].second;
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = *c;
 		rs.diffuseColor = color;
 
-		addToStaticRenderQueue(rs);
+		addToDynamicRenderQueue(rs);
 
 		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
 		cursor.x += (ch.Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}	
+}
+
+glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim sizeDim)
+{
+	float lineSpacing = m_uiFontPointSize * 1.f;
+
+	// cursor origin is at beginning of text baseline
+	int cursorDistOnBaseline = 0;
+	int maxCursorDist = 0;
+	int numLines = 1;
+	int firstLineMaxHeight = 0;
+	int lastLinePadding = 0;
+
+	// Iterate through all characters to find layout space requirements
+	std::string::const_iterator c;
+	for (c = text.begin(); c != text.end(); c++)
+	{
+		if (*c == '\n')
+		{
+			cursorDistOnBaseline = 0;
+			numLines++;
+			lastLinePadding = 0;
+			continue;
+		}
+
+		if (numLines == 1 && m_arrCharacters[*c].Bearing.y > firstLineMaxHeight)
+			firstLineMaxHeight = m_arrCharacters[*c].Bearing.y;
+
+		int padding = m_arrCharacters[*c].Size.y - m_arrCharacters[*c].Bearing.y;
+		if (padding > lastLinePadding)
+			lastLinePadding = padding;
+
+		cursorDistOnBaseline += (m_arrCharacters[*c].Advance.x >> 6);
+		if (cursorDistOnBaseline > maxCursorDist)
+			maxCursorDist = cursorDistOnBaseline;
+	}
+	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
+
+	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
+
+	return textDims * scale;
 }
 
 //-----------------------------------------------------------------------------
