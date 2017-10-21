@@ -23,14 +23,6 @@ WelcomeBehavior::~WelcomeBehavior()
 void WelcomeBehavior::init()
 {
 	InfoBoxManager::getInstance().addInfoBox(
-		"Study Intro",
-		"studyintro.png",
-		1.f,
-		glm::translate(glm::mat4(), glm::vec3(2.f, m_pTDM->getHMDToWorldTransform()[3].y + 1.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::WORLD,
-		true);
-
-	InfoBoxManager::getInstance().addInfoBox(
 		"Welcome",
 		"welcome.png",
 		1.f,
@@ -98,5 +90,4 @@ void WelcomeBehavior::draw()
 		0.001f,
 		glm::vec4(1.f, 1.f, 1.f, 0.75f)
 	);
-	
 }

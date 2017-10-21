@@ -101,7 +101,7 @@ void PointCleanProbe::draw()
 
 	Renderer::getInstance().drawText(
 		std::to_string(m_nPointsSelected),
-		glm::vec4(0.8f, 1.f, 0.8f, 1.f),
+		glm::vec4(0.8f, 0.2f, 0.8f, 1.f),
 		statusTextAnchorTrans[3],
 		glm::quat(statusTextAnchorTrans),
 		0.02f,
@@ -115,19 +115,6 @@ void PointCleanProbe::draw()
 		statusTextAnchorTrans[3],
 		glm::quat(statusTextAnchorTrans),
 		0.0075f,
-		Renderer::TextSizeDim::HEIGHT,
-		Renderer::TextAnchor::CENTER_TOP
-	);
-
-	// Edit label
-	glm::mat4 controllerTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.2f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-
-	Renderer::getInstance().drawText(
-		"Edit",
-		glm::vec4(0.502f, 0.125f, 0.125f, 1.f),
-		controllerTextAnchorTrans[3],
-		glm::quat(controllerTextAnchorTrans),
-		0.05f,
 		Renderer::TextSizeDim::HEIGHT,
 		Renderer::TextAnchor::CENTER_TOP
 	);

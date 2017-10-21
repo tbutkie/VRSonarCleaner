@@ -6,10 +6,14 @@
 #include "Renderer.h"
 
 #include <filesystem>
+#include <sstream>
+
+using namespace std::chrono;
 
 StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, DataLogger::LogHandle log)
 	: m_pTDM(pTDM)
 	, m_Log(log)
+	, m_nPointsLeft(0u)
 {
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -28,6 +32,8 @@ StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string f
 		m_pPointCloud->getMinPositionalTPU(),
 		m_pPointCloud->getMaxPositionalTPU()
 	);
+
+	m_tpLastUpdate = high_resolution_clock::now();
 }
 
 
@@ -57,17 +63,26 @@ void StudyTrialBehavior::update()
 	m_pPointCloud->update();
 	m_pDataVolume->update();
 
-	bool allDone = true;
+	unsigned int prevPointCount = m_nPointsLeft;
+	m_nPointsLeft = m_nCleanedGoodPoints = m_nPointsCleaned = 0u;
 
 	for (int i = 0; i < m_pPointCloud->getPointCount(); ++i)
 	{
-		if (m_pPointCloud->getPointDepthTPU(i) == 1.f && m_pPointCloud->getPointMark(i) != 1)
+		if (m_pPointCloud->getPointDepthTPU(i) == 1.f)
 		{
-			allDone = false;
-			break;
-		}
+			if (m_pPointCloud->getPointMark(i) == 1)
+				m_nPointsCleaned++;
+			else
+				m_nPointsLeft++;
+		} 
+		else if (m_pPointCloud->getPointMark(i) == 1)
+			m_nCleanedGoodPoints++;
 	}
-	if (allDone)// || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
+
+	if (m_nPointsLeft != prevPointCount)// && std::find_if(m_vPointUpdateAnimations.begin(), m_vPointUpdateAnimations.end(), [&](const std::pair<unsigned int, std::chrono::time_point<high_resolution_clock>> &obj) -> bool { return obj.first == m_nPointsLeft; }) == m_vPointUpdateAnimations.end())
+		m_vPointUpdateAnimations.push_back(std::make_pair(m_nPointsLeft, high_resolution_clock::now()));
+
+	if (m_nPointsLeft == 0u)// || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
 	{
 		BehaviorManager::getInstance().removeBehavior("scale");
 		BehaviorManager::getInstance().removeBehavior("grab");
@@ -75,6 +90,7 @@ void StudyTrialBehavior::update()
 
 		m_bActive = false;
 	}
+
 }
 
 void StudyTrialBehavior::draw()
@@ -91,4 +107,89 @@ void StudyTrialBehavior::draw()
 	rs.modelToWorldTransform = m_pDataVolume->getCurrentDataTransform(m_pPointCloud);
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
+
+	// Point Count Label
+	glm::mat4 statusTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.15f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+	float labelSize = 0.025f;
+
+	Renderer::getInstance().drawText(
+		std::to_string(m_nPointsLeft),
+		glm::vec4(0.8f, 0.1f, 0.2f, 1.f),
+		statusTextAnchorTrans[3],
+		glm::quat(statusTextAnchorTrans),
+		labelSize,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_BOTTOM
+	);
+
+	Renderer::getInstance().drawText(
+		std::string("Bad Points Left"),
+		glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+		statusTextAnchorTrans[3],
+		glm::quat(statusTextAnchorTrans),
+		0.01f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_TOP
+	);
+
+	float animTime = 0.2f;
+
+	for (auto &anim : m_vPointUpdateAnimations)
+	{
+		float timeElapsed = duration<float>(high_resolution_clock::now() - anim.second).count();
+		float timeLeft = animTime - timeElapsed;
+
+		if (timeLeft < 0.f)
+			continue;
+
+		float ratio = (animTime - timeLeft) / animTime;
+
+		Renderer::getInstance().drawText(
+			std::to_string(anim.first),
+			glm::mix(glm::vec4(0.8f, 0.1f, 0.2f, 1.f), glm::vec4(0.1f, 0.8f, 0.2f, 0.f), ratio),
+			statusTextAnchorTrans[3] + statusTextAnchorTrans[2] * ratio * 0.1f,
+			glm::quat(statusTextAnchorTrans),
+			labelSize * (1.f + 1.f * ratio),
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAnchor::CENTER_BOTTOM
+		);
+	}
+
+	float accuracy = static_cast<float>(m_nPointsCleaned) / static_cast<float>(m_nCleanedGoodPoints + m_nPointsCleaned);
+	float accuracyPct = accuracy * 100.f;
+	std::stringstream accuracyStr;
+	glm::vec4 accColor;
+
+	if (std::isnan(accuracy))
+	{
+		accuracyStr << "n/a";
+		accColor = glm::vec4(glm::vec3(0.7f), 1.f);
+	}
+	else
+	{
+		accuracyStr.precision(2);
+		accuracyStr << std::fixed << accuracyPct;
+		accColor = glm::mix(glm::vec4(0.8f, 0.1f, 0.2f, 1.f), glm::vec4(0.1f, 0.8f, 0.2f, 1.f), accuracy);
+	}
+
+	glm::mat4 accuracyTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.175f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+	Renderer::getInstance().drawText(
+		"Accuracy: ",
+		glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+		accuracyTextAnchorTrans[3],
+		glm::quat(accuracyTextAnchorTrans),
+		0.01f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_RIGHT
+	);
+	Renderer::getInstance().drawText(
+		accuracyStr.str(),
+		accColor,
+		accuracyTextAnchorTrans[3],
+		glm::quat(accuracyTextAnchorTrans),
+		0.01f,
+		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAnchor::CENTER_LEFT
+	);
 }

@@ -19,10 +19,9 @@
 #include <filesystem>
 #include <limits>
 
-glm::vec3						g_vec3RoomSize(10.f, 4.f, 6.f);
 
 float							g_fNearClip = 0.001f;
-float							g_fFarClip = 1000.f;
+float							g_fFarClip = 10000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
 
