@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <limits>
 
+glm::vec3						g_vec3RoomSize(4.f, 3.f, 3.f);
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 10000.f;
@@ -203,6 +204,10 @@ bool CMainApplication::init()
 		return false;
 	}
 
+	//if (m_bUseVR)
+	//{
+	//	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
+	//}
 	HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (m_bSonarCleaning)
