@@ -38,14 +38,6 @@ void GrabTutorial::init()
 	glm::vec3 goalVolSize = glm::vec3(0.65f);
 	
 	m_pGoalVolume = new DataVolume(goalVolPosition, goalVolOrientation, goalVolSize);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Grab Tut",
-		"grabinstructions.png",
-		0.25f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
 	
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 
@@ -80,7 +72,6 @@ void GrabTutorial::update()
 		if (checkVolBounds())
 		{
 			BehaviorManager::getInstance().removeBehavior("Grab");
-			InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
 
 			TaskCompleteBehavior* tcb = new TaskCompleteBehavior(m_pTDM);
 			tcb->init();
@@ -120,67 +111,84 @@ void GrabTutorial::draw()
 	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), dvColor, 2.f);
 	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
-	float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
-	float dvOffset = std::sqrt(dvMaxSide * dvMaxSide * 2);
-	glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
-
-	Renderer::getInstance().drawText(
-		"Data Volume",
-		volumeHasBeenMoved ? glm::vec4(0.7f, 0.7f, 0.7f, 1.f) : dvColor,
-		dvPromptTrans[3],
-		glm::quat(dvPromptTrans),
-		1.f,
-		Renderer::TextSizeDim::WIDTH,
-		Renderer::TextAnchor::CENTER_BOTTOM
-	);
-
-	float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
-	float goalOffset = std::sqrt(goalMaxSide * goalMaxSide * 2);
-	glm::mat4 goalTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() + goalOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
-
-	Renderer::getInstance().drawText(
-		"GOAL",
-		glm::vec4(0.7f, 0.7f, 0.2f, 1.f),
-		goalTrans[3],
-		glm::quat(goalTrans),
-		1.f,
-		Renderer::TextSizeDim::WIDTH,
-		Renderer::TextAnchor::CENTER_BOTTOM
-	);
-
-	glm::mat4 goalPromptTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() + 1.f * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
-	
-	Renderer::getInstance().drawText(
-		"Align and place\nthe data volume\ninside of the goal!",
-		glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
-		goalPromptTrans[3],
-		glm::quat(goalPromptTrans),
-		2.f,
-		Renderer::TextSizeDim::WIDTH,
-		Renderer::TextAnchor::CENTER_RIGHT
-	);
-	
-	if (!volumeHasBeenMoved)
+	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
 	{
-		glm::mat4 grabTriggerTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, -0.031f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-		std::string grabInitialText("Press the trigger to grab!");
-		glm::vec2 dims = Renderer::getInstance().getTextDimensions(grabInitialText, 0.1f, Renderer::WIDTH);
+
+		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
+		float dvOffset = std::sqrt(dvMaxSide * dvMaxSide * 0.5f);
+		glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
 		Renderer::getInstance().drawText(
-			grabInitialText,
-			dvColor,
-			grabTriggerTrans[3],
-			glm::quat(grabTriggerTrans),
-			0.2f,
+			"Data Volume",
+			volumeHasBeenMoved ? glm::vec4(0.7f, 0.7f, 0.7f, 1.f) : dvColor,
+			dvPromptTrans[3],
+			glm::quat(dvPromptTrans),
+			1.f,
 			Renderer::TextSizeDim::WIDTH,
-			Renderer::TextAnchor::CENTER_RIGHT
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_BOTTOM
 		);
 
-		Renderer::getInstance().drawConnector(
-			grabTriggerTrans[3] - dims.x * grabTriggerTrans[0],
-			m_pDemoVolume->getPosition(),
-			0.001f,
-			dvColor
-		);
+		if (!volumeHasBeenMoved)
+		{
+			glm::mat4 grabTriggerTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, -0.031f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+			std::string grabInitialText("Press the trigger!");
+			glm::vec2 dims = Renderer::getInstance().getTextDimensions(grabInitialText, 0.2f, Renderer::WIDTH);
+			Renderer::getInstance().drawText(
+				grabInitialText,
+				dvColor,
+				grabTriggerTrans[3],
+				glm::quat(grabTriggerTrans),
+				0.2f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_RIGHT
+			);
+
+			Renderer::getInstance().drawConnector(
+				grabTriggerTrans[3] - dims.x * grabTriggerTrans[0],
+				m_pDemoVolume->getPosition(),
+				0.001f,
+				dvColor
+			);
+
+			Renderer::getInstance().drawConnector(
+				grabTriggerTrans[3],
+				(m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3],
+				0.001f,
+				dvColor
+			);
+		}
+		else
+		{
+			float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
+			float goalOffset = std::sqrt(goalMaxSide * goalMaxSide * 0.5f);
+			glm::mat4 goalTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
+			Renderer::getInstance().drawText(
+				"GOAL",
+				glm::vec4(0.2f, 0.7f, 0.2f, 1.f),
+				goalTrans[3],
+				glm::quat(goalTrans),
+				1.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_TOP
+			);
+
+			glm::mat4 goalPromptTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
+			Renderer::getInstance().drawText(
+				"Align and place\nthe data volume\ninside of the goal!",
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				goalPromptTrans[3],
+				glm::quat(goalPromptTrans),
+				2.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_BOTTOM
+			);
+		}
 	}
 }
 
@@ -194,7 +202,6 @@ void GrabTutorial::cleanup()
 		if (m_pGoalVolume)
 			delete m_pGoalVolume;
 
-		InfoBoxManager::getInstance().removeInfoBox("Grab Tut");
 		BehaviorManager::getInstance().removeBehavior("Grab");
 		BehaviorManager::getInstance().removeBehavior("Done");
 

@@ -46,6 +46,7 @@ void GrabDataVolumeBehavior::draw()
 			glm::quat(triggerTextAnchorTrans),
 			0.0075f,
 			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_LEFT
 		);
 

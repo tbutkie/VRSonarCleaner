@@ -119,6 +119,7 @@ void StudyTrialBehavior::draw()
 		glm::quat(statusTextAnchorTrans),
 		labelSize,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_BOTTOM
 	);
 
@@ -129,6 +130,7 @@ void StudyTrialBehavior::draw()
 		glm::quat(statusTextAnchorTrans),
 		0.01f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_TOP
 	);
 
@@ -151,6 +153,7 @@ void StudyTrialBehavior::draw()
 			glm::quat(statusTextAnchorTrans),
 			labelSize * (1.f + 1.f * ratio),
 			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_BOTTOM
 		);
 	}
@@ -181,6 +184,7 @@ void StudyTrialBehavior::draw()
 		glm::quat(accuracyTextAnchorTrans),
 		0.01f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_RIGHT
 	);
 	Renderer::getInstance().drawText(
@@ -190,6 +194,7 @@ void StudyTrialBehavior::draw()
 		glm::quat(accuracyTextAnchorTrans),
 		0.01f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_LEFT
 	);
 }

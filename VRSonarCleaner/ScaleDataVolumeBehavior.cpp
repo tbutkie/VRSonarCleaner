@@ -66,6 +66,7 @@ void ScaleDataVolumeBehavior::draw()
 				glm::quat(rightGripTextAnchorTrans),
 				0.0075f,
 				Renderer::TextSizeDim::HEIGHT,
+				Renderer::TextAlignment::CENTER,
 				Renderer::TextAnchor::CENTER_LEFT
 			);
 			Renderer::getInstance().drawText(
@@ -75,6 +76,7 @@ void ScaleDataVolumeBehavior::draw()
 				glm::quat(leftGripTextAnchorTrans),
 				0.0075f,
 				Renderer::TextSizeDim::HEIGHT,
+				Renderer::TextAlignment::CENTER,
 				Renderer::TextAnchor::CENTER_RIGHT
 			);
 
@@ -187,7 +189,8 @@ void ScaleDataVolumeBehavior::draw()
 				glm::quat(rot),
 				textHeight,
 				Renderer::TextSizeDim::HEIGHT,
-				Renderer::TextAnchor::CENTER
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_MIDDLE
 			);
 		}
 	}

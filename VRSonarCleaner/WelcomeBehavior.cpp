@@ -64,6 +64,7 @@ void WelcomeBehavior::draw()
 		glm::quat(primTriggerTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 	);
 
@@ -81,6 +82,7 @@ void WelcomeBehavior::draw()
 		glm::quat(secTriggerTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		rightHanded ? Renderer::TextAnchor::CENTER_LEFT : Renderer::TextAnchor::CENTER_RIGHT
 	);
 

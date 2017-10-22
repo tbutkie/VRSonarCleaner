@@ -86,6 +86,7 @@ void PointCleanProbe::draw()
 		glm::quat(triggerTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_RIGHT
 	);
 
@@ -106,6 +107,7 @@ void PointCleanProbe::draw()
 		glm::quat(statusTextAnchorTrans),
 		0.02f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_BOTTOM
 	);
 
@@ -116,6 +118,7 @@ void PointCleanProbe::draw()
 		glm::quat(statusTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_TOP
 	);
 }

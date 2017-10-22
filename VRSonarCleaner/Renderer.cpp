@@ -888,7 +888,7 @@ void Renderer::setupText()
 	glBindVertexArray(0);
 }
 
-void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAnchor anchor)
+void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment, TextAnchor anchor)
 {
 	float lineSpacing = m_uiFontPointSize * 1.f;
 
@@ -898,6 +898,8 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 	int numLines = 1;
 	int firstLineMaxHeight = 0;
 	int lastLinePadding = 0;
+
+	std::vector<float> vLineLengths;
 	
 	// Iterate through all characters to find layout space requirements
 	std::string::const_iterator c;
@@ -905,6 +907,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 	{
 		if (*c == '\n')
 		{
+			vLineLengths.push_back(cursorDistOnBaseline);
 			cursorDistOnBaseline = 0;
 			numLines++;
 			lastLinePadding = 0;
@@ -922,6 +925,8 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		if (cursorDistOnBaseline > maxCursorDist)
 			maxCursorDist = cursorDistOnBaseline;
 	}
+	vLineLengths.push_back(cursorDistOnBaseline);
+
 	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
 		
 	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
@@ -930,7 +935,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 
 	switch (anchor)
 	{
-	case Renderer::CENTER:
+	case Renderer::CENTER_MIDDLE:
 		anchorPt = textDims * 0.5f;
 		break;
 	case Renderer::CENTER_TOP:
@@ -961,13 +966,26 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		break;
 	}
 
-	glm::vec2 cursor = (glm::vec2(0.f, lineSpacing * (numLines - 1) + lastLinePadding) - anchorPt);
+	glm::vec2 cursor = glm::vec2(0.f, lineSpacing * (numLines - 1) + lastLinePadding) - anchorPt;
+	unsigned int lineNum = 0u;
+
+	if (alignment == TextAlignment::RIGHT)
+		cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
+	else if (alignment == TextAlignment::CENTER)
+		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
 
 	for (c = text.begin(); c != text.end(); c++)
 	{
 		if (*c == '\n')
 		{
-			cursor.x = -anchorPt.x;
+			lineNum++;
+			if (alignment == TextAlignment::RIGHT)
+				cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
+			else if (alignment == TextAlignment::CENTER)
+				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+			else
+				cursor.x = -anchorPt.x;
+
 			cursor.y -= lineSpacing;
 			continue;
 		}

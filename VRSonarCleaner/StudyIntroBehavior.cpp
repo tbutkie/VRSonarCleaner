@@ -56,6 +56,7 @@ void StudyIntroBehavior::draw()
 		glm::quat(primTriggerTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 	);
 
@@ -73,6 +74,7 @@ void StudyIntroBehavior::draw()
 		glm::quat(secTriggerTextAnchorTrans),
 		0.0075f,
 		Renderer::TextSizeDim::HEIGHT,
+		Renderer::TextAlignment::CENTER,
 		rightHanded ? Renderer::TextAnchor::CENTER_LEFT : Renderer::TextAnchor::CENTER_RIGHT
 	);
 
@@ -98,6 +100,7 @@ void StudyIntroBehavior::draw()
 		glm::quat(textTrans),
 		dims.x,
 		Renderer::TextSizeDim::WIDTH,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_BOTTOM
 	);
 
@@ -108,6 +111,7 @@ void StudyIntroBehavior::draw()
 		glm::quat(textTrans),
 		descSize,
 		Renderer::TextSizeDim::WIDTH,
+		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_TOP
 	);
 }
