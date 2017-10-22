@@ -85,7 +85,7 @@ void StudyIntroBehavior::draw()
 		glm::vec4(1.f, 1.f, 1.f, 0.75f)
 	);
 
-	std::string desc("In this study, you will be cleaning sonar data\nto remove noisey and unwanted data points.\n\nHold both triggers to start a training session.");
+	std::string desc("In this study, you will be cleaning sonar data\nto remove noise and bad data points.\n\nPress both triggers\nto begin a training session...");
 	float descSize = 2.f;
 	glm::vec2 dims = Renderer::getInstance().getTextDimensions(desc, descSize, Renderer::WIDTH);
 

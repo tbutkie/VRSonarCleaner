@@ -10,6 +10,7 @@
 #include "ScaleDataVolumeBehavior.h"
 #include "CurateStudyDataBehavior.h"
 #include "RunStudyBehavior.h"
+#include "StudyIntroBehavior.h"
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -558,7 +559,12 @@ bool CMainApplication::HandleInput()
 					initVR();
 				}
 			}
-
+			if (sdlEvent.key.keysym.sym == SDLK_b)
+			{
+				m_pTableVolume->setVisible(false);
+				m_pWallVolume->setVisible(false);
+				BehaviorManager::getInstance().addBehavior("test", new StudyIntroBehavior(m_pTDM));
+			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
 				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));

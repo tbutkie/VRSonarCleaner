@@ -115,7 +115,8 @@ void GrabTutorial::draw()
 	{
 
 		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
-		float dvOffset = std::sqrt(dvMaxSide * dvMaxSide * 0.5f);
+		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
+		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
 		glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 		Renderer::getInstance().drawText(
@@ -162,7 +163,8 @@ void GrabTutorial::draw()
 		else
 		{
 			float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
-			float goalOffset = std::sqrt(goalMaxSide * goalMaxSide * 0.5f);
+			float tmp1 = std::sqrt(goalMaxSide * goalMaxSide * 2.f);
+			float goalOffset = std::sqrt(tmp1 * tmp1 + goalMaxSide * goalMaxSide) * 0.5f;
 			glm::mat4 goalTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 			Renderer::getInstance().drawText(
