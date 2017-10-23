@@ -16,6 +16,7 @@ ScaleTutorial::ScaleTutorial(TrackedDeviceManager* pTDM)
 	, m_bWaitForTriggerRelease(true)
 {
 	srand(time(NULL));
+	m_tpTimestamp = std::chrono::high_resolution_clock::now();
 }
 
 
@@ -37,22 +38,6 @@ void ScaleTutorial::init()
 	glm::vec3 goalVolSize = glm::vec3(0.25f);
 	
 	m_pGoalVolume = new DataVolume(goalVolPosition, goalVolOrientation, goalVolSize);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Scale Tut",
-		"scalinginstructions.png",
-		0.25f,
-		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
-		false);
-
-	InfoBoxManager::getInstance().addInfoBox(
-		"Scale Tut Goal",
-		"scaletutgoal.png",
-		1.f,
-		glm::translate(glm::mat4(), goalVolPosition + 1.f * glm::vec3(0.f, 1.f, 0.f)),
-		InfoBoxManager::RELATIVE_TO::WORLD,
-		true);
 
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
@@ -89,8 +74,6 @@ void ScaleTutorial::update()
 		{
 			BehaviorManager::getInstance().removeBehavior("Grab");
 			BehaviorManager::getInstance().removeBehavior("Scale");
-			InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
-			InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
 
 			TaskCompleteBehavior* tcb = new TaskCompleteBehavior(m_pTDM);
 			tcb->init();
@@ -101,16 +84,22 @@ void ScaleTutorial::update()
 
 void ScaleTutorial::draw()
 {
+	std::chrono::duration<float> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpTimestamp);
+	float cycleTime = 1.f;
+	float amt = (sinf(glm::two_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime) + 1.f) * 0.5f;
+
+	bool volumeHasBeenScaled = m_pDemoVolume->getOriginalDimensions() != m_pDemoVolume->getDimensions();
+
 	glm::vec4 goalVolBackingColor;
 
 	if (BehaviorManager::getInstance().getBehavior("Done"))
 		goalVolBackingColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.f);
-	else if (!m_bWaitForTriggerRelease && (m_pTDM->getSecondaryController()->isTriggerClicked() || (m_pTDM->getPrimaryController()->isGripButtonPressed() && m_pTDM->getSecondaryController()->isGripButtonPressed())))
+	else if (!m_bWaitForTriggerRelease && volumeHasBeenScaled && (m_pTDM->getSecondaryController()->isTriggerClicked() || (m_pTDM->getPrimaryController()->isGripButtonPressed() && m_pTDM->getSecondaryController()->isGripButtonPressed())))
 	{
 		if (checkVolBounds())
 			goalVolBackingColor = glm::vec4(0.2f, 0.8f, 0.2f, 1.f);
 		else
-			goalVolBackingColor = glm::vec4(0.8f, 0.8f, 0.2f, 1.f);
+			goalVolBackingColor = glm::mix(glm::vec4(0.15f, 0.21f, 0.31f, 1.f), glm::vec4(0.85f, 0.81f, 0.31f, 1.f), amt);
 	}
 	else
 		goalVolBackingColor = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
@@ -120,9 +109,135 @@ void ScaleTutorial::draw()
 	m_pGoalVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), goalVolBackingColor, 2.f);
 	m_pGoalVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
-	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
+	glm::vec4 dvColor = volumeHasBeenScaled ? glm::vec4(0.15f, 0.21f, 0.31f, 1.f) : glm::mix(glm::vec4(0.15f, 0.21f, 0.31f, 1.f), glm::vec4(0.85f, 0.81f, 0.31f, 1.f), amt);
+	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), dvColor, 2.f);
 	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
-	
+
+	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
+	{
+		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
+		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
+		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
+		glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
+		Renderer::getInstance().drawText(
+			"Data Volume",
+			volumeHasBeenScaled ? glm::vec4(0.7f, 0.7f, 0.7f, 1.f) : dvColor,
+			dvPromptTrans[3],
+			glm::quat(dvPromptTrans),
+			dvOffset * 2.f,
+			Renderer::TextSizeDim::WIDTH,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_BOTTOM
+		);
+
+		if (!volumeHasBeenScaled)
+		{
+			glm::vec3 midPt = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3] + (m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3] - m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]) * 0.5f;
+
+			glm::mat4 scaleVolTrans = Renderer::getBillBoardTransform(midPt, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false);
+			std::string scaleInitialText("Squeeze the grips!");
+			glm::vec2 dims = Renderer::getInstance().getTextDimensions(scaleInitialText, 0.2f, Renderer::WIDTH);
+			Renderer::getInstance().drawText(
+				scaleInitialText,
+				dvColor,
+				scaleVolTrans[3],
+				glm::quat(scaleVolTrans),
+				0.2f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_MIDDLE
+			);
+
+			Renderer::getInstance().drawConnector(
+				scaleVolTrans[3] + dims.y * 0.5f * scaleVolTrans[1],
+				m_pDemoVolume->getPosition(),
+				0.001f,
+				dvColor
+			);
+
+			glm::vec3 primGripCtrPos = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.015f, 0.085f)))[3];
+			glm::vec3 secGripCtrPos = (m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.015f, 0.085f)))[3];
+			glm::vec3 gripToGripVec = secGripCtrPos - primGripCtrPos;
+			bool rightHanded = glm::dot(glm::cross(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) - primGripCtrPos, gripToGripVec), glm::vec3(m_pTDM->getHMDToWorldTransform()[1])) < 0.f;
+
+			glm::mat4 pCtrlrGripOffsetAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f));
+			glm::mat4 pCtrlrRightGripAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f));
+			glm::mat4 pCtrlrLeftGripAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f));
+			glm::mat4 sCtrlrGripOffsetAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f));
+			glm::mat4 sCtrlrRightGripAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f));
+			glm::mat4 sCtrlrLeftGripAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f));
+
+			Renderer::getInstance().drawConnector(
+				scaleVolTrans[3] - dims.x * 0.5f * scaleVolTrans[0],
+				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+			Renderer::getInstance().drawConnector(
+				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? sCtrlrRightGripAnchorTrans[3] : pCtrlrRightGripAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+			Renderer::getInstance().drawConnector(
+				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? sCtrlrLeftGripAnchorTrans[3] : pCtrlrLeftGripAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+
+			Renderer::getInstance().drawConnector(
+				scaleVolTrans[3] + dims.x * 0.5f * scaleVolTrans[0],
+				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+			Renderer::getInstance().drawConnector(
+				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? pCtrlrRightGripAnchorTrans[3] : sCtrlrRightGripAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+			Renderer::getInstance().drawConnector(
+				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? pCtrlrLeftGripAnchorTrans[3] : sCtrlrLeftGripAnchorTrans[3],
+				0.001f,
+				dvColor
+			);
+		}
+		else
+		{
+			float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
+			float tmp1 = std::sqrt(goalMaxSide * goalMaxSide * 2.f);
+			float goalOffset = std::sqrt(tmp1 * tmp1 + goalMaxSide * goalMaxSide) * 0.5f;
+			glm::mat4 goalTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
+			Renderer::getInstance().drawText(
+				"GOAL",
+				glm::vec4(0.2f, 0.7f, 0.2f, 1.f),
+				goalTrans[3],
+				glm::quat(goalTrans),
+				goalOffset * 2.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_TOP
+			);
+
+			glm::mat4 goalPromptTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
+			Renderer::getInstance().drawText(
+				"Scale the data volume\n and place it inside of the goal!",
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				goalPromptTrans[3],
+				glm::quat(goalPromptTrans),
+				2.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_BOTTOM
+			);
+		}
+	}
 }
 
 void ScaleTutorial::cleanup()
@@ -135,8 +250,6 @@ void ScaleTutorial::cleanup()
 		if (m_pGoalVolume)
 			delete m_pGoalVolume;
 
-		InfoBoxManager::getInstance().removeInfoBox("Scale Tut");
-		InfoBoxManager::getInstance().removeInfoBox("Scale Tut Goal");
 		BehaviorManager::getInstance().removeBehavior("Grab");
 		BehaviorManager::getInstance().removeBehavior("Scale");
 		BehaviorManager::getInstance().removeBehavior("Done");

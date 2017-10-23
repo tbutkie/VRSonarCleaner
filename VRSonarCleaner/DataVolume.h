@@ -30,6 +30,7 @@ public:
 
 	glm::vec3 getOriginalPosition();
 	glm::quat getOriginalOrientation();
+	glm::vec3 getOriginalDimensions();
 
 	glm::dvec3 convertToRawDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);

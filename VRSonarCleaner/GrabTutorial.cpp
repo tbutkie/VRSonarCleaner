@@ -113,7 +113,6 @@ void GrabTutorial::draw()
 
 	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
 	{
-
 		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
 		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
 		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
@@ -124,7 +123,7 @@ void GrabTutorial::draw()
 			volumeHasBeenMoved ? glm::vec4(0.7f, 0.7f, 0.7f, 1.f) : dvColor,
 			dvPromptTrans[3],
 			glm::quat(dvPromptTrans),
-			1.f,
+			dvOffset * 2.f,
 			Renderer::TextSizeDim::WIDTH,
 			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_BOTTOM
@@ -172,7 +171,7 @@ void GrabTutorial::draw()
 				glm::vec4(0.2f, 0.7f, 0.2f, 1.f),
 				goalTrans[3],
 				glm::quat(goalTrans),
-				1.f,
+				goalOffset * 2.f,
 				Renderer::TextSizeDim::WIDTH,
 				Renderer::TextAlignment::CENTER,
 				Renderer::TextAnchor::CENTER_TOP

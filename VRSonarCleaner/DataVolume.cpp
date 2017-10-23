@@ -58,6 +58,11 @@ glm::quat DataVolume::getOriginalOrientation()
 	return m_qOriginalOrientation;
 }
 
+glm::vec3 DataVolume::getOriginalDimensions()
+{
+	return m_vec3OriginalDimensions;
+}
+
 void DataVolume::resetPositionAndOrientation()
 {
 	setPosition(m_vec3OriginalPosition);

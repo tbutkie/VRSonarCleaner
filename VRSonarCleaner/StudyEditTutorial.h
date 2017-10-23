@@ -9,6 +9,8 @@
 #include "SonarPointCloud.h"
 #include "ColorScaler.h"
 
+#include "PointCleanProbe.h"
+
 class StudyEditTutorial :
 	public InitializableBehavior
 {
@@ -29,17 +31,14 @@ private:
 	SonarPointCloud* m_pDemoCloud;
 	ColorScaler* m_pColorScaler;
 
-	unsigned int m_uiBadPoint1;
-	unsigned int m_uiBadPoint2;
-	unsigned int m_uiBadPoint3;
-	unsigned int m_uiBadPoint4;
+	PointCleanProbe *m_pProbe;
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimestamp;
+
+	std::vector<glm::vec3> m_vvec3BadPoints;
 
 	void cleanup();
 
 	void refreshColorScale();
-
-	void makeBadDataLabels(float width);
-	void updateBadDataLabels(float width);
-	void cleanupBadDataLabels();
 };
 

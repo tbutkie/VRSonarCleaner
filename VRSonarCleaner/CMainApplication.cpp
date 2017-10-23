@@ -11,6 +11,9 @@
 #include "CurateStudyDataBehavior.h"
 #include "RunStudyBehavior.h"
 #include "StudyIntroBehavior.h"
+#include "ScaleTutorial.h"
+#include "StudyEditTutorial.h"
+
 #include "HolodeckBackground.h"
 
 #include <fstream>
@@ -563,7 +566,10 @@ bool CMainApplication::HandleInput()
 			{
 				m_pTableVolume->setVisible(false);
 				m_pWallVolume->setVisible(false);
-				BehaviorManager::getInstance().addBehavior("test", new StudyIntroBehavior(m_pTDM));
+				BehaviorManager::getInstance().clearBehaviors();
+				StudyEditTutorial *st = new StudyEditTutorial(m_pTDM);
+				BehaviorManager::getInstance().addBehavior("test", st);
+				st->init();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_t)
 			{
