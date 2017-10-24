@@ -306,6 +306,21 @@ void ViveController::setScrollWheelVisibility(bool visible)
 	}
 }
 
+glm::vec3 ViveController::getTriggerPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3];
+}
+
+glm::vec3 ViveController::getLeftGripPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f)))[3];
+}
+
+glm::vec3 ViveController::getRightGripPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f)))[3];
+}
+
 bool ViveController::readyToRender()
 {
 	return m_Pose.bDeviceIsConnected &&

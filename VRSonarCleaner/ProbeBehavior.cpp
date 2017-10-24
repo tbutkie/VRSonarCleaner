@@ -17,7 +17,7 @@ ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	, m_fProbeOffsetMax(2.f)
 	, m_fProbeRadius(0.05f)
 	, m_fProbeRadiusMin(0.005f)
-	, m_fProbeRadiusMax(0.5f)
+	, m_fProbeRadiusMax(0.25f)
 {
 }
 
@@ -39,7 +39,7 @@ void ProbeBehavior::deactivateDemoMode()
 	m_fProbeOffsetMax = 2.f;
 	m_fProbeRadius = 0.05f;
 	m_fProbeRadiusMin = 0.005f;
-	m_fProbeRadiusMax = 0.5f;
+	m_fProbeRadiusMax = 0.25f;
 }
 
 glm::vec3 ProbeBehavior::getPosition()
@@ -182,4 +182,39 @@ void ProbeBehavior::drawProbe(float length)
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
 	}
+}
+
+float ProbeBehavior::getProbeOffset()
+{
+	return m_fProbeOffset;
+}
+
+float ProbeBehavior::getProbeOffsetMax()
+{
+	return m_fProbeOffsetMax;
+}
+
+float ProbeBehavior::getProbeOffsetMin()
+{
+	return m_fProbeOffsetMin;
+}
+
+glm::vec3 ProbeBehavior::getProbeOffsetDirection()
+{
+	return m_vec3ProbeOffsetDirection;
+}
+
+float ProbeBehavior::getProbeRadius()
+{
+	return m_fProbeRadius;
+}
+
+float ProbeBehavior::getProbeRadiusMax()
+{
+	return m_fProbeRadiusMax;
+}
+
+float ProbeBehavior::getProbeRadiusMin()
+{
+	return m_fProbeRadiusMin;
 }

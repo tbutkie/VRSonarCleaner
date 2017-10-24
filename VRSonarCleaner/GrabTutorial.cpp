@@ -154,7 +154,7 @@ void GrabTutorial::draw()
 
 			Renderer::getInstance().drawConnector(
 				grabTriggerTrans[3],
-				(m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3],
+				m_pTDM->getSecondaryController()->getTriggerPoint(),
 				0.001f,
 				dvColor
 			);

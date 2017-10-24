@@ -123,6 +123,16 @@ void PointCleanProbe::draw()
 	);
 }
 
+bool PointCleanProbe::isProbeActive()
+{
+	return m_bProbeActive;
+}
+
+bool PointCleanProbe::anyHits()
+{
+	return m_bAnyHits;
+}
+
 void PointCleanProbe::activateProbe()
 {
 	m_bProbeActive = true;
@@ -200,7 +210,7 @@ unsigned int PointCleanProbe::checkPoints()
 
 	bool clearPoints = m_pTDM->getPrimaryController()->isTriggerClicked();
 
-	bool anyHits = false;
+	m_bAnyHits = false;
 
 	unsigned int selectedPoints(0u);
 
@@ -281,7 +291,7 @@ unsigned int PointCleanProbe::checkPoints()
 			{
 				if (clearPoints)
 				{
-					anyHits = true;
+					m_bAnyHits = true;
 					cloud->markPoint(i, 1);
 				}
 				else
@@ -303,7 +313,7 @@ unsigned int PointCleanProbe::checkPoints()
 			cloud->setRefreshNeeded();
 	}
 	
-	if (anyHits)
+	if (m_bAnyHits)
 		m_pHMD->TriggerHapticPulse(m_pTDM->getPrimaryController()->getIndex(), 0, 2000);
 
 	return selectedPoints;

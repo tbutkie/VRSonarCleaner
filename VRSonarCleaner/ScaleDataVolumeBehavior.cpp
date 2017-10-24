@@ -82,13 +82,13 @@ void ScaleDataVolumeBehavior::draw()
 
 			Renderer::getInstance().drawConnector(
 				rightGripTextAnchorTrans[3],
-				(c->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.015f, -0.015f, 0.085f)))[3],
+				c->getRightGripPoint(),
 				0.001f,
 				glm::vec4(1.f, 1.f, 1.f, 0.75f)
 			);
 			Renderer::getInstance().drawConnector(
 				leftGripTextAnchorTrans[3],
-				(c->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.015f, -0.015f, 0.085f)))[3],
+				c->getLeftGripPoint(),
 				0.001f,
 				glm::vec4(1.f, 1.f, 1.f, 0.75f)
 			);

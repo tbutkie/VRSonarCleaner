@@ -52,6 +52,10 @@ public:
 
 	void setScrollWheelVisibility(bool visible);
 
+	glm::vec3 getTriggerPoint();
+	glm::vec3 getLeftGripPoint();
+	glm::vec3 getRightGripPoint();
+
 	bool readyToRender();
 
 protected:

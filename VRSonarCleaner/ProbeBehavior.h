@@ -19,6 +19,20 @@ public:
 
 	virtual void draw() = 0;
 
+	float getProbeOffset();
+	float getProbeOffsetMax();
+	float getProbeOffsetMin();
+	glm::vec3 getProbeOffsetDirection();
+
+	float getProbeRadius();
+	float getProbeRadiusMax();
+	float getProbeRadiusMin();
+
+	glm::vec3 getPosition();
+	glm::vec3 getLastPosition();
+	glm::mat4 getProbeToWorldTransform();
+	glm::mat4 getLastProbeToWorldTransform();
+
 protected:
 	TrackedDeviceManager* m_pTDM;
 	DataVolume* m_pDataVolume;
@@ -43,10 +57,6 @@ protected:
 	float m_fProbeRadiusInitial;
 
 protected:
-	glm::vec3 getPosition();
-	glm::vec3 getLastPosition();
-	glm::mat4 getProbeToWorldTransform();
-	glm::mat4 getLastProbeToWorldTransform();
 
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;

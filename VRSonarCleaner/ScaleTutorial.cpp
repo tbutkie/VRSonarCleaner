@@ -161,47 +161,47 @@ void ScaleTutorial::draw()
 			glm::vec3 gripToGripVec = secGripCtrPos - primGripCtrPos;
 			bool rightHanded = glm::dot(glm::cross(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) - primGripCtrPos, gripToGripVec), glm::vec3(m_pTDM->getHMDToWorldTransform()[1])) < 0.f;
 
-			glm::mat4 pCtrlrGripOffsetAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f));
-			glm::mat4 pCtrlrRightGripAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f));
-			glm::mat4 pCtrlrLeftGripAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f));
-			glm::mat4 sCtrlrGripOffsetAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f));
-			glm::mat4 sCtrlrRightGripAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f));
-			glm::mat4 sCtrlrLeftGripAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f));
+			glm::vec3 pCtrlrGripOffsetAnchorPos = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f)))[3];
+			glm::vec3 pCtrlrRightGripAnchorPos = m_pTDM->getPrimaryController()->getRightGripPoint();
+			glm::vec3 pCtrlrLeftGripAnchorPos = m_pTDM->getPrimaryController()->getLeftGripPoint();
+			glm::vec3 sCtrlrGripOffsetAnchorPos = (m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.05f, 0.085f)))[3];
+			glm::vec3 sCtrlrRightGripAnchorPos = m_pTDM->getSecondaryController()->getRightGripPoint();
+			glm::vec3 sCtrlrLeftGripAnchorPos = m_pTDM->getSecondaryController()->getLeftGripPoint();
 
 			Renderer::getInstance().drawConnector(
 				scaleVolTrans[3] - dims.x * 0.5f * scaleVolTrans[0],
-				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
 				0.001f,
 				dvColor
 			);
 			Renderer::getInstance().drawConnector(
-				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
-				rightHanded ? sCtrlrRightGripAnchorTrans[3] : pCtrlrRightGripAnchorTrans[3],
+				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
+				rightHanded ? sCtrlrRightGripAnchorPos : pCtrlrRightGripAnchorPos,
 				0.001f,
 				dvColor
 			);
 			Renderer::getInstance().drawConnector(
-				rightHanded ? sCtrlrGripOffsetAnchorTrans[3] : pCtrlrGripOffsetAnchorTrans[3],
-				rightHanded ? sCtrlrLeftGripAnchorTrans[3] : pCtrlrLeftGripAnchorTrans[3],
+				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
+				rightHanded ? sCtrlrLeftGripAnchorPos : pCtrlrLeftGripAnchorPos,
 				0.001f,
 				dvColor
 			);
 
 			Renderer::getInstance().drawConnector(
 				scaleVolTrans[3] + dims.x * 0.5f * scaleVolTrans[0],
-				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
+				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
 				0.001f,
 				dvColor
 			);
 			Renderer::getInstance().drawConnector(
-				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
-				rightHanded ? pCtrlrRightGripAnchorTrans[3] : sCtrlrRightGripAnchorTrans[3],
+				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
+				rightHanded ? pCtrlrRightGripAnchorPos : sCtrlrRightGripAnchorPos,
 				0.001f,
 				dvColor
 			);
 			Renderer::getInstance().drawConnector(
-				rightHanded ? pCtrlrGripOffsetAnchorTrans[3] : sCtrlrGripOffsetAnchorTrans[3],
-				rightHanded ? pCtrlrLeftGripAnchorTrans[3] : sCtrlrLeftGripAnchorTrans[3],
+				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
+				rightHanded ? pCtrlrLeftGripAnchorPos : sCtrlrLeftGripAnchorPos,
 				0.001f,
 				dvColor
 			);

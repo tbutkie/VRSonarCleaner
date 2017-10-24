@@ -18,9 +18,13 @@ public:
 
 	virtual void draw();
 
+	bool isProbeActive();
+	bool anyHits();
+
 private:
 	bool m_bProbeActive;
 	bool m_bWaitForTriggerRelease;
+	bool m_bAnyHits;
 	float m_fPtHighlightAmt;
 	unsigned int m_nPointsSelected;
 

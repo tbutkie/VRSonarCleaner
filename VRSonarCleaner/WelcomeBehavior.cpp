@@ -49,8 +49,8 @@ void WelcomeBehavior::draw()
 		!m_pTDM->getSecondaryController() || !m_pTDM->getSecondaryController()->readyToRender())
 		return;
 
-	glm::vec3 primTrigPos = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3];
-	glm::vec3 secTrigPos = (m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3];
+	glm::vec3 primTrigPos = m_pTDM->getPrimaryController()->getTriggerPoint();
+	glm::vec3 secTrigPos = m_pTDM->getSecondaryController()->getTriggerPoint();
 	glm::vec3 trigToTrigVec = secTrigPos - primTrigPos;
 	bool rightHanded = glm::dot(glm::cross(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]) - primTrigPos, trigToTrigVec), glm::vec3(m_pTDM->getHMDToWorldTransform()[1])) < 0.f;
 

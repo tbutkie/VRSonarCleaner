@@ -33,7 +33,19 @@ private:
 
 	PointCleanProbe *m_pProbe;
 
+	bool m_bProbeActivated;
+	bool m_bProbeMaxed;
+	bool m_bProbeMinned;
+	bool m_bProbeExtended;
+	bool m_bProbeRetracted;
+
+	unsigned int m_nPointsLeft;
+	unsigned int m_nPointsCleaned;
+	unsigned int m_nCleanedGoodPoints;
+
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimestamp;
+
+	std::vector<std::pair<unsigned int, std::chrono::time_point<std::chrono::high_resolution_clock>>> m_vPointUpdateAnimations;
 
 	std::vector<glm::vec3> m_vvec3BadPoints;
 

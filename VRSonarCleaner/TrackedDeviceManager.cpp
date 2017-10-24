@@ -363,6 +363,15 @@ glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
 	return glm::mat4();
 }
 
+bool TrackedDeviceManager::isPrimaryControllerInRighthandPosition()
+{
+	if (!m_pPrimaryController || !m_pSecondaryController)
+		return false;
+
+	glm::vec3 primaryToSecondaryVec = m_pSecondaryController->getDeviceToWorldTransform()[3] - m_pPrimaryController->getDeviceToWorldTransform()[3];
+	return glm::dot(glm::cross(glm::vec3(m_mat4HMDToWorldTransform[3]) - glm::vec3(m_pPrimaryController->getDeviceToWorldTransform()[3]), primaryToSecondaryVec), glm::vec3(m_mat4HMDToWorldTransform[1])) < 0.f;
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Finds a render model we've already loaded or loads a new one
