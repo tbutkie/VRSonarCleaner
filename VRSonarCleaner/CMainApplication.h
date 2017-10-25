@@ -72,7 +72,7 @@ private:
 	ColorScaler* m_pColorScalerTPU;
 
 	//ARCBALL STUFF
-	Arcball m_Arcball;
+	ArcBall* m_pArcball;
 	glm::vec3 m_vec3BallEye;
 	glm::vec3 m_vec3BallCenter;
 	glm::vec3 m_vec3BallUp;

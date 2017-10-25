@@ -118,11 +118,11 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
 	, m_fPtHighlightAmt(1.f)
-	, m_Arcball(Arcball(false))
+	, m_pArcball(NULL)
 	, m_vec3BallEye(glm::vec3(0.f, 0.f, 1.f))
 	, m_vec3BallCenter(glm::vec3(0.f))
 	, m_vec3BallUp(glm::vec3(0.f, 1.f, 0.f))
-	, m_fBallRadius(2.f)
+	, m_fBallRadius(20.f)
 	, m_pLasso(NULL)
 {	
 	switch (mode)
@@ -406,6 +406,23 @@ bool CMainApplication::initDesktop()
 	createDesktopView();
 
 	m_pLasso = new LassoTool();
+
+	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
+	//glm::mat4 screenToWorldTrans = glm::unProject();
+	glm::mat4 viewTrans = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
+	
+	glm::mat4 inv = glm::inverse(m_sviDesktop3DViewInfo.projection * viewTrans);
+
+	glm::vec4 tmp(glm::vec3(0.f), 1.f);
+	tmp.x = (0.f - vp[0]) / vp[2];
+	tmp.y = (0.f - vp[1]) / vp[3];
+
+	tmp = tmp * 2.f - 1.f;
+
+	glm::vec4 obj = inv * tmp;
+	obj /= obj.w;
+
+	m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f);
 
 	if (m_bFlowVis)
 	{
@@ -704,7 +721,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = true;
-					m_Arcball.start(sdlEvent.button.x, sdlEvent.button.y);
+					m_pArcball->beginDrag(glm::vec2(sdlEvent.button.x, sdlEvent.button.y));
 					if (m_bRightMouseDown)
 					{
 						m_pLasso->end();
@@ -724,7 +741,7 @@ bool CMainApplication::HandleInput()
 						m_pLasso->end();
 					}
 					m_bMiddleMouseDown = true;
-					m_Arcball.center(sdlEvent.button.x, sdlEvent.button.y);
+					//m_Arcball.center(sdlEvent.button.x, sdlEvent.button.y);
 				}
 
 			}//end mouse down 
@@ -750,7 +767,7 @@ bool CMainApplication::HandleInput()
 			{
 				if (m_bLeftMouseDown)
 				{
-					m_Arcball.move(sdlEvent.button.x, sdlEvent.button.y);
+					m_pArcball->drag(glm::vec2(sdlEvent.button.x, sdlEvent.button.y));
 				}
 				if (m_bRightMouseDown && !m_bLeftMouseDown)
 				{
@@ -838,18 +855,12 @@ void CMainApplication::update()
 	{
 		m_sviDesktop3DViewInfo.view = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
 
-		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
-
-		m_Arcball.setProjectionMatrix(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
-		m_Arcball.setViewport(vp);
-
-		m_Arcball.setZoom(m_fBallRadius, m_vec3BallEye, m_vec3BallUp);
 	}
 
 	if (m_bSonarCleaning)
 	{
 		if (m_bUseDesktop)
-			m_pTableVolume->setOrientation(m_pTableVolume->getOriginalOrientation() * glm::quat_cast(m_Arcball.getRotation()));
+			m_pTableVolume->setOrientation(glm::quat_cast(glm::inverse(m_pArcball->getTransformation())));
 
 		for (auto &cloud : m_vpClouds)
 			cloud->update();

@@ -1,91 +1,85 @@
-#ifndef ARCBALL_H
-#define ARCBALL_H
+#ifndef IAUNS_ARC_BALL_H
+#define IAUNS_ARC_BALL_H
 
-/* Arcball, written by Bradley Smith, March 24, 2006
- * arcball.h is free to use and modify for any purpose, with no
- * restrictions of copyright or license.
- *
- * Using the arcball:
- *   Call arcball_setzoom after setting up the projection matrix.
- *
- *     The arcball, by default, will act as if a sphere with the given
- *     radius, centred on the origin, can be directly manipulated with
- *     the mouse. Clicking on a point should drag that point to rest under
- *     the current mouse position. eye is the position of the eye relative
- *     to the origin. up is unused.
- *
- *     Alternatively, pass the value: (-radius/|eye|)
- *     This puts the arcball in a mode where the distance the mouse moves
- *     is equivalent to rotation along the axes. This acts much like a
- *     trackball. (It is for this mode that the up vector is required,
- *     which must be a unit vector.)
- *
- *     You should call arcball_setzoom after use of gluLookAt.
- *     gluLookAt(eye.x,eye.y,eye.z, ?,?,?, up.x,up.y,up.z);
- *     The arcball derives its transformation information from the
- *     openGL projection and viewport matrices. (modelview is ignored)
- *
- *     If looking at a point different from the origin, the arcball will still
- *     act as if it centred at (0,0,0). (You can use this to translate
- *     the arcball to some other part of the screen.)
- *
- *   Call arcball_start with a mouse position, and the arcball will
- *     be ready to manipulate. (Call on mouse button down.)
- *   Call arcball_move with a mouse position, and the arcball will
- *     find the rotation necessary to move the start mouse position to
- *     the current mouse position on the sphere. (Call on mouse move.)
- *   Call arcball_rotate after resetting the modelview matrix in your
- *     drawing code. It will call glRotate with its current rotation.
- *   Call arcball_reset if you wish to reset the arcball rotation.
- */
-
-#include <GL/glew.h>
+#include <stdint.h>
 
 #include <glm.hpp>
 #include <gtc/quaternion.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtc/matrix_inverse.hpp>
+#include <gtc/matrix_transform.hpp>
 
-class Arcball
+
+/// A reimplementation of Ken Shoemake's arcball camera. SCIRun 4's camera
+/// system is based off of Ken's code. The Code appears in Graphics Gems 4, 
+/// III.1.
+/// Unless specified otherwise, all calculations and variables stored in this
+/// class are relative to the target coordinate system (TCS) for which there is
+/// a transformation from screen space to TCS given by the screenToTCS
+/// constructor parameter.
+/// If the screenToTCS parameter in the constructor is left as the identity
+/// matrix then all values are given in screen coordinates.
+/// Screen coordinates are (x \in [-1,1]) and (y \in [-1,1]) where (0,0) is the
+/// center of the screen.
+class ArcBall
 {
 public:
-	Arcball(bool usePlanar = false);
-	~Arcball();
+  /// \param center         Center of the arcball in TCS (screen coordinates if 
+  ///                       screenToTCS = identity). Generally this will 
+  ///                       always be (0,0,0). But you may move the center
+  ///                       in and out of the screen plane to various effect.
+  /// \param radius         Radius in TCS. For screen coordinates, a good
+  ///                       default is 0.75.
+  /// \param screenToTCS    Transformation from screen coordinates
+  ///                       to TCS. \p center and \p radius are given in TCS.
+  ArcBall(const glm::vec3& center, glm::float_t radius,
+          const glm::mat4& screenToTCS = glm::mat4());
+  virtual ~ArcBall();
+  
+  /// Initiate an arc ball drag given the mouse click in screen coordinates.
+  /// \param mouseScreenCoords  Mouse screen coordinates.
+  void beginDrag(const glm::vec2& mouseScreenCoords);
 
-	void setZoom(float radius, glm::vec3 eye, glm::vec3 up);
-	void start(int mx, int my);
-	void move(int mx, int my);
-	void center(int mx, int my);
-	glm::mat4 getRotation();
-	void setViewport(glm::vec4 vp);
-	void setProjectionMatrix(glm::mat4 projMat);
+  /// Informs the arcball when the mouse has been dragged.
+  /// \param mouseScreenCoords  Mouse screen coordinates.
+  void drag(const glm::vec2& mouseScreenCoords);
 
-private:
-	glm::quat m_quatOrientation, m_quatLast, m_quatNext;
-
-	// the distance from the origin to the eye
-	GLfloat m_fZoom, m_fZoom_sq;
-	// the radius of the arcball
-	GLfloat m_fSphereRadius, m_fSphereRadius_sq;
-	// the distance from the origin of the plane that intersects
-	// the edge of the visible sphere (tangent to a ray from the eye)
-	GLfloat m_fEdgeDistance;
-	// whether we are using a sphere or plane
-	bool m_bPlanar;
-	GLfloat m_fPlaneDistance;
-
-	glm::vec3 m_vec3Start;
-	glm::vec3 m_vec3Current;
-	glm::vec3 m_vec3Eye;
-	glm::vec3 m_vec3Forward;
-	glm::vec3 m_vec3Up;
-	glm::vec3 m_vec3Out;
-
-	glm::mat4 m_mat4Projection, m_mat4Model;
-	glm::vec4 m_vec4Viewport;
+  /// Retrieves the current transformation in TCS.
+  /// Obtains full transformation of object in question. If the arc ball is 
+  /// being used to control camera rotation, then this will contain all
+  /// concatenated camera transformations. The current state of the camera
+  /// is stored in the quaternions mQDown and mQNow. mMatNow is calculated
+  /// from mQNow.
+  glm::mat4 getTransformation() const;
 
 private:
-	glm::vec3 edge_coords(glm::vec3 m);
-	glm::vec3 sphere_coords(GLdouble mx, GLdouble my);
-	glm::vec3 planar_coords(GLdouble mx, GLdouble my);
+
+  /// Calculates our position on the ArcBall from 2D mouse position.
+  /// \param tscMouse   TSC coordinates of mouse click.
+  glm::vec3 mouseOnSphere(const glm::vec3& tscMouse);
+
+  /// Construct a unit quaternion from two points on the unit sphere.
+  static glm::quat quatFromUnitSphere(const glm::vec3& from, const glm::vec3& to);
+
+  glm::vec3     mCenter;        ///< Center of the arcball in target coordinate system.
+  glm::float_t  mRadius;        ///< Radius of the arcball in target coordinate system.
+
+  glm::quat     mQNow;          ///< Current state of the rotation taking into account mouse.
+                                ///< Essentially QDrag * QDown (QDown is a applied first, just
+                                ///< as in matrix multiplication).
+  glm::quat     mQDown;         ///< State of the rotation since mouse down.
+  glm::quat     mQDrag;         ///< Dragged transform. Knows nothing of any prior 
+                                ///< transformations.
+
+  glm::vec3     mVNow;          ///< Most current TCS position of mouse (during drag).
+  glm::vec3     mVDown;         ///< TCS position of mouse when the drag was begun.
+  glm::vec3     mVSphereFrom;   ///< vDown mapped to the sphere of 'mRadius' centered at 'mCenter' in TCS.
+  glm::vec3     mVSphereTo;     ///< vNow mapped to the sphere of 'mRadius' centered at 'mCenter' in TCS.
+
+  glm::mat4     mMatNow;        ///< Matrix representing the current rotation.
+
+  /// Transform from screen coordinates to the target coordinate system.
+  glm::mat4     mScreenToTCS;
 };
 
 #endif
