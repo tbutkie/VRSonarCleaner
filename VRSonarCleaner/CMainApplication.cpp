@@ -212,7 +212,6 @@ bool CMainApplication::init()
 	//{
 	//	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
 	//}
-	HolodeckBackground(g_vec3RoomSize, 0.25f);
 
 	if (m_bSonarCleaning)
 	{
@@ -498,12 +497,16 @@ bool CMainApplication::HandleInput()
 
 			if (sdlEvent.key.keysym.sym == SDLK_l)
 			{
-				if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
-					BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
-				if (!BehaviorManager::getInstance().getBehavior("grab"))
-					BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
-				if (!BehaviorManager::getInstance().getBehavior("scale"))
-					BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				if (m_bUseVR)
+				{
+					if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+						BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+					if (!BehaviorManager::getInstance().getBehavior("grab"))
+						BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+					if (!BehaviorManager::getInstance().getBehavior("scale"))
+						BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				}
+				else m_pWallVolume->setVisible(false);
 
 				using namespace std::experimental::filesystem::v1;
 
@@ -757,11 +760,15 @@ bool CMainApplication::HandleInput()
 			if (sdlEvent.type == SDL_MOUSEWHEEL)
 			{
 				m_pLasso->reset();
-				m_vec3BallEye.z -= ((float)sdlEvent.wheel.y*0.5f);
-				if (m_vec3BallEye.z < 0.5f)
-					m_vec3BallEye.z = 0.5f;
-				if (m_vec3BallEye.z > 10.f)
-					m_vec3BallEye.z = 10.f;
+				glm::vec3 eyeForward = glm::normalize(m_vec3BallCenter - m_vec3BallEye);
+				m_vec3BallEye += eyeForward * ((float)sdlEvent.wheel.y*0.5f);
+
+				float newLen = glm::length(m_vec3BallCenter - m_vec3BallEye);
+
+				if (newLen < 0.5f)
+					m_vec3BallEye = m_vec3BallCenter - eyeForward * 0.5f;
+				if (newLen > 10.f)
+					m_vec3BallEye = m_vec3BallCenter - eyeForward * 10.f;
 			}
 		}
 	}
@@ -918,7 +925,9 @@ void CMainApplication::drawScene()
 		{
 			if (!dv->isVisible()) continue;
 
-			dv->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+			glm::mat4 trans = m_bUseDesktop ? glm::inverse(glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp)) : m_pTDM->getHMDToWorldTransform();
+
+			dv->drawVolumeBacking(trans, glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 			//dv->drawAxes();
 

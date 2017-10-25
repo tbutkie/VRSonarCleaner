@@ -12,6 +12,14 @@ public:
 	ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume);
 	virtual ~ProbeBehavior();
 
+	void lockProbeLength();
+	void unlockProbeLength();
+	void lockProbeSize();
+	void unlockProbeSize();
+
+	void disable();
+	void enable();
+
 	void activateDemoMode();
 	void deactivateDemoMode();
 
@@ -36,6 +44,8 @@ public:
 protected:
 	TrackedDeviceManager* m_pTDM;
 	DataVolume* m_pDataVolume;
+
+	bool m_bEnabled;
 
 	bool m_bShowProbe;
 

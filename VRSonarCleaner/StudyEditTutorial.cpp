@@ -52,6 +52,9 @@ void StudyEditTutorial::init()
 	m_pProbe = new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem());
 	BehaviorManager::getInstance().addBehavior("Editing", m_pProbe);
 
+	m_pProbe->lockProbeLength();
+	m_pProbe->lockProbeSize();
+
 	m_bInitialized = true;
 }
 
@@ -66,6 +69,13 @@ void StudyEditTutorial::update()
 	if (!m_bProbeActivated)
 	{
 		m_bProbeActivated = m_pProbe->isProbeActive() && m_nPointsCleaned > 0u;
+
+		if (m_nPointsCleaned > 0u)
+		{
+			m_pDemoVolume->setVisible(false);
+			m_pProbe->unlockProbeSize();
+			m_pProbe->disable();
+		}
 	}
 	else if (!m_bProbeMaxed)
 	{
@@ -74,6 +84,12 @@ void StudyEditTutorial::update()
 	else if (!m_bProbeMinned)
 	{
 		m_bProbeMinned = m_pProbe->getProbeRadius() == m_pProbe->getProbeRadiusMin();
+
+		if (m_bProbeMinned)
+		{
+			m_pProbe->lockProbeSize();
+			m_pProbe->unlockProbeLength();
+		}
 	}
 	else if (!m_bProbeExtended)
 	{
@@ -82,6 +98,13 @@ void StudyEditTutorial::update()
 	else if (!m_bProbeRetracted)
 	{
 		m_bProbeRetracted = m_pProbe->getProbeOffset() == m_pProbe->getProbeOffsetMin();
+
+		if (m_bProbeRetracted)
+		{
+			m_pProbe->unlockProbeSize();
+			m_pProbe->enable();
+			m_pDemoVolume->setVisible(true);
+		}
 	}
 
 	BehaviorBase* done = BehaviorManager::getInstance().getBehavior("Done");
@@ -145,69 +168,70 @@ void StudyEditTutorial::update()
 
 void StudyEditTutorial::draw()
 {
-	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
-	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+	if (m_pDemoVolume->isVisible())
+	{
+		m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
+		m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
 
-	Renderer::RendererSubmission rs;
-	rs.glPrimitiveType = GL_POINTS;
-	rs.shaderName = "flat";
-	rs.VAO = m_pDemoCloud->getVAO();
-	rs.vertCount = m_pDemoCloud->getPointCount();
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
+		Renderer::RendererSubmission rs;
+		rs.glPrimitiveType = GL_POINTS;
+		rs.shaderName = "flat";
+		rs.VAO = m_pDemoCloud->getVAO();
+		rs.vertCount = m_pDemoCloud->getPointCount();
+		rs.indexType = GL_UNSIGNED_INT;
+		rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
 
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
+	}
 	
-
-
 	std::chrono::duration<float> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpTimestamp);
 	float cycleTime = 1.f;
 	float amt = (sinf(glm::two_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime) + 1.f) * 0.5f;
 	glm::vec4 hiliteColor = glm::mix(glm::vec4(0.7f, 0.7f, 0.7f, 1.f), glm::vec4(0.85f, 0.81f, 0.31f, 1.f), amt);
 
+	float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
+	float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
+	float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
+	glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+
 	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
 	{
-		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
-		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
-		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
-		glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
-
-		Renderer::getInstance().drawText(
-			"Bad Data Points",
-			glm::vec4(0.7f, 0.1f, 0.1f, 1.f),
-			dvPromptTrans[3],
-			glm::quat(dvPromptTrans),
-			dvOffset * 2.f,
-			Renderer::TextSizeDim::WIDTH,
-			Renderer::TextAlignment::CENTER,
-			Renderer::TextAnchor::CENTER_BOTTOM
-		);
-
-		for (auto &pt : m_vvec3BadPoints)
+		if (m_pDemoVolume->isVisible())
 		{
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawText(
+				"Bad Data Points",
+				glm::vec4(0.7f, 0.1f, 0.1f, 1.f),
 				dvPromptTrans[3],
-				glm::vec3(dvPromptTrans[3]) + (pt - glm::vec3(dvPromptTrans[3])) * 0.999f,
-				0.001f,
-				glm::vec4(0.7f, 0.7f, 0.7f, 1.f)
+				glm::quat(dvPromptTrans),
+				dvOffset * 2.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_BOTTOM
 			);
-		}
 
-		glm::mat4 instTrans = Renderer::getBillBoardTransform(glm::vec3(1.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
-		Renderer::getInstance().drawText(
-			"Bad data is colored red\nand should be cleaned away!",
-			glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
-			instTrans[3],
-			glm::quat(instTrans),
-			1.f,
-			Renderer::TextSizeDim::WIDTH,
-			Renderer::TextAlignment::CENTER,
-			Renderer::TextAnchor::CENTER_MIDDLE
-		);
+			for (auto &pt : m_vvec3BadPoints)
+			{
+				Renderer::getInstance().drawConnector(
+					dvPromptTrans[3],
+					glm::vec3(dvPromptTrans[3]) + (pt - glm::vec3(dvPromptTrans[3])) * 0.999f,
+					0.001f,
+					glm::vec4(0.7f, 0.7f, 0.7f, 1.f)
+				);
+			}
+		}
 
 		bool rightHanded = m_pTDM->isPrimaryControllerInRighthandPosition();
 		glm::mat4 probeEdgeTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * m_pProbe->getProbeRadius()) * m_pProbe->getProbeToWorldTransform();
 		glm::mat4 probeLabelTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * 0.025f + glm::vec3(m_pTDM->getHMDToWorldTransform()[2]) * 0.05f) * probeEdgeTrans;
+
+		glm::mat4 ctrlrLabelTrans = Renderer::getBillBoardTransform(
+			m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3] + 
+			(rightHanded ? -m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[0] : m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[0]) * 0.05f +
+			m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[1] * 0.025f,
+			m_pTDM->getHMDToWorldTransform()[3],
+			m_pTDM->getHMDToWorldTransform()[1],
+			false
+		);
 
 		glm::vec3 triggerPos = m_pTDM->getPrimaryController()->getTriggerPoint();
 
@@ -217,7 +241,7 @@ void StudyEditTutorial::draw()
 			glm::vec2 dims = Renderer::getInstance().getTextDimensions(grabInitialText, 0.5f, Renderer::WIDTH);
 			Renderer::getInstance().drawText(
 				grabInitialText,
-				hiliteColor,
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
 				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.5f,
@@ -243,14 +267,14 @@ void StudyEditTutorial::draw()
 		else if (!m_bProbeMaxed)
 		{
 			// the size of the tool can also be increased by swiping right on the touchpad
-			std::string maxText("..and can be increased\nby swiping right on the touchpad");
+			std::string maxText("The size of the tool can be increased\nby swiping right on the touchpad");
 			glm::vec2 dims = Renderer::getInstance().getTextDimensions(maxText, 0.05f, Renderer::HEIGHT);
 			float osc = sinf(glm::half_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime);
 			Renderer::getInstance().drawText(
 				maxText,
-				hiliteColor,
-				probeLabelTrans[3],
-				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				ctrlrLabelTrans[3],
+				glm::quat(Renderer::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -258,15 +282,15 @@ void StudyEditTutorial::draw()
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
+				ctrlrLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(-0.02023f, 0.00495f, 0.04934f), glm::vec3(0.02023f, 0.00495f, 0.04934f), osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
-				probeEdgeTrans[3],
+				ctrlrLabelTrans[3],
+				m_pProbe->getProbeToWorldTransform()[3] + m_pProbe->getProbeToWorldTransform()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
 				hiliteColor
 			);
@@ -274,14 +298,14 @@ void StudyEditTutorial::draw()
 		else if (!m_bProbeMinned)
 		{
 			// the size of the tool can be decreased by swiping left on the touchpad
-			std::string minText("The size of the tool can be decreased\nby swiping left on the touchpad...");
+			std::string minText("... and can be decreased\nby swiping left on the touchpad...");
 			glm::vec2 dims = Renderer::getInstance().getTextDimensions(minText, 0.05f, Renderer::HEIGHT);
 			float osc = sinf(glm::half_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime);
 			Renderer::getInstance().drawText(
 				minText,
-				hiliteColor,
-				probeLabelTrans[3],
-				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				ctrlrLabelTrans[3],
+				glm::quat(Renderer::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -289,15 +313,15 @@ void StudyEditTutorial::draw()
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
+				ctrlrLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(0.02023f, 0.00495f, 0.04934f), glm::vec3(-0.02023f, 0.00495f, 0.04934f) , osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
-				probeEdgeTrans[3],
+				ctrlrLabelTrans[3],
+				m_pProbe->getProbeToWorldTransform()[3] + m_pProbe->getProbeToWorldTransform()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
 				hiliteColor
 			);
@@ -310,7 +334,7 @@ void StudyEditTutorial::draw()
 			float osc = sinf(glm::half_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime);
 			Renderer::getInstance().drawText(
 				extText,
-				hiliteColor,
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
 				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
@@ -337,14 +361,14 @@ void StudyEditTutorial::draw()
 		{
 			// the tool can also be retracted by swiping downwards on the touchpad
 			std::string retText("...and can be retracted\nby swiping down on the touchpad");
-			glm::vec2 dims = Renderer::getInstance().getTextDimensions(retText, 0.05f, Renderer::HEIGHT);
+			glm::vec2 dims = Renderer::getInstance().getTextDimensions(retText, 0.1f, Renderer::HEIGHT);
 			float osc = sinf(glm::half_pi<float>() * fmodf(elapsedTime.count(), cycleTime) / cycleTime);
 			Renderer::getInstance().drawText(
 				retText,
-				hiliteColor,
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
 				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
-				0.05f,
+				0.1f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
@@ -371,14 +395,26 @@ void StudyEditTutorial::draw()
 			glm::mat4 statusTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.15f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 			glm::mat4 accuracyTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.175f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 
+			glm::mat4 instTrans = Renderer::getBillBoardTransform(glm::vec3(1.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			Renderer::getInstance().drawText(
+				"Bad data is colored red\nand should be cleaned away!",
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				instTrans[3],
+				glm::quat(instTrans),
+				1.f,
+				Renderer::TextSizeDim::WIDTH,
+				Renderer::TextAlignment::CENTER,
+				Renderer::TextAnchor::CENTER_MIDDLE
+			);
+
 			// the tool can also be retracted by swiping downwards on the touchpad
-			std::string retText("Clean the remaining bad data points.\nTry to keep your accuracy high\nby only cleaning red points!");
+			std::string retText("Clean the remaining bad data points.\nTry to keep your accuracy high\nby only cleaning red points!\n\nRemember: you can grab and scale\nthe data volume while cleaning!");
 			glm::vec2 dims = Renderer::getInstance().getTextDimensions(retText, 0.05f, Renderer::HEIGHT);
 			Renderer::getInstance().drawText(
 				retText,
-				hiliteColor,
-				probeLabelTrans[3],
-				glm::quat(Renderer::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+				ctrlrLabelTrans[3],
+				glm::quat(Renderer::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -386,14 +422,14 @@ void StudyEditTutorial::draw()
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
+				ctrlrLabelTrans[3],
 				statusTextAnchorTrans[3],
 				0.001f,
 				hiliteColor
 			);
 
 			Renderer::getInstance().drawConnector(
-				probeLabelTrans[3],
+				ctrlrLabelTrans[3],
 				dvPromptTrans[3],
 				0.001f,
 				hiliteColor
@@ -458,7 +494,7 @@ void StudyEditTutorial::draw()
 			else
 			{
 				accuracyStr.precision(2);
-				accuracyStr << std::fixed << accuracyPct;
+				accuracyStr << std::fixed << accuracyPct << "%";
 				accColor = glm::mix(glm::vec4(0.8f, 0.1f, 0.2f, 1.f), glm::vec4(0.1f, 0.8f, 0.2f, 1.f), accuracy);
 			}
 
@@ -483,8 +519,48 @@ void StudyEditTutorial::draw()
 				Renderer::TextAnchor::CENTER_LEFT
 			);
 		}
+	}
+	else
+	{
+		float accuracy = static_cast<float>(m_nPointsCleaned) / static_cast<float>(m_nCleanedGoodPoints + m_nPointsCleaned);
+		float accuracyPct = accuracy * 100.f;
+		std::stringstream accuracyStr;
+		glm::vec4 accColor;
 
-		
+		glm::mat4 accuracyTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.175f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		if (std::isnan(accuracy))
+		{
+			accuracyStr << "n/a";
+			accColor = glm::vec4(glm::vec3(0.7f), 1.f);
+		}
+		else
+		{
+			accuracyStr.precision(2);
+			accuracyStr << std::fixed << accuracyPct << "%";
+			accColor = glm::mix(glm::vec4(0.8f, 0.1f, 0.2f, 1.f), glm::vec4(0.1f, 0.8f, 0.2f, 1.f), accuracy);
+		}
+
+		Renderer::getInstance().drawText(
+			"Accuracy: ",
+			glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+			dvPromptTrans[3],
+			glm::quat(dvPromptTrans),
+			0.1f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::BOTTOM_RIGHT
+		);
+		Renderer::getInstance().drawText(
+			accuracyStr.str(),
+			accColor,
+			dvPromptTrans[3],
+			glm::quat(dvPromptTrans),
+			0.1f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::BOTTOM_LEFT
+		);
 	}
 }
 

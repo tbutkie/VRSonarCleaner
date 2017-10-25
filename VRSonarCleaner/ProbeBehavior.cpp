@@ -8,6 +8,7 @@ ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
 	, m_pDataVolume(dataVolume)
 	, c_fTouchDeltaThreshold(0.2f)
+	, m_bEnabled(true)
 	, m_bShowProbe(true)
 	, m_bVerticalSwipeMode(false)
 	, m_bHorizontalSwipeMode(false)
@@ -24,6 +25,38 @@ ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 
 ProbeBehavior::~ProbeBehavior()
 {
+}
+
+void ProbeBehavior::lockProbeLength()
+{
+	m_fProbeOffsetMin = m_fProbeOffsetMax = m_fProbeOffset;
+}
+
+void ProbeBehavior::unlockProbeLength()
+{
+	m_fProbeOffsetMin = 0.1f;
+	m_fProbeOffsetMax = 2.f;
+}
+
+void ProbeBehavior::lockProbeSize()
+{
+	m_fProbeRadiusMin = m_fProbeRadiusMax = m_fProbeRadius;
+}
+
+void ProbeBehavior::unlockProbeSize()
+{
+	m_fProbeRadiusMin = 0.005f;
+	m_fProbeRadiusMax = 0.25f;
+}
+
+void ProbeBehavior::disable()
+{
+	m_bEnabled = false;
+}
+
+void ProbeBehavior::enable()
+{
+	m_bEnabled = true;
 }
 
 void ProbeBehavior::activateDemoMode()

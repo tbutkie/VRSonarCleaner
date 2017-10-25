@@ -37,7 +37,7 @@ void PointCleanProbe::update()
 	m_msElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastTime);
 	m_tpLastTime = tick;
 
-	if (!m_bWaitForTriggerRelease)
+	if (!m_bWaitForTriggerRelease && m_bEnabled)
 		m_nPointsSelected = checkPoints();
 }
 
