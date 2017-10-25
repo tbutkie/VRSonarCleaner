@@ -1079,6 +1079,27 @@ glm::mat4 Renderer::getBillBoardTransform(const glm::vec3 & pos, const glm::vec3
 	return result;
 }
 
+glm::mat4 Renderer::getUnprojectionMatrix(glm::mat4 & proj, glm::mat4 & view, glm::mat4 & model, glm::ivec4 & vp)
+{
+	glm::mat4 inv = glm::inverse(proj * view);
+
+	glm::mat4 screenToNDC =
+		glm::translate(glm::mat4(), glm::vec3(-1.f, -1.f, 0.f)) *
+		glm::scale(glm::mat4(), glm::vec3(2.f / vp[2], 2.f / vp[3], 1.f)) *
+		glm::translate(glm::mat4(), glm::vec3(-vp[0], -vp[1], 0.f));
+
+	glm::mat4 beforePerspDivide = inv * screenToNDC;
+
+	float perspDiv = 1.f / beforePerspDivide[3].w;
+	glm::mat4 perspDivMat(0);
+	perspDivMat[0][0] = perspDiv;
+	perspDivMat[1][1] = perspDiv;
+	perspDivMat[2][2] = perspDiv;
+	perspDivMat[3][3] = perspDiv;
+
+	return perspDivMat * beforePerspDivide;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------

@@ -122,7 +122,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_vec3BallEye(glm::vec3(0.f, 0.f, 1.f))
 	, m_vec3BallCenter(glm::vec3(0.f))
 	, m_vec3BallUp(glm::vec3(0.f, 1.f, 0.f))
-	, m_fBallRadius(20.f)
+	, m_fBallRadius(1.f)
 	, m_pLasso(NULL)
 {	
 	switch (mode)
@@ -407,22 +407,12 @@ bool CMainApplication::initDesktop()
 
 	m_pLasso = new LassoTool();
 
-	glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
-	//glm::mat4 screenToWorldTrans = glm::unProject();
+	glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
 	glm::mat4 viewTrans = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
-	
-	glm::mat4 inv = glm::inverse(m_sviDesktop3DViewInfo.projection * viewTrans);
 
-	glm::vec4 tmp(glm::vec3(0.f), 1.f);
-	tmp.x = (0.f - vp[0]) / vp[2];
-	tmp.y = (0.f - vp[1]) / vp[3];
+	glm::mat4 screenToWorldTrans = Renderer::getUnprojectionMatrix(m_sviDesktop3DViewInfo.projection, viewTrans, glm::mat4(), vp);
 
-	tmp = tmp * 2.f - 1.f;
-
-	glm::vec4 obj = inv * tmp;
-	obj /= obj.w;
-
-	m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f);
+	m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f, screenToWorldTrans);
 
 	if (m_bFlowVis)
 	{
@@ -853,14 +843,42 @@ void CMainApplication::update()
 
 	if (m_bUseDesktop)
 	{
-		m_sviDesktop3DViewInfo.view = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
+		m_sviDesktop3DViewInfo.view = glm::lookAt(glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f), m_vec3BallUp);
 
+		glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+
+		//glm::mat4 screenToWorldTrans = Renderer::getUnprojectionMatrix(m_sviDesktop3DViewInfo.projection, m_sviDesktop3DViewInfo.view, glm::mat4(), vp);
+		
+		glm::mat4 inv = glm::inverse(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
+
+		glm::mat4 screenToNDC =
+			glm::translate(glm::mat4(), glm::vec3(-1.f, -1.f, 0.f)) *
+			glm::scale(glm::mat4(), glm::vec3(2.f / vp[2], 2.f / vp[3], 1.f)) *
+			glm::translate(glm::mat4(), glm::vec3(-vp[0], -vp[1], 0.f));
+
+		glm::mat4 beforePerspDivide = inv * screenToNDC;
+
+		float perspDiv = 1.f / beforePerspDivide[3].w;
+		glm::mat4 perspDivMat(0);
+		perspDivMat[0][0] = perspDiv;
+		perspDivMat[1][1] = perspDiv;
+		perspDivMat[2][2] = perspDiv;
+		perspDivMat[3][3] = perspDiv;
+
+		glm::mat4 screenToWorldTrans = perspDivMat * beforePerspDivide;
+
+		glm::vec4 testPt = glm::vec4(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f, 1.f);
+
+		glm::vec4 test1 = screenToWorldTrans * testPt;
+		glm::vec4 test2 = screenToNDC * testPt;
+
+		m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f, screenToWorldTrans);
 	}
 
 	if (m_bSonarCleaning)
 	{
 		if (m_bUseDesktop)
-			m_pTableVolume->setOrientation(glm::quat_cast(glm::inverse(m_pArcball->getTransformation())));
+			m_pTableVolume->setOrientation(glm::quat_cast(m_pArcball->getTransformation()));
 
 		for (auto &cloud : m_vpClouds)
 			cloud->update();

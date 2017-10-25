@@ -155,6 +155,8 @@ public:
 
 	static glm::mat4 getBillBoardTransform(const glm::vec3 &pos, const glm::vec3 &viewPos, const glm::vec3 &up, bool lockToUpVector);
 
+	static glm::mat4 getUnprojectionMatrix(glm::mat4 &proj, glm::mat4 &view, glm::mat4 &model, glm::ivec4 &vp);
+
 	void toggleWireframe();
 
 	GLTexture* getTexture(std::string texName);
