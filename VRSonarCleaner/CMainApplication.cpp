@@ -23,12 +23,18 @@
 #include <filesystem>
 #include <limits>
 
+#include <gtx/intersect.hpp>
+
 glm::vec3						g_vec3RoomSize(4.f, 3.f, 3.f);
 
 float							g_fNearClip = 0.001f;
 float							g_fFarClip = 10000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
+
+glm::vec3 startTrans, endTrans;
+std::chrono::time_point<std::chrono::high_resolution_clock> tpStartTrans;
+float transTime(0.1f);
 
 //-----------------------------------------------------------------------------
 // Purpose: OpenGL Debug Callback Function
@@ -268,7 +274,7 @@ bool CMainApplication::init()
 		glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 		float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
 
-		m_pArcball->setRadius(radPx);
+		//m_pArcball->setRadius(radPx);
 	}
 	else if (m_bFlowVis)
 	{
@@ -644,11 +650,35 @@ bool CMainApplication::HandleInput()
 				{
 					printf("Pressed r, resetting marks\n");
 
-					for (auto &cloud : m_vpClouds)
-						cloud->resetAllMarks();
+					if (!m_bStudyMode)
+					{
+						for (auto &cloud : m_vpClouds)
+							cloud->resetAllMarks();
+					}
 
 					for (auto &dv : m_vpDataVolumes)
 						dv->resetPositionAndOrientation();
+
+					if (m_pArcball)
+					{
+						m_vec3BallEye = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+						m_vec3BallCenter = m_pTableVolume->getPosition();
+
+						glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+
+						glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
+
+						std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
+						std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
+						float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
+						float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
+						glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
+
+						glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+						float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
+
+						m_pArcball = new ArcBall(glm::vec3(glm::vec2(m_ivec2DesktopWindowSize) * 0.5f, 0.f), radPx);
+					}
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_g)
@@ -742,6 +772,30 @@ bool CMainApplication::HandleInput()
 						m_pLasso->end();
 					}
 					m_bMiddleMouseDown = true;
+
+					glm::vec4 vp(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+
+					glm::vec3 nearPt(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y, 0.f);
+					glm::vec3 farPt(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y, 1.f);
+
+					glm::vec3 nearPtWorld = glm::unProject(nearPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+					glm::vec3 farPtWorld = glm::unProject(farPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+
+					glm::vec3 rayDir = glm::normalize(farPtWorld - nearPtWorld);
+					glm::vec3 planeNorm = glm::normalize(m_vec3BallEye - m_vec3BallCenter);
+					float intersectionDist;
+
+					glm::intersectRayPlane(nearPtWorld, rayDir, m_vec3BallCenter, planeNorm, intersectionDist);
+
+					glm::vec3 offsetVec = m_vec3BallCenter - (nearPtWorld + rayDir * intersectionDist);
+
+					startTrans = m_pTableVolume->getPosition();
+					endTrans = m_pTableVolume->getPosition() + offsetVec;
+					tpStartTrans = std::chrono::high_resolution_clock::now();
+
+					m_pTableVolume->setPivotPoint(startTrans);
+					m_pTableVolume->setUsePivot(true);
+					
 					//m_Arcball.center(sdlEvent.button.x, sdlEvent.button.y);
 				}
 
@@ -873,6 +927,31 @@ void CMainApplication::update()
 			float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
 			m_pArcball->setRadius(radPx);
 		}
+
+		std::stringstream ss;
+		ss.precision(2);
+
+		ss << std::fixed << m_msFrameTime.count() << "ms/frame | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps";
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(1.f),
+			glm::vec3(0.f),
+			glm::quat(),
+			20.f,
+			Renderer::HEIGHT,
+			Renderer::CENTER,
+			Renderer::BOTTOM_LEFT
+		);
+
+		float timeElapsed = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tpStartTrans).count();
+
+		if (timeElapsed <= transTime)
+		{
+			float ratio = timeElapsed / transTime;
+			glm::vec3 transDir = endTrans - startTrans;
+			m_pTableVolume->setPosition(startTrans + transDir * ratio);
+		}
 	}
 
 	if (m_bSonarCleaning)
@@ -881,16 +960,7 @@ void CMainApplication::update()
 		{
 			m_pTableVolume->setOrientation(glm::quat_cast(glm::inverse(m_pArcball->getTransformation())) * m_pTableVolume->getOriginalOrientation());
 		
-			Renderer::getInstance().drawUIText(
-				"Test",
-				glm::vec4(1.f),
-				glm::vec3(0.f),
-				glm::quat(),
-				100.f,
-				Renderer::HEIGHT,
-				Renderer::CENTER,
-				Renderer::BOTTOM_LEFT
-			);
+
 		}
 
 		for (auto &cloud : m_vpClouds)

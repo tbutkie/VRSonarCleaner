@@ -45,6 +45,11 @@ public:
 	glm::mat4 getCurrentVolumeTransform();
 	glm::mat4 getLastVolumeTransform();
 
+	void setPivotPoint(glm::vec3 pivot);
+	glm::vec3 getPivotPoint();
+	void setUsePivot(bool yesno);
+	bool getUsePivot();
+
 	void resetPositionAndOrientation();
 
 	void setPosition(glm::vec3 newPos);
@@ -91,8 +96,9 @@ protected:
 	glm::vec3 m_vec3Position;
 	glm::quat m_qOriginalOrientation;        // Original Data Volume Orientation
 	glm::quat m_qOrientation;
-	glm::vec3 m_vec3OriginalDimensions;           // Original Data Volume Orientation
+	glm::vec3 m_vec3OriginalDimensions;      // Original Data Volume Orientation
 	glm::vec3 m_vec3Dimensions;
+	glm::vec3 m_vec3PivotPoint;				 // World space pivot point
 
 	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
 	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
@@ -120,5 +126,5 @@ protected:
 	bool m_bFirstRun;                        // Flag for First Runthrough
 	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed
 	bool m_bUseCustomBounds;
-
+	bool m_bUsePivot;
 };

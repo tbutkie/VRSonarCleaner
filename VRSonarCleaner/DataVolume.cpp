@@ -17,6 +17,7 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_bFirstRun(true)
 	, m_bDirty(true)
 	, m_bUseCustomBounds(false)
+	, m_bUsePivot(false)
 {
 	updateTransforms();
 }
@@ -263,6 +264,26 @@ glm::mat4 DataVolume::getCurrentVolumeTransform()
 glm::mat4 DataVolume::getLastVolumeTransform()
 {
 	return m_mat4VolumeTransformPrevious;
+}
+
+void DataVolume::setPivotPoint(glm::vec3 pivot)
+{
+	m_vec3PivotPoint = pivot;
+}
+
+glm::vec3 DataVolume::getPivotPoint()
+{
+	return m_vec3PivotPoint;
+}
+
+void DataVolume::setUsePivot(bool yesno)
+{
+	m_bUsePivot = yesno;
+}
+
+bool DataVolume::getUsePivot()
+{
+	return m_bUsePivot;
 }
 
 void DataVolume::setPosition(glm::vec3 newPos)
