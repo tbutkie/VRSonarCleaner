@@ -35,6 +35,8 @@ public:
   ArcBall(const glm::vec3& center, glm::float_t radius,
           const glm::mat4& screenToTCS = glm::mat4());
   virtual ~ArcBall();
+
+  void setRadius(glm::float_t radius);
   
   /// Initiate an arc ball drag given the mouse click in screen coordinates.
   /// \param mouseScreenCoords  Mouse screen coordinates.

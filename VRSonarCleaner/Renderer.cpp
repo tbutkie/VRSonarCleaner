@@ -1017,6 +1017,135 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 	}	
 }
 
+void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment, TextAnchor anchor)
+{
+	float lineSpacing = m_uiFontPointSize * 1.f;
+
+	// cursor origin is at beginning of text baseline
+	int cursorDistOnBaseline = 0;
+	int maxCursorDist = 0;
+	int numLines = 1;
+	int firstLineMaxHeight = 0;
+	int lastLinePadding = 0;
+
+	std::vector<float> vLineLengths;
+
+	// Iterate through all characters to find layout space requirements
+	std::string::const_iterator c;
+	for (c = text.begin(); c != text.end(); c++)
+	{
+		if (*c == '\n')
+		{
+			vLineLengths.push_back(cursorDistOnBaseline);
+			cursorDistOnBaseline = 0;
+			numLines++;
+			lastLinePadding = 0;
+			continue;
+		}
+
+		if (numLines == 1 && m_arrCharacters[*c].Bearing.y > firstLineMaxHeight)
+			firstLineMaxHeight = m_arrCharacters[*c].Bearing.y;
+
+		int padding = m_arrCharacters[*c].Size.y - m_arrCharacters[*c].Bearing.y;
+		if (padding > lastLinePadding)
+			lastLinePadding = padding;
+
+		cursorDistOnBaseline += (m_arrCharacters[*c].Advance.x >> 6);
+		if (cursorDistOnBaseline > maxCursorDist)
+			maxCursorDist = cursorDistOnBaseline;
+	}
+	vLineLengths.push_back(cursorDistOnBaseline);
+
+	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
+
+	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
+
+	glm::vec2 anchorPt;
+
+	switch (anchor)
+	{
+	case Renderer::CENTER_MIDDLE:
+		anchorPt = textDims * 0.5f;
+		break;
+	case Renderer::CENTER_TOP:
+		anchorPt = glm::vec2(textDims.x * 0.5f, textDims.y);
+		break;
+	case Renderer::CENTER_BOTTOM:
+		anchorPt = glm::vec2(textDims.x * 0.5f, 0.f);
+		break;
+	case Renderer::CENTER_LEFT:
+		anchorPt = glm::vec2(0.f, textDims.y * 0.5f);
+		break;
+	case Renderer::CENTER_RIGHT:
+		anchorPt = glm::vec2(textDims.x, textDims.y * 0.5f);
+		break;
+	case Renderer::TOP_LEFT:
+		anchorPt = glm::vec2(0.f, textDims.y);
+		break;
+	case Renderer::TOP_RIGHT:
+		anchorPt = glm::vec2(textDims.x, textDims.y);
+		break;
+	case Renderer::BOTTOM_LEFT:
+		anchorPt = glm::vec2(0.f, 0.f);
+		break;
+	case Renderer::BOTTOM_RIGHT:
+		anchorPt = glm::vec2(textDims.x, 0.f);
+		break;
+	default:
+		break;
+	}
+
+	glm::vec2 cursor = glm::vec2(0.f, lineSpacing * (numLines - 1) + lastLinePadding) - anchorPt;
+	unsigned int lineNum = 0u;
+
+	if (alignment == TextAlignment::RIGHT)
+		cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
+	else if (alignment == TextAlignment::CENTER)
+		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+
+	for (c = text.begin(); c != text.end(); c++)
+	{
+		if (*c == '\n')
+		{
+			lineNum++;
+			if (alignment == TextAlignment::RIGHT)
+				cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
+			else if (alignment == TextAlignment::CENTER)
+				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+			else
+				cursor.x = -anchorPt.x;
+
+			cursor.y -= lineSpacing;
+			continue;
+		}
+
+		Character ch = m_arrCharacters[*c];
+
+		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x);
+		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y);
+
+		GLfloat w = ch.Size.x;
+		GLfloat h = ch.Size.y;
+
+		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
+
+		RendererSubmission rs;
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "text";
+		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
+		rs.VAO = m_mapPrimitives["quaddouble"].first;
+		rs.vertCount = m_mapPrimitives["quaddouble"].second;
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.diffuseTexName = *c;
+		rs.diffuseColor = color;
+
+		addToUIRenderQueue(rs);
+
+		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+		cursor.x += (ch.Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+	}
+}
+
 glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim sizeDim)
 {
 	float lineSpacing = m_uiFontPointSize * 1.f;
@@ -1079,19 +1208,20 @@ glm::mat4 Renderer::getBillBoardTransform(const glm::vec3 & pos, const glm::vec3
 	return result;
 }
 
+// TODO: fix this function. Everything up to the perspective divide is good.
 glm::mat4 Renderer::getUnprojectionMatrix(glm::mat4 & proj, glm::mat4 & view, glm::mat4 & model, glm::ivec4 & vp)
 {
 	glm::mat4 inv = glm::inverse(proj * view);
 
 	glm::mat4 screenToNDC =
-		glm::translate(glm::mat4(), glm::vec3(-1.f, -1.f, 0.f)) *
-		glm::scale(glm::mat4(), glm::vec3(2.f / vp[2], 2.f / vp[3], 1.f)) *
+		glm::translate(glm::mat4(), glm::vec3(-1.f)) *
+		glm::scale(glm::mat4(), glm::vec3(2.f / vp[2], 2.f / vp[3], 2.f)) *
 		glm::translate(glm::mat4(), glm::vec3(-vp[0], -vp[1], 0.f));
 
 	glm::mat4 beforePerspDivide = inv * screenToNDC;
 
 	float perspDiv = 1.f / beforePerspDivide[3].w;
-	glm::mat4 perspDivMat(0);
+	glm::mat4 perspDivMat(1);
 	perspDivMat[0][0] = perspDiv;
 	perspDivMat[1][1] = perspDiv;
 	perspDivMat[2][2] = perspDiv;

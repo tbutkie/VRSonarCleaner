@@ -151,6 +151,7 @@ public:
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
 	void drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color);
 	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE);
+	void drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE);
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
 
 	static glm::mat4 getBillBoardTransform(const glm::vec3 &pos, const glm::vec3 &viewPos, const glm::vec3 &up, bool lockToUpVector);

@@ -253,6 +253,22 @@ bool CMainApplication::init()
 		m_vpDataVolumes.push_back(m_pWallVolume);
 
 		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+
+
+		glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+
+		std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
+		std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
+		float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
+		float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
+
+		glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
+		glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
+
+		glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+		float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
+
+		m_pArcball->setRadius(radPx);
 	}
 	else if (m_bFlowVis)
 	{
@@ -407,12 +423,7 @@ bool CMainApplication::initDesktop()
 
 	m_pLasso = new LassoTool();
 
-	glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
-	glm::mat4 viewTrans = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
-
-	glm::mat4 screenToWorldTrans = Renderer::getUnprojectionMatrix(m_sviDesktop3DViewInfo.projection, viewTrans, glm::mat4(), vp);
-
-	m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f, screenToWorldTrans);
+	m_pArcball = new ArcBall(glm::vec3(glm::vec2(m_ivec2DesktopWindowSize) * 0.5f, 0.f), 0.5f);
 
 	if (m_bFlowVis)
 	{
@@ -711,7 +722,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = true;
-					m_pArcball->beginDrag(glm::vec2(sdlEvent.button.x, sdlEvent.button.y));
+					m_pArcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
 					if (m_bRightMouseDown)
 					{
 						m_pLasso->end();
@@ -757,7 +768,7 @@ bool CMainApplication::HandleInput()
 			{
 				if (m_bLeftMouseDown)
 				{
-					m_pArcball->drag(glm::vec2(sdlEvent.button.x, sdlEvent.button.y));
+					m_pArcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
 				}
 				if (m_bRightMouseDown && !m_bLeftMouseDown)
 				{
@@ -843,42 +854,44 @@ void CMainApplication::update()
 
 	if (m_bUseDesktop)
 	{
-		m_sviDesktop3DViewInfo.view = glm::lookAt(glm::vec3(0.f), glm::vec3(0.f, 0.f, 1.f), m_vec3BallUp);
+		glm::mat4 tmp = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
+		if (tmp != m_sviDesktop3DViewInfo.view)
+		{
+			m_sviDesktop3DViewInfo.view = tmp;
 
-		glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
 
-		//glm::mat4 screenToWorldTrans = Renderer::getUnprojectionMatrix(m_sviDesktop3DViewInfo.projection, m_sviDesktop3DViewInfo.view, glm::mat4(), vp);
-		
-		glm::mat4 inv = glm::inverse(m_sviDesktop3DViewInfo.projection * m_sviDesktop3DViewInfo.view);
+			glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
 
-		glm::mat4 screenToNDC =
-			glm::translate(glm::mat4(), glm::vec3(-1.f, -1.f, 0.f)) *
-			glm::scale(glm::mat4(), glm::vec3(2.f / vp[2], 2.f / vp[3], 1.f)) *
-			glm::translate(glm::mat4(), glm::vec3(-vp[0], -vp[1], 0.f));
+			std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
+			std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
+			float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
+			float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
+			glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
 
-		glm::mat4 beforePerspDivide = inv * screenToNDC;
-
-		float perspDiv = 1.f / beforePerspDivide[3].w;
-		glm::mat4 perspDivMat(0);
-		perspDivMat[0][0] = perspDiv;
-		perspDivMat[1][1] = perspDiv;
-		perspDivMat[2][2] = perspDiv;
-		perspDivMat[3][3] = perspDiv;
-
-		glm::mat4 screenToWorldTrans = perspDivMat * beforePerspDivide;
-
-		glm::vec4 testPt = glm::vec4(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f, 1.f);
-
-		glm::vec4 test1 = screenToWorldTrans * testPt;
-		glm::vec4 test2 = screenToNDC * testPt;
-
-		m_pArcball = new ArcBall(m_vec3BallCenter, vp[3] * 0.5f, screenToWorldTrans);
+			glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+			float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
+			m_pArcball->setRadius(radPx);
+		}
 	}
 
 	if (m_bSonarCleaning)
 	{
 		if (m_bUseDesktop)
-			m_pTableVolume->setOrientation(glm::quat_cast(m_pArcball->getTransformation()));
+		{
+			m_pTableVolume->setOrientation(glm::quat_cast(glm::inverse(m_pArcball->getTransformation())) * m_pTableVolume->getOriginalOrientation());
+		
+			Renderer::getInstance().drawUIText(
+				"Test",
+				glm::vec4(1.f),
+				glm::vec3(0.f),
+				glm::quat(),
+				100.f,
+				Renderer::HEIGHT,
+				Renderer::CENTER,
+				Renderer::BOTTOM_LEFT
+			);
+		}
 
 		for (auto &cloud : m_vpClouds)
 			cloud->update();
@@ -1065,7 +1078,7 @@ bool CMainApplication::editCleaningTableDesktop()
 
 		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
-			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud->getAdjustedPointPosition(i));
+			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud->getRawPointPosition(i));
 			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
 
 			if (m_pLasso->checkPoint(glm::vec2(out)))

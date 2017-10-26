@@ -22,6 +22,11 @@ ArcBall::~ArcBall()
 {
 }
 
+void ArcBall::setRadius(glm::float_t radius)
+{
+	mRadius = radius;
+}
+
 //------------------------------------------------------------------------------
 glm::vec3 ArcBall::mouseOnSphere(const glm::vec3& tscMouse)
 {
