@@ -7,6 +7,7 @@
 #include <gtx/norm.hpp>
 
 #include <string>
+#include <sstream>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -874,21 +875,71 @@ void Renderer::setupText()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	// Destroy FreeType once we're finished
 	FT_Done_Face(face);
-	FT_Done_FreeType(ft);
 
-	// Configure VAO/VBO for texture quads
-	glGenVertexArrays(1, &m_glTextVAO);
-	glGenBuffers(1, &m_glTextVBO);
-	glBindVertexArray(m_glTextVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glTextVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+
+
+	// Load Snellen optotype font as face
+	{
+		if (FT_New_Face(ft, "fonts/snellen.ttf", 0, &face))
+			std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+
+		// Set size to load glyphs as
+		FT_Set_Pixel_Sizes(face, 0, m_uiFontPointSize);
+
+		std::vector<FT_Char> sloanLetters = { 'C', 'D', 'H', 'K', 'N', 'O', 'R', 'S', 'V', 'Z', ' ' };
+
+		// Load first 128 characters of ASCII set
+		for (auto c : sloanLetters)
+		{
+			// Load character glyph 
+			if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+			{
+				std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+				continue;
+			}
+			// Generate texture
+			GLuint texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			glTexImage2D(
+				GL_TEXTURE_2D,
+				0,
+				GL_RED,
+				face->glyph->bitmap.width,
+				face->glyph->bitmap.rows,
+				0,
+				GL_RED,
+				GL_UNSIGNED_BYTE,
+				face->glyph->bitmap.buffer
+			);
+			// Set texture options
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			// Now store character for later use
+			Character character = {
+				texture,
+				glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+				glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+				glm::ivec2(face->glyph->advance.x, face->glyph->advance.y)
+			};
+			m_mapSloanCharacters[c] = character;
+			char tmp[2];
+			tmp[0] = c;
+			tmp[1] = '\0';
+			//std::cout << "Adding character \'" << std::string(tmp) + "_sloan" << "\' to text renderer..." << std::endl;
+			addTexture(new GLTexture(std::string(tmp) + "_sloan", face->glyph->bitmap.width, face->glyph->bitmap.rows, texture, true));
+		}
+		glBindTexture(GL_TEXTURE_2D, 0);
+		// Destroy FreeType once we're finished
+		FT_Done_Face(face);
+	}
+
+	FT_Done_FreeType(ft);
 }
 
-void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment, TextAnchor anchor)
+void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment, TextAnchor anchor, bool snellenFont)
 {
 	float lineSpacing = m_uiFontPointSize * 1.f;
 
@@ -905,7 +956,9 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 	std::string::const_iterator c;
 	for (c = text.begin(); c != text.end(); c++)
 	{
-		if (*c == '\n')
+		char charCurrent = *c;
+
+		if (charCurrent == '\n')
 		{
 			vLineLengths.push_back(cursorDistOnBaseline);
 			cursorDistOnBaseline = 0;
@@ -914,14 +967,16 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 			continue;
 		}
 
-		if (numLines == 1 && m_arrCharacters[*c].Bearing.y > firstLineMaxHeight)
-			firstLineMaxHeight = m_arrCharacters[*c].Bearing.y;
+		Character* charDesc = snellenFont ? &m_mapSloanCharacters[charCurrent] : &m_arrCharacters[charCurrent];
 
-		int padding = m_arrCharacters[*c].Size.y - m_arrCharacters[*c].Bearing.y;
+		if (numLines == 1 && charDesc->Bearing.y > firstLineMaxHeight)
+			firstLineMaxHeight = charDesc->Bearing.y;
+
+		int padding = charDesc->Size.y - charDesc->Bearing.y;
 		if (padding > lastLinePadding)
 			lastLinePadding = padding;
 
-		cursorDistOnBaseline += (m_arrCharacters[*c].Advance.x >> 6);
+		cursorDistOnBaseline += (charDesc->Advance.x >> 6);
 		if (cursorDistOnBaseline > maxCursorDist)
 			maxCursorDist = cursorDistOnBaseline;
 	}
@@ -990,15 +1045,19 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 			continue;
 		}
 
-		Character ch = m_arrCharacters[*c];
+		Character *ch = snellenFont ? &m_mapSloanCharacters[*c] : &m_arrCharacters[*c];
 
-		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x);
-		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y);
+		GLfloat xpos = cursor.x + (ch->Bearing.x + 0.5f * ch->Size.x);
+		GLfloat ypos = cursor.y + (ch->Bearing.y - 0.5f * ch->Size.y);
 
-		GLfloat w = ch.Size.x;
-		GLfloat h = ch.Size.y;
+		GLfloat w = ch->Size.x;
+		GLfloat h = ch->Size.y;
 
 		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
+		
+		std::stringstream diffTexName;
+		diffTexName << *c;
+		if (snellenFont) diffTexName << "_sloan";
 
 		RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
@@ -1007,13 +1066,13 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		rs.VAO = m_mapPrimitives["quaddouble"].first;
 		rs.vertCount = m_mapPrimitives["quaddouble"].second;
 		rs.indexType = GL_UNSIGNED_SHORT;
-		rs.diffuseTexName = *c;
+		rs.diffuseTexName = diffTexName.str();
 		rs.diffuseColor = color;
 
 		addToDynamicRenderQueue(rs);
 
 		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-		cursor.x += (ch.Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+		cursor.x += (ch->Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}	
 }
 

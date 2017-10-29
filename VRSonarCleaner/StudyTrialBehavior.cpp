@@ -108,6 +108,9 @@ void StudyTrialBehavior::draw()
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
 
+	if (!m_pTDM->getPrimaryController())
+		return;
+
 	// Point Count Label
 	glm::mat4 statusTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.15f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 	float labelSize = 0.025f;

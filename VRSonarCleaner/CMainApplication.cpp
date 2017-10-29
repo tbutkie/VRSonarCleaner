@@ -13,6 +13,7 @@
 #include "StudyIntroBehavior.h"
 #include "ScaleTutorial.h"
 #include "StudyEditTutorial.h"
+#include "SnellenTest.h"
 
 #include "HolodeckBackground.h"
 
@@ -594,7 +595,7 @@ bool CMainApplication::HandleInput()
 				m_pTableVolume->setVisible(false);
 				m_pWallVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
-				StudyEditTutorial *st = new StudyEditTutorial(m_pTDM);
+				SnellenTest *st = new SnellenTest(m_pTDM);
 				BehaviorManager::getInstance().addBehavior("test", st);
 				st->init();
 			}

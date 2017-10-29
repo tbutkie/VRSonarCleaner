@@ -189,6 +189,9 @@
     <ClCompile Include="DataLogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SnellenTest.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -346,6 +349,9 @@
     </ClInclude>
     <ClInclude Include="DataLogger.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SnellenTest.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

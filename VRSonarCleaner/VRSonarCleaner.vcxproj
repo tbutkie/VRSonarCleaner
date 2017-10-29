@@ -199,6 +199,7 @@
     <ClCompile Include="ScaleTutorial.cpp" />
     <ClCompile Include="SelectAreaBehavior.cpp" />
     <ClCompile Include="shaderset.cpp" />
+    <ClCompile Include="SnellenTest.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
@@ -254,6 +255,7 @@
     <ClInclude Include="SelectAreaBehavior.h" />
     <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />
+    <ClInclude Include="SnellenTest.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="StudyEditTutorial.h" />
