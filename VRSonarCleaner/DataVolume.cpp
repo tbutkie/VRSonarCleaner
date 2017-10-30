@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <functional>
 
 DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions)
 	: m_vec3Position(pos)
@@ -19,6 +20,7 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_bUseCustomBounds(false)
 	, m_bUsePivot(false)
 {
+	calculateBoundingRadius();
 	updateTransforms();
 }
 
@@ -266,26 +268,6 @@ glm::mat4 DataVolume::getLastVolumeTransform()
 	return m_mat4VolumeTransformPrevious;
 }
 
-void DataVolume::setPivotPoint(glm::vec3 pivot)
-{
-	m_vec3PivotPoint = pivot;
-}
-
-glm::vec3 DataVolume::getPivotPoint()
-{
-	return m_vec3PivotPoint;
-}
-
-void DataVolume::setUsePivot(bool yesno)
-{
-	m_bUsePivot = yesno;
-}
-
-bool DataVolume::getUsePivot()
-{
-	return m_bUsePivot;
-}
-
 void DataVolume::setPosition(glm::vec3 newPos)
 {
 	m_vec3Position = newPos;
@@ -311,6 +293,7 @@ glm::quat DataVolume::getOrientation()
 void DataVolume::setDimensions(glm::vec3 newScale)
 {
 	m_vec3Dimensions = newScale;
+	calculateBoundingRadius();
 	m_bDirty = true;
 }
 
@@ -395,6 +378,12 @@ double DataVolume::getMaxZDataBound()
 		return (*maxZDS)->getRawZMax();
 }
 
+void DataVolume::calculateBoundingRadius()
+{
+	std::vector<float> vTableDims = { m_vec3Dimensions.x, m_vec3Dimensions.y, m_vec3Dimensions.z };
+	m_fBoundingRadius = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1] + vTableDims[2] * vTableDims[2]) * 0.5f;
+}
+
 glm::dvec3 DataVolume::getDataDimensions()
 {
 	if (m_vpDatasets.size() == 0u)
@@ -424,6 +413,11 @@ glm::dvec3 DataVolume::getCustomMaxBound()
 glm::dvec3 DataVolume::getCustomDomainDimensions()
 {
 	return m_dvec3CustomDomainDims;
+}
+
+float DataVolume::getBoundingRadius()
+{
+	return m_fBoundingRadius;
 }
 
 void DataVolume::useCustomBounds(bool yesno)

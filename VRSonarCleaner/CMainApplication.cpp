@@ -24,7 +24,6 @@
 #include <filesystem>
 #include <limits>
 
-#include <gtx/intersect.hpp>
 
 glm::vec3						g_vec3RoomSize(4.f, 3.f, 3.f);
 
@@ -32,10 +31,6 @@ float							g_fNearClip = 0.001f;
 float							g_fFarClip = 10000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
-
-glm::vec3 startTrans, endTrans;
-std::chrono::time_point<std::chrono::high_resolution_clock> tpStartTrans;
-float transTime(0.1f);
 
 //-----------------------------------------------------------------------------
 // Purpose: OpenGL Debug Callback Function
@@ -126,10 +121,6 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pHMD(NULL)
 	, m_fPtHighlightAmt(1.f)
 	, m_pArcball(NULL)
-	, m_vec3BallEye(glm::vec3(0.f, 0.f, 1.f))
-	, m_vec3BallCenter(glm::vec3(0.f))
-	, m_vec3BallUp(glm::vec3(0.f, 1.f, 0.f))
-	, m_fBallRadius(1.f)
 	, m_pLasso(NULL)
 {	
 	switch (mode)
@@ -234,8 +225,8 @@ bool CMainApplication::init()
 
 		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
 
-		m_vec3BallEye = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_vec3BallCenter = tablePosition;
+		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_Camera.lookat = tablePosition;
 
 		m_pColorScalerTPU = new ColorScaler();
 		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -261,21 +252,16 @@ bool CMainApplication::init()
 
 		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
 
+		if (m_bUseDesktop)
+		{
+			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
 
-		glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
-
-		std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
-		std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
-		float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
-		float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
-
-		glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
-		glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
-
-		glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-		float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
-
-		//m_pArcball->setRadius(radPx);
+			m_pArcball = new ArcBall(m_pTableVolume);
+			m_pArcball->setProjection(&m_sviDesktop3DViewInfo.projection);
+			m_pArcball->setView(&m_sviDesktop3DViewInfo.view);
+			m_pArcball->setViewport(vp);
+			BehaviorManager::getInstance().addBehavior("arcball", m_pArcball);
+		}
 	}
 	else if (m_bFlowVis)
 	{
@@ -298,9 +284,11 @@ bool CMainApplication::init()
 		if (m_bGreatBayModel)
 			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
 
-		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_vec3BallCenter = m_pFlowVolume->getPosition();
+		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_Camera.lookat = m_pFlowVolume->getPosition();
 	}
+
+	m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 	BehaviorManager::getInstance().init();
 
@@ -430,13 +418,8 @@ bool CMainApplication::initDesktop()
 
 	m_pLasso = new LassoTool();
 
-	m_pArcball = new ArcBall(glm::vec3(glm::vec2(m_ivec2DesktopWindowSize) * 0.5f, 0.f), 0.5f);
-
-	if (m_bFlowVis)
-	{
-		m_vec3BallEye = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_vec3BallCenter = m_pFlowVolume->getPosition();
-	}
+	m_Camera.pos = glm::vec3(0.f, 0.f, 1.f);
+	m_Camera.up = glm::vec3(0.f, 1.f, 0.f);
 
 	return true;
 }
@@ -662,23 +645,12 @@ bool CMainApplication::HandleInput()
 
 					if (m_pArcball)
 					{
-						m_vec3BallEye = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-						m_vec3BallCenter = m_pTableVolume->getPosition();
+						m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+						m_Camera.lookat = m_pTableVolume->getPosition();
 
-						glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+						m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
-						glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
-
-						std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
-						std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
-						float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
-						float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
-						glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
-
-						glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-						float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
-
-						m_pArcball = new ArcBall(glm::vec3(glm::vec2(m_ivec2DesktopWindowSize) * 0.5f, 0.f), radPx);
+						m_pArcball->reset();
 					}
 				}
 
@@ -774,30 +746,8 @@ bool CMainApplication::HandleInput()
 					}
 					m_bMiddleMouseDown = true;
 
-					glm::vec4 vp(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
-
-					glm::vec3 nearPt(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y, 0.f);
-					glm::vec3 farPt(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y, 1.f);
-
-					glm::vec3 nearPtWorld = glm::unProject(nearPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-					glm::vec3 farPtWorld = glm::unProject(farPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-
-					glm::vec3 rayDir = glm::normalize(farPtWorld - nearPtWorld);
-					glm::vec3 planeNorm = glm::normalize(m_vec3BallEye - m_vec3BallCenter);
-					float intersectionDist;
-
-					glm::intersectRayPlane(nearPtWorld, rayDir, m_vec3BallCenter, planeNorm, intersectionDist);
-
-					glm::vec3 offsetVec = m_vec3BallCenter - (nearPtWorld + rayDir * intersectionDist);
-
-					startTrans = m_pTableVolume->getPosition();
-					endTrans = m_pTableVolume->getPosition() + offsetVec;
-					tpStartTrans = std::chrono::high_resolution_clock::now();
-
-					m_pTableVolume->setPivotPoint(startTrans);
-					m_pTableVolume->setUsePivot(true);
-					
-					//m_Arcball.center(sdlEvent.button.x, sdlEvent.button.y);
+					if (m_pArcball)
+						m_pArcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
 				}
 
 			}//end mouse down 
@@ -833,15 +783,17 @@ bool CMainApplication::HandleInput()
 			if (sdlEvent.type == SDL_MOUSEWHEEL)
 			{
 				m_pLasso->reset();
-				glm::vec3 eyeForward = glm::normalize(m_vec3BallCenter - m_vec3BallEye);
-				m_vec3BallEye += eyeForward * ((float)sdlEvent.wheel.y*0.5f);
+				glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
+				m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.5f);
 
-				float newLen = glm::length(m_vec3BallCenter - m_vec3BallEye);
+				float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
 
 				if (newLen < 0.5f)
-					m_vec3BallEye = m_vec3BallCenter - eyeForward * 0.5f;
+					m_Camera.pos = m_Camera.lookat - eyeForward * 0.5f;
 				if (newLen > 10.f)
-					m_vec3BallEye = m_vec3BallCenter - eyeForward * 10.f;
+					m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+
+				m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 			}
 		}
 	}
@@ -909,61 +861,11 @@ void CMainApplication::update()
 
 	if (m_bUseDesktop)
 	{
-		glm::mat4 tmp = glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp);
-		if (tmp != m_sviDesktop3DViewInfo.view)
-		{
-			m_sviDesktop3DViewInfo.view = tmp;
-
-			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
-
-			glm::vec3 right = glm::inverse(m_sviDesktop3DViewInfo.view)[0];
-
-			std::vector<float> vTableDims = { m_pTableVolume->getDimensions().x, m_pTableVolume->getDimensions().y, m_pTableVolume->getDimensions().z };
-			std::sort(vTableDims.begin(), vTableDims.end(), std::greater<float>());
-			float tmp = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1]);
-			float tableRad = std::sqrt(tmp * tmp + vTableDims[2] * vTableDims[2]) * 0.5f;
-			glm::vec3 tableRadPt = m_vec3BallCenter + right * tableRad;
-
-			glm::vec3 pt = glm::project(tableRadPt, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-			float radPx = pt.x - m_ivec2DesktopWindowSize.x * 0.5f;
-			m_pArcball->setRadius(radPx);
-		}
-
-		std::stringstream ss;
-		ss.precision(2);
-
-		ss << std::fixed << m_msFrameTime.count() << "ms/frame | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps";
-
-		Renderer::getInstance().drawUIText(
-			ss.str(),
-			glm::vec4(1.f),
-			glm::vec3(0.f),
-			glm::quat(),
-			20.f,
-			Renderer::HEIGHT,
-			Renderer::CENTER,
-			Renderer::BOTTOM_LEFT
-		);
-
-		float timeElapsed = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tpStartTrans).count();
-
-		if (timeElapsed <= transTime)
-		{
-			float ratio = timeElapsed / transTime;
-			glm::vec3 transDir = endTrans - startTrans;
-			m_pTableVolume->setPosition(startTrans + transDir * ratio);
-		}
+		
 	}
 
 	if (m_bSonarCleaning)
 	{
-		if (m_bUseDesktop)
-		{
-			m_pTableVolume->setOrientation(glm::quat_cast(glm::inverse(m_pArcball->getTransformation())) * m_pTableVolume->getOriginalOrientation());
-		
-
-		}
-
 		for (auto &cloud : m_vpClouds)
 			cloud->update();
 
@@ -1004,10 +906,10 @@ void CMainApplication::drawScene()
 				DebugDrawer::getInstance().drawLine(x0y1, x0y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
 
 				// connect the viewing plane corners to view pos
-				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
-				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x1y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
-				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
-				DebugDrawer::getInstance().drawLine(m_vec3BallEye, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x1y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x1y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x0y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 
 				// draw the lasso points, if any
 				std::vector<glm::vec3> pts = m_pLasso->getPoints();
@@ -1027,6 +929,22 @@ void CMainApplication::drawScene()
 
 		if (m_bUseDesktop)
 		{
+			std::stringstream ss;
+			ss.precision(2);
+
+			ss << std::fixed << m_msFrameTime.count() << "ms/frame | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps";
+
+			Renderer::getInstance().drawUIText(
+				ss.str(),
+				glm::vec4(1.f),
+				glm::vec3(0.f),
+				glm::quat(),
+				20.f,
+				Renderer::HEIGHT,
+				Renderer::CENTER,
+				Renderer::BOTTOM_LEFT
+			);
+
 			//draw 2D interface elements
 			Renderer::RendererSubmission rs;
 			rs.modelToWorldTransform = glm::mat4();
@@ -1038,7 +956,7 @@ void CMainApplication::drawScene()
 		{
 			if (!dv->isVisible()) continue;
 
-			glm::mat4 trans = m_bUseDesktop ? glm::inverse(glm::lookAt(m_vec3BallEye, m_vec3BallCenter, m_vec3BallUp)) : m_pTDM->getHMDToWorldTransform();
+			glm::mat4 trans = m_bUseDesktop ? glm::inverse(m_sviDesktop3DViewInfo.view) : m_pTDM->getHMDToWorldTransform();
 
 			dv->drawVolumeBacking(trans, glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);

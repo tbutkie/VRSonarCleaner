@@ -38,7 +38,7 @@ void RunStudyBehavior::init()
 	//std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 
 	for (auto const &ds : m_vStudyDatasets)
-		m_qTrials.push(new StudyTrialBehavior(m_pTDM, ds.string(), m_DataLog));
+		m_qTrials.push(new StudyTrialBehavior(m_pTDM, ds.string()));
 
 	m_bTrialsLoaded = true;
 	m_qTrials.front()->init();
@@ -57,7 +57,7 @@ void RunStudyBehavior::update()
 		if (m_qTrials.size() > 0u)
 			m_qTrials.front()->init();
 		else
-			DataLogger::getInstance().closeLog(m_DataLog);
+			DataLogger::getInstance().closeLog();
 	}
 	else
 		m_qTrials.front()->update();

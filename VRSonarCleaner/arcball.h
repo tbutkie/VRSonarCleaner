@@ -2,6 +2,7 @@
 #define IAUNS_ARC_BALL_H
 
 #include <stdint.h>
+#include <chrono>
 
 #include <glm.hpp>
 #include <gtc/quaternion.hpp>
@@ -9,6 +10,8 @@
 #include <gtc/matrix_inverse.hpp>
 #include <gtc/matrix_transform.hpp>
 
+#include "BehaviorBase.h"
+#include "DataVolume.h"
 
 /// A reimplementation of Ken Shoemake's arcball camera. SCIRun 4's camera
 /// system is based off of Ken's code. The Code appears in Graphics Gems 4, 
@@ -21,7 +24,7 @@
 /// matrix then all values are given in screen coordinates.
 /// Screen coordinates are (x \in [-1,1]) and (y \in [-1,1]) where (0,0) is the
 /// center of the screen.
-class ArcBall
+class ArcBall : public BehaviorBase
 {
 public:
   /// \param center         Center of the arcball in TCS (screen coordinates if 
@@ -32,11 +35,20 @@ public:
   ///                       default is 0.75.
   /// \param screenToTCS    Transformation from screen coordinates
   ///                       to TCS. \p center and \p radius are given in TCS.
-  ArcBall(const glm::vec3& center, glm::float_t radius,
-          const glm::mat4& screenToTCS = glm::mat4());
+  ArcBall(DataVolume *dataVolume);
   virtual ~ArcBall();
 
-  void setRadius(glm::float_t radius);
+  void reset();
+
+  void update();
+
+  void draw();
+
+  void setProjection(glm::mat4 *proj);
+  void setView(glm::mat4 *view);
+  void setViewport(glm::ivec4 &vp);
+
+  void calculateRadius();
   
   /// Initiate an arc ball drag given the mouse click in screen coordinates.
   /// \param mouseScreenCoords  Mouse screen coordinates.
@@ -46,13 +58,15 @@ public:
   /// \param mouseScreenCoords  Mouse screen coordinates.
   void drag(const glm::vec2& mouseScreenCoords);
 
+  void translate(const glm::vec2& mouseScreenCoords);
+
   /// Retrieves the current transformation in TCS.
   /// Obtains full transformation of object in question. If the arc ball is 
   /// being used to control camera rotation, then this will contain all
   /// concatenated camera transformations. The current state of the camera
   /// is stored in the quaternions mQDown and mQNow. mMatNow is calculated
   /// from mQNow.
-  glm::mat4 getTransformation() const;
+  glm::quat getOrientation() const;
 
 private:
 
@@ -78,10 +92,20 @@ private:
   glm::vec3     mVSphereFrom;   ///< vDown mapped to the sphere of 'mRadius' centered at 'mCenter' in TCS.
   glm::vec3     mVSphereTo;     ///< vNow mapped to the sphere of 'mRadius' centered at 'mCenter' in TCS.
 
-  glm::mat4     mMatNow;        ///< Matrix representing the current rotation.
-
   /// Transform from screen coordinates to the target coordinate system.
   glm::mat4     mScreenToTCS;
+
+  DataVolume *m_pDataVolume;
+
+  glm::vec3 m_vec3PivotPoint;	///< World space pivot point
+
+  glm::mat4 *m_pmat4Projection;
+  glm::mat4 *m_pmat4View;
+  glm::ivec4 m_ivec4Viewport;
+
+  glm::vec3 m_vec3StartTransPos, m_vec3EndTransPos;
+  std::chrono::time_point<std::chrono::high_resolution_clock> m_tpStartTrans;
+  float m_fTranslationTime;
 };
 
 #endif

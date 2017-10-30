@@ -10,25 +10,26 @@ void DataLogger::setLogDirectory(std::string dir)
 	m_LogDirectory = current_path().append(dir);
 }
 
-DataLogger::LogHandle DataLogger::openLog(std::string logName, bool appendTimestampToLogname)
+bool DataLogger::openLog(std::string logName, bool appendTimestampToLogname)
 {
 	std::string filename = appendTimestampToLogname ? logName + getTimeString() : logName;
-	std::ofstream ofs;
-	ofs.open(std::string(m_LogDirectory.string() + filename));
-	//LogHandle thisHandle = m_sCurrentHandle++;
-	//m_mapLogs.emplace(std::make_pair(thisHandle, ofs));
-	return 0;
+	m_fsLog.open(std::string(m_LogDirectory.string() + filename));
+	return m_fsLog.is_open();
 }
 
-void DataLogger::closeLog(LogHandle handle)
+void DataLogger::closeLog()
 {
-	m_mapLogs[handle].close();
-	m_mapLogs.erase(handle);
+	m_fsLog.close();
 }
 
-void DataLogger::logMessage(LogHandle handle, std::string message)
+void DataLogger::setID(int id)
 {
-	m_mapLogs[handle] << message << std::endl;
+	m_nID = id;
+}
+
+void DataLogger::logMessage(std::string message)
+{
+	m_fsLog << m_nID << '\t' << message << std::endl;
 }
 
 DataLogger::DataLogger()

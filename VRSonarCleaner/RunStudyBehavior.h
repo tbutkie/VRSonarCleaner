@@ -28,8 +28,6 @@ private:
 	std::vector<std::experimental::filesystem::v1::path> m_vStudyDatasets;
 	std::queue<StudyTrialBehavior*> m_qTrials;
 
-	DataLogger::LogHandle m_DataLog;
-
 	std::future<void> m_Future;
 
 	bool m_bTrialsLoaded;

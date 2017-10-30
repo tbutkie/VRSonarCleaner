@@ -73,10 +73,12 @@ private:
 
 	//ARCBALL STUFF
 	ArcBall* m_pArcball;
-	glm::vec3 m_vec3BallEye;
-	glm::vec3 m_vec3BallCenter;
-	glm::vec3 m_vec3BallUp;
-	float m_fBallRadius;
+
+	struct Camera {
+		glm::vec3 pos;
+		glm::vec3 lookat;
+		glm::vec3 up;
+	} m_Camera;
 
 	LassoTool* m_pLasso;
 

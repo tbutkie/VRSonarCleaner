@@ -880,7 +880,7 @@ void Renderer::setupText()
 
 	// Load Snellen optotype font as face
 	{
-		if (FT_New_Face(ft, "fonts/snellen.ttf", 0, &face))
+		if (FT_New_Face(ft, "fonts/sloan.ttf", 0, &face))
 			std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
 		// Set size to load glyphs as
@@ -1054,7 +1054,13 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		GLfloat h = ch->Size.y;
 
 		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
+
+		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+		cursor.x += (ch->Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 		
+		if (*c == ' ')
+			continue;
+
 		std::stringstream diffTexName;
 		diffTexName << *c;
 		if (snellenFont) diffTexName << "_sloan";
@@ -1070,9 +1076,6 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		rs.diffuseColor = color;
 
 		addToDynamicRenderQueue(rs);
-
-		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-		cursor.x += (ch->Advance.x >> 6); // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}	
 }
 

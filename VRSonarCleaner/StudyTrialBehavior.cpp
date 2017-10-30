@@ -10,9 +10,8 @@
 
 using namespace std::chrono;
 
-StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, DataLogger::LogHandle log)
+StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName)
 	: m_pTDM(pTDM)
-	, m_Log(log)
 	, m_nPointsLeft(0u)
 {
 	m_pColorScaler = new ColorScaler();

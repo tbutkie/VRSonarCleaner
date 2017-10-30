@@ -7,8 +7,7 @@
 
 class DataLogger
 {
-public:	
-	typedef uint32_t LogHandle;
+public:
 
 	static DataLogger& getInstance()
 	{
@@ -19,18 +18,20 @@ public:
 	static std::string getTimeString();
 
 	void setLogDirectory(std::string dir);
-	LogHandle openLog(std::string logName, bool appendTimestampToLogname = true);
-	void closeLog(LogHandle handle);
+	bool openLog(std::string logName, bool appendTimestampToLogname = true);
+	void closeLog();
 
-	void logMessage(LogHandle handle, std::string message);
+	void setID(int id);
+
+	void logMessage(std::string message);
 
 private:
 	DataLogger();
 	~DataLogger();
 
-	static LogHandle m_sCurrentHandle;
+	std::ofstream m_fsLog;
 
-	std::map<LogHandle, std::ofstream> m_mapLogs;
+	int m_nID;
 
 	std::experimental::filesystem::v1::path m_LogDirectory;
 

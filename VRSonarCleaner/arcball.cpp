@@ -1,20 +1,16 @@
 #include "ArcBall.h"
 
-//------------------------------------------------------------------------------
-ArcBall::ArcBall(const glm::vec3& center, glm::float_t radius, const glm::mat4& screenToTCS) :
-    mCenter(center),
-    mRadius(radius),
-    mScreenToTCS(screenToTCS)
-{
-  // glm uses the following format for quaternions: w,x,y,z.
-  //        w,    x,    y,    z
-  glm::quat qOne(1.0, 0.0, 0.0, 0.0);
-  glm::vec3 vZero(0.0, 0.0, 0.0);
+#include <gtx/intersect.hpp>
 
-  mVDown    = vZero;
-  mVNow     = vZero;
-  mQDown    = qOne;
-  mQNow     = qOne;
+//------------------------------------------------------------------------------
+ArcBall::ArcBall(DataVolume *dataVolume)
+	: m_pDataVolume(dataVolume)
+	, m_pmat4Projection(NULL)
+	, m_pmat4View(NULL)
+	, m_vec3PivotPoint(dataVolume->getPosition())
+	, m_fTranslationTime(0.1f)
+{
+	reset();
 }
 
 //------------------------------------------------------------------------------
@@ -22,9 +18,71 @@ ArcBall::~ArcBall()
 {
 }
 
-void ArcBall::setRadius(glm::float_t radius)
+void ArcBall::reset()
 {
-	mRadius = radius;
+	glm::quat qOne(1.0, 0.0, 0.0, 0.0);
+	glm::vec3 vZero(0.0, 0.0, 0.0);
+
+	mVDown = vZero;
+	mVNow = vZero;
+	mQDown = qOne;
+	mQNow = qOne;
+}
+
+void ArcBall::update()
+{
+	calculateRadius();
+
+	float tableRad = m_pDataVolume->getBoundingRadius();
+
+	glm::vec3 right = glm::inverse(*m_pmat4View)[0];
+	glm::vec3 tableRadPt = m_pDataVolume->getPosition() + right * tableRad;
+
+	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
+
+	m_pDataVolume->setOrientation(getOrientation() * m_pDataVolume->getOriginalOrientation());
+
+	float timeElapsed = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_tpStartTrans).count();
+
+	if (timeElapsed <= m_fTranslationTime)
+	{
+		float ratio = timeElapsed / m_fTranslationTime;
+		glm::vec3 transDir = m_vec3EndTransPos - m_vec3StartTransPos;
+		m_pDataVolume->setPosition(m_vec3StartTransPos + transDir * ratio);
+	}
+}
+
+void ArcBall::draw()
+{
+}
+
+void ArcBall::setProjection(glm::mat4 * proj)
+{
+	m_pmat4Projection = proj;
+}
+
+void ArcBall::setView(glm::mat4 * view)
+{
+	m_pmat4View = view;
+}
+
+void ArcBall::setViewport(glm::ivec4 & vp)
+{
+	m_ivec4Viewport = vp;
+
+	mCenter = glm::vec3(vp[2] - vp[0], vp[3] - vp[1], 0.f) * 0.5f;
+}
+
+void ArcBall::calculateRadius()
+{
+	float tableRad = m_pDataVolume->getBoundingRadius();
+
+	glm::vec3 right = glm::inverse(*m_pmat4View)[0];
+	glm::vec3 tableRadPt = m_pDataVolume->getPosition() + right * tableRad;
+
+	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
 }
 
 //------------------------------------------------------------------------------
@@ -78,13 +136,33 @@ void ArcBall::drag(const glm::vec2& msc)
   mQDrag = quatFromUnitSphere(mVSphereFrom, mVSphereTo); 
   mQNow = mQDrag * mQDown;
 
-  // Perform complex conjugate
-  glm::quat q = mQNow;
-  q.x = -q.x;
-  q.y = -q.y;
-  q.z = -q.z;
-  q.w =  q.w;
-  mMatNow = glm::mat4_cast(q);
+  // Perform complex conjugate (think inverse rotation matrix)
+  //glm::quat q = mQNow;
+  //q.x = -q.x;
+  //q.y = -q.y;
+  //q.z = -q.z;
+  //q.w =  q.w;
+}
+
+void ArcBall::translate(const glm::vec2 & mouseScreenCoords)
+{
+	glm::vec3 nearPt(mouseScreenCoords, 0.f);
+	glm::vec3 farPt(mouseScreenCoords, 1.f);
+
+	glm::vec3 nearPtWorld = glm::unProject(nearPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	glm::vec3 farPtWorld = glm::unProject(farPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+
+	glm::vec3 rayDir = glm::normalize(farPtWorld - nearPtWorld);
+	glm::vec3 planeNorm = glm::normalize(glm::vec3(glm::inverse(*m_pmat4View)[3]) - m_vec3PivotPoint);
+	float intersectionDist;
+
+	glm::intersectRayPlane(nearPtWorld, rayDir, m_vec3PivotPoint, planeNorm, intersectionDist);
+
+	glm::vec3 offsetVec = m_vec3PivotPoint - (nearPtWorld + rayDir * intersectionDist);
+
+	m_vec3StartTransPos = m_pDataVolume->getPosition();
+	m_vec3EndTransPos = m_pDataVolume->getPosition() + offsetVec;
+	m_tpStartTrans = std::chrono::high_resolution_clock::now();
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +177,7 @@ glm::quat ArcBall::quatFromUnitSphere(const glm::vec3& from, const glm::vec3& to
 }
 
 //------------------------------------------------------------------------------
-glm::mat4 ArcBall::getTransformation() const
+glm::quat ArcBall::getOrientation() const
 {
-  return mMatNow;
+  return mQNow;
 }

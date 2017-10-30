@@ -24,5 +24,6 @@ private:
 	bool m_bWaitForTriggerRelease;
 	std::vector<char> m_vSloanLetters;
 	std::string m_strCurrent;
+	float m_fVisualAngle;
 };
 

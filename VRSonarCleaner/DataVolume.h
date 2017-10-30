@@ -45,11 +45,6 @@ public:
 	glm::mat4 getCurrentVolumeTransform();
 	glm::mat4 getLastVolumeTransform();
 
-	void setPivotPoint(glm::vec3 pivot);
-	glm::vec3 getPivotPoint();
-	void setUsePivot(bool yesno);
-	bool getUsePivot();
-
 	void resetPositionAndOrientation();
 
 	void setPosition(glm::vec3 newPos);
@@ -67,6 +62,8 @@ public:
 	glm::dvec3 getCustomMinBound();
 	glm::dvec3 getCustomMaxBound();
 	glm::dvec3 getCustomDomainDimensions();
+
+	float getBoundingRadius();
 
 	static glm::vec3 calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims);
 
@@ -90,6 +87,8 @@ protected:
 	double getMaxYDataBound();
 	double getMaxZDataBound();
 
+	void calculateBoundingRadius();
+
 	std::vector<Dataset*> m_vpDatasets;
 
 	glm::vec3 m_vec3OriginalPosition;        // Original Data Volume Position	
@@ -98,7 +97,7 @@ protected:
 	glm::quat m_qOrientation;
 	glm::vec3 m_vec3OriginalDimensions;      // Original Data Volume Orientation
 	glm::vec3 m_vec3Dimensions;
-	glm::vec3 m_vec3PivotPoint;				 // World space pivot point
+	float m_fBoundingRadius;
 
 	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
 	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;

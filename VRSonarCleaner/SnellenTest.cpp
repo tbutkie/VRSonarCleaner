@@ -24,7 +24,7 @@ void SnellenTest::init()
 {
 	m_vSloanLetters = { 'C', 'D', 'H', 'K', 'N', 'O', 'R', 'S', 'V', 'Z' };
 
-	m_strCurrent = generateSnellenString(6);
+	m_strCurrent = generateSnellenString(5);
 
 	m_bInitialized = true;
 }
@@ -38,7 +38,7 @@ void SnellenTest::update()
 		m_bWaitForTriggerRelease = false;
 
 	if (!m_bWaitForTriggerRelease && m_pTDM->getPrimaryController()->justClickedTrigger())
-		m_strCurrent = generateSnellenString(6);
+		m_strCurrent = generateSnellenString(5);
 }
 
 void SnellenTest::draw()
@@ -54,7 +54,7 @@ void SnellenTest::draw()
 		glm::vec4(1.f),
 		stringPos,
 		glm::quat(Renderer::getBillBoardTransform(stringPos, hmdTrans[3], hmdTrans[1], true)),
-		0.00886f,
+		1.f,//0.00886f,
 		Renderer::TextSizeDim::HEIGHT,
 		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_MIDDLE,
