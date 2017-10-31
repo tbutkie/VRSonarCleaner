@@ -756,6 +756,7 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = false;
+					m_pArcball->endDrag();
 					m_pLasso->reset();
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
@@ -784,12 +785,12 @@ bool CMainApplication::HandleInput()
 			{
 				m_pLasso->reset();
 				glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
-				m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.5f);
+				m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
 
 				float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
 
-				if (newLen < 0.5f)
-					m_Camera.pos = m_Camera.lookat - eyeForward * 0.5f;
+				if (newLen < 0.1f)
+					m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
 				if (newLen > 10.f)
 					m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
 
@@ -1069,6 +1070,9 @@ bool CMainApplication::editCleaningTableDesktop()
 		{
 			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud->getRawPointPosition(i));
 			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
+
+			if (out.z > 1.f)
+				continue;
 
 			if (m_pLasso->checkPoint(glm::vec2(out)))
 			{

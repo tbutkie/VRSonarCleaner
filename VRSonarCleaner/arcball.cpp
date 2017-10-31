@@ -2,6 +2,8 @@
 
 #include <gtx/intersect.hpp>
 
+#include "Renderer.h"
+
 //------------------------------------------------------------------------------
 ArcBall::ArcBall(DataVolume *dataVolume)
 	: m_pDataVolume(dataVolume)
@@ -9,6 +11,7 @@ ArcBall::ArcBall(DataVolume *dataVolume)
 	, m_pmat4View(NULL)
 	, m_vec3PivotPoint(dataVolume->getPosition())
 	, m_fTranslationTime(0.1f)
+	, m_bDragging(false)
 {
 	reset();
 }
@@ -27,19 +30,14 @@ void ArcBall::reset()
 	mVNow = vZero;
 	mQDown = qOne;
 	mQNow = qOne;
+
+
+	m_bDragging = false;
 }
 
 void ArcBall::update()
 {
 	calculateRadius();
-
-	float tableRad = m_pDataVolume->getBoundingRadius();
-
-	glm::vec3 right = glm::inverse(*m_pmat4View)[0];
-	glm::vec3 tableRadPt = m_pDataVolume->getPosition() + right * tableRad;
-
-	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
-	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
 
 	m_pDataVolume->setOrientation(getOrientation() * m_pDataVolume->getOriginalOrientation());
 
@@ -50,11 +48,14 @@ void ArcBall::update()
 		float ratio = timeElapsed / m_fTranslationTime;
 		glm::vec3 transDir = m_vec3EndTransPos - m_vec3StartTransPos;
 		m_pDataVolume->setPosition(m_vec3StartTransPos + transDir * ratio);
+		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_vec3PivotPoint - transDir * (1.f - ratio), 0.005f, glm::vec4(0.7f, 0.7f, 0.2f, 0.7f));
 	}
 }
 
 void ArcBall::draw()
 {
+	if (m_bDragging)
+		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_pDataVolume->getPosition(), 0.005f, glm::vec4(0.7f));
 }
 
 void ArcBall::setProjection(glm::mat4 * proj)
@@ -78,8 +79,8 @@ void ArcBall::calculateRadius()
 {
 	float tableRad = m_pDataVolume->getBoundingRadius();
 
-	glm::vec3 right = glm::inverse(*m_pmat4View)[0];
-	glm::vec3 tableRadPt = m_pDataVolume->getPosition() + right * tableRad;
+	glm::vec3 right = glm::normalize(glm::inverse(*m_pmat4View)[0]);
+	glm::vec3 tableRadPt = m_vec3PivotPoint + right * tableRad;
 
 	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
 	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
@@ -122,6 +123,10 @@ void ArcBall::beginDrag(const glm::vec2& msc)
 
   // Normal 'begin' code.
   mVDown      = (mScreenToTCS * glm::vec4(msc.x, msc.y, 0.0f, 1.0));
+
+  m_vec3StartRotateVec = m_pDataVolume->getPosition() - m_vec3PivotPoint;
+
+  m_bDragging = true;
 }
 
 //------------------------------------------------------------------------------
@@ -142,6 +147,17 @@ void ArcBall::drag(const glm::vec2& msc)
   //q.y = -q.y;
   //q.z = -q.z;
   //q.w =  q.w;
+
+  if (m_pDataVolume->getPosition() != m_vec3PivotPoint)
+  {
+	  glm::vec3 newVec = glm::rotate(mQDrag, glm::normalize(m_vec3StartRotateVec));
+	  m_pDataVolume->setPosition(m_vec3PivotPoint + newVec * glm::length(m_vec3StartRotateVec));
+  }
+}
+
+void ArcBall::endDrag()
+{
+	m_bDragging = false;
 }
 
 void ArcBall::translate(const glm::vec2 & mouseScreenCoords)

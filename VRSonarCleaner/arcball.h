@@ -58,6 +58,8 @@ public:
   /// \param mouseScreenCoords  Mouse screen coordinates.
   void drag(const glm::vec2& mouseScreenCoords);
 
+  void endDrag();
+
   void translate(const glm::vec2& mouseScreenCoords);
 
   /// Retrieves the current transformation in TCS.
@@ -97,12 +99,16 @@ private:
 
   DataVolume *m_pDataVolume;
 
+  bool m_bDragging;
+
   glm::vec3 m_vec3PivotPoint;	///< World space pivot point
 
   glm::mat4 *m_pmat4Projection;
   glm::mat4 *m_pmat4View;
   glm::ivec4 m_ivec4Viewport;
 
+  glm::vec3 m_vec3StartRotatePos;
+  glm::vec3 m_vec3StartRotateVec;
   glm::vec3 m_vec3StartTransPos, m_vec3EndTransPos;
   std::chrono::time_point<std::chrono::high_resolution_clock> m_tpStartTrans;
   float m_fTranslationTime;
