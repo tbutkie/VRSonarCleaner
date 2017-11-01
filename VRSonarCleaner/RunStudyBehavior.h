@@ -25,7 +25,7 @@ public:
 
 private:
 	TrackedDeviceManager *m_pTDM;
-	std::vector<std::experimental::filesystem::v1::path> m_vStudyDatasets;
+	std::vector<std::pair<std::experimental::filesystem::v1::path, std::string>> m_vStudyDatasets;
 	std::queue<StudyTrialBehavior*> m_qTrials;
 
 	std::future<void> m_Future;

@@ -1,7 +1,9 @@
 #include "DataLogger.h"
 
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <iomanip>
 
 using namespace std::experimental::filesystem::v1;
 
@@ -14,12 +16,14 @@ bool DataLogger::openLog(std::string logName, bool appendTimestampToLogname)
 {
 	std::string filename = appendTimestampToLogname ? logName + getTimeString() : logName;
 	m_fsLog.open(std::string(m_LogDirectory.string() + filename));
+	m_tpLogOpened = std::chrono::high_resolution_clock::now();
 	return m_fsLog.is_open();
 }
 
 void DataLogger::closeLog()
 {
-	m_fsLog.close();
+	if (m_fsLog.is_open())
+		m_fsLog.close();
 }
 
 void DataLogger::setID(int id)
@@ -29,7 +33,34 @@ void DataLogger::setID(int id)
 
 void DataLogger::logMessage(std::string message)
 {
-	m_fsLog << m_nID << '\t' << message << std::endl;
+	if (m_fsLog.is_open())
+		m_fsLog << m_nID << '\t' << message << "\n";
+}
+
+std::string DataLogger::getTimeSinceLogStartString()
+{
+	if (!m_fsLog.is_open())
+		return "00:00:00.000";
+
+	std::chrono::duration<double> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpLogOpened);
+
+	int hours, minutes, seconds, milliseconds;
+
+	hours = fmod(std::chrono::duration_cast<std::chrono::hours>(elapsedTime).count(), 24);
+	minutes = fmod(std::chrono::duration_cast<std::chrono::minutes>(elapsedTime).count(), 60);
+	seconds = fmod(std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count(), 60);
+	milliseconds = fmod(std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime).count(), 1000);
+
+	std::stringstream ss;
+	ss << std::setw(2) << std::setfill('0') << hours;
+	ss << ":";
+	ss << std::setw(2) << std::setfill('0') << minutes;
+	ss << ":";
+	ss << std::setw(2) << std::setfill('0') << seconds;
+	ss << ".";
+	ss << std::setw(3) << std::setfill('0') << milliseconds;
+
+	return ss.str();
 }
 
 DataLogger::DataLogger()

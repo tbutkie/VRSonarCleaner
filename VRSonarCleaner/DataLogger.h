@@ -25,6 +25,8 @@ public:
 
 	void logMessage(std::string message);
 
+	std::string getTimeSinceLogStartString();
+
 private:
 	DataLogger();
 	~DataLogger();
@@ -34,6 +36,7 @@ private:
 	int m_nID;
 
 	std::experimental::filesystem::v1::path m_LogDirectory;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLogOpened;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

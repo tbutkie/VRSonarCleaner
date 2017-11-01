@@ -4,14 +4,17 @@
 #include "ScaleDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
 #include "Renderer.h"
+#include "DataLogger.h"
 
 #include <filesystem>
 #include <sstream>
 
 using namespace std::chrono;
 
-StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName)
+StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
 	: m_pTDM(pTDM)
+	, m_strFileName(fileName)
+	, m_strCategory(category)
 	, m_nPointsLeft(0u)
 {
 	m_pColorScaler = new ColorScaler();
@@ -55,6 +58,47 @@ void StudyTrialBehavior::init()
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM, m_pDataVolume, vr::VRSystem()));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
+
+	glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+	glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+	std::stringstream ss;
+
+	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+	ss << "\t";
+	ss << "trial-type:\"standing\"";
+	ss << ";";
+	ss << "file-name:\"" << m_strFileName.substr(m_strFileName.find_last_of('\\') + 1) << "\"";
+	ss << ";";
+	ss << "file-category:\"" << m_strCategory << "\"";
+	ss << ";";
+	ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+	ss << ";";
+	ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+	if (m_pTDM->getPrimaryController())
+	{
+		glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+		glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+		ss << ";";
+		ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+		ss << ";";
+		ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+	}
+
+	if (m_pTDM->getSecondaryController())
+	{
+		glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+		glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+		ss << ";";
+		ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+		ss << ";";
+		ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+	}
+
+	DataLogger::getInstance().logMessage(ss.str());
 }
 
 void StudyTrialBehavior::update()

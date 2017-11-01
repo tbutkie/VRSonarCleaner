@@ -11,7 +11,7 @@ class StudyTrialBehavior :
 	public InitializableBehavior
 {
 public:
-	StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName);
+	StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
 	~StudyTrialBehavior();
 
 	void init();
@@ -25,6 +25,9 @@ private:
 	ColorScaler* m_pColorScaler;
 	SonarPointCloud* m_pPointCloud;
 	DataVolume* m_pDataVolume;
+
+	std::string m_strFileName;
+	std::string m_strCategory;
 
 	unsigned int m_nPointsLeft;
 	unsigned int m_nPointsCleaned;

@@ -618,6 +618,11 @@ bool CMainApplication::HandleInput()
 				}
 			}
 
+			if (sdlEvent.key.keysym.sym == SDLK_c)
+			{
+				std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
+			}
+
 			if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
 			{
 				Renderer::getInstance().toggleWireframe();
