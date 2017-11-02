@@ -800,6 +800,21 @@ bool CMainApplication::HandleInput()
 					m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
 
 				m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+				if (DataLogger::getInstance().logging())
+				{
+					std::stringstream ss;
+
+					ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+					ss << "\t";
+					ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+					ss << ";";
+					ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+					ss << ";";
+					ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+
+					DataLogger::getInstance().logMessage(ss.str());
+				}
 			}
 		}
 	}

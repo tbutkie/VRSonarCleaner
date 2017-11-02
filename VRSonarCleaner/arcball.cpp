@@ -1,8 +1,10 @@
 #include "ArcBall.h"
 
 #include <gtx/intersect.hpp>
+#include <sstream>
 
 #include "Renderer.h"
+#include "DataLogger.h"
 
 //------------------------------------------------------------------------------
 ArcBall::ArcBall(DataVolume *dataVolume)
@@ -127,6 +129,19 @@ void ArcBall::beginDrag(const glm::vec2& msc)
   m_vec3StartRotateVec = m_pDataVolume->getPosition() - m_vec3PivotPoint;
 
   m_bDragging = true;
+
+  if (DataLogger::getInstance().logging())
+  {
+	  std::stringstream ss;
+
+	  ss << "Arcball Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+	  ss << "\t";
+	  ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+	  ss << ";";
+	  ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+
+	  DataLogger::getInstance().logMessage(ss.str());
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -158,6 +173,19 @@ void ArcBall::drag(const glm::vec2& msc)
 void ArcBall::endDrag()
 {
 	m_bDragging = false;
+
+	if (DataLogger::getInstance().logging())
+	{
+		std::stringstream ss;
+
+		ss << "Arcball End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 void ArcBall::translate(const glm::vec2 & mouseScreenCoords)
@@ -179,6 +207,21 @@ void ArcBall::translate(const glm::vec2 & mouseScreenCoords)
 	m_vec3StartTransPos = m_pDataVolume->getPosition();
 	m_vec3EndTransPos = m_pDataVolume->getPosition() + offsetVec;
 	m_tpStartTrans = std::chrono::high_resolution_clock::now();
+
+	if (DataLogger::getInstance().logging())
+	{
+		std::stringstream ss;
+
+		ss << "Translate" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "target-pos:\"" << m_vec3EndTransPos.x << "," << m_vec3EndTransPos.y << "," << m_vec3EndTransPos.z << "\"";
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 //------------------------------------------------------------------------------

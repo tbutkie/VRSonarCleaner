@@ -1,4 +1,4 @@
-#include "StudyTrialBehavior.h"
+#include "StudyTrialStandingBehavior.h"
 #include "BehaviorManager.h"
 #include "GrabDataVolumeBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -11,7 +11,7 @@
 
 using namespace std::chrono;
 
-StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
+StudyTrialStandingBehavior::StudyTrialStandingBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
 	: m_pTDM(pTDM)
 	, m_strFileName(fileName)
 	, m_strCategory(category)
@@ -39,7 +39,7 @@ StudyTrialBehavior::StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string f
 }
 
 
-StudyTrialBehavior::~StudyTrialBehavior()
+StudyTrialStandingBehavior::~StudyTrialStandingBehavior()
 {
 	if (m_pPointCloud)
 		delete m_pPointCloud;
@@ -51,7 +51,7 @@ StudyTrialBehavior::~StudyTrialBehavior()
 		delete m_pColorScaler;
 }
 
-void StudyTrialBehavior::init()
+void StudyTrialStandingBehavior::init()
 {
 	using namespace std::experimental::filesystem::v1;
 	std::cout << "Starting trials for " << path(m_pPointCloud->getName()).filename() << std::endl;
@@ -71,6 +71,12 @@ void StudyTrialBehavior::init()
 	ss << "file-name:\"" << m_strFileName.substr(m_strFileName.find_last_of('\\') + 1) << "\"";
 	ss << ";";
 	ss << "file-category:\"" << m_strCategory << "\"";
+	ss << ";";
+	ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+	ss << ";";
+	ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+	ss << ";";
+	ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
 	ss << ";";
 	ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
 	ss << ";";
@@ -101,7 +107,7 @@ void StudyTrialBehavior::init()
 	DataLogger::getInstance().logMessage(ss.str());
 }
 
-void StudyTrialBehavior::update()
+void StudyTrialStandingBehavior::update()
 {
 	m_pPointCloud->update();
 	m_pDataVolume->update();
@@ -132,11 +138,58 @@ void StudyTrialBehavior::update()
 		BehaviorManager::getInstance().removeBehavior("edit");
 
 		m_bActive = false;
+
+		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+		std::stringstream ss;
+
+		ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "trial-type:\"standing\"";
+		ss << ";";
+		ss << "file-name:\"" << m_strFileName.substr(m_strFileName.find_last_of('\\') + 1) << "\"";
+		ss << ";";
+		ss << "file-category:\"" << m_strCategory << "\"";
+		ss << ";";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << ";";
+		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << ";";
+		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+		if (m_pTDM->getPrimaryController())
+		{
+			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+		}
+
+		if (m_pTDM->getSecondaryController())
+		{
+			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+		}
+
+		DataLogger::getInstance().logMessage(ss.str());
 	}
 
 }
 
-void StudyTrialBehavior::draw()
+void StudyTrialStandingBehavior::draw()
 {
 	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
 	m_pDataVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);

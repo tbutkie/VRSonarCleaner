@@ -183,13 +183,13 @@
     <ClCompile Include="RunStudyBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
-    <ClCompile Include="StudyTrialBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
     <ClCompile Include="DataLogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SnellenTest.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTrialStandingBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
   </ItemGroup>
@@ -344,13 +344,13 @@
     <ClInclude Include="RunStudyBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
-    <ClInclude Include="StudyTrialBehavior.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
     <ClInclude Include="DataLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SnellenTest.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialStandingBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>

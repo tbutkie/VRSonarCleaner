@@ -14,9 +14,8 @@ void DataLogger::setLogDirectory(std::string dir)
 
 bool DataLogger::openLog(std::string logName, bool appendTimestampToLogname)
 {
-	std::string filename = appendTimestampToLogname ? logName + getTimeString() : logName;
+	std::string filename = appendTimestampToLogname ? logName + "_" + getTimeString() : logName;
 	m_fsLog.open(std::string(m_LogDirectory.string() + filename));
-	m_tpLogOpened = std::chrono::high_resolution_clock::now();
 	return m_fsLog.is_open();
 }
 
@@ -24,25 +23,45 @@ void DataLogger::closeLog()
 {
 	if (m_fsLog.is_open())
 		m_fsLog.close();
+
+	stop();
 }
 
-void DataLogger::setID(int id)
+void DataLogger::start()
 {
-	m_nID = id;
+	m_bLogging = m_fsLog.is_open();
+
+	if (m_bLogging)
+		m_tpLogStart = std::chrono::high_resolution_clock::now();
+}
+
+void DataLogger::stop()
+{
+	m_bLogging = false;
+}
+
+bool DataLogger::logging()
+{
+	return m_bLogging;
+}
+
+void DataLogger::setID(std::string id)
+{
+	m_strID = id;
 }
 
 void DataLogger::logMessage(std::string message)
 {
-	if (m_fsLog.is_open())
-		m_fsLog << m_nID << '\t' << message << "\n";
+	if (m_bLogging)
+		m_fsLog << m_strID << '\t' << message << "\n";
 }
 
 std::string DataLogger::getTimeSinceLogStartString()
 {
-	if (!m_fsLog.is_open())
+	if (!m_bLogging)
 		return "00:00:00.000";
 
-	std::chrono::duration<double> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpLogOpened);
+	std::chrono::duration<double> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpLogStart);
 
 	int hours, minutes, seconds, milliseconds;
 
@@ -63,13 +82,15 @@ std::string DataLogger::getTimeSinceLogStartString()
 	return ss.str();
 }
 
-DataLogger::DataLogger()
+DataLogger::DataLogger() : m_bLogging(false)
 {
 }
 
 
 DataLogger::~DataLogger()
 {
+	if (m_fsLog.is_open())
+		m_fsLog.close();
 }
 
 

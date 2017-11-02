@@ -1,6 +1,6 @@
 #pragma once
 #include "BehaviorBase.h"
-#include "StudyTrialBehavior.h"
+#include "StudyTrialStandingBehavior.h"
 #include "TrackedDeviceManager.h"
 #include "DataLogger.h"
 
@@ -26,7 +26,7 @@ public:
 private:
 	TrackedDeviceManager *m_pTDM;
 	std::vector<std::pair<std::experimental::filesystem::v1::path, std::string>> m_vStudyDatasets;
-	std::queue<StudyTrialBehavior*> m_qTrials;
+	std::queue<StudyTrialStandingBehavior*> m_qTrials;
 
 	std::future<void> m_Future;
 

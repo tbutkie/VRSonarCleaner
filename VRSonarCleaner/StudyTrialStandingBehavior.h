@@ -7,12 +7,12 @@
 
 #include <queue>
 
-class StudyTrialBehavior :
+class StudyTrialStandingBehavior :
 	public InitializableBehavior
 {
 public:
-	StudyTrialBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
-	~StudyTrialBehavior();
+	StudyTrialStandingBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
+	~StudyTrialStandingBehavior();
 
 	void init();
 

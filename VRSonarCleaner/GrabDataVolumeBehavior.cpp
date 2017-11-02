@@ -1,6 +1,7 @@
 #include "GrabDataVolumeBehavior.h"
 #include "InfoBoxManager.h"
 #include "Renderer.h"
+#include "DataLogger.h"
 
 GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
@@ -113,6 +114,50 @@ void GrabDataVolumeBehavior::startRotation()
 	m_mat4ControllerToVolumeTransform = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;
 
 	m_bRotationInProgress = true;
+
+	if (DataLogger::getInstance().logging())
+	{
+		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+		std::stringstream ss;
+
+		ss << "Manipulation Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << ";";
+		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << ";";
+		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+		if (m_pTDM->getPrimaryController())
+		{
+			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+		}
+
+		if (m_pTDM->getSecondaryController())
+		{
+			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+		}
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 void GrabDataVolumeBehavior::continueRotation()
@@ -133,6 +178,50 @@ void GrabDataVolumeBehavior::endRotation()
 {
 	m_bRotationInProgress = false;
 	//could revert to old starting position and orientation here to have it always snap back in place
+
+	if (DataLogger::getInstance().logging())
+	{
+		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+		std::stringstream ss;
+
+		ss << "Manipulation End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << ";";
+		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << ";";
+		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+		if (m_pTDM->getPrimaryController())
+		{
+			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+		}
+
+		if (m_pTDM->getSecondaryController())
+		{
+			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+		}
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 bool GrabDataVolumeBehavior::isBeingRotated()

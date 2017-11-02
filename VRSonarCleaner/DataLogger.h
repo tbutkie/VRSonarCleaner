@@ -2,6 +2,7 @@
 
 #include "BehaviorBase.h"
 #include <map>
+#include <sstream>
 #include <fstream>
 #include <filesystem>
 
@@ -21,7 +22,11 @@ public:
 	bool openLog(std::string logName, bool appendTimestampToLogname = true);
 	void closeLog();
 
-	void setID(int id);
+	void start();
+	void stop();
+	bool logging();
+
+	void setID(std::string id);
 
 	void logMessage(std::string message);
 
@@ -31,12 +36,14 @@ private:
 	DataLogger();
 	~DataLogger();
 
+	bool m_bLogging;
+
 	std::ofstream m_fsLog;
 
-	int m_nID;
+	std::string m_strID;
 
 	std::experimental::filesystem::v1::path m_LogDirectory;
-	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLogOpened;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLogStart;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

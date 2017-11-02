@@ -60,7 +60,7 @@ void RunStudyBehavior::init()
 	std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 
 	for (auto const &ds : m_vStudyDatasets)
-		m_qTrials.push(new StudyTrialBehavior(m_pTDM, ds.first.string(), ds.second));
+		m_qTrials.push(new StudyTrialStandingBehavior(m_pTDM, ds.first.string(), ds.second));
 
 	m_bTrialsLoaded = true;
 	m_qTrials.front()->init();
