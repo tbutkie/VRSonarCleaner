@@ -95,6 +95,12 @@ public:
 		uint32_t m_nRenderHeight;
 	};
 
+	struct Camera {
+		glm::vec3 pos;
+		glm::vec3 lookat;
+		glm::vec3 up;
+	};
+
 public:	
 	// Singleton instance access
 	static Renderer& getInstance()

@@ -206,6 +206,8 @@
     <ClCompile Include="InfoBoxManager.cpp" />
     <ClCompile Include="StudyEditTutorial.cpp" />
     <ClCompile Include="StudyIntroBehavior.cpp" />
+    <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
+    <ClCompile Include="StudyTrialSittingBehavior.cpp" />
     <ClCompile Include="StudyTrialStandingBehavior.cpp" />
     <ClCompile Include="StudyTutorialBehavior.cpp" />
     <ClCompile Include="TaskCompleteBehavior.cpp" />
@@ -262,6 +264,8 @@
     <ClInclude Include="InfoBoxManager.h" />
     <ClInclude Include="StudyEditTutorial.h" />
     <ClInclude Include="StudyIntroBehavior.h" />
+    <ClInclude Include="StudyTrialDesktopBehavior.h" />
+    <ClInclude Include="StudyTrialSittingBehavior.h" />
     <ClInclude Include="StudyTrialStandingBehavior.h" />
     <ClInclude Include="StudyTutorialBehavior.h" />
     <ClInclude Include="TaskCompleteBehavior.h" />

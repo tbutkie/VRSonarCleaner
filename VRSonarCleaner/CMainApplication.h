@@ -31,6 +31,9 @@ public:
 	bool initVR();
 	bool initDesktop();
 
+	bool shutdownVR();
+	bool shutdownDesktop();
+
 	void Shutdown();
 
 	void RunMainLoop();
@@ -67,13 +70,7 @@ private:
 	std::vector<DataVolume*> m_vpDataVolumes;
 	ColorScaler* m_pColorScalerTPU;
 
-	struct Camera {
-		glm::vec3 pos;
-		glm::vec3 lookat;
-		glm::vec3 up;
-	} m_Camera;
-
-	float m_fPtHighlightAmt;
+	Renderer::Camera m_Camera;
 
 private: // SDL bookkeeping
 	SDL_Window* createFullscreenWindow(int displayIndex);

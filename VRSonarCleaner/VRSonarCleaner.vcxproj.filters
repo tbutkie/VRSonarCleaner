@@ -195,6 +195,12 @@
     <ClCompile Include="DesktopCleanBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClCompile>
+    <ClCompile Include="StudyTrialSittingBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTrialDesktopBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -358,6 +364,12 @@
     </ClInclude>
     <ClInclude Include="DesktopCleanBehavior.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialSittingBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialDesktopBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

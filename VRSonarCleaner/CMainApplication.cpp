@@ -122,7 +122,6 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pDesktopWindow(NULL)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
-	, m_fPtHighlightAmt(1.f)
 {	
 	switch (mode)
 	{
@@ -421,6 +420,35 @@ bool CMainApplication::initDesktop()
 	return true;
 }
 
+bool CMainApplication::shutdownVR()
+{
+	SDL_DestroyWindow(m_pVRCompanionWindow);
+	m_pVRCompanionWindow = NULL;
+
+	if (m_pTDM)
+	{
+		delete m_pTDM;
+		m_pTDM = NULL;
+	}
+
+	vr::VR_Shutdown();
+	m_pHMD = NULL;
+
+	m_bUseVR = false;
+
+	return true;
+}
+
+bool CMainApplication::shutdownDesktop()
+{
+	SDL_DestroyWindow(m_pDesktopWindow);
+	m_pDesktopWindow = NULL;
+
+	m_bUseDesktop = false;
+
+	return true;
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -614,6 +642,28 @@ bool CMainApplication::HandleInput()
 					{
 						m_bUseDesktop = true;
 						initDesktop();
+					}
+				}
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_x)
+			{
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+				{
+					if (m_bUseVR)
+					{
+						shutdownVR();
+					}
+				}
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_z)
+			{
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+				{
+					if (m_bUseDesktop)
+					{
+						shutdownDesktop();
 					}
 				}
 			}
@@ -987,7 +1037,13 @@ void CMainApplication::drawScene()
 		{
 			if (!dv->isVisible()) continue;
 
-			glm::mat4 trans = m_bUseDesktop ? glm::inverse(m_sviDesktop3DViewInfo.view) : m_pTDM->getHMDToWorldTransform();
+			glm::mat4 trans;
+			
+			if (m_bUseDesktop)
+				trans = glm::inverse(m_sviDesktop3DViewInfo.view);
+
+			if (m_bUseVR)
+				trans = m_pTDM->getHMDToWorldTransform();
 
 			dv->drawVolumeBacking(trans, glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
 			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
