@@ -192,6 +192,9 @@
     <ClCompile Include="StudyTrialStandingBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
+    <ClCompile Include="DesktopCleanBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -352,6 +355,9 @@
     </ClInclude>
     <ClInclude Include="StudyTrialStandingBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="DesktopCleanBehavior.h">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

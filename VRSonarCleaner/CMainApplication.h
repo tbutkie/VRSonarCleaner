@@ -12,8 +12,6 @@
 #include "FlowVolume.h"
 #include "TrackedDeviceManager.h"
 #include "Renderer.h"
-#include "arcball.h"
-#include "LassoTool.h"
 #include "SonarPointCloud.h"
 #include "ColorScaler.h"
 
@@ -59,8 +57,6 @@ private:
 	void drawScene();
 	void render();
 
-	bool editCleaningTableDesktop();
-
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 	
 	DataVolume* m_pWallVolume;
@@ -71,16 +67,11 @@ private:
 	std::vector<DataVolume*> m_vpDataVolumes;
 	ColorScaler* m_pColorScalerTPU;
 
-	//ARCBALL STUFF
-	ArcBall* m_pArcball;
-
 	struct Camera {
 		glm::vec3 pos;
 		glm::vec3 lookat;
 		glm::vec3 up;
 	} m_Camera;
-
-	LassoTool* m_pLasso;
 
 	float m_fPtHighlightAmt;
 

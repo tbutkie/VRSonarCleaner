@@ -13,6 +13,9 @@
 #include "StudyIntroBehavior.h"
 #include "ScaleTutorial.h"
 #include "StudyEditTutorial.h"
+#include "DesktopCleanBehavior.h"
+#include "arcball.h"
+#include "LassoTool.h"
 #include "SnellenTest.h"
 
 #include "HolodeckBackground.h"
@@ -120,8 +123,6 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
 	, m_fPtHighlightAmt(1.f)
-	, m_pArcball(NULL)
-	, m_pLasso(NULL)
 {	
 	switch (mode)
 	{
@@ -256,11 +257,9 @@ bool CMainApplication::init()
 		{
 			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
 
-			m_pArcball = new ArcBall(m_pTableVolume);
-			m_pArcball->setProjection(&m_sviDesktop3DViewInfo.projection);
-			m_pArcball->setView(&m_sviDesktop3DViewInfo.view);
-			m_pArcball->setViewport(vp);
-			BehaviorManager::getInstance().addBehavior("arcball", m_pArcball);
+			DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume, &m_sviDesktop3DViewInfo, vp);
+			BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
+			tmp->init();
 		}
 	}
 	else if (m_bFlowVis)
@@ -416,8 +415,6 @@ bool CMainApplication::initDesktop()
 	
 	createDesktopView();
 
-	m_pLasso = new LassoTool();
-
 	m_Camera.pos = glm::vec3(0.f, 0.f, 1.f);
 	m_Camera.up = glm::vec3(0.f, 1.f, 0.f);
 
@@ -481,6 +478,9 @@ bool CMainApplication::HandleInput()
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
+		ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
+		LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
+
 		if (sdlEvent.type == SDL_QUIT)
 		{
 			bRet = true;
@@ -648,14 +648,14 @@ bool CMainApplication::HandleInput()
 					for (auto &dv : m_vpDataVolumes)
 						dv->resetPositionAndOrientation();
 
-					if (m_pArcball)
+					if (arcball)
 					{
 						m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 						m_Camera.lookat = m_pTableVolume->getPosition();
 
 						m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
-						m_pArcball->reset();
+						arcball->reset();
 					}
 				}
 
@@ -668,11 +668,10 @@ bool CMainApplication::HandleInput()
 
 				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
 				{
-					if (m_pLasso && m_pLasso->readyToCheck())
-					{
-						editCleaningTableDesktop();
-						m_pLasso->reset();
-					}
+					DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
+
+					if (desktopEdit)
+						desktopEdit->activate();
 				}
 			}
 			else if (m_bFlowVis) //flow
@@ -722,6 +721,7 @@ bool CMainApplication::HandleInput()
 			}
 		}
 
+
 		// MOUSE
 		if (m_bUseDesktop)
 		{
@@ -730,29 +730,35 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = true;
-					m_pArcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
-					if (m_bRightMouseDown)
+
+					if (arcball)
+						arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+
+					if (lasso)
 					{
-						m_pLasso->end();
+						if (m_bRightMouseDown)
+							lasso->end();
+						
+						lasso->reset();
 					}
-					m_pLasso->reset();
+					
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_bRightMouseDown = true;
-					if (!m_bLeftMouseDown)
-						m_pLasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					if (lasso && !m_bLeftMouseDown)
+						lasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
 				{
-					if (m_bRightMouseDown)
+					if (lasso && m_bRightMouseDown)
 					{
-						m_pLasso->end();
+						lasso->end();
 					}
 					m_bMiddleMouseDown = true;
 
-					if (m_pArcball)
-						m_pArcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					if (arcball)
+						arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
 				}
 
 			}//end mouse down 
@@ -761,13 +767,19 @@ bool CMainApplication::HandleInput()
 				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					m_bLeftMouseDown = false;
-					m_pArcball->endDrag();
-					m_pLasso->reset();
+
+					if (arcball)
+						arcball->endDrag();
+
+					if (lasso)
+						lasso->reset();
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_bRightMouseDown = false;
-					m_pLasso->end();
+
+					if (lasso)
+						lasso->end();
 				}
 				if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
 				{
@@ -779,16 +791,20 @@ bool CMainApplication::HandleInput()
 			{
 				if (m_bLeftMouseDown)
 				{
-					m_pArcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					if (arcball)
+						arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
 				}
 				if (m_bRightMouseDown && !m_bLeftMouseDown)
 				{
-					m_pLasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					if (lasso)
+						lasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
 				}
 			}
 			if (sdlEvent.type == SDL_MOUSEWHEEL)
 			{
-				m_pLasso->reset();
+				if (lasso)
+					lasso->reset();
+
 				glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
 				m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
 
@@ -933,18 +949,18 @@ void CMainApplication::drawScene()
 				DebugDrawer::getInstance().drawLine(m_Camera.pos, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 
 				// draw the lasso points, if any
-				std::vector<glm::vec3> pts = m_pLasso->getPoints();
-				for (int i = 0; i < pts.size(); ++i)
-				{
-					glm::vec3 pt1 = pts[i];
-					glm::vec3 pt2 = pts[(i + 1) % pts.size()];
-					DebugDrawer::getInstance().drawLine
-					(
-						glm::unProject(pt1, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)), 
-						glm::unProject(pt2, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)),
-						glm::vec4(0.f, 1.f, 0.f, 1.f)
-					);
-				}
+				//std::vector<glm::vec3> pts = m_pLasso->getPoints();
+				//for (int i = 0; i < pts.size(); ++i)
+				//{
+				//	glm::vec3 pt1 = pts[i];
+				//	glm::vec3 pt2 = pts[(i + 1) % pts.size()];
+				//	DebugDrawer::getInstance().drawLine
+				//	(
+				//		glm::unProject(pt1, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)), 
+				//		glm::unProject(pt2, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)),
+				//		glm::vec4(0.f, 1.f, 0.f, 1.f)
+				//	);
+				//}
 			}
 		}
 
@@ -965,12 +981,6 @@ void CMainApplication::drawScene()
 				Renderer::CENTER,
 				Renderer::BOTTOM_LEFT
 			);
-
-			//draw 2D interface elements
-			Renderer::RendererSubmission rs;
-			rs.modelToWorldTransform = glm::mat4();
-			m_pLasso->prepareForRender(rs);
-			Renderer::getInstance().addToUIRenderQueue(rs);
 		}
 
 		for (auto &dv : m_vpDataVolumes)
@@ -1074,36 +1084,6 @@ void CMainApplication::render()
 	Renderer::getInstance().clearDynamicRenderQueue();
 	Renderer::getInstance().clearUIRenderQueue();
 	DebugDrawer::getInstance().flushLines();
-}
-
-bool CMainApplication::editCleaningTableDesktop()
-{
-	bool hit = false;
-
-	for (auto &ds : m_pTableVolume->getDatasets())
-	{
-		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(ds);
-
-		glm::vec4 vp(0.f, 0.f, static_cast<float>(m_ivec2DesktopWindowSize.x), static_cast<float>(m_ivec2DesktopWindowSize.y));
-
-		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
-		{
-			glm::vec3 in = m_pTableVolume->convertToWorldCoords(cloud->getRawPointPosition(i));
-			glm::vec3 out = glm::project(in, m_sviDesktop3DViewInfo.view, m_sviDesktop3DViewInfo.projection, vp);
-
-			if (out.z > 1.f)
-				continue;
-
-			if (m_pLasso->checkPoint(glm::vec2(out)))
-			{
-				cloud->markPoint(i, 1);
-				hit = true;
-			}
-		}
-		if (hit)
-			cloud->setRefreshNeeded();
-	}
-	return hit;
 }
 
 void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)

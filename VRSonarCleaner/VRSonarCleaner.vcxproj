@@ -173,6 +173,7 @@
     <ClCompile Include="DataLogger.cpp" />
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
+    <ClCompile Include="DesktopCleanBehavior.cpp" />
     <ClCompile Include="GrabDataVolumeBehavior.cpp" />
     <ClCompile Include="GrabTutorial.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
@@ -226,6 +227,7 @@
     <ClInclude Include="DataLogger.h" />
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="DemoBehavior.h" />
+    <ClInclude Include="DesktopCleanBehavior.h" />
     <ClInclude Include="GrabDataVolumeBehavior.h" />
     <ClInclude Include="GrabTutorial.h" />
     <ClInclude Include="PointCleanProbe.h" />

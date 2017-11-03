@@ -5,13 +5,18 @@
 
 #include <glm.hpp>
 
+#include "BehaviorBase.h"
 #include "Renderer.h"
 
-class LassoTool
+class LassoTool : public InitializableBehavior
 {
 public:
 	LassoTool();
 	~LassoTool();
+
+	void init();
+	void update();
+	void draw();
 
 	void start(int mx, int my);
 	void move(int mx, int my);
@@ -22,8 +27,6 @@ public:
 	std::vector<glm::vec3> getPoints();
 
 	bool checkPoint(glm::vec2 testPt);
-
-	void prepareForRender(Renderer::RendererSubmission &rs);
 
 	void reset();
 

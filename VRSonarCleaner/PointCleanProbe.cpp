@@ -2,6 +2,7 @@
 
 #include "InfoBoxManager.h"
 #include "Renderer.h"
+#include "DataLogger.h"
 
 using namespace std::chrono_literals;
 
@@ -136,11 +137,111 @@ bool PointCleanProbe::anyHits()
 void PointCleanProbe::activateProbe()
 {
 	m_bProbeActive = true;
+
+	if (DataLogger::getInstance().logging())
+	{
+		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+		std::stringstream ss;
+
+		ss << "Probe Activated" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << ";";
+		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << ";";
+		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+		if (m_pTDM->getPrimaryController())
+		{
+			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+			glm::mat4 probeTrans(getProbeToWorldTransform());
+
+			ss << ";";
+			ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
+			ss << ";";
+			ss << "probe-radius:\"" << getProbeRadius() << "\""; 
+			ss << ";";
+			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+		}
+
+		if (m_pTDM->getSecondaryController())
+		{
+			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+		}
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 void PointCleanProbe::deactivateProbe()
 {
 	m_bProbeActive = false;
+
+	if (DataLogger::getInstance().logging())
+	{
+		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+		std::stringstream ss;
+
+		ss << "Probe Deactivated" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << ";";
+		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << ";";
+		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+		if (m_pTDM->getPrimaryController())
+		{
+			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+			glm::mat4 probeTrans(getProbeToWorldTransform());
+
+			ss << ";";
+			ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
+			ss << ";";
+			ss << "probe-radius:\"" << getProbeRadius() << "\"";
+			ss << ";";
+			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+		}
+
+		if (m_pTDM->getSecondaryController())
+		{
+			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+			ss << ";";
+			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+			ss << ";";
+			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+		}
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
 }
 
 // This code taken from http://www.flipcode.com/archives/Fast_Point-In-Cylinder_Test.shtml
