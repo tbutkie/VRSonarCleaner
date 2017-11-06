@@ -610,10 +610,6 @@ bool CMainApplication::HandleInput()
 				BehaviorManager::getInstance().addBehavior("test", st);
 				st->init();
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_t)
-			{
-				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
-			}
 			if (sdlEvent.key.keysym.sym == SDLK_y)
 			{
 				m_bDemoMode = true;
@@ -624,13 +620,42 @@ bool CMainApplication::HandleInput()
 			{
 				BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
-			if (sdlEvent.key.keysym.sym == SDLK_i)
+
+			if (sdlEvent.key.keysym.sym == SDLK_KP_0)
 			{
 				m_pWallVolume->setVisible(false);
 				m_pTableVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
-				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM);
-				BehaviorManager::getInstance().addBehavior("Study", rsb);
+				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_KP_1)
+			{
+				m_pWallVolume->setVisible(false);
+				m_pTableVolume->setVisible(false);
+				BehaviorManager::getInstance().clearBehaviors();
+				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
+				BehaviorManager::getInstance().addBehavior("Standing Study", rsb);
+				rsb->init();
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_KP_2)
+			{
+				m_pWallVolume->setVisible(false);
+				m_pTableVolume->setVisible(false);
+				BehaviorManager::getInstance().clearBehaviors();
+				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
+				BehaviorManager::getInstance().addBehavior("Sitting Study", rsb);
+				rsb->init();
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_KP_3)
+			{
+				m_pWallVolume->setVisible(false);
+				m_pTableVolume->setVisible(false);
+				BehaviorManager::getInstance().clearBehaviors();
+				RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera);
+				BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
 				rsb->init();
 			}
 

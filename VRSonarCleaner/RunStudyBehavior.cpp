@@ -1,5 +1,9 @@
 #include "RunStudyBehavior.h"
 
+#include "StudyTrialStandingBehavior.h"
+#include "StudyTrialSittingBehavior.h"
+#include "StudyTrialDesktopBehavior.h"
+
 #include <iostream>
 #include <random>
 #include <algorithm>
@@ -7,8 +11,21 @@
 using namespace std::experimental::filesystem::v1;
 
 
-RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM)
-	: m_pTDM(pTDM)
+RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, bool sitting)
+	: m_eStudyType(sitting ? VR_SITTING : VR_STANDING)
+	, m_pTDM(pTDM)
+	, m_pDesktop3DViewInfo(NULL)
+	, m_pCamera(NULL)
+	, m_bTrialsLoaded(false)
+{
+}
+
+RunStudyBehavior::RunStudyBehavior(Renderer::SceneViewInfo * pSceneInfo, glm::ivec4 & viewport, Renderer::Camera * pCamera)
+	: m_eStudyType(DESKTOP)
+	, m_pTDM(NULL)
+	, m_pDesktop3DViewInfo(pSceneInfo)
+	, m_ivec4Viewport(viewport)
+	, m_pCamera(pCamera)
 	, m_bTrialsLoaded(false)
 {
 }
@@ -16,6 +33,7 @@ RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM)
 
 RunStudyBehavior::~RunStudyBehavior()
 {
+	DataLogger::getInstance().closeLog();
 }
 
 void RunStudyBehavior::init()
@@ -60,7 +78,21 @@ void RunStudyBehavior::init()
 	std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 
 	for (auto const &ds : m_vStudyDatasets)
-		m_qTrials.push(new StudyTrialStandingBehavior(m_pTDM, ds.first.string(), ds.second));
+		switch (m_eStudyType)
+		{
+		case RunStudyBehavior::VR_STANDING:
+			m_qTrials.push(new StudyTrialStandingBehavior(m_pTDM, ds.first.string(), ds.second));
+			break;
+		case RunStudyBehavior::VR_SITTING:
+			m_qTrials.push(new StudyTrialSittingBehavior(m_pTDM, ds.first.string(), ds.second));
+			break;
+		case RunStudyBehavior::DESKTOP:
+			m_qTrials.push(new StudyTrialDesktopBehavior(m_pDesktop3DViewInfo, m_ivec4Viewport, m_pCamera, ds.first.string(), ds.second));
+			break;
+		default:
+			break;
+		}
+		
 
 	m_bTrialsLoaded = true;
 	m_qTrials.front()->init();
