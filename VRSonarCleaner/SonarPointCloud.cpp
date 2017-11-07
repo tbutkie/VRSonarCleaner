@@ -26,8 +26,8 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 {
 	switch (filetype)
 	{
-		loadCARISTxt();
 	case SonarPointCloud::CARIS:
+		loadCARISTxt();
 		break;
 	case SonarPointCloud::XYZF:
 		loadStudyCSV();

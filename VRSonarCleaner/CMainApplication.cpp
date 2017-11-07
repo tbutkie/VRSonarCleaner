@@ -17,6 +17,7 @@
 #include "arcball.h"
 #include "LassoTool.h"
 #include "SnellenTest.h"
+#include "CloudEditControllerTutorial.h"
 
 #include "HolodeckBackground.h"
 
@@ -606,15 +607,19 @@ bool CMainApplication::HandleInput()
 				m_pTableVolume->setVisible(false);
 				m_pWallVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
-				SnellenTest *st = new SnellenTest(m_pTDM);
+				SnellenTest *st = new SnellenTest(m_pTDM, 1.f);
 				BehaviorManager::getInstance().addBehavior("test", st);
 				st->init();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_y)
 			{
 				m_bDemoMode = true;
+				m_pTableVolume->setVisible(false);
+				m_pWallVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
-				BehaviorManager::getInstance().addBehavior("Demo", new DemoBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				CloudEditControllerTutorial *cet = new CloudEditControllerTutorial(m_pTDM);
+				BehaviorManager::getInstance().addBehavior("Demo", cet);
+				cet->init();
 			}
 			if (sdlEvent.key.keysym.sym == SDLK_u)
 			{

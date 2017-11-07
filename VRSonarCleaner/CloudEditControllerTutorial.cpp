@@ -258,19 +258,19 @@ void CloudEditControllerTutorial::updateBadDataLabels(float width)
 
 	glm::dmat4 dataXform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
 
-	glm::vec3 pos1 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint1), 1.f));
-	glm::vec3 pos2 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint2), 1.f));
-	glm::vec3 pos3 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint3), 1.f));
-	glm::vec3 pos4 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint4), 1.f));
+	//glm::vec3 pos1 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint1), 1.f));
+	//glm::vec3 pos2 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint2), 1.f));
+	//glm::vec3 pos3 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint3), 1.f));
+	//glm::vec3 pos4 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint4), 1.f));
 
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 1", glm::translate(glm::mat4(), pos1) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 2", glm::translate(glm::mat4(), pos1) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 3", glm::translate(glm::mat4(), pos2) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 4", glm::translate(glm::mat4(), pos2) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 5", glm::translate(glm::mat4(), pos3) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 6", glm::translate(glm::mat4(), pos3) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 7", glm::translate(glm::mat4(), pos4) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
-	InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 8", glm::translate(glm::mat4(), pos4) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 1", glm::translate(glm::mat4(), pos1) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 2", glm::translate(glm::mat4(), pos1) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 3", glm::translate(glm::mat4(), pos2) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 4", glm::translate(glm::mat4(), pos2) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 5", glm::translate(glm::mat4(), pos3) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 6", glm::translate(glm::mat4(), pos3) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 7", glm::translate(glm::mat4(), pos4) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(offset, 0.f, 0.f)));
+	//InfoBoxManager::getInstance().updateInfoBoxPose("Bad Data Label 8", glm::translate(glm::mat4(), pos4) * glm::mat4_cast(m_pDemoVolume->getOrientation()) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(-offset, 0.f, 0.f)));
 }
 
 void CloudEditControllerTutorial::cleanupBadDataLabels()
