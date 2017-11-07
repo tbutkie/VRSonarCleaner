@@ -24,6 +24,8 @@ public:
 
 	void draw();
 
+	void next();
+
 	enum STUDY_TYPE {
 		VR_STANDING,
 		VR_SITTING,

@@ -20,6 +20,8 @@ public:
 
 	void draw();
 
+	void finish();
+
 private:
 	Renderer::SceneViewInfo *m_pDesktop3DViewInfo;
 	glm::ivec4 m_ivec4Viewport;
@@ -38,5 +40,7 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdate;
 
 	std::vector<std::pair<unsigned int, std::chrono::time_point<std::chrono::high_resolution_clock>>> m_vPointUpdateAnimations;
+
+	bool m_bPointsCleaned;
 };
 

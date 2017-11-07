@@ -74,6 +74,7 @@ void RunStudyBehavior::init()
 
 	DataLogger::getInstance().setLogDirectory("data");
 	DataLogger::getInstance().openLog("study", true);
+	DataLogger::getInstance().start();
 
 	std::shuffle(m_vStudyDatasets.begin(), m_vStudyDatasets.end(), std::mt19937_64(std::random_device()()));
 
@@ -121,4 +122,10 @@ void RunStudyBehavior::draw()
 {
 	if (m_bTrialsLoaded && m_qTrials.size() > 0u)
 		m_qTrials.front()->draw();
+}
+
+void RunStudyBehavior::next()
+{
+	if (m_eStudyType == DESKTOP && m_qTrials.size() > 0u)
+		static_cast<StudyTrialDesktopBehavior*>(m_qTrials.front())->finish();
 }

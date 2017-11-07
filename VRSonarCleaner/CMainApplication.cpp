@@ -629,7 +629,7 @@ bool CMainApplication::HandleInput()
 				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
 			}
 
-			if (sdlEvent.key.keysym.sym == SDLK_KP_1)
+			if (sdlEvent.key.keysym.sym == SDLK_KP_1 || sdlEvent.key.keysym.sym == SDLK_1)
 			{
 				m_pWallVolume->setVisible(false);
 				m_pTableVolume->setVisible(false);
@@ -639,7 +639,7 @@ bool CMainApplication::HandleInput()
 				rsb->init();
 			}
 
-			if (sdlEvent.key.keysym.sym == SDLK_KP_2)
+			if (sdlEvent.key.keysym.sym == SDLK_KP_2 || sdlEvent.key.keysym.sym == SDLK_2)
 			{
 				m_pWallVolume->setVisible(false);
 				m_pTableVolume->setVisible(false);
@@ -649,7 +649,7 @@ bool CMainApplication::HandleInput()
 				rsb->init();
 			}
 
-			if (sdlEvent.key.keysym.sym == SDLK_KP_3)
+			if (sdlEvent.key.keysym.sym == SDLK_KP_3 || sdlEvent.key.keysym.sym == SDLK_3)
 			{
 				m_pWallVolume->setVisible(false);
 				m_pTableVolume->setVisible(false);
@@ -739,6 +739,14 @@ bool CMainApplication::HandleInput()
 					printf("Pressed g, generating fake test cloud\n");
 					//m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
 					//m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_RETURN)
+				{
+					RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
+
+					if (study)
+						study->next();
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_SPACE)
@@ -1039,7 +1047,7 @@ void CMainApplication::drawScene()
 			}
 		}
 
-		if (m_bUseDesktop)
+		if (m_bUseDesktop && !m_bStudyMode)
 		{
 			std::stringstream ss;
 			ss.precision(2);
