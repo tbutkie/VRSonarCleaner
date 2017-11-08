@@ -9,12 +9,11 @@
 #include <random>
 #include <sstream>
 
-SnellenTest::SnellenTest(TrackedDeviceManager* pTDM, float visualAngle)
+SnellenTest::SnellenTest(TrackedDeviceManager* pTDM, float minutesOfArc)
 	: m_pTDM(pTDM)
-	, m_fVisualAngle(visualAngle)
+	, m_fVisualAngle(minutesOfArc)
 	, m_bWaitForTriggerRelease(true)
 {
-	std::cout << getHeightForOptotype(m_fVisualAngle) << std::endl;
 }
 
 
@@ -26,7 +25,7 @@ void SnellenTest::init()
 {
 	m_vSloanLetters = { 'C', 'D', 'H', 'K', 'N', 'O', 'R', 'S', 'V', 'Z' };
 
-	m_strCurrent = generateSnellenString();
+	newTest();
 
 	m_bInitialized = true;
 }
@@ -55,7 +54,7 @@ void SnellenTest::draw()
 		m_strCurrent,
 		glm::vec4(1.f),
 		stringPos,
-		glm::quat(Renderer::getBillBoardTransform(stringPos, hmdTrans[3], hmdTrans[1], true)),
+		glm::quat(Renderer::getBillBoardTransform(stringPos, hmdTrans[3], glm::vec3(0.f, 1.f, 0.f), true)),
 		getHeightForOptotype(m_fVisualAngle),
 		Renderer::TextSizeDim::HEIGHT,
 		Renderer::TextAlignment::CENTER,
@@ -67,11 +66,18 @@ void SnellenTest::draw()
 void SnellenTest::newTest()
 {
 	m_strCurrent = generateSnellenString();
+
+	std::cout << "Current Snellen string: " << m_strCurrent << " (Minutes of visual arc: " << m_fVisualAngle << ")" << std::endl;
 }
 
-void SnellenTest::setVisualAngle(float visualAngleToTest)
+void SnellenTest::setVisualAngle(float minutesOfArc)
 {
-	m_fVisualAngle = visualAngleToTest;
+	m_fVisualAngle = minutesOfArc;
+}
+
+float SnellenTest::getVisualAngle()
+{
+	return m_fVisualAngle;
 }
 
 std::string SnellenTest::generateSnellenString()
@@ -85,14 +91,13 @@ std::string SnellenTest::generateSnellenString()
 	for (int i = 1; i < s_nCharacters; ++i)
 		ss << " " << m_vSloanLetters[i];
 
-	std::cout << "Current Snellen string: " << ss.str();
-
 	return ss.str();
 }
 
-float SnellenTest::getHeightForOptotype(float visualAngle)
+float SnellenTest::getHeightForOptotype(float minutesOfArc)
 {
-	visualAngle *= s_fOptotypeGrating;
-	visualAngle *= 0.5f;
-	return 2.f * s_fDistance * glm::atan(glm::radians(visualAngle));
+	float degrees = minutesOfArc / 60.f;
+	degrees *= s_fOptotypeGrating;
+	degrees *= 0.5f;
+	return 2.f * s_fDistance * glm::atan(glm::radians(degrees));
 }

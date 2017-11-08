@@ -7,7 +7,7 @@ class SnellenTest :
 	public InitializableBehavior
 {
 public:
-	SnellenTest(TrackedDeviceManager* pTDM, float visualAngle);
+	SnellenTest(TrackedDeviceManager* pTDM, float minutesOfArc);
 	virtual ~SnellenTest();
 
 	void init();
@@ -18,11 +18,13 @@ public:
 
 	void newTest();
 
-	void setVisualAngle(float visualAngleToTest);
+	void setVisualAngle(float minutesOfArc);
+
+	float getVisualAngle();
 
 private:
 	std::string generateSnellenString();
-	float getHeightForOptotype(float visualAngle);
+	float getHeightForOptotype(float minutesOfArc);
 
 	TrackedDeviceManager *m_pTDM;
 
@@ -31,7 +33,7 @@ private:
 	std::string m_strCurrent;
 	float m_fVisualAngle;
 
-	int s_fOptotypeGrating = 5.f;
+	float s_fOptotypeGrating = 5.f;
 	float s_fDistance = 6.f;
 	int s_nCharacters = 6;
 };

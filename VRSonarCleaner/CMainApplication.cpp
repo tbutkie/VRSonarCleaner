@@ -607,10 +607,34 @@ bool CMainApplication::HandleInput()
 				m_pTableVolume->setVisible(false);
 				m_pWallVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
-				SnellenTest *st = new SnellenTest(m_pTDM, 1.f);
-				BehaviorManager::getInstance().addBehavior("test", st);
+				SnellenTest *st = new SnellenTest(m_pTDM, 10.f);
+				BehaviorManager::getInstance().addBehavior("snellen", st);
 				st->init();
 			}
+			if (sdlEvent.key.keysym.sym == SDLK_UP)
+			{
+				SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+
+				if (snellen)
+				{
+					snellen->setVisualAngle(snellen->getVisualAngle() + 1.f);
+					snellen->newTest();
+				}
+			}
+			if (sdlEvent.key.keysym.sym == SDLK_DOWN)
+			{
+				SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+
+				if (snellen)
+				{
+					float angle = snellen->getVisualAngle() - 1.f;
+					if (angle < 1.f) angle = 1.f;
+					snellen->setVisualAngle(angle);
+					snellen->newTest();
+				}
+			}
+
+
 			if (sdlEvent.key.keysym.sym == SDLK_y)
 			{
 				m_bDemoMode = true;
