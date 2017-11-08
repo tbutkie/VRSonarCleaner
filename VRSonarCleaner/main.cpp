@@ -1,6 +1,8 @@
 #include "CMainApplication.h"
 #include <conio.h>
 #include <cstdio> // fclose
+#include <string>
+#include "DataLogger.h"
 
 
 //-----------------------------------------------------------------------------
@@ -22,6 +24,16 @@ int main(int argc, char *argv[])
 
 	if (selectedMode == 27)
 		return 0;
+
+	//std::string s;
+	//
+	//if ((selectedMode - '0') == 2 || (selectedMode - '0') == 7)
+	//{
+	//	std::cin >> s;
+		DataLogger::getInstance().setID("fasmb");
+	//}
+
+
 
 	CMainApplication *pMainApplication = new CMainApplication(argc, argv, (int)(selectedMode - '0'));
 

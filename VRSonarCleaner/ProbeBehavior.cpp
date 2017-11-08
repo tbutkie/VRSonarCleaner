@@ -129,7 +129,7 @@ void ProbeBehavior::update()
 
 				std::stringstream ss;
 
-				ss << m_bHorizontalSwipeMode ? "Probe Length Begin" : "Probe Radius Begin";
+				ss << (m_bHorizontalSwipeMode ? "Probe Length Begin" : "Probe Radius Begin");
 				ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 				ss << "\t";
 				ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
@@ -228,7 +228,7 @@ void ProbeBehavior::update()
 
 			std::stringstream ss;
 
-			ss << m_bHorizontalSwipeMode ? "Probe Length End" : "Probe Radius End";
+			ss << (m_bHorizontalSwipeMode ? "Probe Length End" : "Probe Radius End");
 			ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 			ss << "\t";
 			ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
@@ -275,7 +275,7 @@ void ProbeBehavior::update()
 		activateProbe();
 	}
 
-	if (!m_pTDM->getPrimaryController()->isTriggerClicked())
+	if (m_pTDM->getPrimaryController()->justUnclickedTrigger() && !m_pTDM->getPrimaryController()->isTriggerClicked())
 	{
 		deactivateProbe();
 	}

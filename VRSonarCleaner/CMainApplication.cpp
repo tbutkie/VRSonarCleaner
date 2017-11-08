@@ -14,6 +14,7 @@
 #include "ScaleTutorial.h"
 #include "StudyEditTutorial.h"
 #include "DesktopCleanBehavior.h"
+#include "StudyTrialDesktopBehavior.h"
 #include "arcball.h"
 #include "LassoTool.h"
 #include "SnellenTest.h"
@@ -656,6 +657,16 @@ bool CMainApplication::HandleInput()
 				m_pTableVolume->setVisible(false);
 				BehaviorManager::getInstance().clearBehaviors();
 				BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_KP_PERIOD)
+			{
+				m_pWallVolume->setVisible(false);
+				m_pTableVolume->setVisible(false);
+				BehaviorManager::getInstance().clearBehaviors();
+				StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
+				BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
+				stdb->init();
 			}
 
 			if (sdlEvent.key.keysym.sym == SDLK_KP_1 || sdlEvent.key.keysym.sym == SDLK_1)

@@ -29,7 +29,12 @@ void ScaleDataVolumeBehavior::update()
 	if (m_bScaling)
 	{
 		float delta = controllerDistance() - m_fInitialDistance;
-		m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
+
+		if (!isnan(exp(delta * 10.f) * m_vec3InitialDimensions.x) &&
+			!isnan(exp(delta * 10.f) * m_vec3InitialDimensions.y) && 
+			!isnan(exp(delta * 10.f) * m_vec3InitialDimensions.z))
+			m_pDataVolume->setDimensions(glm::vec3(exp(delta * 10.f) * m_vec3InitialDimensions));
+
 		m_pDataVolume->update();
 	}
 }
@@ -255,7 +260,7 @@ void ScaleDataVolumeBehavior::updateState()
 		}
 	}
 
-	if (!m_pTDM->getSecondaryController()->isGripButtonPressed() || !m_pTDM->getPrimaryController()->isGripButtonPressed())
+	if (m_bScaling && (m_pTDM->getSecondaryController()->justUnpressedGrip() || m_pTDM->getPrimaryController()->justUnpressedGrip()))
 	{
 		m_bScaling = false;
 

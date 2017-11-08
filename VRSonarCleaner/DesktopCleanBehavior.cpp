@@ -86,7 +86,7 @@ unsigned int DesktopCleanBehavior::checkPoints()
 				{
 					std::stringstream ss;
 
-					ss << (cloud->getPointDepthTPU(i) == 1.f) ? "Bad Point Cleaned" : "Good Point Cleaned";
+					ss << ((cloud->getPointDepthTPU(i) == 1.f) ? "Bad Point Cleaned" : "Good Point Cleaned");
 					ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 					ss << "\t";
 					ss << "point-id:\"" << i << "\"";

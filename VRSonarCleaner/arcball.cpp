@@ -12,6 +12,7 @@ ArcBall::ArcBall(DataVolume *dataVolume)
 	, m_pmat4Projection(NULL)
 	, m_pmat4View(NULL)
 	, m_vec3PivotPoint(dataVolume->getPosition())
+	, m_vec3DataVolumeInitialPos(dataVolume->getPosition())
 	, m_fTranslationTime(0.1f)
 	, m_bDragging(false)
 {
@@ -32,6 +33,9 @@ void ArcBall::reset()
 	mVNow = vZero;
 	mQDown = qOne;
 	mQNow = qOne;
+
+	m_pDataVolume->setPosition(m_vec3DataVolumeInitialPos);
+	m_vec3PivotPoint = m_vec3DataVolumeInitialPos;
 
 
 	m_bDragging = false;

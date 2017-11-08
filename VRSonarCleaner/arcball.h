@@ -99,6 +99,8 @@ private:
 
   DataVolume *m_pDataVolume;
 
+  glm::vec3 m_vec3DataVolumeInitialPos;
+
   bool m_bDragging;
 
   glm::vec3 m_vec3PivotPoint;	///< World space pivot point

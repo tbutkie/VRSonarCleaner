@@ -136,6 +136,10 @@ void StudyTrialDesktopBehavior::update()
 			ss << "cam-pos:\"" << m_pCamera->pos.x << "," << m_pCamera->pos.y << "," << m_pCamera->pos.z << "\"";
 			ss << ";";
 			ss << "cam-lookat:\"" << m_pCamera->lookat.x << "," << m_pCamera->lookat.y << "," << m_pCamera->lookat.z << "\"";
+			ss << ";";
+			ss << "total-cleaned:\"" << m_nPointsCleaned << "\"";
+			ss << ";";
+			ss << "total-mistakes:\"" << m_nCleanedGoodPoints << "\"";
 
 			DataLogger::getInstance().logMessage(ss.str());
 		}

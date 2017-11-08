@@ -184,6 +184,11 @@ void StudyTrialStandingBehavior::update()
 			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
 		}
 
+		ss << ";";
+		ss << "total-cleaned:\"" << m_nPointsCleaned << "\"";
+		ss << ";";
+		ss << "total-mistakes:\"" << m_nCleanedGoodPoints << "\"";
+
 		DataLogger::getInstance().logMessage(ss.str());
 	}
 }
