@@ -3,6 +3,7 @@
 #include <gtc/matrix_transform.hpp> // for translate()
 
 #include "Renderer.h"
+#include "DataLogger.h"
 
 ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
@@ -120,6 +121,51 @@ void ProbeBehavior::update()
 				m_pTDM->getPrimaryController()->setScrollWheelVisibility(true);
 				m_fProbeInitialOffset = m_fProbeOffset;
 			}
+
+			if (DataLogger::getInstance().logging())
+			{
+				glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+				glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+				std::stringstream ss;
+
+				ss << m_bHorizontalSwipeMode ? "Probe Length Begin" : "Probe Radius Begin";
+				ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+				ss << "\t";
+				ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+				ss << ";";
+				ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+				if (m_pTDM->getPrimaryController())
+				{
+					glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+					glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+					glm::mat4 probeTrans(getProbeToWorldTransform());
+
+					ss << ";";
+					ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
+					ss << ";";
+					ss << "probe-radius:\"" << getProbeRadius() << "\"";
+					ss << ";";
+					ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+					ss << ";";
+					ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+				}
+
+				if (m_pTDM->getSecondaryController())
+				{
+					glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+					glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+					ss << ";";
+					ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+					ss << ";";
+					ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+				}
+
+				DataLogger::getInstance().logMessage(ss.str());
+			}
 		}
 
 		assert(!(m_bVerticalSwipeMode && m_bHorizontalSwipeMode));
@@ -175,6 +221,51 @@ void ProbeBehavior::update()
 
 	if (m_pTDM->getPrimaryController()->justUntouchedTouchpad())
 	{
+		if (DataLogger::getInstance().logging())
+		{
+			glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+			glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+
+			std::stringstream ss;
+
+			ss << m_bHorizontalSwipeMode ? "Probe Length End" : "Probe Radius End";
+			ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+			ss << "\t";
+			ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+			ss << ";";
+			ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+
+			if (m_pTDM->getPrimaryController())
+			{
+				glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
+				glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
+
+				glm::mat4 probeTrans(getProbeToWorldTransform());
+
+				ss << ";";
+				ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
+				ss << ";";
+				ss << "probe-radius:\"" << getProbeRadius() << "\"";
+				ss << ";";
+				ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
+				ss << ";";
+				ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
+			}
+
+			if (m_pTDM->getSecondaryController())
+			{
+				glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
+				glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
+
+				ss << ";";
+				ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
+				ss << ";";
+				ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
+			}
+
+			DataLogger::getInstance().logMessage(ss.str());
+		}
+
 		m_bVerticalSwipeMode = m_bHorizontalSwipeMode = false;
 		m_pTDM->getPrimaryController()->setScrollWheelVisibility(false);
 	}

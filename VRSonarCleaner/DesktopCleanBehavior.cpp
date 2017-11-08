@@ -50,6 +50,12 @@ void DesktopCleanBehavior::activate()
 
 	if (m_pLasso && m_pLasso->readyToCheck())
 	{
+		std::stringstream ss;
+
+		ss << "Lasso Activate" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+
+		DataLogger::getInstance().logMessage(ss.str());
+
 		checkPoints();
 		m_pLasso->reset();
 	}
@@ -75,6 +81,28 @@ unsigned int DesktopCleanBehavior::checkPoints()
 			{
 				cloud->markPoint(i, 1);
 				hit = true;
+
+				if (DataLogger::getInstance().logging())
+				{
+					std::stringstream ss;
+
+					ss << (cloud->getPointDepthTPU(i) == 1.f) ? "Bad Point Cleaned" : "Good Point Cleaned";
+					ss << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+					ss << "\t";
+					ss << "point-id:\"" << i << "\"";
+					ss << ";";
+					ss << "point-pos:\"" << in.x << "," << in.y << "," << in.z << "\"";
+					ss << ";";
+					ss << "point-pos-screen:\"" << out.x << "," << out.y << "\"";
+					ss << ";";
+					ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+					ss << ";";
+					ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+					ss << ";";
+					ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+
+					DataLogger::getInstance().logMessage(ss.str());
+				}
 			}
 		}
 		if (hit)

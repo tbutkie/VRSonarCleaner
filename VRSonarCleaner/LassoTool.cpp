@@ -1,10 +1,13 @@
 #include "LassoTool.h"
 
+#include "DataLogger.h"
+
 #include <gtc/type_ptr.hpp> // glm::value_ptr
 #include <gtc/matrix_transform.hpp> // glm::project
 
 #include <GL/glew.h>
 
+#include <sstream>
 
 const glm::vec4 g_vec4ActiveLineColor(0.25f, 0.65f, 0.25f, 1.f);
 const glm::vec4 g_vec4LineColor(0.65f, 0.25f, 0.25f, 1.f);
@@ -161,6 +164,14 @@ void LassoTool::start(int mx, int my)
 	m_vvec3LassoPoints.push_back(newPt);
 	m_vec2MinBB = m_vec2MaxBB = glm::vec2(newPt);
 	m_bLassoActive = true;
+
+	std::stringstream ss;
+
+	ss << "Lasso Start" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+	ss << "\t";
+	ss << "mouse-pos:\"" << newPt.x << "," << newPt.y << "\"";
+
+	DataLogger::getInstance().logMessage(ss.str());
 }
 
 // update current arcball rotation
@@ -189,6 +200,14 @@ void LassoTool::move(int mx, int my)
 void LassoTool::end()
 {
 	m_bLassoActive = false;
+
+	std::stringstream ss;
+
+	ss << "Lasso End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+	ss << "\t";
+	ss << "mouse-pos:\"" << m_vvec3LassoPoints.back().x << "," << m_vvec3LassoPoints.back().y << "\"";
+
+	DataLogger::getInstance().logMessage(ss.str());
 }
 
 bool LassoTool::readyToCheck()
