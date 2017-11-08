@@ -117,9 +117,6 @@
     <ClCompile Include="shaderset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LassoTool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RenderModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -201,6 +198,9 @@
     <ClCompile Include="StudyTrialDesktopBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
+    <ClCompile Include="LassoTool.cpp">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -264,9 +264,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorsAndSizes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LassoTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LightingSystem.h">
@@ -370,6 +367,9 @@
     </ClInclude>
     <ClInclude Include="StudyTrialDesktopBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="LassoTool.h">
+      <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
