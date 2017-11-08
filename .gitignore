@@ -309,6 +309,7 @@ paket-files/
 
 VRSonarCleaner/data/accept
 VRSonarCleaner/data/reject
+VRSonarCleaner/data/collected
 VRSonarCleaner/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt
 VRSonarCleaner/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt
 VRSonarCleaner/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt
