@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	//if ((selectedMode - '0') == 2 || (selectedMode - '0') == 7)
 	//{
 	//	std::cin >> s;
-		DataLogger::getInstance().setID("fasmb");
+		DataLogger::getInstance().setID("none");
 	//}
 
 

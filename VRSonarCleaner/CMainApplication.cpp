@@ -575,7 +575,7 @@ bool CMainApplication::HandleInput()
 						m_pWallVolume->setVisible(false);
 						m_pTableVolume->setVisible(false);
 						BehaviorManager::getInstance().clearBehaviors();
-						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
+						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, true);
 						BehaviorManager::getInstance().addBehavior("Sitting Study", rsb);
 						rsb->init();
 					}
