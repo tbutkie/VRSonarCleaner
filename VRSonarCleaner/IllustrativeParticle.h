@@ -1,91 +1,73 @@
 #ifndef __IllustrativeParticle_h__
 #define __IllustrativeParticle_h__
-
-#include <windows.h>
-#include "FlowGrid.h"
+                                                                   
 #include <vector>
-#include "Vec3.h"
+#include <chrono>
 
-#define MAX_NUM_POSITIONS 100
+#include <glm.hpp>
+
+#include "FlowGrid.h"
+
+// number of particle positions to store for things like trails, etc.
+#define MAX_NUM_TRAIL_POSITIONS 100
 
 class IllustrativeParticle
 {
 public:
-	IllustrativeParticle(float x, float y, float z, float TimeToLive, float TrailTime, ULONGLONG currentTime);
+	IllustrativeParticle();
 	virtual ~IllustrativeParticle();
 
-	void updatePosition(ULONGLONG currentTime, float newX, float newY, float newZ); //true if still in bounds, false if needs to be deleted
+	void init(glm::vec3 pos, glm::vec3 color, float gravity, std::chrono::milliseconds timeToLive, std::chrono::milliseconds trailTime, std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, bool userCreated);
+
+	void updatePosition(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime, float newX, float newY, float newZ);
+	void updateBufferIndices(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime);
 
 	void reset();
-	void reset(float x, float y, float z);
-	void kill();
-	//bool updated;
-	ULONGLONG birthTime;
-	float timeToLive;
-	ULONGLONG timeToStartDying;
-	float trailTime;
 
-	float getLastSpeed();
-	float getOldLastSpeed();
-	float lastSpeed;
-	float oldLastSpeed;
-
-	float latestPosition[3];
-	
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpBirthTime;
+	std::chrono::milliseconds m_msTimeToLive;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimeToStartDying;
+	std::chrono::milliseconds m_msTrailTime;
+		
 	float getCurrentX();
 	float getCurrentY();
 	float getCurrentZ();
-	void getCurrentXYZ(float *x, float *y, float *z);
-
-	
-	float getDyingOpacity();
-
+	glm::vec3 getCurrentXYZ();
+	 
 	float getFadeInFadeOutOpacity();
 
-	bool dead;
-	bool dying;
-	ULONGLONG timeOfDeath;
+	bool m_bDead;
+	bool m_bDying;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpTimeDeathBegan;
 
-	bool userCreated;
+	bool m_bUserCreated;
 	//int color;
 
-	float color[3];
+	glm::vec3 m_vec3Color;
 	void getColor(float *r, float *g, float *b);
 
-	float gravity;
+	float m_fGravity;
 
-	float speedFactor; //100 = normal
+	glm::vec3 m_vec3StartingPosition;
+	std::vector<glm::vec3> m_vvec3Positions;
+	std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> m_vtpTimes;
 
-	float startingPosition[3];
-	float positions[3*MAX_NUM_POSITIONS];
-	ULONGLONG times[MAX_NUM_POSITIONS];
-
-	int liveStartIndex;
-	int liveEndIndex;
-	ULONGLONG liveTimeElapsed;
-	ULONGLONG lastUpdateTimestamp;
+	int m_iBufferTail;
+	int m_iBufferHead; // Index of the next FREE buffer slot
+	std::chrono::milliseconds m_msLiveTimeElapsed;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdateTimestamp;
 	
 	int getNumLivePositions();
 	int getLivePosition(int index);
-
-	float temperatureColor[3];
-	//void draw();
-
+	
 	//Index of which flowGrid in the flowGridCollection it is within
-	int flowGridIndex;
-	void setFlowGridIndex(int index);
-	int getFlowGridIndex();
+	FlowGrid* m_pFlowGrid;
 
 private:
+	int getWrappedIndex(int index);
 
 	//update() vars, put them here so no alloc needed each frame
-	ULONGLONG timeSinceLast;
-	float U, V, W, T, S;
-	float rand1, rand2, rand3;
-	bool inWater;
-	float currentPos[3];
-	float newPos[3];
-	ULONGLONG timeSince;
+	std::chrono::milliseconds m_msTimeSince;
 	bool foundValid;
 };
 

@@ -1,235 +1,139 @@
 #include "SonarPointCloud.h"
 
-SonarPointCloud::SonarPointCloud()
+#include "GLSLpreamble.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <numeric>
+#include <limits>
+
+SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
+	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
+	, m_pColorScaler(colorScaler)
+	, m_iPreviewReductionFactor(10)
+	, m_bPointsAllocated(false)
+	, refreshNeeded(true)
+	, previewRefreshNeeded(true)
+	, m_nPoints(0)
+	, colorMode(1) //0=predefined 1=scaled
+	, colorScale(2)
+	, colorScope(1) //0=global 1=dynamic
+	, m_fMinPositionalTPU(std::numeric_limits<float>::max())
+	, m_fMaxPositionalTPU(-std::numeric_limits<float>::max())
+	, m_fMinDepthTPU(std::numeric_limits<float>::max())
+	, m_fMaxDepthTPU(-std::numeric_limits<float>::max())
 {
-	markedForDeletion = false;
-	buffersGenerated = false;
-	previewBuffersGenerated = false;
-
-	firstMinMaxSet = false;
-
-	xMin = 0;
-	xMax = 0;
-	xRange = xMax - xMin;
-	yMin = 0;
-	yMax = 0;
-	yRange = yMax - yMin;
-	
-	minDepth = 123456789;
-	maxDepth = -123456789;
-
-	minDepthTPU = 0;
-	maxDepthTPU = 0;
-	minPositionalTPU = 0;
-	maxPositionalTPU = 0;
-
-	colorMode = 1; //0=predefined 1=scaled
-	colorScale = 2;
-	colorScope = 1; //0=global 1=dynamic
-
-	pointsAllocated = false;
-
-	glewInited = false;
-
-	refreshNeeded = true;
-	previewRefreshNeeded = true;
+	switch (filetype)
+	{
+	case SonarPointCloud::CARIS:
+		loadCARISTxt();
+		break;
+	case SonarPointCloud::XYZF:
+		loadStudyCSV();
+		break;
+	case SonarPointCloud::QIMERA:
+		loadQimeraTxt();
+		break;
+	default:
+		break;
+	}
 }
 
 SonarPointCloud::~SonarPointCloud()
-{
-	deleteSelf();
-}
-
-void SonarPointCloud::markForDeletion()
-{
-	markedForDeletion = true;
-}
-
-bool SonarPointCloud::shouldBeDeleted()
-{
-	return markedForDeletion;
-}
-
-void SonarPointCloud::deleteSelf()
-{
-	printf("PointCloud cleaning itself up...\n");
-	
-	if (pointsAllocated)
-	{
-		delete[] pointsPositions;
-		delete[] pointsColors;
-		delete[] pointsMarks;
-		delete[] pointsDepthTPU;
-		delete[] pointsPositionTPU;
-		pointsAllocated = false;
-	}
-
-	if (buffersGenerated)
-	{
-		glDeleteBuffers(1, &pointsPositionsVBO);
-		glDeleteBuffers(1, &pointsColorsVBO);
-	}
-	if (previewBuffersGenerated)
-	{
-		glDeleteBuffers(1, &previewPointsPositionsVBO);
-		glDeleteBuffers(1, &previewPointsColorsVBO);
-	}
-	printf("PointCloud done cleaning itself up!\n");
+{	
 }
 
 void SonarPointCloud::initPoints(int numPointsToAllocate)
 {
-	numPoints = numPointsToAllocate;
-	if (pointsAllocated)
+	m_nPoints = numPointsToAllocate;
+	if (m_bPointsAllocated)
 	{
-		delete[] pointsPositions;
-		delete[] pointsColors;
-		delete[] pointsMarks;
-		delete[] pointsDepthTPU;
-		delete[] pointsPositionTPU;
+		m_vdvec3RawPointsPositions.clear();
+		m_vvec3AdjustedPointsPositions.clear();
+		m_vvec4PointsColors.clear();
+		m_vuiPointsMarks.clear();
+		m_vfPointsDepthTPU.clear();
+		m_vfPointsPositionTPU.clear();
+		m_vuiIndicesFull.clear();
 	}
-	pointsPositions = new double[numPoints*3];
-	pointsColors = new float[numPoints*3];
-	pointsDepthTPU = new float[numPoints];
-	pointsPositionTPU = new float[numPoints];;
-	pointsMarks = new int[numPoints];
-	pointsAllocated = true;
+
+	m_vdvec3RawPointsPositions.resize(m_nPoints);
+	m_vvec3AdjustedPointsPositions.resize(m_nPoints);
+	m_vvec4PointsColors.resize(m_nPoints);
+	m_vuiPointsMarks.resize(m_nPoints);
+	m_vfPointsDepthTPU.resize(m_nPoints);
+	m_vfPointsPositionTPU.resize(m_nPoints);
+	m_vuiIndicesFull.resize(m_nPoints);
+
+	m_bPointsAllocated = true;
 }
 
 void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth)
 {
-	pointsPositions[index*3]	 = lonX;
-	pointsPositions[(index*3)+1] = latY;
-	pointsPositions[(index*3)+2] = depth;
+	glm::dvec3 pt(lonX, latY, depth);
+	m_vdvec3RawPointsPositions[index] = pt;
 	
-	pointsColors[index*3]	 = 0.75;
-	pointsColors[(index*3)+1] = 0.75;
-	pointsColors[(index*3)+2] = 0.75;
+	m_vvec4PointsColors[index] = glm::vec4(0.75f, 0.75f, 0.75f, 1.f);
 
-	pointsDepthTPU[index] = 0.0;
-	pointsPositionTPU[index] = 0.0;
-	pointsMarks[index] = 0;
+	m_vfPointsDepthTPU[index] = 0.f;
+	m_vfPointsPositionTPU[index] = 0.f;
+	m_vuiPointsMarks[index] = 0u;
 	
-	if (firstMinMaxSet)
-	{
-		if (lonX < xMin)
-			xMin = lonX;
-		if (lonX > xMax)
-			xMax = lonX;
-
-		if (latY < yMin)
-			yMin = latY;
-		if (latY > yMax)
-			yMax = latY;
-		
-		if (depth < minDepth)
-			minDepth = depth;
-		if (depth > maxDepth)
-			maxDepth = depth;
-	}
-	else
-	{
-		xMin = lonX;
-		xMax = lonX;
-		yMin = latY;
-		yMax = latY;
-		minDepth = depth;
-		maxDepth = depth;
-		firstMinMaxSet = true;
-	}
-
+	checkNewRawPosition(pt);
 }
 
 
 void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU)
 {
-	pointsPositions[index * 3] = lonX;
-	pointsPositions[(index * 3) + 1] = latY;
-	pointsPositions[(index * 3) + 2] = depth; 
+	glm::dvec3 pt(lonX, latY, depth); 
+	m_vdvec3RawPointsPositions[index] = pt;
 
-	pointsColors[index * 3] = 0.75;
-	pointsColors[(index * 3) + 1] = 0.75;
-	pointsColors[(index * 3) + 2] = 0.75;
+	float r, g, b;
+	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
+	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
-	pointsDepthTPU[index] = depthTPU;
-	pointsPositionTPU[index] = positionTPU;
+	m_vfPointsDepthTPU[index] = depthTPU;
+	m_vfPointsPositionTPU[index] = positionTPU;
 
-	pointsMarks[index] = 0;
+	m_vuiPointsMarks[index] = 0u;
 
-	if (firstMinMaxSet)
-	{
-		if (lonX < xMin)
-			xMin = lonX;
-		if (lonX > xMax)
-			xMax = lonX;
+	checkNewRawPosition(pt);
 
-		if (latY < yMin)
-			yMin = latY;
-		if (latY > yMax)
-			yMax = latY;
+	if (depthTPU < m_fMinDepthTPU)
+		m_fMinDepthTPU = depthTPU;
+	if (depthTPU > m_fMaxDepthTPU)
+		m_fMaxDepthTPU = depthTPU;
 
-		if (depth < minDepth)
-			minDepth = depth;
-		if (depth > maxDepth)
-			maxDepth = depth;
-
-		if (depthTPU < minDepthTPU)
-			minDepthTPU = depthTPU;
-		if (depthTPU > maxDepthTPU)
-			maxDepthTPU = depthTPU;
-
-		if (positionTPU < minPositionalTPU)
-			minPositionalTPU = positionTPU;
-		if (positionTPU > maxPositionalTPU)
-			maxPositionalTPU = positionTPU;
-	}
-	else
-	{
-		xMin = lonX;
-		xMax = lonX;
-		yMin = latY;
-		yMax = latY;
-		minDepth = depth;
-		maxDepth = depth;
-		minDepthTPU = depthTPU;
-		maxDepthTPU = depthTPU;
-		minPositionalTPU = positionTPU;
-		maxPositionalTPU = positionTPU;
-		firstMinMaxSet = true;
-	}
-
+	if (positionTPU < m_fMinPositionalTPU)
+		m_fMinPositionalTPU = positionTPU;
+	if (positionTPU > m_fMaxPositionalTPU)
+		m_fMaxPositionalTPU = positionTPU;
 }
 
 
 void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b)
 {
-	pointsPositions[index*3]	 = lonX;
-	pointsPositions[(index*3)+1] = latY;
-	pointsPositions[(index*3)+2] = depth;
-	
-	pointsColors[index*3]	 = r;
-	pointsColors[(index*3)+1] = g;
-	pointsColors[(index*3)+2] = b;
+	m_vdvec3RawPointsPositions[index] = glm::dvec3(lonX, latY, depth);
 
-	pointsDepthTPU[index] = 0.0;
-	pointsPositionTPU[index] = 0.0;
-	pointsMarks[index] = 0;
+	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
+
+	m_vfPointsDepthTPU[index] = 0.f;
+	m_vfPointsPositionTPU[index] = 0.f;
+	m_vuiPointsMarks[index] = 0u;
 }
 
 
-bool SonarPointCloud::loadFromSonarTxt(char* filename)
+bool SonarPointCloud::loadCARISTxt()
 {
-	
-	printf("Loading Point Cloud from %s\n", filename);
-
-	strcpy(name, filename);
-
+	printf("Loading Point Cloud from %s\n", getName().c_str());
 		
 	FILE *file;
-	file = fopen(filename, "r");
+	file = fopen(getName().c_str(), "r");
 	if (file == NULL)
 	{
-		printf("ERROR reading file in loadFromASCII!\n");
+		printf("ERROR reading file in %s\n", __FUNCTION__);
+		return false;
 	}
 	else
 	{
@@ -251,14 +155,13 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		printf("Skipped %d characters\n", skipped);
 
 		//now count lines of points
-		double x, y, z;
+		double x, y, depth;
 		int profnum, beamnum;
 		float depthTPU, positionTPU, alongAngle, acrossAngle;
-		int numPointsInFile = 0;
-		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &z, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
-		{
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 			numPointsInFile++;
-		}
+
 		initPoints(numPointsInFile);
 		printf("found %d lines of points\n", numPointsInFile);
 
@@ -279,576 +182,248 @@ bool SonarPointCloud::loadFromSonarTxt(char* filename)
 		}
 
 		//now load lines of points
-		int index = 0;
-		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &z, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
+		GLuint index = 0u;
+		double averageDepth =  0.0;
+		while (fscanf(file, "%lf,%lf,%lf,%d,%d,%f,%f,%f,%f\n", &x, &y, &depth, &profnum, &beamnum, &depthTPU, &positionTPU, &alongAngle, &acrossAngle) != EOF)  //while another valid entry to load
 		{
-			setUncertaintyPoint(index, x, y, z, depthTPU, positionTPU);
-			index++;
+			setUncertaintyPoint(index++, x, y, depth, depthTPU, positionTPU);
+			averageDepth += depth;
 		}
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
 
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", xMin, xMax);
-		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
-		double averageDepth =  0;
-		for (int i = 0; i<numPoints; i++)
-		{
-			averageDepth += pointsPositions[(i * 3) + 2];
-		}
-		averageDepth /= numPoints;
-		printf("ZDepth Avg: %f\n", averageDepth);
-
-
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
-
-		//scaling hack
-		for (int i = 0; i<numPoints; i++)
-		{
-			pointsPositions[i * 3] = (pointsPositions[i * 3] - xMin);
-			pointsPositions[(i * 3) + 1] = (pointsPositions[(i * 3) + 1] - yMin);
-			pointsPositions[(i * 3) + 2] = -pointsPositions[(i * 3) + 2];
-		}
-		actualRemovedXmin = xMin;
-		actualRemovedYmin = yMin;
-		xMin = pointsPositions[0];
-		xMax = pointsPositions[0];
-		yMin = pointsPositions[1];
-		yMax = pointsPositions[1];
-		minDepth = pointsPositions[2];
-		maxDepth = pointsPositions[2];
-
-		for (int i = 0; i<numPoints; i++)
-		{
-			if (pointsPositions[i * 3] < xMin)
-				xMin = pointsPositions[i * 3];
-			if (pointsPositions[i * 3] > xMax)
-				xMax = pointsPositions[i * 3];
-
-			if (pointsPositions[(i * 3) + 1] < yMin)
-				yMin = pointsPositions[(i * 3) + 1];
-			if (pointsPositions[(i * 3) + 1] > yMax)
-				yMax = pointsPositions[(i * 3) + 1];
-
-			if (pointsPositions[(i * 3) + 2] < minDepth)
-				minDepth = pointsPositions[(i * 3) + 2];
-			if (pointsPositions[(i * 3) + 2] > maxDepth)
-				maxDepth = pointsPositions[(i * 3) + 2];
-		}
-
-		xRange = xMax - xMin;
-		yRange = yMax - yMin;
-		rangeDepth = maxDepth - minDepth;
-
-		colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
+		
+		adjustPoints();
 
 		setRefreshNeeded();
 
-		printf("Trimmed Min/Maxes:\n");
-		printf("TrimXMin: %f TrimYMin: %f\n", actualRemovedXmin, actualRemovedYmin);
-		printf("X Min: %f Max: %f\n", xMin, xMax);
-		printf("Y Min: %f Max: %f\n", yMin, yMax);
-		printf("ZDepth Min: %f Max: %f\n", minDepth, maxDepth);
-
+		createAndLoadBuffers();
 	}
 
 	return true;
 }
 
-bool SonarPointCloud::generateFakeCloud(float xSize, float ySize, float zSize, int numPoints)
+bool SonarPointCloud::loadQimeraTxt()
 {
-	strcpy(name, "fakeCloud");
-	
-	initPoints(numPoints);
+	printf("Loading Study Point Cloud from %s\n", getName().c_str());
 
-	int index = 0;
-	float randX, randY, randZ;
-	srand(149124);
-	for (int i = 0; i < numPoints; i++)
+	bool rejectedDataset = getName().find("reject") != std::string::npos;
+
+	FILE *file;
+	file = fopen(getName().c_str(), "r");
+	if (file == NULL)
 	{
-		if (i == 0)
-		{
-			randX = 0;
-			randY = 0;
-			randZ = 0;
-		}
-		else if (i == 1)
-		{
-			randX = xSize;
-			randY = ySize;
-			randZ = zSize;
-		}
-		else if (i < numPoints*0.40)
-		{
-			randZ = zSize*(((float)(rand() % 1000)) / 1000);
-			randX = xSize*((((float)(rand() % 100)) + 450) / 1000);
-			randY = ySize*(((float)(rand() % 1000)) / 1000);
-		}
-		else
-		{
-			randZ = zSize*((((float)(rand() % 100)) + 450) / 1000);
-			randX = xSize*(((float)(rand() % 1000)) / 1000);
-			randY = ySize*(((float)(rand() % 1000)) / 1000);
-		}
-		setUncertaintyPoint(i, randX, randY, randZ, 0.0, 0.0);
+		printf("ERROR reading file in %s\n", __FUNCTION__);
 	}
-
-	//scaling hack
-	for (int i = 0; i<numPoints; i++)
+	else
 	{
-		pointsPositions[i * 3] = (pointsPositions[i * 3] - xMin);
-		pointsPositions[(i * 3) + 1] = (pointsPositions[(i * 3) + 1] - yMin);
-		pointsPositions[(i * 3) + 2] = -pointsPositions[(i * 3) + 2];
+		//count points
+		//skip the first linesToSkip lines
+		int skipped = 0;
+		int tries = 0;
+		char tempChar;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+		printf("Skipped %d characters\n", skipped);
+
+		//now count lines of points
+		double x, y, depth;
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+			numPointsInFile++;
+
+		initPoints(numPointsInFile);
+		printf("found %d lines of points\n", numPointsInFile);
+
+		//rewind
+		rewind(file);
+		//skip the first linesToSkip lines
+		skipped = 0;
+		tries = 0;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+
+		//now load lines of points
+		GLuint index = 0u;
+		double averageDepth = 0.0;
+		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+		{
+			float conf = rejectedDataset ? 1.f : 0.f;
+			setUncertaintyPoint(index++, x, y, depth, conf, conf);
+			averageDepth += depth;
+			assert(depth < 0.);
+		}
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
+
+		printf("Loaded %d points\n", index);
+
+		printf("Original Min/Maxes:\n");
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("Depth Avg: %f\n", averageDepth);
+
+		fclose(file);
+
+		adjustPoints();
+
+		setRefreshNeeded();
+
+		createAndLoadBuffers();
 	}
-	actualRemovedXmin = xMin;
-	actualRemovedYmin = yMin;
-	xMin = pointsPositions[0];
-	xMax = pointsPositions[0];
-	yMin = pointsPositions[1];
-	yMax = pointsPositions[1];
-	minDepth = pointsPositions[2];
-	maxDepth = pointsPositions[2];
-
-	for (int i = 0; i<numPoints; i++)
-	{
-		if (pointsPositions[i * 3] < xMin)
-			xMin = pointsPositions[i * 3];
-		if (pointsPositions[i * 3] > xMax)
-			xMax = pointsPositions[i * 3];
-
-		if (pointsPositions[(i * 3) + 1] < yMin)
-			yMin = pointsPositions[(i * 3) + 1];
-		if (pointsPositions[(i * 3) + 1] > yMax)
-			yMax = pointsPositions[(i * 3) + 1];
-
-		if (pointsPositions[(i * 3) + 2] < minDepth)
-			minDepth = pointsPositions[(i * 3) + 2];
-		if (pointsPositions[(i * 3) + 2] > maxDepth)
-			maxDepth = pointsPositions[(i * 3) + 2];
-	}
-
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
-	rangeDepth = maxDepth - minDepth;
-
-	colorScalerTPU->submitBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU);
-
-	setRefreshNeeded();
 
 	return true;
 }
 
 
-void SonarPointCloud::buildPointsVBO()
+
+bool SonarPointCloud::loadStudyCSV()
 {
-	
-	printf("Begin rebuilding PointCloud VBOs\n");
+	printf("Loading Study Point Cloud from %s\n", getName().c_str());
 
-	//printGlErrorCode();
-
-	//printf("Time: %f, TMin: %d, TMax: %d, TFact: %0.2f\n", time, tmin, tmax, timeFactor);
-	
-	if (!glewInited)
+	FILE *file;
+	file = fopen(getName().c_str(), "r");
+	if (file == NULL)
 	{
-		GLenum err = glewInit();
-		if (err != GLEW_OK)
-		{
-			printf("Glew already initialized?!\n");
-			printf("GlewInit error: %s\n", glewGetErrorString(err));
-			//return;
-		}
-		glewInited = true;
-	}
-
-
-	
-	//build VBO out of mesh
-	//printf("checking before gen buffers\n");
-	if (!buffersGenerated)
-	{
-		printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
-		glGenBuffers(1, &pointsPositionsVBO);
-		glGenBuffers(1, &pointsColorsVBO);
-		
-		buffersGenerated = true;
+		printf("ERROR reading file in %s\n", __FUNCTION__);
 	}
 	else
 	{
-		printf("deleting buffers\n");
-		glDeleteBuffers(1, &pointsPositionsVBO);
-		glDeleteBuffers(1, &pointsColorsVBO);
-		
-		glGenBuffers(1, &pointsPositionsVBO);
-		glGenBuffers(1, &pointsColorsVBO);
-
-		buffersGenerated = true;
-	}
-
-	//figure out how many point to draw
-	int count = 0;
-	for (int i = 0; i < numPoints; i++)
-	{
-		if (pointsMarks[i] != 1)
-			count++;
-	}
-	
-	//numPointsInVBO = numPoints;
-	numPointsInVBO = count;
-
-	printf("Building VBO with %d points... ", numPointsInVBO);
-
-	GLsizeiptr positionsSize = numPointsInVBO * 3  * sizeof(GLfloat);
-	GLsizeiptr colorsSize    = numPointsInVBO * 3 * sizeof(GLfloat);
-	
-	
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	double x,y,z;
-	float r,g,b;
-	
-	int index = 0;
-	
-	//if (colorScope == 1)
-		//projSettings->resetMinMaxForColorScale(minDepth, maxDepth);
-
-	//projSettings->setColorScale(colorScale);
-
-	for (int i=0;i<numPoints;i++)
-	{
-		if (pointsMarks[i] != 1)
+		//count points
+		//skip the first linesToSkip lines
+		int skipped = 0;
+		int tries = 0;
+		char tempChar;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
 		{
-			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
-
-			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-
-			if (pointsMarks[i] == 2)
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
 			{
-				r = 1.0;
-				g = 0.0;
-				b = 0.0;
+				tempChar = fgetc(file);
 			}
-			if (pointsMarks[i] == 3)
-			{
-				r = 0.0;
-				g = 1.0;
-				b = 0.0;
-			}
-			if (pointsMarks[i] == 4)
-			{
-				r = 0.0;
-				g = 0.0;
-				b = 1.0;
-			}
-
-			if (pointsMarks[i] >= 100)
-			{
-				r = (1.f / r) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-				g = (1.f / g) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-				b = (1.f / b) * (static_cast<float>(pointsMarks[i]) - 100.f) / 100.f;
-			}
-
-			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-			//g = 1;// pointsColors[(i * 3) + 1];
-			//b = 1;// pointsColors[(i * 3) + 2];
-
-			positions[(index * 3)] = (float)x;
-			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-			positions[(index * 3) + 2] = (float)y;
-
-			colors[(index * 3)] = r;
-			colors[(index * 3) + 1] = g;
-			colors[(index * 3) + 2] = b;
-
-			index++;
-		}//end if not marked
-	}//end for each pt
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(3, GL_FLOAT, 0, NULL);
-//printf("at END: ");
-	//printGlErrorCode();
-
-	printf("done\n");
-
-	refreshNeeded = false;
-
-}
-
-void SonarPointCloud::buildPreviewVBO()
-{
-
-	printf("Begin rebuilding PointCloud Preview VBOs\n");
-
-	//printGlErrorCode();
-
-	//printf("Time: %f, TMin: %d, TMax: %d, TFact: %0.2f\n", time, tmin, tmax, timeFactor);
-
-	if (!glewInited)
-	{
-		GLenum err = glewInit();
-		if (err != GLEW_OK)
-		{
-			printf("Glew already initialized?!\n");
-			printf("GlewInit error: %s\n", glewGetErrorString(err));
-			//return;
+			skipped++;
 		}
-		glewInited = true;
-	}
+		printf("Skipped %d characters\n", skipped);
 
+		//now count lines of points
+		double x, y, depth;
+		int flag;
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf,%lf,%lf,%i\n", &x, &y, &depth, &flag) != EOF)  //while another valid entry to load
+			numPointsInFile++;
 
+		initPoints(numPointsInFile);
+		printf("found %d lines of points\n", numPointsInFile);
 
-	//build VBO out of mesh
-	//printf("checking before gen buffers\n");
-	if (!previewBuffersGenerated)
-	{
-		//printf("PID of dynamicbathy process: %d\n", GetCurrentProcessId());
-		glGenBuffers(1, &previewPointsPositionsVBO);
-		glGenBuffers(1, &previewPointsColorsVBO);
-
-		previewBuffersGenerated = true;
-	}
-	else
-	{
-		//printf("deleting buffers\n");
-		glDeleteBuffers(1, &previewPointsPositionsVBO);
-		glDeleteBuffers(1, &previewPointsColorsVBO);
-
-		glGenBuffers(1, &previewPointsPositionsVBO);
-		glGenBuffers(1, &previewPointsColorsVBO);
-
-		previewBuffersGenerated = true;
-	}
-
-	int reductionFactor = 20;
-
-	//figure out how many point to draw
-	int count = 0;
-	for (int i = 0; i < numPoints; i+=20)
-	{
-		if (pointsMarks[i] != 1)
-			count++;
-	}
-
-	//previewNumPointsInVBO = (int)floor((double)numPoints/ (double)reductionFactor);
-	previewNumPointsInVBO = count;
-
-	printf("Building preview VBO with %d points... ", previewNumPointsInVBO);
-
-	GLsizeiptr positionsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
-	GLsizeiptr colorsSize = previewNumPointsInVBO * 3 * sizeof(GLfloat);
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-	double x, y, z;
-	float r, g, b;
-
-	int index = 0;
-
-	//if (colorScope == 1)
-	//projSettings->resetMinMaxForColorScale(minDepth, maxDepth);
-
-	//projSettings->setColorScale(colorScale);
-
-	for (int i = 0; i<numPoints; i+= reductionFactor)
-	{
-		if (pointsMarks[i] != 1)
+		//rewind
+		rewind(file);
+		//skip the first linesToSkip lines
+		skipped = 0;
+		tries = 0;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
 		{
-			x = pointsPositions[i * 3];//projSettings->getScaledLonX(pointsPositions[i*3]);
-			y = pointsPositions[(i * 3) + 1];//projSettings->getScaledLatY(pointsPositions[(i*3)+1]);
-			z = pointsPositions[(i * 3) + 2];//projSettings->getScaledDepth(pointsPositions[(i*3)+2]);
-
-			colorScalerTPU->getBiValueScaledColor(pointsDepthTPU[i], pointsPositionTPU[i], &r, &g, &b);
-			//r = 1;// colorScalerTPU->getScaledColor(//1;// pointsColors[i * 3];
-			//g = 1;// pointsColors[(i * 3) + 1];
-			//b = 1;// pointsColors[(i * 3) + 2];
-
-			positions[(index * 3)] = (float)x;
-			positions[(index * 3) + 1] = (float)z;  ///SWAP Y and Z for OpenGL coordinate system (y-up)
-			positions[(index * 3) + 2] = (float)y;
-
-			colors[(index * 3)] = r;
-			colors[(index * 3) + 1] = g;
-			colors[(index * 3) + 2] = b;
-
-			index++;
-		}//end if point not marked
-	}//end for each pt
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(3, GL_FLOAT, 0, NULL);
-	//printf("at END: ");
-	//printGlErrorCode();
-
-	printf("done\n");
-
-	previewRefreshNeeded = false;
-
-}
-
-void SonarPointCloud::draw()
-{
-	if (numPoints > 0) //if we even have points
-	{
-		if (!buffersGenerated || numPointsInVBO < 1 || refreshNeeded)
-		{
-			buildPointsVBO();
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
 		}
-		drawPointsVBO();
-	}
-}
 
-void SonarPointCloud::drawPreview()
-{
-	if (numPoints > 0) //if we even have points
-	{
-		if (!previewBuffersGenerated || previewNumPointsInVBO < 1 || previewRefreshNeeded)
+		//now load lines of points
+		GLuint index = 0u;
+		double averageDepth = 0.0;
+		while (fscanf(file, "%lf,%lf,%lf,%i\n", &x, &y, &depth, &flag) != EOF)  //while another valid entry to load
 		{
-			buildPreviewVBO();
+			float tpu = flag == 1 ? 1.f : 0.f;
+			setUncertaintyPoint(index++, x, y, depth, tpu, tpu);
+			averageDepth += depth;
+			assert(depth < 0.);
 		}
-		drawPreviewVBO();
+		averageDepth /= m_nPoints;
+
+		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
+
+		printf("Loaded %d points\n", index);
+
+		printf("Original Min/Maxes:\n");
+		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
+		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
+		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("Depth Avg: %f\n", averageDepth);
+
+		fclose(file);
+
+		adjustPoints();
+
+		setRefreshNeeded();
+
+		createAndLoadBuffers();
+	}
+
+	return true;
+}
+
+void SonarPointCloud::update()
+{
+	if (refreshNeeded || previewRefreshNeeded)
+	{
+		// Sub buffer data for colors...
+		glNamedBufferSubData(m_glVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+
+		refreshNeeded = false;
+		previewRefreshNeeded = false;
 	}
 }
 
-void SonarPointCloud::drawPointsVBO()
+GLuint SonarPointCloud::getVAO()
 {
-	//printf("PointCloud-drawPointsVBO()\n");
+	return m_glVAO;
+}
 
-	//printf("MINMAX X %f, %f Y %f, %f Z %f %f\n", xMin, xMax, yMin, yMax, minDepth, maxDepth);
-
-	if (!buffersGenerated)
-		return;
-	if (numPointsInVBO < 1)
-		return;
-
-	/*
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.00000001;//0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.0001;//0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.00001;//0.0001;//c = 4 (this is the minimum size, when dist = 0)
-		
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-    //glEnable( GL_POINT_SPRITE_ARB );
-    glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-    glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-    //glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-	*/
-
-	glPointSize(1.0);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1,1,1,1);
-	//glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, pointsPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, pointsColorsVBO);
-	glColorPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, numPointsInVBO);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-
-	glDisable(GL_POINT_SPRITE_ARB);
-	
-	//printf("DrawDone\n");
-
-}//end drawWaterMeshVBO()
-
-void SonarPointCloud::drawPreviewVBO()
+unsigned int SonarPointCloud::getPointCount()
 {
-	if (!previewBuffersGenerated)
-		return;
-	if (previewNumPointsInVBO < 1)
-		return;
+	return m_nPoints;
+}
 
-	/*
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.00000001;//0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.0001;//0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.00001;//0.0001;//c = 4 (this is the minimum size, when dist = 0)
-
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-	//glEnable( GL_POINT_SPRITE_ARB );
-	glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-	glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-	//glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-	*/
-
-	glPointSize(1.0);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1, 1, 1, 1);
-	//glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, previewPointsColorsVBO);
-	glColorPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, previewNumPointsInVBO);
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-
-	glDisable(GL_POINT_SPRITE_ARB);
-
-	//printf("DrawDone\n");
-
-}//end drawWaterMeshVBO()
-
-void SonarPointCloud::refreshPointsVBO()
+GLuint SonarPointCloud::getPreviewVAO()
 {
-	//printf("Refreshing Dynamic Bathy VBOs\n");
-	buildPointsVBO();
-	refreshNeeded = false;
+	return m_glPreviewVAO;
+}
+
+unsigned int SonarPointCloud::getPreviewPointCount()
+{
+	return m_nPoints / m_iPreviewReductionFactor;
 }
 
 bool SonarPointCloud::getRefreshNeeded()
@@ -894,163 +469,177 @@ int SonarPointCloud::getColorScope()
 	return colorScope;
 }
 
-std::vector<Vector3> SonarPointCloud::getPointPositions()
+float SonarPointCloud::getMinDepthTPU()
 {
-	std::vector<Vector3> ret;
-	for (int i = 0; i < numPoints * 3; i += 3)
+	return m_fMinDepthTPU;
+}
+float SonarPointCloud::getMaxDepthTPU()
+{
+	return m_fMaxDepthTPU;
+}
+float SonarPointCloud::getMinPositionalTPU()
+{
+	return m_fMinPositionalTPU;
+}
+float SonarPointCloud::getMaxPositionalTPU()
+{
+	return m_fMaxPositionalTPU;
+}
+
+bool SonarPointCloud::s_funcDepthTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs)
+{
+	return lhs->getMinDepthTPU() < rhs->getMinDepthTPU();
+}
+
+bool SonarPointCloud::s_funcDepthTPUMaxCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMaxDepthTPU() < rhs->getMaxDepthTPU();
+}
+
+bool SonarPointCloud::s_funcPosTPUMinCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMinPositionalTPU() < rhs->getMinPositionalTPU();
+}
+
+bool SonarPointCloud::s_funcPosTPUMaxCompare(SonarPointCloud * const & lhs, SonarPointCloud * const & rhs)
+{
+	return lhs->getMaxPositionalTPU() < rhs->getMaxPositionalTPU();
+}
+
+glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
+{
+	glm::vec3 col;
+	switch (m_pColorScaler->getColorMode())
 	{
-		Vector3 thisVert = { // SWAP Y AND Z
-			  (float)pointsPositions[i + 0]
-			, (float)pointsPositions[i + 2]
-			, (float)pointsPositions[i + 1]
-		};
-
-		ret.push_back(thisVert);
-	}
-	return ret;
-}
-
-double SonarPointCloud::getXMin()
-{
-	return xMin;
-}
-
-double SonarPointCloud::getXMax()
-{
-	return xMax;
-}
-
-double SonarPointCloud::getYMin()
-{
-	return yMin;
-}
-
-double SonarPointCloud::getYMax()
-{
-	return yMax;
-}
-
-double SonarPointCloud::getMinDepth()
-{
-	return minDepth;
-}
-
-double SonarPointCloud::getMaxDepth()
-{
-	return maxDepth;
-}
-
-double SonarPointCloud::getMinDepthTPU()
-{
-	return minDepthTPU;
-}
-double SonarPointCloud::getMaxDepthTPU()
-{
-	return maxDepthTPU;
-}
-double SonarPointCloud::getMinPositionalTPU()
-{
-	return minPositionalTPU;
-}
-double SonarPointCloud::getMaxPositionalTPU()
-{
-	return maxPositionalTPU;
-}
-
-char* SonarPointCloud::getName()
-{
-	return name;
-}
-
-void SonarPointCloud::setName(char* Name)
-{
-	strcpy(name, Name);
-}
-
-double SonarPointCloud::getActualRemovedXMin()
-{
-	return actualRemovedXmin;
-}
-
-double SonarPointCloud::getActualRemovedYMin()
-{
-	return actualRemovedYmin;
-}
-
-
-void SonarPointCloud::drawAxes()
-{
-	//printf("In Holodeck Draw()\n");
-	glColor3f(0.75, 0.0, 0.0);
-	glLineWidth(1.0);
-
-	float smallSize = xRange / 40;
-	float bigSize = xRange / 20;
-	float centerX = (xMin + xMax) / 2;
-	float centerY = (minDepth + maxDepth) / 2;  //swap z & y
-	float centerZ = (yMin + yMax) / 2;
-
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(centerX - smallSize, centerY, centerZ);
-	glVertex3f(centerX + bigSize, centerY, centerZ);
-
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(centerX, centerY - smallSize, centerZ);
-	glVertex3f(centerX, centerY + bigSize, centerZ);
-
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(centerX, centerY, centerZ - smallSize);
-	glVertex3f(centerX, centerY, centerZ + bigSize);
-	glEnd();
-}
-
-void SonarPointCloud::useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin)
-{
-	double adjustmentX = actualRemovedXmin - newRemovedXmin;
-	double adjustmentY = actualRemovedYmin - newRemovedYmin;
-
-	printf("adjusting cloud by %f, %f\n", adjustmentX, adjustmentY);
-
-	actualRemovedXmin = newRemovedXmin;
-	actualRemovedYmin = newRemovedYmin;
-
-	//adjust bounds
-	xMin += adjustmentX;
-	xMax += adjustmentX; 
-	yMin += adjustmentY;
-	yMax += adjustmentY;
-
-	//shouldn't have to do this, but just in case of precision errors
-	xRange = xMax - xMin;
-	yRange = yMax - yMin;
-
-	//adjust point positions
-	for (int i = 0; i < numPoints; i++)
+	case ColorScaler::Mode::ColorScale:
 	{
-		pointsPositions[i * 3] += adjustmentX;
-		pointsPositions[(i * 3) + 1] += adjustmentY;
+		m_pColorScaler->getScaledColorForValue(m_vdvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
+		break;
 	}
+	case ColorScaler::Mode::ColorScale_BiValue:
+	{
+		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &col.r, &col.g, &col.b);
+		break;
+	}
+	default:
+		break;
+	}
+	return col;
+}
+
+void SonarPointCloud::adjustPoints()
+{
+	glm::dvec3 adjustment = getDataCenteringAdjustments();
+
+	for (int i = 0; i < m_nPoints; ++i)
+		m_vvec3AdjustedPointsPositions[i] = m_vdvec3RawPointsPositions[i] + adjustment;
+}
+
+void SonarPointCloud::createAndLoadBuffers()
+{
+	// Create data buffer, allocate storage, and upload initial data
+	glCreateBuffers(1, &m_glVBO);
+	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferSubData(m_glVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
+	glNamedBufferSubData(m_glVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+
+	// Create index buffer, allocate storage, and upload initial data
+	glCreateBuffers(1, &m_glEBO);
+	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(GLuint), &m_vuiIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
+
+	// Create main VAO
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+
+	// Create preview VAO
+	glGenVertexArrays(1, &m_glPreviewVAO);
+	glBindVertexArray(m_glPreviewVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+	glBindVertexArray(0);
+}
+
+void SonarPointCloud::markPoint(unsigned int index, int code)
+{
+	m_vuiPointsMarks[index] = code;	
+
+	glm::vec3 color;
+	float a = 1.f;
+
+	switch (code)
+	{
+	case 0:
+		color = getDefaultPointColor(index);
+		break;
+	case 1:
+		a = 0.f;
+		break;
+	case 2:
+		color = glm::vec3(1.f, 0.f, 0.f);
+		break;
+	case 3:
+		color = glm::vec3(0.f, 1.f, 0.f);
+		break;
+	case 4:
+		color = glm::vec3(0.f, 0.f, 1.f);
+		break;
+	default: // if >= 100
+		color = (1.f / getDefaultPointColor(index)) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		//g = (1.f / g) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		//b = (1.f / b) * (static_cast<float>(m_vuiPointsMarks[index]) - 100.f) / 100.f;
+		a = (static_cast<float>(code) - 100.f) / 100.f;
+		break;
+	}
+
+	m_vvec4PointsColors[index] = glm::vec4(color, a);
 
 	setRefreshNeeded();
-}
-
-void SonarPointCloud::markPoint(int index, int code)
-{
-	pointsMarks[index] = code;
 }
 
 void SonarPointCloud::resetAllMarks()
 {
-	for (int i = 0; i < numPoints; i++)
-	{
-		pointsMarks[i] = 0;
-	}
-	setRefreshNeeded();
+	for (int i = 0; i < m_nPoints; i++)
+		markPoint(i, 0);	
 }
 
-int SonarPointCloud::getPointMark(int index)
+glm::vec3 SonarPointCloud::getAdjustedPointPosition(unsigned int index)
 {
-	return pointsMarks[index];
+	return m_vvec3AdjustedPointsPositions[index];
+}
+
+glm::dvec3 SonarPointCloud::getRawPointPosition(unsigned int index)
+{
+	return m_vdvec3RawPointsPositions[index];
+}
+
+int SonarPointCloud::getPointMark(unsigned int index)
+{
+	return m_vuiPointsMarks[index];
+}
+
+float SonarPointCloud::getPointDepthTPU(unsigned int index)
+{
+	return m_vfPointsDepthTPU[index];
+}
+
+float SonarPointCloud::getPointPositionTPU(unsigned int index)
+{
+	return m_vfPointsPositionTPU[index];
 }

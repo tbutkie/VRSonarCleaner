@@ -1,479 +1,556 @@
 #include "DataVolume.h"
-#include "DebugDrawer.h"
+#include "Renderer.h"
 
-#include "shared/glm/gtx/transform.hpp"
+#include <gtx/transform.hpp>
 
 #include <iostream>
 #include <math.h>
+#include <functional>
 
-DataVolume::DataVolume(float PosX, float PosY, float PosZ, int startingOrientation, float SizeX, float SizeY, float SizeZ)
+DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions)
+	: m_vec3Position(pos)
+	, m_qOrientation(orientation)
+	, m_vec3Dimensions(dimensions)
+	, m_vec3OriginalPosition(pos)
+	, m_qOriginalOrientation(orientation)
+	, m_vec3OriginalDimensions(dimensions)
+	, m_bVisible(true)
+	, m_bFirstRun(true)
+	, m_bDirty(true)
+	, m_bUseCustomBounds(false)
+	, m_bUsePivot(false)
 {
-	size.x = SizeX;
-	size.y = SizeY;
-	size.z = SizeZ;
-
-	pos = glm::vec3(PosX, PosY, PosZ);	
-
-	if (startingOrientation == 0)
-		orientation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
-	else
-		orientation = glm::angleAxis(-90.f, glm::vec3(1, 0, 0));
-
-	rotationInProgress = false;
-
-	
-	originalPosition = pos;
-	originalOrientation = orientation;
-
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
+	calculateBoundingRadius();
+	updateTransforms();
 }
 
 DataVolume::~DataVolume()
 {
+}
 
+void DataVolume::add(Dataset * data)
+{
+	// Only add if not already in collection
+	if (std::find(m_vpDatasets.begin(), m_vpDatasets.end(), data) == m_vpDatasets.end())
+	{
+		m_vpDatasets.push_back(data);
+		m_bDirty = true;
+		updateTransforms();
+	}
+}
+
+void DataVolume::remove(Dataset * data)
+{
+	m_vpDatasets.erase(std::remove(m_vpDatasets.begin(), m_vpDatasets.end(), data), m_vpDatasets.end());
+	m_bDirty = true;
+	updateTransforms();
+}
+
+std::vector<Dataset*> DataVolume::getDatasets()
+{
+	return m_vpDatasets;
+}
+
+glm::vec3 DataVolume::getOriginalPosition()
+{
+	return m_vec3OriginalPosition;
+}
+
+glm::quat DataVolume::getOriginalOrientation()
+{
+	return m_qOriginalOrientation;
+}
+
+glm::vec3 DataVolume::getOriginalDimensions()
+{
+	return m_vec3OriginalDimensions;
 }
 
 void DataVolume::resetPositionAndOrientation()
 {
-	pos.x = originalPosition[0];
-	pos.y = originalPosition[1];
-	pos.z = originalPosition[2];
-	orientation = originalOrientation;
-
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
+	setPosition(m_vec3OriginalPosition);
+	setOrientation(m_qOriginalOrientation);
+	setDimensions(m_vec3OriginalDimensions);
 }
 
-
-void DataVolume::setSize(float SizeX, float SizeY, float SizeZ)
+glm::dvec3 DataVolume::convertToRawDomainCoords(glm::vec3 worldPos)
 {
-	size.x = SizeX;
-	size.y = SizeY;
-	size.z = SizeZ;
-
-	//minX = posX - (sizeX / 2);
-	//minY = posY - (sizeY / 2);
-	//minZ = posZ - (sizeZ / 2);
-
-	//maxX = posX + (sizeX / 2);
-	//maxY = posY + (sizeY / 2);
-	//maxZ = posZ + (sizeZ / 2);
-
-	recalcScaling();
+	if (m_vpDatasets.size() == 0u)
+		return glm::dvec3();
+	else
+		return glm::dvec3(glm::inverse(m_dmat4RawDomainToVolumeTransform) * glm::dvec4(worldPos, 1.));
 }
 
-void DataVolume::setPosition(float PosX, float PosY, float PosZ)
+glm::vec3 DataVolume::convertToAdjustedDomainCoords(glm::vec3 worldPos)
 {
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
-
-	pos.x = PosX;
-	pos.y = PosY;
-	pos.z = PosZ;
-	//minX = posX - (sizeX / 2);
-	//minY = posY - (sizeY / 2);
-	//minZ = posZ - (sizeZ / 2);
-
-	//maxX = posX + (sizeX / 2);
-	//maxY = posY + (sizeY / 2);
-	//maxZ = posZ + (sizeZ / 2);3.
-
-	recalcScaling();
+	if (m_vpDatasets.size() == 0u)
+		return glm::vec3();
+	else
+		return glm::vec3(glm::inverse(m_mat4AdjustedDomainToVolumeTransform) * glm::vec4(worldPos, 1.f));
 }
 
-void DataVolume::setInnerCoords(double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ)
+glm::vec3 DataVolume::convertToDataCoords(Dataset* dataset, glm::vec3 worldPos)
 {
-	innerMinX = MinX;
-	innerMaxX = MaxX;
-	innerMinY = MinY;
-	innerMaxY = MaxY;
-	innerMinZ = MinZ;
-	innerMaxZ = MaxZ;
-	innerSizeX = MaxX - MinX;
-	innerSizeY = MaxY - MinY;
-	innerSizeZ = MaxZ - MinZ;
-
-	recalcScaling();
+	if (m_vpDatasets.size() == 0u)
+		return glm::vec3();
+	else
+		return glm::vec3(glm::inverse(getCurrentDataTransform(dataset)) * glm::vec4(worldPos, 1.f));
 }
 
-void DataVolume::recalcScaling()
+glm::vec3 DataVolume::convertToWorldCoords(glm::dvec3 rawDataPos)
 {
-	XZscale = (float)std::min((double)size.x / innerSizeX, (double)size.z / innerSizeZ);
-	depthScale = size.y / (float)innerSizeY;
-	printf("Scaling Factor is XZ: %f, Y: %f", XZscale, depthScale);
+	if (m_vpDatasets.size() == 0u)
+		return glm::vec3();
+	else
+		return glm::vec3(m_dmat4RawDomainToVolumeTransform * glm::dvec4(rawDataPos, 1.f));
+}
+
+bool DataVolume::isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ)
+{
+	if (m_vpDatasets.size() == 0u)
+		return false;
 	
-	/*
-	if (orientation == 0) //z-up table
-	{
-		XZscale = (float)min((double)sizeX / innerSizeX, (double)sizeZ / innerSizeZ);
-		//float newWidth = innerSizeX*XYscale;
-		//float newHeight = innerSizeY*XYscale;
+	glm::dvec3 ptXform(glm::inverse(m_dmat4RawDomainToVolumeTransform) * glm::dvec4(worldPt, 1.));
 
-		depthScale = sizeY / (float)innerSizeY;
-	}
-	else if (orientation == 1) //rotated wall view
+	if (ptXform.x >= getMinXDataBound() && ptXform.x <= getMaxXDataBound() &&
+		ptXform.y >= getMinYDataBound() && ptXform.y <= getMaxYDataBound())
 	{
-		XZscale = (float)min((double)sizeX / innerSizeX, (double)sizeY / innerSizeZ);
-		
-		depthScale = sizeZ / (float)innerSizeY;
+		if (checkZ)
+		{
+			if (ptXform.z >= getMinZDataBound() && ptXform.z <= getMaxZDataBound())
+				return true;
+		}
+		else
+		{
+			return true;
+		}
 	}
 
-	printf("Scaling Factor for Orientation %d is XZ: %f, Y: %f", orientation, XZscale, depthScale);
-	*/
-
-}//end recalc scaling
-
-void DataVolume::convertToInnerCoords(float xWorld, float yWorld, float zWorld, float *xInner, float *yInner, float *zInner)
-{
-	double inverted[16];
-	InvertMat(storedMatrix, inverted);
-	
-	//Vec3 pointIn(xWorld, yWorld, zWorld);
-	double pointIn[3];
-	double pointOut[3];
-
-	pointIn[0] = xWorld;
-	pointIn[1] = yWorld;
-	pointIn[2] = zWorld;
-
-	MVMult(inverted, pointIn, pointOut, true);
-
-	*xInner = pointOut[0];
-	*yInner = pointOut[1];
-	*zInner = pointOut[2];
+	return false;
 }
 
-void DataVolume::convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld)
+void DataVolume::drawBBox(glm::vec4 color, float padPct)
 {
-	double pointIn[3];
-	double pointOut[3];
+	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
-	pointIn[0] = xInner;
-	pointIn[1] = yInner;
-	pointIn[2] = zInner;
-
-	MVMult(storedMatrix, pointIn, pointOut, true);
-
-	*xWorld = pointOut[0];
-	*yWorld = pointOut[1];
-	*zWorld = pointOut[2];
+	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, color);
 }
 
-void DataVolume::activateTransformationMatrix()
+void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
 {
-	//store current matrix so we can restore it later in deactivateTransformationMatrix(), this isn't working right now for some reason
-	glMatrixMode(GL_MODELVIEW);
-	//glGetDoublev(GL_MODELVIEW, storedMatrix);
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
-	glTranslatef(pos.x, pos.y, pos.z);
+	Renderer::getInstance().drawPrimitive("inverse_icosphere", volTransform, color, color, 0.f);
+}
 
-	//old if
+void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct)
+{
+	glm::vec3 bbMin(-0.5f);
+	glm::vec3 bbMax(0.5f);
 
-	//rotate here
+	glm::vec3 viewPos = glm::vec3(worldToHMDTransform[3]);
+	glm::vec3 viewDir = -glm::normalize(glm::vec3(worldToHMDTransform[2]));
+
+	glm::mat4 volTransform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
+
+	std::vector<glm::vec4> vv4cubeSideCtrs;
 	
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
-	//scale/trans
-
-	glScalef(XZscale, depthScale, XZscale);
-	//glTranslatef((-((float)innerSizeX) / 2) - innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ); //why y different? to flip depth?
-	glTranslatef((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ); //tried this and it seems fine for now
-
-	glMatrixMode(GL_MODELVIEW);
-	glGetDoublev(GL_MODELVIEW_MATRIX, storedMatrix);
-
-	/*
-	if (orientation == 0) //table view 
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMin.x, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // left
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // right
+	
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMin.y, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // bottom
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y, bbMax.z - (bbMax.z - bbMin.z) / 2.f, 1.f)); // top
+	
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMax.z, 1.f)); // front
+	vv4cubeSideCtrs.push_back(volTransform * glm::vec4(bbMax.x - (bbMax.x - bbMin.x) / 2.f, bbMax.y - (bbMax.y - bbMin.y) / 2.f, bbMin.z, 1.f)); // back
+	
+	glm::vec4 volumeCtr = volTransform[3];
+	
+	for (auto const &midPt : vv4cubeSideCtrs)
 	{
-		//glScalef(-1.0, 1.0, 1.0);
-		//glRotatef(180.0, 0.0, 0.0, 1.0);
-		//glRotatef(90.0, 1.0, 0.0, 0.0);
-		glScalef(XZscale, depthScale, XZscale);
-		glTranslatef((-((float)innerSizeX) / 2)-innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glGetDoublev(GL_MODELVIEW_MATRIX, storedMatrix);
+		glm::vec3 v3PlaneNorm(glm::normalize(volumeCtr - midPt));
+	
+		glm::vec3 v3PlaneToHMD(glm::normalize(viewPos - glm::vec3(midPt)));
+	
+		float dpPlaneHMD = glm::dot(v3PlaneToHMD, v3PlaneNorm);
+		float dpPlaneView = glm::dot(viewDir, v3PlaneNorm);
+	
+		if (dpPlaneHMD < 0.f)
+			continue;
+	
+		float angleCutoff = 0.f;
+		float cosCutoff = glm::cos(glm::radians(angleCutoff));
+		float angleFade = 70.f; // degrees viewing angle to plane normal
+		float cosFade = glm::cos(glm::radians(angleFade));
+	
+		if (dpPlaneView < cosCutoff)
+		{
+			// calculate transparency fade
+			float range = cosFade - cosCutoff;
+			//color.a *= (dpPlaneView - cosCutoff) / range;
+			//color.a = 0.5f;
+	
+			// now position the planes
+			float eps = 0.001f;
+			glm::mat4 planeTransform;
+			planeTransform[2] = glm::normalize(volumeCtr - midPt); // z
+			planeTransform[3] = midPt; // pos
+	
+			if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[0]))) - (-1.f)) < eps)
+			{ // right
+				planeTransform[0] = volTransform[2];
+				planeTransform[1] = volTransform[1];
+				//color = glm::vec4(glm::vec3(1.f, 0.f, 0.f), color.a);
+			}
+			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[0]))) - 1.f) < eps)
+			{ // left
+				planeTransform[0] = -volTransform[2];
+				planeTransform[1] = volTransform[1];
+				//color = glm::vec4(glm::vec3(0.f, 1.f, 0.f), color.a);
+			}
+			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[1]))) - (-1.f)) < eps)
+			{ // top
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = volTransform[2];
+				//color = glm::vec4(glm::vec3(0.f, 0.f, 1.f), color.a);
+			}
+			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[1]))) - 1.f) < eps)
+			{ // bottom
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = -volTransform[2];
+				//color = glm::vec4(glm::vec3(1.f, 1.f, 0.f), color.a);
+			}
+			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[2]))) - (-1.f)) < eps)
+			{ // front
+				planeTransform[0] = -volTransform[0];
+				planeTransform[1] = volTransform[1];
+				//color = glm::vec4(glm::vec3(0.f, 1.f, 1.f), color.a);
+			}
+			else if (abs(glm::dot(v3PlaneNorm, glm::normalize(glm::vec3(volTransform[2]))) - 1.f) < eps)
+			{ // back
+				planeTransform[0] = volTransform[0];
+				planeTransform[1] = volTransform[1];
+				//color = glm::vec4(glm::vec3(1.f, 0.f, 1.f), color.a);
+			}
+	
+			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, color);
+		}
 	}
-	if (orientation == 1) //wall view
+}
+
+glm::mat4 DataVolume::getCurrentDataTransform(Dataset* dataset)
+{
+	return m_bUseCustomBounds ? m_mapCustomDataTransforms[dataset] : m_mapDataTransforms[dataset];
+}
+
+glm::mat4 DataVolume::getLastDataTransform(Dataset* dataset)
+{
+	return m_bUseCustomBounds ? m_mapCustomDataTransformsPrevious[dataset] : m_mapDataTransformsPrevious[dataset];
+}
+
+glm::dmat4 DataVolume::getRawDomainToVolumeTransform()
+{
+	return m_dmat4RawDomainToVolumeTransform;
+}
+
+glm::dmat4 DataVolume::getLastRawDomainToVolumeTransform()
+{
+	return m_dmat4RawDomainToVolumeTransformPrevious;
+}
+
+glm::mat4 DataVolume::getCurrentVolumeTransform()
+{
+	return m_mat4VolumeTransform;
+}
+
+glm::mat4 DataVolume::getLastVolumeTransform()
+{
+	return m_mat4VolumeTransformPrevious;
+}
+
+void DataVolume::setPosition(glm::vec3 newPos)
+{
+	m_vec3Position = newPos;
+	m_bDirty = true;
+}
+
+glm::vec3 DataVolume::getPosition()
+{
+	return m_vec3Position;
+}
+
+void DataVolume::setOrientation(glm::quat newOrientation)
+{
+	m_qOrientation = newOrientation;
+	m_bDirty = true;
+}
+
+glm::quat DataVolume::getOrientation()
+{
+	return m_qOrientation;
+}
+
+void DataVolume::setDimensions(glm::vec3 newScale)
+{
+	m_vec3Dimensions = newScale;
+	calculateBoundingRadius();
+	m_bDirty = true;
+}
+
+glm::vec3 DataVolume::getDimensions()
+{
+	return m_vec3Dimensions;
+}
+
+glm::dvec3 DataVolume::getMinDataBound()
+{
+	if (m_vpDatasets.size() == 0u)
+		return glm::dvec3(std::numeric_limits<double>::max());
+	else
+		return m_dvec3DomainMinBound;
+}
+
+double DataVolume::getMinXDataBound()
+{
+	auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
+	auto minXDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
+	if (minXDS == m_vpDatasets.end())
+		return std::numeric_limits<double>::max();
+	else
+		return (*minXDS)->getRawXMin();
+}
+
+double DataVolume::getMinYDataBound()
+{
+	auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
+	auto minYDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
+	if (minYDS == m_vpDatasets.end())
+		return std::numeric_limits<double>::max();
+	else
+		return (*minYDS)->getRawYMin();
+}
+
+double DataVolume::getMinZDataBound()
+{
+	auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
+	auto minZDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
+	if (minZDS == m_vpDatasets.end())
+		return std::numeric_limits<double>::max();
+	else
+		return (*minZDS)->getRawZMin();
+}
+
+glm::dvec3 DataVolume::getMaxDataBound()
+{
+	if (m_vpDatasets.size() == 0u)
+		return glm::dvec3(-std::numeric_limits<double>::max());
+	else
+		return m_dvec3DomainMaxBound;
+}
+
+double DataVolume::getMaxXDataBound()
+{
+	auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
+	auto maxXDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn);
+	if (maxXDS == m_vpDatasets.end())
+		return -std::numeric_limits<double>::max();
+	else
+		return (*maxXDS)->getRawXMax();
+}
+
+double DataVolume::getMaxYDataBound()
+{
+	auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
+	auto maxYDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn);
+	if (maxYDS == m_vpDatasets.end())
+		return -std::numeric_limits<double>::max();
+	else
+		return (*maxYDS)->getRawYMax();
+}
+
+double DataVolume::getMaxZDataBound()
+{
+	auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
+	auto maxZDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn);
+	if (maxZDS == m_vpDatasets.end())
+		return -std::numeric_limits<double>::max();
+	else
+		return (*maxZDS)->getRawZMax();
+}
+
+void DataVolume::calculateBoundingRadius()
+{
+	std::vector<float> vTableDims = { m_vec3Dimensions.x, m_vec3Dimensions.y, m_vec3Dimensions.z };
+	m_fBoundingRadius = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1] + vTableDims[2] * vTableDims[2]) * 0.5f;
+}
+
+glm::dvec3 DataVolume::getDataDimensions()
+{
+	if (m_vpDatasets.size() == 0u)
+		return glm::dvec3(0.);
+	else
+		return m_dvec3DomainDims;
+}
+
+void DataVolume::setCustomBounds(glm::dvec3 minBound, glm::dvec3 maxBound)
+{
+	m_dvec3CustomDomainMinBound = minBound;
+	m_dvec3CustomDomainMaxBound = maxBound;
+	m_dvec3CustomDomainDims = maxBound - minBound;
+	m_bDirty = true;
+}
+
+glm::dvec3 DataVolume::getCustomMinBound()
+{
+	return m_dvec3CustomDomainMinBound;
+}
+
+glm::dvec3 DataVolume::getCustomMaxBound()
+{
+	return m_dvec3CustomDomainMaxBound;
+}
+
+glm::dvec3 DataVolume::getCustomDomainDimensions()
+{
+	return m_dvec3CustomDomainDims;
+}
+
+float DataVolume::getBoundingRadius()
+{
+	return m_fBoundingRadius;
+}
+
+void DataVolume::useCustomBounds(bool yesno)
+{
+	m_bUseCustomBounds = yesno;
+}
+
+bool DataVolume::getUseCustomBounds()
+{
+	return m_bUseCustomBounds;
+}
+
+void DataVolume::drawAxes(float size)
+{
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(glm::rotate(m_mat4VolumeTransform, glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", glm::scale(m_mat4VolumeTransform, glm::vec3(0.1f, 0.1f, 1.f) * size), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f), 1.f);
+}
+
+void DataVolume::update()
+{
+	updateTransforms();
+}
+
+bool DataVolume::isVisible()
+{
+	return m_bVisible;
+}
+
+void DataVolume::setVisible(bool yesno)
+{
+	m_bVisible = yesno;
+}
+
+glm::vec3 DataVolume::calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims)
+{
+	float fromAR = fromDims.x / fromDims.y; // for figuring out how to maintain correct scale in the data volume
+	float toAR = toDims.x / toDims.y;
+
+	glm::vec3 adjustedDims;
+
+	if (toAR > fromAR)
 	{
-		//glScalef(-1.0, 1.0, 1.0);
-		//glRotatef(180.0, 0.0, 0.0, 1.0);
-		glRotatef(-90.0, 1.0, 0.0, 0.0);
-		//glScalef(XZscale, XZscale, depthScale);
-		glScalef(XZscale, depthScale, XZscale);
-		//glTranslatef(-((float)innerSizeX) / 2, ((float)innerSizeY) / 2, -((float)innerSizeZ) / 2);
-		glTranslatef((-((float)innerSizeX) / 2) - innerMinX, (((float)innerSizeY) / 2) + innerMaxY, (-((float)innerSizeZ) / 2) - innerMinZ);
+		adjustedDims.x = fromDims.x * (toDims.y / fromDims.y);
+		adjustedDims.y = toDims.y;
 	}
-	*/
+	else
+	{
+		adjustedDims.x = toDims.x;
+		adjustedDims.y = fromDims.y * (toDims.x / fromDims.x);
+	}
 
+	adjustedDims.z = toDims.z;
+
+	return adjustedDims;
 }
 
-
-
-
-void DataVolume::drawBBox()
+void DataVolume::updateTransforms()
 {
-	//printf("In Holodeck Draw()\n");
-	//glColor3f(0.75, 0.0, 0.0);
-	glColor4f(0.22, 0.25, 0.34, 1.0);
-	glLineWidth(1.0);
-	
-	float BBox[6];
-	BBox[0] = pos.x-(size.x / 2);
-	BBox[1] = pos.x+(size.x / 2);
-	BBox[2] = pos.y-(size.y / 2);
-	BBox[3] = pos.y+(size.y / 2);
-	BBox[4] = pos.z-(size.z / 2);
-	BBox[5] = pos.z+(size.z / 2);
-	
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glTranslatef(pos.x, pos.y, pos.z);
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
-	glTranslatef(-pos.x, -pos.y, -pos.z);
-	
-	glBegin(GL_LINES);
-
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-
-
-
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-
-
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-
-
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-
-	glEnd();
-
-	glPopMatrix();
-
-	/*
-
-	float BBox[6];
-	BBox[0] = minX;
-	BBox[1] = maxX;
-	BBox[2] = minY;
-	BBox[3] = maxY;
-	BBox[4] = minZ;
-	BBox[5] = maxZ;
-
-
-	glBegin(GL_LINES);
-
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-
-
-
-	glVertex3f(BBox[0], BBox[2], BBox[4]);
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-
-	glVertex3f(BBox[1], BBox[2], BBox[5]);
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[2], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-
-
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-
-
-	glVertex3f(BBox[1], BBox[3], BBox[4]);
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[1], BBox[3], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-
-	glVertex3f(BBox[0], BBox[3], BBox[5]);
-	glVertex3f(BBox[0], BBox[3], BBox[4]);
-
-	glEnd();
-
-	*/
-
-
-
-}
-
-void DataVolume::drawBacking()
-{
-	//printf("In Holodeck Draw()\n");
-	glColor4f(0.22, 0.25, 0.34, 1.0);
-
-	float BBox[6];
-	BBox[0] = pos.x-(size.x / 2);
-	BBox[1] = pos.x+(size.x / 2);
-	BBox[2] = pos.y -(size.y / 2);
-	BBox[3] = pos.y+(size.y / 2);
-	BBox[4] = pos.z-(size.z / 2);
-	BBox[5] = pos.z+(size.z / 2);
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glTranslatef(pos.x, pos.y, pos.z);
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));                 
-	glTranslatef(-pos.x, -pos.y, -pos.z);
-
-	glBegin(GL_QUADS);
-
-		glVertex3f(BBox[0], BBox[2], BBox[4]);
-		glVertex3f(BBox[1], BBox[2], BBox[4]);
-		glVertex3f(BBox[1], BBox[2], BBox[5]);
-		glVertex3f(BBox[0], BBox[2], BBox[5]);
-	
-	glEnd();
-
-	glPopMatrix();
-}
-
-void DataVolume::drawAxes()
-{
-	//printf("In Holodeck Draw()\n");
-	//glColor3f(0.75, 0.0, 0.0);
-	//glLineWidth(1.0);
-
-	//float smallSize = sizeX / 40;
-	//float bigSize = sizeX / 20;
-
-	//glMatrixMode(GL_MODELVIEW);
-	//glPushMatrix();
-	//glTranslatef(posX, posY, posZ);
-	//glMultMatrixf(glm::value_ptr(glm::mat4_cast(orientation)));
-	//glTranslatef(-posX, -posY, -posZ);
-
-	//glLineWidth(2.0);
-	//glBegin(GL_LINES);
-	//glColor3f(1.0, 0.0, 0.0);
-	//glVertex3f(posX-smallSize, posY, posZ);
-	//glVertex3f(posX+bigSize, posY, posZ);
-
-	//glColor3f(0.0, 1.0, 0.0);
-	//glVertex3f(posX, posY -smallSize, posZ);
-	//glVertex3f(posX, posY+bigSize, posZ);
-
-	//glColor3f(0.0, 0.0, 1.0);
-	//glVertex3f(posX, posY, posZ -smallSize);
-	//glVertex3f(posX, posY, posZ+bigSize);
-	//glEnd();
-
-	//glPopMatrix();
-
-	DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation));
-	DebugDrawer::getInstance().drawTransform(0.1f);
-}
-
-glm::mat4 DataVolume::getCurrentTransform()
-{
-	glm::mat4 trans = glm::translate(glm::mat4(), pos);
-
-	glm::mat4 rot = glm::mat4_cast(orientation);
-
-	glm::mat4 scl = glm::scale(glm::vec3(XZscale, depthScale, XZscale));
-
-	glm::mat4 dataCenterTrans = glm::translate(glm::mat4(), glm::vec3((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ));
-
-	return trans * rot * scl * dataCenterTrans;
-}
-
-glm::mat4 DataVolume::getLastTransform()
-{
-	glm::mat4 scl = glm::scale(glm::vec3(XZscale, depthScale, XZscale));
-
-	glm::mat4 dataCenterTrans = glm::translate(glm::mat4(), glm::vec3((-((float)innerSizeX) / 2) - innerMinX, -(((float)innerSizeY) / 2) - innerMinY, (-((float)innerSizeZ) / 2) - innerMinZ));
-
-	return m_mat4LastPose * scl * dataCenterTrans;
-}
-
-glm::mat4 DataVolume::getCurrentPose()
-{
-	return glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
-}
-
-glm::mat4 DataVolume::getLastPose()
-{
-	return m_mat4LastPose;
-}
-
-void DataVolume::startRotation(const float *controllerPose)
-{
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
-	m_mat4ControllerPoseAtRotationStart = glm::make_mat4(controllerPose);
-	m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
+	if (m_bDirty)
+	{
+		m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
+
+		// M = T * R * S
+		m_mat4VolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(glm::mat4(), m_vec3Dimensions);
+
+		if (m_vpDatasets.size() == 0u)
+			return;
+
+		m_dvec3DomainMinBound = glm::dvec3(getMinXDataBound(), getMinYDataBound(), getMinZDataBound());
+		m_dvec3DomainMaxBound = glm::dvec3(getMaxXDataBound(), getMaxYDataBound(), getMaxZDataBound());
+		m_dvec3DomainDims = glm::dvec3(m_dvec3DomainMaxBound - m_dvec3DomainMinBound);
+
+		glm::vec3 domainAdjustedVolumeDims = calcAspectAdjustedDimensions(m_dvec3DomainDims, m_vec3Dimensions);
+		glm::dvec3 combinedDataCenter = m_dvec3DomainMinBound + m_dvec3DomainDims * 0.5;
+		m_mapDataTransformsPrevious = m_mapDataTransforms;
+		glm::vec3 scalingFactors = domainAdjustedVolumeDims / glm::vec3(m_dvec3DomainDims);
+		// Apply data volume transform and aspect-corrected scaling so data fits inside volume
+		m_mat4AdjustedDomainToVolumeTransformPrevious = m_mat4AdjustedDomainToVolumeTransform;
+		m_mat4AdjustedDomainToVolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(scalingFactors);
+
+
+		glm::vec3 domainCustomAdjustedVolumeDims = calcAspectAdjustedDimensions(m_dvec3CustomDomainDims, m_vec3Dimensions);
+		glm::dvec3 combinedCustomDataCenter = m_dvec3CustomDomainMinBound + m_dvec3CustomDomainDims * 0.5;
+		m_mapCustomDataTransformsPrevious = m_mapCustomDataTransforms;
+		glm::vec3 customScalingFactors = domainCustomAdjustedVolumeDims / glm::vec3(m_dvec3CustomDomainDims);
+		glm::mat4 customDomainToVolumeTransform = glm::translate(glm::mat4(), m_vec3Position) * glm::mat4(m_qOrientation) * glm::scale(customScalingFactors);
+
+
+		// calculate the transform from the entire raw domain to the world space
+		m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
+		m_dmat4RawDomainToVolumeTransform = glm::translate(glm::dmat4(), glm::dvec3(m_vec3Position)) * glm::dmat4(glm::mat4(m_qOrientation)) * glm::scale(glm::dvec3(scalingFactors)) * glm::translate(glm::dmat4(), -combinedDataCenter);
 		
-	//save volume pose in controller space
-	m_mat4ControllerToVolumePose = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4PoseAtRotationStart;
-	
-	rotationInProgress = true;
-}
 
-void DataVolume::continueRotation(const float *controllerPose)
-{
-	if (!rotationInProgress)
-		return;
+		for (auto &dataset : m_vpDatasets)
+		{
+			glm::dvec3 dataCenterRaw = dataset->getRawMinBounds() + dataset->getRawDimensions() * 0.5;
 
-	glm::mat4 mat4ControllerPoseCurrent = glm::make_mat4(controllerPose);
+			glm::vec3 dataPositionOffsetInVolume = dataCenterRaw - combinedDataCenter;
+			glm::vec3 dataPositionOffsetInCustomVolume = dataCenterRaw - combinedCustomDataCenter;
 
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
-		
-	pos = glm::vec3((mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose)[3]);
-	orientation = glm::quat(mat4ControllerPoseCurrent * m_mat4ControllerToVolumePose);
+			glm::vec3 dataCenteringOffset = -(dataset->getAdjustedMinBounds() + dataset->getAdjustedDimensions() * 0.5f);
 
-	DebugDrawer::getInstance().setTransformDefault();
-	DebugDrawer::getInstance().drawLine(glm::vec3(m_mat4ControllerPoseAtRotationStart[3]), glm::vec3(m_mat4PoseAtRotationStart[3]), glm::vec3(0.f, 1.f, 0.f));
-	DebugDrawer::getInstance().drawLine(glm::vec3(mat4ControllerPoseCurrent[3]), pos, glm::vec3(1.f, 0.f, 0.f));
-}
+			glm::mat4 handednessConversion;
+			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
+				handednessConversion[2][2] = -1.f;
 
-void DataVolume::endRotation()
-{
-	rotationInProgress = false;
+			glm::mat4 trans = m_mat4AdjustedDomainToVolumeTransform;
+			trans *= handednessConversion; // 3. Inverts the z-coordinate to change handedness, if needed
+			trans *= glm::translate(glm::mat4(), dataPositionOffsetInVolume); // 2. Positions center of dataset within data volume
+			trans *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
 
-	m_mat4LastPose = glm::translate(glm::mat4(), pos) * glm::mat4_cast(orientation);
+			m_mapDataTransforms[dataset] = trans;
 
-	//could revert to old starting position and orientation here to have it always snap back in place
-}
+			// custom domain calcs
+			glm::mat4 customTrans = customDomainToVolumeTransform;
+			customTrans *= handednessConversion;
+			customTrans *= glm::translate(glm::mat4(), dataPositionOffsetInCustomVolume);
+			customTrans *= glm::translate(glm::mat4(), dataCenteringOffset);
 
-bool DataVolume::isBeingRotated()
-{
-	return rotationInProgress;
+			m_mapCustomDataTransforms[dataset] = customTrans;
+		}
+
+		if (m_bFirstRun)
+		{
+			m_mapDataTransformsPrevious = m_mapDataTransforms;
+			m_mapCustomDataTransformsPrevious = m_mapCustomDataTransforms;
+			m_mat4VolumeTransformPrevious = m_mat4VolumeTransform;
+			m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
+			m_mat4AdjustedDomainToVolumeTransformPrevious = m_mat4AdjustedDomainToVolumeTransform;
+			m_bFirstRun = false;
+		}
+
+		m_bDirty = false;
+	}
 }

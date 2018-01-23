@@ -1,77 +1,97 @@
 #pragma once
 
 #include <vector>
-#include <windows.h>
+#include <map>
 
 #include <openvr.h>
 
-#include "Subject.h"
-#include "CGLRenderModel.h"
-#include "Icosphere.h"
+#include <GL/glew.h>
 
-#include "../shared/Matrices.h"
+#include <glm.hpp>
 
-class TrackedDevice : public Subject
+class TrackedDevice
 {
+	friend class TrackedDeviceManager;
+
 public:
-	TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
+	TrackedDevice(vr::TrackedDeviceIndex_t id, vr::IVRSystem *pHMD, vr::IVRRenderModels * pRenderModels);
 	~TrackedDevice();
 
 	virtual bool BInit();
 
 	vr::TrackedDeviceIndex_t getIndex();
-	void setRenderModel(CGLRenderModel *renderModel);
-	inline bool hasRenderModel() { return !(m_pTrackedDeviceToRenderModel == NULL); }
-
-	bool toggleAxes();
-	bool axesActive();
+	void setRenderModelName(std::string renderModelName);
+	bool hasRenderModel();
 
 	bool poseValid();
+	glm::mat4 getPose();
 
 	char getClassChar();
 	void setClassChar(char classChar);
 
-	Matrix4 getPose();
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
-
-	virtual void prepareForRendering();
-
-	virtual void render(Matrix4 & matVP); 
-	virtual void renderModel(Matrix4 & matVP);
+	glm::mat4 getDeviceToWorldTransform();
 
 protected:
+	struct TrackedDeviceComponent {
+		uint32_t							m_unComponentIndex;
+		std::string							m_strComponentName;
+		std::string							m_strComponentRenderModelName;
+		std::vector<vr::EVRButtonId>		m_vButtonsAssociated;
+		vr::RenderModel_ComponentState_t	m_State;
+		vr::RenderModel_ComponentState_t	m_LastState;
+		bool								m_bInitialized;
+		bool								m_bHasRenderModel;
 
-	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
-	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const Matrix4 &matPose);
-	bool createShaders();
-	CGLRenderModel* loadRenderModel(const char *pchRenderModelName);
-	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+		TrackedDeviceComponent()
+			: m_unComponentIndex			(0u)
+			, m_strComponentName			("No name")
+			, m_strComponentRenderModelName	("No render model name")
+			, m_bInitialized				(false)
+			, m_bHasRenderModel				(false)
+		{}
+
+		bool isPressed()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed) > 0; }
+		bool wasPressed()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed) > 0; }
+		bool justPressed()		{ return !wasPressed() && isPressed(); }
+		bool justUnpressed()	{ return wasPressed() && !isPressed(); }
+		bool continuePress()	{ return wasPressed() && isPressed(); }
+		bool isTouched()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched) > 0; }
+		bool wasTouched()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched) > 0; }
+		bool justTouched()		{ return !wasTouched() && isTouched(); }
+		bool justUntouched()	{ return wasTouched() && !isTouched(); }
+		bool continueTouch()	{ return wasTouched() && isTouched(); }
+		bool isScrolled()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled) > 0; }
+		bool wasScrolled()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled) > 0; }
+		bool isVisible()		{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible) > 0; }
+		bool wasVisible()		{ return (m_LastState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible) > 0; }
+		bool isStatic()			{ return (m_State.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic) > 0; }
+	};
+
+	std::vector<TrackedDeviceComponent*> m_vpComponents;
+
+protected:
+	virtual bool update(vr::TrackedDevicePose_t pose);
+
+	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
+	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);
 	uint32_t getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
+	std::string getPropertyString(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL);
 
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
 
 	vr::TrackedDeviceIndex_t m_unDeviceID;
-	CGLRenderModel *m_pTrackedDeviceToRenderModel;
 	std::string m_strRenderModelName;
 	
 	char m_ClassChar;   // for each device, a character representing its class
 	
+	std::map<vr::EVRButtonId, std::vector<TrackedDeviceComponent*>> m_mapButtonToComponentMap;
+
 	vr::TrackedDevicePose_t m_Pose;
 
-	Matrix4 m_mat4Pose;
-	
-	GLuint m_glVertBuffer;
-	GLuint m_unVAO;
-	unsigned int m_uiLineVertcount;
-	unsigned int m_uiTriVertcount;
-	GLuint m_unTransformProgramID;
-	GLint m_nMatrixLocation;
+	glm::mat4 m_mat4DeviceToWorldTransform;
 
-	GLuint m_unRenderModelProgramID;
-	GLint m_nRenderModelMatrixLocation;
-	
-	bool m_bShow;
-	bool m_bShowAxes;
+	bool m_bHasRenderModel;
+	bool m_bHidden;
 };
 

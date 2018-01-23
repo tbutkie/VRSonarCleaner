@@ -5,22 +5,21 @@
 #include <queue>
 #include <openvr.h>
 
-#include <shared\glm\glm.hpp>
+#include <glm.hpp>
+#include <GLTexture.h>
 
-#include "shared/Texture.h"
-#include "Observer.h"
 #include "TrackedDeviceManager.h"
 
 #define MAX_N_INFO_BOXES 16
 
-class InfoBoxManager : public Observer
+class InfoBoxManager
 {
 public:
 	enum RELATIVE_TO {
 		WORLD = 0,
 		HMD,
-		EDIT_CONTROLLER,
-		MANIP_CONTROLLER
+		PRIMARY_CONTROLLER,
+		SECONDARY_CONTROLLER
 	};
 
 private:
@@ -41,9 +40,7 @@ public:
 	void addInfoBox(std::string name, std::string pngFileName, float width, glm::mat4 pose, RELATIVE_TO what, bool billboarded);
 	bool removeInfoBox(std::string name);
 
-	virtual void receiveEvent(TrackedDevice* device, const int event);
-
-	void render(const float *matVP);
+	void draw();
 
 	bool updateInfoBoxPose(std::string infoBoxName, glm::mat4 pose);
 	bool updateInfoBoxSize(std::string infoBoxName, float size);
@@ -52,25 +49,12 @@ private:
 	InfoBoxManager();
 	~InfoBoxManager();
 
-	void createGeometry();
-	bool createShaders();
-
-	void createTutorial();
-
-	typedef std::tuple<Texture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
+	typedef std::tuple<GLTexture*, float, glm::mat4, RELATIVE_TO, bool> InfoBoxT;
 	typedef std::map<std::string, InfoBoxT> IBMapT;
 
 	IBMapT m_mapInfoBoxes;
-	std::map<std::string, Texture*> m_mapTextureBank;
-
-	GLuint m_unTransformProgramID;
-	GLint m_nMatrixLocation;
-	GLuint m_glVertBuffer;
-	GLuint m_unVAO;
 
 	TrackedDeviceManager* m_pTDM;
-
-	std::queue<std::vector<InfoBoxT>> m_Tutorial;
 		
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
 public:

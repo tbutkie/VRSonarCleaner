@@ -4,65 +4,126 @@
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
-#include "Vec3.h"
-#include "MatrixUtils.h"
-#include "../shared/glm/gtc/quaternion.hpp"
-#include "../shared/glm/gtx/quaternion.hpp"
-#include "../shared//glm/gtc/type_ptr.hpp"
+#include <vector>
+#include <map>
+#include "Dataset.h"
+#include <gtc/quaternion.hpp>
+#include <gtx/quaternion.hpp>
+#include <gtc/type_ptr.hpp>
 //#include <string>
 //#include <cstdlib>
 
 class DataVolume
 {
 public:
-	DataVolume(float PosX, float PosY, float PosZ, int startingOrientation, float SizeX, float SizeY, float SizeZ);
+	DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions);
 	virtual ~DataVolume();
 
-	void drawBBox();
-	void drawBacking();
-	void drawAxes();
+	void add(Dataset* data);
+	void remove(Dataset* data);
 
-	void setSize(float SizeX, float SizeY, float SizeZ);
-	void setPosition(float PosX, float PosY, float PosZ);
-	void setInnerCoords(double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ);
+	std::vector<Dataset*> getDatasets();
+
+	void drawBBox(glm::vec4 color, float padPct);
+	void drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct);
+	void drawEllipsoidBacking(glm::vec4 color, float padPct);
+
+	glm::vec3 getOriginalPosition();
+	glm::quat getOriginalOrientation();
+	glm::vec3 getOriginalDimensions();
+
+	glm::dvec3 convertToRawDomainCoords(glm::vec3 worldPos);
+	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);
+	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
+	glm::vec3 convertToWorldCoords(glm::dvec3 rawDataPos);
+	bool isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ = true);
 	
-	void recalcScaling();
-
-	void convertToInnerCoords(float xWorld, float yWorld, float zWorld, float *xInner, float *yInner, float *zInner);
-	void convertToWorldCoords(float xInner, float yInner, float zInner, float *xWorld, float *yWorld, float *zWorld);
-
-	void activateTransformationMatrix();
-
-	glm::mat4 getCurrentTransform();
-	glm::mat4 getLastTransform();
-	glm::mat4 getCurrentPose();
-	glm::mat4 getLastPose();
-
-	void startRotation(const float *controllerPose);
-	void continueRotation(const float *controllerPose);
-	void endRotation();
-	bool isBeingRotated();	
+	glm::mat4 getCurrentDataTransform(Dataset* dataset);
+	glm::mat4 getLastDataTransform(Dataset* dataset);
+	glm::dmat4 getRawDomainToVolumeTransform();
+	glm::dmat4 getLastRawDomainToVolumeTransform();
+	glm::mat4 getCurrentVolumeTransform();
+	glm::mat4 getLastVolumeTransform();
 
 	void resetPositionAndOrientation();
 
-private:
-	glm::vec3 pos, size;
+	void setPosition(glm::vec3 newPos);
+	glm::vec3 getPosition();
+	void setOrientation(glm::quat newOrientation);
+	glm::quat getOrientation();
+	void setDimensions(glm::vec3 newScale);
+	glm::vec3 getDimensions();
 
-	glm::quat orientation;
-	glm::quat originalOrientation;
-	glm::vec3 originalPosition;
+	glm::dvec3 getMinDataBound();
+	glm::dvec3 getMaxDataBound();
+	glm::dvec3 getDataDimensions();
+
+	void setCustomBounds(glm::dvec3 minBound, glm::dvec3 maxBound);
+	glm::dvec3 getCustomMinBound();
+	glm::dvec3 getCustomMaxBound();
+	glm::dvec3 getCustomDomainDimensions();
+
+	float getBoundingRadius();
+
+	static glm::vec3 calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims);
+
+	void useCustomBounds(bool yesno);
+	bool getUseCustomBounds();
+
+	void drawAxes(float size = 1.f);
+
+	void update();
+
+	bool isVisible();
+	void setVisible(bool yesno);
+
+protected:
+	void updateTransforms();
 	
-	double innerMinX, innerMaxX, innerMinY, innerMaxY, innerMinZ, innerMaxZ;
-	double innerSizeX, innerSizeY, innerSizeZ;
+	double getMinXDataBound();
+	double getMinYDataBound();
+	double getMinZDataBound();
+	double getMaxXDataBound();
+	double getMaxYDataBound();
+	double getMaxZDataBound();
 
-	double storedMatrix[16];
-	float XZscale, depthScale;
+	void calculateBoundingRadius();
 
-	glm::mat4 m_mat4LastPose;
+	std::vector<Dataset*> m_vpDatasets;
 
-	//rotate action
-	bool rotationInProgress;
-	glm::mat4 m_mat4PoseAtRotationStart;
-	glm::mat4 m_mat4ControllerPoseAtRotationStart;
-	glm::mat4 m_mat4ControllerToVolumePose;
+	glm::vec3 m_vec3OriginalPosition;        // Original Data Volume Position	
+	glm::vec3 m_vec3Position;
+	glm::quat m_qOriginalOrientation;        // Original Data Volume Orientation
+	glm::quat m_qOrientation;
+	glm::vec3 m_vec3OriginalDimensions;      // Original Data Volume Orientation
+	glm::vec3 m_vec3Dimensions;
+	float m_fBoundingRadius;
+
+	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
+	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
+
+	glm::mat4 m_mat4VolumeTransform;         // Volume Position and Orientation Transform
+	glm::mat4 m_mat4VolumeTransformPrevious; // Previous Volume Position and Orientation Transform
+
+	glm::dmat4 m_dmat4RawDomainToVolumeTransform;		 // The transform from the entire raw data domain to the data volume
+	glm::dmat4 m_dmat4RawDomainToVolumeTransformPrevious; // Previous transform from the entire raw data domain to the data volume
+
+	glm::mat4 m_mat4AdjustedDomainToVolumeTransform;		 // The transform from the entire adjusted data domain to the data volume
+	glm::mat4 m_mat4AdjustedDomainToVolumeTransformPrevious; // Previous transform from the entire adjusted data domain to the data volume
+
+	glm::dvec3 m_dvec3DomainMinBound;
+	glm::dvec3 m_dvec3DomainMaxBound;
+	glm::dvec3 m_dvec3DomainDims;
+
+	glm::dvec3 m_dvec3CustomDomainMinBound;
+	glm::dvec3 m_dvec3CustomDomainMaxBound;
+	glm::dvec3 m_dvec3CustomDomainDims;
+	std::map<Dataset*, glm::mat4> m_mapCustomDataTransforms;
+	std::map<Dataset*, glm::mat4> m_mapCustomDataTransformsPrevious;
+	
+	bool m_bVisible;
+	bool m_bFirstRun;                        // Flag for First Runthrough
+	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed
+	bool m_bUseCustomBounds;
+	bool m_bUsePivot;
 };

@@ -1,57 +1,47 @@
 #ifndef __SonarPointCloud_h__
 #define __SonarPointCloud_h__
 
-#include <windows.h>
 #include <vector>
 #include <GL/glew.h>
 #include <stdio.h>
 #include <math.h>
+#include <functional>
+#include "Dataset.h"
 #include "ColorScaler.h"
 
-#include "../shared/Matrices.h"
+#include <bag.h>
 
-#include "../thirdparty/OpenNS_1.6.0/include/bag.h"
+#include <glm.hpp>
 
-extern ColorScaler *colorScalerTPU;
-
-class SonarPointCloud
+class SonarPointCloud : public Dataset
 {
-	public:
-		SonarPointCloud();
-		~SonarPointCloud();
+public:
+	enum SONAR_FILETYPE {
+		CARIS,
+		XYZF,
+		QIMERA
+	};
 
-		void markForDeletion();
-		bool shouldBeDeleted();
-		bool markedForDeletion;
+	public:
+		SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype);
+		~SonarPointCloud();
 		
 		bool getRefreshNeeded();
 		void setRefreshNeeded();
-		bool refreshNeeded;
+		void update();
+
+		GLuint getVAO();
+		unsigned int getPointCount();
+		GLuint getPreviewVAO();
+		unsigned int getPreviewPointCount();
 
 		//methods:
-		void deleteSelf();
-	
+
 		void initPoints(int numPoints);
 		void setPoint(int index, double lonX, double latY, double depth);
 		void setUncertaintyPoint(int index, double lonX, double latY, double depth, float depthTPU, float positionTPU);
 		void setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b);
 
-		bool loadFromSonarTxt(char* filename);
-
-		bool generateFakeCloud(float xSize, float ySize, float zSize, int numPoints);
-				
-		//VBOs
-		void buildPointsVBO();
-		void drawPointsVBO();
-		void refreshPointsVBO();
-
-		void buildPreviewVBO();
-		void drawPreviewVBO();
-		void drawPreview();
-
-		void draw();
-
-		void drawAxes();
 
 		int colorScale;
 
@@ -62,68 +52,62 @@ class SonarPointCloud
 		void setColorScope(int mode);
 		int getColorScope();
 		
-		void markPoint(int index, int code);
+		void markPoint(unsigned int index, int code);
 		void resetAllMarks();
 
-		//cleaning
-		std::vector<Vector3> getPointPositions(); // with Y and Z swapped
+		glm::vec3 getAdjustedPointPosition(unsigned int index);
+		glm::dvec3 getRawPointPosition(unsigned int index);
+		int getPointMark(unsigned int index);
+		float getPointDepthTPU(unsigned int index);
+		float getPointPositionTPU(unsigned int index);
 
-		int getPointMark(int index);
+		float getMinDepthTPU();
+		float getMaxDepthTPU();
+		float getMinPositionalTPU();
+		float getMaxPositionalTPU();
 
-		//bounds access:
-		double getXMin();
-		double getXMax();
-		double getYMin();
-		double getYMax();
-		double getMinDepth();
-		double getMaxDepth();
-		double getActualRemovedXMin();
-		double getActualRemovedYMin();
-		double getMinDepthTPU();
-		double getMaxDepthTPU();
-		double getMinPositionalTPU();
-		double getMaxPositionalTPU();
+		static bool s_funcDepthTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
+		static bool s_funcDepthTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 
-		void useNewActualRemovedMinValues(double newRemovedXmin, double newRemovedYmin);
-
-		char* getName();
-		void setName(char* Name);
-		char name[512];
+		static bool s_funcPosTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
+		static bool s_funcPosTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 
 	private:
 		//variables
-		double xMin, xMax, xRange;
-		double yMin, yMax, yRange;
-		double minDepth, maxDepth, rangeDepth;
-		double actualRemovedXmin, actualRemovedYmin; //stores the actual x and y min of the original data, we subtract them to keep scaling easier for opengl
-		float minDepthTPU, maxDepthTPU, minPositionalTPU, maxPositionalTPU;
+		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 
-		double *pointsPositions;
-		float *pointsColors;
-		int *pointsMarks;
-		float *pointsDepthTPU;
-		float *pointsPositionTPU;
-		int numPoints;
-		bool pointsAllocated;
-		bool firstMinMaxSet;
+		std::vector<glm::dvec3> m_vdvec3RawPointsPositions;
+		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
+		std::vector<glm::vec4> m_vvec4PointsColors;
+		std::vector<GLuint> m_vuiIndicesFull;
+		std::vector<GLuint> m_vuiPointsMarks;
+		std::vector<float> m_vfPointsDepthTPU;
+		std::vector<float> m_vfPointsPositionTPU;
+		unsigned int m_nPoints;
+		bool m_bPointsAllocated;
 
 		int colorMode;
 		int colorScope;
+
+		ColorScaler *m_pColorScaler;
 		
-		//VBOs
-		bool glewInited;
-		bool buffersGenerated;
-		
-		GLuint pointsPositionsVBO;
-		GLuint pointsColorsVBO;
-		int numPointsInVBO;
+		int m_iPreviewReductionFactor;
 
 		//preview
-		bool previewBuffersGenerated;
-		GLuint previewPointsPositionsVBO;
-		GLuint previewPointsColorsVBO;
-		int previewNumPointsInVBO;
+		bool refreshNeeded;
 		bool previewRefreshNeeded;
+
+		//OpenGL
+		GLuint m_glVAO, m_glVBO, m_glEBO;
+		GLuint m_glPreviewVAO;		
+
+		bool loadCARISTxt();
+		bool loadQimeraTxt();
+		bool loadStudyCSV();
+
+		glm::vec3 getDefaultPointColor(unsigned int index);
+		void adjustPoints();
+		void createAndLoadBuffers();
 };
 
 #endif

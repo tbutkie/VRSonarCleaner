@@ -1,10 +1,7 @@
 //========= Copyright Valve Corporation ============//
 #include "pathtools.h"
-//#include "hmdplatform_private.h"
-//#include "vrcommon/strtools.h"
 
 #if defined( _WIN32)
-#include <Windows.h>
 #include <direct.h>
 #include <Shobjidl.h>
 #include <KnownFolders.h>

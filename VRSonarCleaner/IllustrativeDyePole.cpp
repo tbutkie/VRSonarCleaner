@@ -18,9 +18,9 @@ IllustrativeDyePole::~IllustrativeDyePole()
 
 void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, DepthBottom, DepthTop, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (DepthTop - DepthBottom) * 0.5f, scaler);
 	if (emitters.size() > 0)
-		tempPE->changeColor(emitters.at(emitters.size()-1)->getColor()+1);
+		tempPE->changeColor(emitters.at(emitters.size()-1)->color+1);
 	else
 		tempPE->changeColor(0);
 	emitters.push_back(tempPE);
@@ -28,7 +28,7 @@ void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 
 void IllustrativeDyePole::addDefaultEmitter()
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, depthBottom, depthTop, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (depthTop - depthBottom) * 0.5f, scaler);
 	emitters.push_back(tempPE);	
 }
 
@@ -60,12 +60,12 @@ void IllustrativeDyePole::changeEmitterRate(int emitterIndex, float msBetweenPar
 	emitters.at(emitterIndex)->setRate(msBetweenParticles);
 }
 
-void IllustrativeDyePole::changeEmitterLifetime(int emitterIndex, float lifetime)
+void IllustrativeDyePole::changeEmitterLifetime(int emitterIndex, std::chrono::milliseconds lifetime)
 {
 	emitters.at(emitterIndex)->setLifetime(lifetime);
 }
 
-void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, float trailTime)
+void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, std::chrono::milliseconds trailTime)
 {
 	emitters.at(emitterIndex)->setTrailTime(trailTime);
 }
@@ -75,58 +75,19 @@ int IllustrativeDyePole::getNumEmitters()
 	return emitters.size();
 }
 
-void IllustrativeDyePole::drawSmall3D()
-{
-	glLineWidth(1);
-	glColor3f(DYE_POLE_COLOR);
-	glBegin(GL_LINES);
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthTop));
-		glVertex3f(scaler->getScaledLonX(x), scaler->getScaledLatY(y), scaler->getScaledDepth(depthBottom));
-	glEnd();
-
-	for (int i=0;i<emitters.size();i++)
-	{
-		emitters.at(i)->drawSmall3D();
-	}
-}
-
 float IllustrativeDyePole::getBottomActualDepth()
 {
 	return depthBottom;
-	/*float interpolatedLayer = (-zBottom/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-	int aboveLayer = floor((double)interpolatedLayer);
-	int belowLayer = ceil((double)interpolatedLayer);
-	float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-	float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-	float factor = interpolatedLayer - aboveLayer;
-	float depth = factor*belowDepth + (1-factor)*aboveDepth;
-	return depth;*/
 }
 
 float IllustrativeDyePole::getTopActualDepth()
 {
 	return depthTop;
-	/*float interpolatedLayer = (-zTop/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-	int aboveLayer = floor((double)interpolatedLayer);
-	int belowLayer = ceil((double)interpolatedLayer);
-	float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-	float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-	float factor = interpolatedLayer - aboveLayer;
-	float depth = factor*belowDepth + (1-factor)*aboveDepth;
-	return depth;*/
 }
 
 float IllustrativeDyePole::getActualDepthOf(float Z)
 {
 	return Z;
-		//float interpolatedLayer = (-Z/dataset->dataBoundsMaxFakeDepth)*dataset->numDepths;
-		//int aboveLayer = floor((double)interpolatedLayer);
-		//int belowLayer = ceil((double)interpolatedLayer);
-		//float aboveDepth = dataset->getActualDepthAtLayer(aboveLayer);
-		//float belowDepth = dataset->getActualDepthAtLayer(belowLayer);
-		//float factor = interpolatedLayer - aboveLayer;
-		//float depth = factor*belowDepth + (1-factor)*aboveDepth;
-		//return depth;
 }
 
 void IllustrativeDyePole::kill()

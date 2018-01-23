@@ -1,586 +1,266 @@
 #include "ViveController.h"
 
+#include <iostream>
+
+#include <gtc/type_ptr.hpp>
+#include <gtc/matrix_transform.hpp>
+
+
+const glm::vec4 ViveController::c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadLeft(glm::vec4(-0.02023f, 0.00495f, 0.04934f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadRight(glm::vec4(0.02023f, 0.00495f, 0.04934f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadTop(glm::vec4(0.f, 0.00725f, 0.02924f, 1.f));
+const glm::vec4 ViveController::c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.06943f, 1.f));
+
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
-	, m_unStatePacketNum(0)
-	, m_bShowScrollWheel(false)
-	, m_bSystemButtonClicked(false)
-	, m_bMenuButtonClicked(false)
-	, m_bGripButtonClicked(false)
-	, m_bTouchpadTouched(false)
-	, m_bTouchpadClicked(false)
-	, m_vec2TouchpadInitialTouchPoint(Vector2(0.f, 0.f))
-	, m_vec2TouchpadCurrentTouchPoint(Vector2(0.f, 0.f))
-	, m_bTriggerEngaged(false)
-	, m_bTriggerClicked(false)
-	, m_fTriggerPull(0.f)
+	, m_bStateInitialized(false)
+	, m_nTriggerAxis(-1)
+	, m_nTouchpadAxis(-1)
 	, m_fHairTriggerThreshold(0.05f)
-	, m_unTriggerAxis(vr::k_unControllerStateAxisCount)
-	, m_unTouchpadAxis(vr::k_unControllerStateAxisCount)
-	, m_TouchPointSphere(Icosphere(2))
-	, c_vec4TouchPadCenter(Vector4(0.f, 0.00378f, 0.04920f, 1.f))
-	, c_vec4TouchPadLeft(Vector4(-0.02023f, 0.00495f, 0.04934f, 1.f))
-	, c_vec4TouchPadRight(Vector4(0.02023f, 0.00495f, 0.04934f, 1.f))
-	, c_vec4TouchPadTop(Vector4(0.f, 0.00725f, 0.02924f, 1.f))
-	, c_vec4TouchPadBottom(Vector4(0.f, 0.00265f, 0.06943f, 1.f))
-	, m_pOverlayHandle(vr::k_ulOverlayHandleInvalid)
 {
-
+	m_ControllerScrollModeState.bScrollWheelVisible = false;
 }
 
 ViveController::~ViveController()
 {
-	m_vComponents.clear();
+	for (auto &c : m_vpComponents)
+		delete c;
+	m_vpComponents.clear();
 }
 
 bool ViveController::BInit()
 {
-	std::string strRenderModelName = getPropertyString(vr::Prop_RenderModelName_String);
+	TrackedDevice::BInit();
 
-	CGLRenderModel *pRenderModel = loadRenderModel(strRenderModelName.c_str());
+	m_pHMD->GetControllerState(
+		m_unDeviceID,
+		&m_ControllerState,
+		sizeof(m_ControllerState)
+	);
 
-	if (!pRenderModel)
+	m_LastControllerState = m_ControllerState;
+
+	// Check if there are model components
+	uint32_t nModelComponents = m_pRenderModels->GetComponentCount(m_strRenderModelName.c_str());
+
+	// Loop over model components and add them to the tracked device
+	for (uint32_t i = 0; i < nModelComponents; ++i)
 	{
-		std::string sTrackingSystemName = getPropertyString(vr::Prop_TrackingSystemName_String);
-		printf("Unable to load render model for controller [device %d] (%s.%s)", m_unDeviceID, sTrackingSystemName.c_str(), strRenderModelName.c_str());
-		return false;
-	}
-	else
-	{
-		m_strRenderModelName = pRenderModel->GetName();
+		TrackedDevice::TrackedDeviceComponent *component = new TrackedDevice::TrackedDeviceComponent();
+		component->m_unComponentIndex = i;
 
-		std::cout << "Controller (device " << m_unDeviceID << ")'s RenderModel name is " << m_strRenderModelName << std::endl;
-		setRenderModel(pRenderModel);
-	}
-
-	if (pRenderModel)
-	{
-		const char* pchRenderName = m_strRenderModelName.c_str();
-
-		uint32_t nModelComponents = m_pRenderModels->GetComponentCount(pchRenderName);
-
-		for (uint32_t i = 0; i < nModelComponents; ++i)
+		uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, NULL, 0);
+		if (unRequiredBufferLen == 0)
 		{
-			ControllerComponent c;
-			c.m_unComponentIndex = i;
+			printf("Controller [device %d] component %d index out of range.\n", m_unDeviceID, i);
+		}
+		else
+		{
+			char *pchBuffer1 = new char[unRequiredBufferLen];
+			unRequiredBufferLen = m_pRenderModels->GetComponentName(m_strRenderModelName.c_str(), i, pchBuffer1, unRequiredBufferLen);
+			component->m_strComponentName = pchBuffer1;
+			delete[] pchBuffer1;
 
-			uint32_t unRequiredBufferLen = m_pRenderModels->GetComponentName(pRenderModel->GetName().c_str(), i, NULL, 0);
+			unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), NULL, 0);
 			if (unRequiredBufferLen == 0)
-			{
-				printf("Controller [device %d] component %d index out of range.\n", m_unDeviceID, i);
-			}
+				component->m_bHasRenderModel = false;
 			else
 			{
-				char *pchBuffer1 = new char[unRequiredBufferLen];
-				unRequiredBufferLen = m_pRenderModels->GetComponentName(pchRenderName, i, pchBuffer1, unRequiredBufferLen);
-				c.m_strComponentName = pchBuffer1;
-				delete[] pchBuffer1;
+				char *pchBuffer2 = new char[unRequiredBufferLen];
+				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
+				component->m_strComponentRenderModelName = pchBuffer2;
 
-				unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), NULL, 0);
-				if (unRequiredBufferLen == 0)
-					c.m_bHasRenderModel = false;
-				else
-				{
-					char *pchBuffer2 = new char[unRequiredBufferLen];
-					unRequiredBufferLen = m_pRenderModels->GetComponentRenderModelName(pchRenderName, c.m_strComponentName.c_str(), pchBuffer2, unRequiredBufferLen);
-					std::string sComponentRenderModelName = pchBuffer2;
+				delete[] pchBuffer2;
 
-					CGLRenderModel *pComponentRenderModel = loadRenderModel(pchBuffer2);
-					delete[] pchBuffer2;
+				component->m_bHasRenderModel = true;
 
-					c.m_pComponentRenderModel = pComponentRenderModel;
-					c.m_bHasRenderModel = true;					
-				}
+				vr::RenderModel_ControllerMode_State_t controllerModeState;
+				m_pRenderModels->GetComponentState(
+					m_strRenderModelName.c_str(),
+					component->m_strComponentRenderModelName.c_str(),
+					&m_ControllerState,
+					&controllerModeState,
+					&(component->m_State)
+				);
 
-				c.m_bInitialized = true;
-
-				m_vComponents.push_back(c);
-
-				std::cout << "\t" << (c.m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << c.m_strComponentName << std::endl;
+				component->m_LastState = component->m_State;
 			}
+
+			uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), component->m_strComponentName.c_str());
+
+			for (int i = 0; i != vr::EVRButtonId::k_EButton_Max; ++i)
+			{
+				if (vr::ButtonMaskFromId((vr::EVRButtonId)i) & buttonMask)
+				{
+					m_mapButtonToComponentMap[(vr::EVRButtonId)i].push_back(component);
+					component->m_vButtonsAssociated.push_back((vr::EVRButtonId)i);
+				}
+			}
+
+			component->m_bInitialized = true;
+
+			m_vpComponents.push_back(component);
+
+			std::cout << "\t" << (component->m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component->m_strComponentName.c_str();
+			for (auto &b : component->m_vButtonsAssociated) std::cout << " |->(" << m_pHMD->GetButtonIdNameFromEnum(b) << ")";
+			std::cout << std::endl;
 		}
 	}
 
-	
 	// Figure out controller axis indices
 	for (uint32_t i = 0u; i < vr::k_unControllerStateAxisCount; ++i)
 	{
-		vr::ETrackedDeviceProperty p = static_cast<vr::TrackedDeviceProperty>(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32 + i);
-		vr::EVRControllerAxisType axisType = static_cast<vr::EVRControllerAxisType>(getPropertyInt32(p));
-		if (axisType == vr::k_eControllerAxis_Trigger) m_unTriggerAxis = i;
-		if (axisType == vr::k_eControllerAxis_TrackPad) m_unTouchpadAxis = i;
+		vr::ETrackedDeviceProperty prop = static_cast<vr::TrackedDeviceProperty>(vr::TrackedDeviceProperty::Prop_Axis0Type_Int32 + i);
+		vr::EVRControllerAxisType axisType = static_cast<vr::EVRControllerAxisType>(getPropertyInt32(prop));
+		if (axisType == vr::k_eControllerAxis_Trigger) m_nTriggerAxis = i;
+		if (axisType == vr::k_eControllerAxis_TrackPad) m_nTouchpadAxis = i;
 	}
 
 	// Check if we were able to figure 'em out
-	if (m_unTriggerAxis == vr::k_unControllerStateAxisCount)
+	if (m_nTriggerAxis < 0)
 		printf("Unable to find proper axis for controller trigger.\n");
 	
-	if (m_unTouchpadAxis == vr::k_unControllerStateAxisCount)
+	if (m_nTouchpadAxis < 0)
 		printf("Unable to find proper axes for controller touchpad.\n");
-
-
-	// Create shaders used for rendering controller model as well as our own custom geometry
-	createShaders();
-
-
-	// Create Overlay
-	vr::EVROverlayError oError = vr::VROverlayError_None;
-
-	if (m_pOverlayHandle == vr::k_ulOverlayHandleInvalid)
-	{
-		printf("Setting up overlay... ");
-		std::string filename = "overlay_thumb_placeholder.png"; // relative to SteamVR resources folder or absolute filepath
-
-		oError = vr::VROverlay()->CreateOverlay("test", "An Overlay Test", &m_pOverlayHandle);
-
-		if (oError != vr::EVROverlayError::VROverlayError_None)
-			printf("Overlay could not be created: %d\n", oError);
-
-		oError = vr::VROverlay()->SetOverlayFromFile(m_pOverlayHandle, filename.c_str());
-
-		if (oError != vr::EVROverlayError::VROverlayError_None)
-			printf("Overlay file could not be loaded: %d\n", oError);
-
-		vr::VROverlay()->SetOverlayWidthInMeters(m_pOverlayHandle, 0.1f);
-
-		printf("done!\n");
-	}
 
 	return true;
 }
 
-void ViveController::update()
+glm::mat4 ViveController::getLastPose()
 {
-	if (!m_Pose.bDeviceIsConnected || !m_Pose.bPoseIsValid)
-		return;
-
-	vr::VRControllerState_t controllerState;
-	if (!m_pHMD->GetControllerState(m_unDeviceID, &controllerState))
-		return;
-
-
-	// check if anything has changed
-	if (controllerState.unPacketNum > 0 && m_unStatePacketNum == controllerState.unPacketNum)
-		return;
-
-	m_unStatePacketNum = controllerState.unPacketNum;
-
-	// Set scrollwheel mode if necessary
-	vr::RenderModel_ControllerMode_State_t controllerModeState;
-	controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
-	bool bScrollWheelBefore = m_bShowScrollWheel;
-
-	vr::RenderModel_ComponentState_t controllerComponentState;
-	
-	// Update the controller components
-	for (std::vector<ControllerComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
-	{
-		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
-
-		it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
-
-		uint64_t buttonMask = m_pRenderModels->GetComponentButtonMask(m_strRenderModelName.c_str(), it->m_strComponentName.c_str());
-		bool bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-		bool bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-
-		// Find buttons associated with component and handle state changes/events
-		
-		if (vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu) & buttonMask)
-		{
-			// Button pressed
-			if(!it->m_bPressed && bPressed)
-			{
-				menuButtonPressed();
-			}
-
-			// Button unpressed
-			if (it->m_bPressed && !bPressed)
-			{
-				menuButtonUnpressed();
-			}
-		}
-
-		if (vr::ButtonMaskFromId(vr::k_EButton_System) & buttonMask)
-		{
-			// Button pressed
-			if (!it->m_bPressed && bPressed)
-			{
-				systemButtonPressed();
-			}
-
-			// Button unpressed
-			if (it->m_bPressed && !bPressed)
-			{
-				systemButtonUnpressed();
-			}
-		}
-
-		if (vr::ButtonMaskFromId(vr::k_EButton_Grip) & buttonMask)
-		{
-			// Button pressed
-			if (!isGripButtonPressed() && bPressed)
-			{
-				gripButtonPressed();
-			}
-
-			// Button unpressed
-			if (isGripButtonPressed() && !bPressed)
-			{
-				gripButtonUnpressed();
-			}
-		}
-
-		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger) & buttonMask)
-		{
-			float triggerPull = controllerState.rAxis[m_unTriggerAxis].x; // trigger data on x axis
-
-			// Trigger pressed
-			if (!isTriggerClicked() && bPressed)
-			{
-				//printf("(VR Event) Controller (device %u) trigger pressed.\n", m_unDeviceID);
-			}
-
-			// Trigger unpressed
-			if (isTriggerClicked() && !bPressed)
-			{
-				//printf("(VR Event) Controller (device %u) trigger unpressed.\n", m_unDeviceID);
-			}
-
-			// Trigger touched
-			if (!isTriggerEngaged() && bTouched)
-			{
-				//printf("(VR Event) Controller (device %u) trigger touched.\n", m_unDeviceID);
-			}
-
-			// Trigger untouched
-			if (isTriggerEngaged() && !bTouched)
-			{
-				//printf("(VR Event) Controller (device %u) trigger untouched.\n", m_unDeviceID);
-			}
-
-			// TRIGGER INTERACTIONS
-			if (triggerPull >= getHairTriggerThreshold())
-			{
-				// TRIGGER ENGAGED
-				if (!isTriggerEngaged())
-				{
-					triggerEngaged(triggerPull);
-				}
-
-				// TRIGGER BEING PULLED
-				if (!isTriggerClicked())
-				{
-					triggerBeingPulled(triggerPull);
-				}
-
-				// TRIGGER CLICKED
-				if (triggerPull >= 1.f && !isTriggerClicked())
-				{
-					triggerClicked();
-				}
-				// TRIGGER UNCLICKED
-				if (triggerPull < 1.f && isTriggerClicked())
-				{
-					triggerUnclicked(triggerPull);
-				}
-			}
-			// TRIGGER DISENGAGED
-			else if (isTriggerEngaged())
-			{
-				triggerDisengaged();
-			}
-		}
-
-		if (vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad) & buttonMask)
-		{
-			vr::VRControllerAxis_t touchpadAxis = controllerState.rAxis[m_unTouchpadAxis];
-
-			// Touchpad pressed
-			if (!it->m_bPressed && bPressed)
-			{
-				touchPadClicked(touchpadAxis.x, touchpadAxis.y);
-			}
-
-			// Touchpad unpressed
-			if (it->m_bPressed && !bPressed)
-			{
-				touchPadUnclicked(touchpadAxis.x, touchpadAxis.y);
-			}
-
-			// Touchpad touched
-			if (!it->m_bTouched && bTouched)
-			{
-				touchpadInitialTouch(touchpadAxis.x, touchpadAxis.y);
-			}
-
-			// Touchpad untouched
-			if (it->m_bTouched && !bTouched)
-			{
-				this->touchpadUntouched();
-			}
-
-			// Touchpad being touched
-			if (this->isTouchpadTouched())
-			{
-				this->touchpadTouch(touchpadAxis.x, touchpadAxis.y);
-			}
-		}
-
-		// Update the component's properties
-		it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
-		it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
-		it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-		it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-		it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
-	}
-
-	// see if scrollwheel model visibility changed, and update if necessary
-	if (bScrollWheelBefore != m_bShowScrollWheel)
-	{
-		controllerModeState.bScrollWheelVisible = m_bShowScrollWheel;
-
-		for (std::vector<ControllerComponent>::iterator it = m_vComponents.begin(); it != m_vComponents.end(); ++it)
-		{
-			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), it->m_strComponentName.c_str(), &controllerState, &controllerModeState, &controllerComponentState);
-
-			it->m_mat3PoseTransform = controllerComponentState.mTrackingToComponentRenderModel;
-
-			// Update the component's properties
-			it->m_bStatic = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsStatic;
-			it->m_bVisible = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsVisible;
-			it->m_bTouched = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsTouched;
-			it->m_bPressed = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsPressed;
-			it->m_bScrolled = controllerComponentState.uProperties & vr::EVRComponentProperty::VRComponentProperty_IsScrolled;
-		}
-	}
+	return ConvertSteamVRMatrixToMatrix4(m_LastPose.mDeviceToAbsoluteTracking);
 }
 
-bool ViveController::updatePose(vr::TrackedDevicePose_t pose)
+bool ViveController::update(vr::TrackedDevicePose_t pose)
 {
+	m_LastPose = m_Pose;
 	m_Pose = pose;
-	m_mat4Pose = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4DeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
+	m_mat4LastDeviceToWorldTransform = ConvertSteamVRMatrixToMatrix4(m_LastPose.mDeviceToAbsoluteTracking);
+	
+	updateControllerState();
 
 	return m_Pose.bPoseIsValid;
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: Draw all of the line-based controller augmentations
-//-----------------------------------------------------------------------------
-void ViveController::prepareForRendering()
+bool ViveController::updateControllerState()
 {
-	std::vector<float> vertdataarray;
+	vr::VRControllerState_t tempCtrllrState;
+	if (!m_pHMD->GetControllerState(m_unDeviceID, &tempCtrllrState, sizeof(tempCtrllrState)))
+		return false; // bad controller index
+	
+	// check if any state has changed
+	//if (m_bStateInitialized && tempCtrllrState.unPacketNum == m_ControllerState.unPacketNum)
+	//	return false; // no new state to process
 
-	m_uiLineVertcount = 0;
-	m_uiTriVertcount = 0;
+	m_LastControllerState = m_ControllerState;
+	m_ControllerState = tempCtrllrState;
 
-	if (!poseValid())
-		return;
+	m_LastCustomState = m_CustomState;
 
-	const Matrix4 & mat = getPose();
-
-	// Draw Axes
-	if (axesActive())
+	// Update the controller components
+	for (auto &component : m_vpComponents)
 	{
-		for (int i = 0; i < 3; ++i)
+		component->m_LastState = component->m_State;
+		m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component->m_State);
+
+		// Find buttons associated with component and handle state changes/events
+
+		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
+
+		if (triggerPull >= getHairTriggerThreshold())
 		{
-			Vector4 color(0, 0, 0, 1);
-			Vector4 center = mat * Vector4(0, 0, 0, 1);
-			Vector4 point(0, 0, 0, 1);
-			point[i] += 0.1f;  // offset in X, Y, Z
-			color[i] = 1.0;  // R, G, B
-			point = mat * point;
-			vertdataarray.push_back(center.x);
-			vertdataarray.push_back(center.y);
-			vertdataarray.push_back(center.z);
+			m_CustomState.m_fTriggerPull = triggerPull;
 
-			//printf("Controller #%d at %f, %f, %f\n", unTrackedDevice, center.x, center.y, center.z);
+			m_CustomState.m_bTriggerEngaged = true;			
 
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
-			vertdataarray.push_back(color.w);
+			m_CustomState.m_bTriggerClicked = triggerPull >= 1.f;
+		}
+		// TRIGGER DISENGAGED
+		else
+		{
+			m_CustomState.m_bTriggerEngaged = false;
+			m_CustomState.m_bTriggerClicked = false;
+			m_CustomState.m_fTriggerPull = 0.f;
+		}
+		
 
-			vertdataarray.push_back(point.x);
-			vertdataarray.push_back(point.y);
-			vertdataarray.push_back(point.z);
+		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_SteamVR_Touchpad) != component->m_vButtonsAssociated.end())
+		{
+			glm::vec2 touchPoint = glm::vec2(m_ControllerState.rAxis[m_nTouchpadAxis].x, m_ControllerState.rAxis[m_nTouchpadAxis].y);
 
-			vertdataarray.push_back(color.x);
-			vertdataarray.push_back(color.y);
-			vertdataarray.push_back(color.z);
-			vertdataarray.push_back(color.w);
+			// Touchpad touched
+			if (component->justTouched())
+			{
+				m_CustomState.m_vec2TouchpadInitialTouchPoint = touchPoint;
+				m_CustomState.m_vec2TouchpadCurrentTouchPoint = m_CustomState.m_vec2TouchpadInitialTouchPoint;
+			}
 
-			m_uiLineVertcount += 2;
+			// Touchpad untouched
+			if (component->justUntouched())
+			{
+				m_CustomState.m_vec2TouchpadInitialTouchPoint = glm::vec2(0.f, 0.f);
+				m_CustomState.m_vec2TouchpadCurrentTouchPoint = glm::vec2(0.f, 0.f);
+			}
+
+			// Touchpad being touched
+			if (component->continueTouch())
+			{
+				m_CustomState.m_vec2TouchpadCurrentTouchPoint = touchPoint;
+
+				if (m_CustomState.m_vec2TouchpadInitialTouchPoint == glm::vec2(0.f, 0.f))
+					m_CustomState.m_vec2TouchpadInitialTouchPoint = m_CustomState.m_vec2TouchpadCurrentTouchPoint;
+			}
 		}
 	}
 
-	// Draw pointing line
-	//{
-	//	Vector4 start = mat * Vector4(0, 0, -0.02f, 1);
-	//	Vector4 end = mat * Vector4(0, 0, -39.f, 1);
-	//	Vector3 color(.92f, .92f, .71f);
+	if (!m_bStateInitialized)
+		m_bStateInitialized = true;
 
-	//	vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-
-	//	vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-	//	vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z);
-	//	m_uiLineVertcount += 2;
-	//}
-
-	// Draw Touchpad line
-	if(m_bTouchpadTouched)
-	{
-
-		Vector4 start = mat * transformTouchPointToModelCoords(&m_vec2TouchpadInitialTouchPoint);
-		Vector4 end = mat * transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
-		Vector4 color(.9f, .2f, .1f, 0.75f);
-
-		vertdataarray.push_back(start.x); vertdataarray.push_back(start.y); vertdataarray.push_back(start.z);
-		vertdataarray.push_back(color.x); vertdataarray.push_back(color.y); vertdataarray.push_back(color.z); vertdataarray.push_back(color.w);
-
-		vertdataarray.push_back(end.x); vertdataarray.push_back(end.y); vertdataarray.push_back(end.z);
-		vertdataarray.push_back(color.z); vertdataarray.push_back(color.y); vertdataarray.push_back(color.x); vertdataarray.push_back(color.w);
-		m_uiLineVertcount += 2;
-	}
-
-	// Draw touchpad touch point sphere
-	if (m_bTouchpadTouched)
-	{
-		insertTouchpadCursor(vertdataarray, m_uiTriVertcount, 0.35f, 0.35f, 0.35f, 0.75f);
-	}
-
-	// Setup the VAO the first time through.
-	if (m_unVAO == 0)
-	{
-		glGenVertexArrays(1, &m_unVAO);
-		glBindVertexArray(m_unVAO);
-
-		glGenBuffers(1, &m_glVertBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
-
-		GLuint stride = 3 * sizeof(float) + 4 * sizeof(float);
-		GLuint offset = 0;
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-		offset += sizeof(Vector3);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-		glBindVertexArray(0);
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
-
-	// set vertex data if we have some
-	if (vertdataarray.size() > 0)
-	{
-		//$ TODO: Use glBufferSubData for this...
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
-	}
-}
-
-void ViveController::systemButtonPressed()
-{
-	//printf("Controller (device %u) system button pressed.\n", m_unDeviceID);
-	m_bSystemButtonClicked = true;
-}
-
-void ViveController::systemButtonUnpressed()
-{
-	//printf("Controller (device %u) system button unpressed.\n", m_unDeviceID);
-	m_bSystemButtonClicked = false;
+	return true;
 }
 
 bool ViveController::isSystemButtonPressed()
 {
-	return m_bSystemButtonClicked;
-}
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_System])
+		if (!c->isPressed())
+			return false;
 
-void ViveController::menuButtonPressed()
-{
-	//printf("Controller (device %u) menu button pressed.\n", m_unDeviceID);
-	m_bMenuButtonClicked = true;
-}
-
-void ViveController::menuButtonUnpressed()
-{
-	//printf("Controller (device %u) menu button unpressed.\n", m_unDeviceID);
-	m_bMenuButtonClicked = false;
+	return true;
 }
 
 bool ViveController::isMenuButtonPressed()
 {
-	return m_bMenuButtonClicked;
-}
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
+		if (!c->isPressed())
+			return false;
 
-void ViveController::gripButtonPressed()
-{
-	//printf("Controller (device %u) grip pressed.\n", m_unDeviceID);
-	m_bGripButtonClicked = true;
-	//toggleAxes();
-}
-
-void ViveController::gripButtonUnpressed()
-{
-	//printf("Controller (device %u) grip unpressed.\n", m_unDeviceID);
-	m_bGripButtonClicked = false;
-	//toggleAxes();
+	return true;
 }
 
 bool ViveController::isGripButtonPressed()
 {
-	return m_bGripButtonClicked;
-}
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_Grip])
+		if (!c->isPressed())
+			return false;
 
-void ViveController::triggerEngaged(float amount)
-{
-	//printf("Controller (device %u) trigger engaged).\n", m_unDeviceID);
-	m_bTriggerEngaged = true;
-	m_fTriggerPull = amount;
-}
-
-void ViveController::triggerBeingPulled(float amount)
-{
-	//printf("Controller (device %u) trigger at %f%%).\n", m_unDeviceID, amount * 100.f);
-	m_fTriggerPull = amount;
-}
-
-void ViveController::triggerDisengaged()
-{
-	//printf("Controller (device %u) trigger disengaged).\n", m_unDeviceID);
-	m_bTriggerEngaged = false;
-	m_fTriggerPull = 0.f;
-}
-
-void ViveController::triggerClicked()
-{
-	//printf("Controller (device %u) trigger clicked.\n", m_unDeviceID);
-	m_bTriggerClicked = true;
-	m_fTriggerPull = 1.f;
-}
-
-void ViveController::triggerUnclicked(float amount)
-{
-	//printf("Controller (device %u) trigger unclicked.\n", m_unDeviceID);
-	m_bTriggerClicked = false;
-	m_fTriggerPull = amount;
+	return true;
 }
 
 bool ViveController::isTriggerEngaged()
 {
-	return m_bTriggerEngaged;
+	return m_CustomState.m_bTriggerEngaged;
 }
 
 bool ViveController::isTriggerClicked()
 {
-	return m_bTriggerClicked;
+	return m_CustomState.m_bTriggerClicked;
 }
 
 float ViveController::getTriggerPullAmount()
 {
-	return m_fTriggerPull;
+	return m_CustomState.m_fTriggerPull;
 }
 
 float ViveController::getHairTriggerThreshold()
@@ -588,118 +268,175 @@ float ViveController::getHairTriggerThreshold()
 	return m_fHairTriggerThreshold;
 }
 
-void ViveController::touchpadInitialTouch(float x, float y)
+glm::vec2 ViveController::getCurrentTouchpadTouchPoint()
 {
-	//printf("Controller (device %u) touchpad touched at initial position (%f, %f).\n", m_unDeviceID, x, y);
-	m_bTouchpadTouched = true;
-	m_vec2TouchpadInitialTouchPoint = Vector2(x, y);
-	m_vec2TouchpadCurrentTouchPoint = m_vec2TouchpadInitialTouchPoint;
-
+	return m_CustomState.m_vec2TouchpadCurrentTouchPoint;
 }
 
-void ViveController::touchpadTouch(float x, float y)
+glm::vec2 ViveController::getInitialTouchpadTouchPoint()
 {
-	//printf("Controller (device %u) touchpad touch tracked at (%f, %f).\n" , m_unDeviceID, x, y);
-	m_vec2TouchpadCurrentTouchPoint = Vector2(x, y);
-
-	if (m_vec2TouchpadInitialTouchPoint.equal(Vector2(0.f, 0.f), 0.000001))
-		m_vec2TouchpadInitialTouchPoint = m_vec2TouchpadCurrentTouchPoint;
+	return m_CustomState.m_vec2TouchpadInitialTouchPoint;
 }
 
-void ViveController::touchpadUntouched()
+// In model coordinates
+glm::vec3 ViveController::getCurrentTouchpadTouchPointModelCoords()
 {
-	//printf("Controller (device %u) touchpad untouched.\n", m_unDeviceID);
-	m_bTouchpadTouched = false;
-	m_vec2TouchpadInitialTouchPoint = Vector2(0.f, 0.f);
-	m_vec2TouchpadCurrentTouchPoint = Vector2(0.f, 0.f);
+	return glm::vec3(transformTouchPointToModelCoords(&m_CustomState.m_vec2TouchpadCurrentTouchPoint));
 }
 
-void ViveController::touchPadClicked(float x, float y)
+// In model coordinates
+glm::vec3 ViveController::getInitialTouchpadTouchPointModelCoords()
 {
-	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-	m_bTouchpadClicked = true;
+	return glm::vec3(transformTouchPointToModelCoords(&m_CustomState.m_vec2TouchpadInitialTouchPoint));
 }
 
-void ViveController::touchPadUnclicked(float x, float y)
+void ViveController::setScrollWheelVisibility(bool visible)
 {
-	//printf("Controller (device %u) touchpad pressed at (%f, %f).\n", m_unDeviceID, x, y);
-	m_bTouchpadClicked = false;
+	m_ControllerScrollModeState.bScrollWheelVisible = visible;
+
+	for (auto &component : m_vpComponents)
+	{
+		if (component->m_strComponentName.compare("scroll_wheel") == 0 ||
+			component->m_strComponentName.compare("touchpad") == 0 ||
+			component->m_strComponentName.compare("touchpad_scroll_cut") == 0)
+		{
+			component->m_LastState = component->m_State;
+			m_pRenderModels->GetComponentState(m_strRenderModelName.c_str(), component->m_strComponentName.c_str(), &m_ControllerState, &m_ControllerScrollModeState, &component->m_State);
+		}
+	}
+}
+
+glm::vec3 ViveController::getTriggerPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3];
+}
+
+glm::vec3 ViveController::getLeftGripPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(-0.0225f, -0.015f, 0.085f)))[3];
+}
+
+glm::vec3 ViveController::getRightGripPoint()
+{
+	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f)))[3];
+}
+
+bool ViveController::readyToRender()
+{
+	return m_Pose.bDeviceIsConnected &&
+		m_Pose.bPoseIsValid &&
+		m_Pose.eTrackingResult == vr::ETrackingResult::TrackingResult_Running_OK;
 }
 
 bool ViveController::isTouchpadTouched()
 {
-	return m_bTouchpadTouched;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->isTouched())
+			return false;
+
+	return true;
 }
 
 bool ViveController::isTouchpadClicked()
 {
-	return m_bTouchpadClicked;
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->isPressed())
+			return false;
+
+	return true;
 }
 
-void ViveController::renderModel(Matrix4 & matVP)
+bool ViveController::justClickedTrigger()
 {
-	if (!poseValid())
-		return;
-
-	// ----- Render Model rendering -----
-	glUseProgram(m_unRenderModelProgramID);
-	
-	for(size_t i = 0; i < m_vComponents.size(); ++i)
-		if (m_vComponents[i].m_pComponentRenderModel && m_vComponents[i].m_bVisible)
-		{
-			Matrix4 matMVP;
-
-			if (!m_vComponents[i].m_bStatic)
-			{
-				vr::TrackedDevicePose_t p;
-				m_pHMD->ApplyTransform(&p, &m_Pose, &(m_vComponents[i].m_mat3PoseTransform));
-				matMVP = matVP * ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
-			}
-			else
-			{
-				matMVP = matVP * m_mat4Pose;
-			}
-
-			glUniformMatrix4fv(m_nRenderModelMatrixLocation, 1, GL_FALSE, matMVP.get());
-			m_vComponents[i].m_pComponentRenderModel->Draw();
-		}
-	glUseProgram(0);
+	return m_CustomState.m_bTriggerClicked && !m_LastCustomState.m_bTriggerClicked;
 }
 
-Vector4 ViveController::transformTouchPointToModelCoords(Vector2 * pt)
+bool ViveController::justUnclickedTrigger()
 {
-	Vector4 xVec = (pt->x > 0 ? c_vec4TouchPadRight : c_vec4TouchPadLeft) - c_vec4TouchPadCenter;
-	Vector4 yVec = (pt->y > 0 ? c_vec4TouchPadTop : c_vec4TouchPadBottom) - c_vec4TouchPadCenter;
+	return !m_CustomState.m_bTriggerClicked && m_LastCustomState.m_bTriggerClicked;
+}
+
+bool ViveController::justPressedGrip()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_Grip])
+		if (!c->justPressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justUnpressedGrip()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_Grip])
+		if (!c->justUnpressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justTouchedTouchpad()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->justTouched())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justUntouchedTouchpad()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->justUntouched())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justPressedTouchpad()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->justPressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justUnpressedTouchpad()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])
+		if (!c->justUnpressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justPressedMenu()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
+		if (!c->justPressed())
+			return false;
+
+	return true;
+}
+
+bool ViveController::justUnpressedMenu()
+{
+	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_ApplicationMenu])
+		if (!c->justUnpressed())
+			return false;
+
+	return true;
+}
+
+glm::mat4 ViveController::getLastDeviceToWorldTransform()
+{
+	return m_mat4LastDeviceToWorldTransform;
+}
+
+glm::vec4 ViveController::transformTouchPointToModelCoords(glm::vec2 * pt)
+{
+	glm::vec4 xVec = (pt->x > 0 ? c_vec4TouchPadRight : c_vec4TouchPadLeft) - c_vec4TouchPadCenter;
+	glm::vec4 yVec = (pt->y > 0 ? c_vec4TouchPadTop : c_vec4TouchPadBottom) - c_vec4TouchPadCenter;
 
 	return c_vec4TouchPadCenter + (xVec * abs(pt->x) + yVec * abs(pt->y));
-}
-
-void ViveController::insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a)
-{
-	std::vector<float> sphereVertdataarray;
-	std::vector<Vector3> sphereVerts = m_TouchPointSphere.getUnindexedVertices();
-	Vector4 ctr = transformTouchPointToModelCoords(&m_vec2TouchpadCurrentTouchPoint);
-
-	//Vector3 color(.2f, .2f, .71f);
-	Vector4 color(r, g, b, a);
-
-	Matrix4 & sphereMat = m_mat4Pose * Matrix4().translate(Vector3(ctr.x, ctr.y, ctr.z)) * Matrix4().scale(0.0025f);
-
-	for (size_t i = 0; i < sphereVerts.size(); ++i)
-	{
-		Vector4 thisPt = sphereMat * Vector4(sphereVerts[i].x, sphereVerts[i].y, sphereVerts[i].z, 1.f);
-
-		sphereVertdataarray.push_back(thisPt.x);
-		sphereVertdataarray.push_back(thisPt.y);
-		sphereVertdataarray.push_back(thisPt.z);
-
-		sphereVertdataarray.push_back(color.x);
-		sphereVertdataarray.push_back(color.y);
-		sphereVertdataarray.push_back(color.z);
-		sphereVertdataarray.push_back(color.w);
-
-		nTriangleVertices++;
-	}
-
-	vertices.insert(vertices.end(), sphereVertdataarray.begin(), sphereVertdataarray.end());
 }

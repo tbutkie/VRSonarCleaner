@@ -108,14 +108,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS_1.6.0/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../shared;../thirdparty/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS-1.6.0/include;../thirdparty/freetype-2.8.1/include;../thirdparty/glm-0.9.8.5;../thirdparty/OpenVR-1.0.8/include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bagd.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\thirdparty\OpenNS_1.6.0\lib\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msvcrtd.lib;msvcmrtd.lib;freetyped.lib;openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bagd.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\thirdparty\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\lib\win64;..\thirdparty\OpenNS-1.6.0\lib\win64;..\thirdparty\OpenVR-1.0.8\lib\win64;..\thirdparty\freetype-2.8.1\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMTD;/NODEFAULTLIB:MSVCRTD</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -149,92 +150,142 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..;../headers;../thirdparty/glew/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS_1.6.0/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../shared;../thirdparty/glew-1.11.0/include;../thirdparty/sdl2-2.0.3/include;../thirdparty/OpenNS-1.6.0/include;../thirdparty/freetype-2.8.1/include;../thirdparty/glm-0.9.8.5;../thirdparty/OpenVR-1.0.8/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bag.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\thirdparty\glew\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\bin\win64;..\thirdparty\OpenNS_1.6.0\lib\win64;..\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msvcrt.lib;msvcmrt.lib;freetype.lib;openvr_api.lib;glew32.lib;SDL2.lib;SDL2main.lib;bag.lib;glu32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\thirdparty\glew-1.11.0\lib\Release\x64;..\thirdparty\sdl2-2.0.3\lib\win64;..\thirdparty\OpenNS-1.6.0\lib\win64;..\thirdparty\OpenVR-1.0.8\lib\win64;..\thirdparty\freetype-2.8.1\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/NODEFAULTLIB:LIBCMT</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp" />
-    <ClCompile Include="..\shared\Matrices.cpp" />
     <ClCompile Include="..\shared\pathtools.cpp" />
+    <ClCompile Include="AdvectionProbe.cpp" />
     <ClCompile Include="arcball.cpp" />
-    <ClCompile Include="CGLRenderModel.cpp" />
-    <ClCompile Include="CleaningRoom.cpp" />
-    <ClCompile Include="CloudCollection.cpp" />
+    <ClCompile Include="BehaviorManager.cpp" />
+    <ClCompile Include="CloudEditControllerTutorial.cpp" />
+    <ClCompile Include="CurateStudyDataBehavior.cpp" />
+    <ClCompile Include="DataLogger.cpp" />
+    <ClCompile Include="Dataset.cpp" />
+    <ClCompile Include="DemoBehavior.cpp" />
+    <ClCompile Include="DesktopCleanBehavior.cpp" />
+    <ClCompile Include="GrabDataVolumeBehavior.cpp" />
+    <ClCompile Include="GrabTutorial.cpp" />
+    <ClCompile Include="PointCleanProbe.cpp" />
+    <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="CMainApplication.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="CoordinateScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
-    <ClCompile Include="EditingController.cpp" />
     <ClCompile Include="FlowGrid.cpp" />
-    <ClCompile Include="FlowRoom.cpp" />
+    <ClCompile Include="FlowProbe.cpp" />
+    <ClCompile Include="FlowVolume.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
     <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="IllustrativeDyePole.cpp" />
     <ClCompile Include="IllustrativeParticle.cpp" />
     <ClCompile Include="IllustrativeParticleEmitter.cpp" />
     <ClCompile Include="IllustrativeParticleSystem.cpp" />
-    <ClCompile Include="InteractionManager.cpp" />
     <ClCompile Include="LassoTool.cpp" />
-    <ClCompile Include="LassoWindow.cpp" />
-    <ClCompile Include="MatrixUtils.cpp" />
-    <ClCompile Include="Quaternion.cpp" />
+    <ClCompile Include="LightingSystem.cpp" />
+    <ClCompile Include="ProbeBehavior.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RunStudyBehavior.cpp" />
+    <ClCompile Include="ScaleDataVolumeBehavior.cpp" />
+    <ClCompile Include="ScaleTutorial.cpp" />
+    <ClCompile Include="SelectAreaBehavior.cpp" />
+    <ClCompile Include="shaderset.cpp" />
+    <ClCompile Include="SnellenTest.cpp" />
     <ClCompile Include="SonarPointCloud.cpp" />
-    <ClCompile Include="SonarCleanerMain.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="StudyEditTutorial.cpp" />
+    <ClCompile Include="StudyIntroBehavior.cpp" />
+    <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
+    <ClCompile Include="StudyTrialSittingBehavior.cpp" />
+    <ClCompile Include="StudyTrialStandingBehavior.cpp" />
+    <ClCompile Include="StudyTutorialBehavior.cpp" />
+    <ClCompile Include="TaskCompleteBehavior.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
-    <ClCompile Include="Vec3.cpp" />
-    <ClCompile Include="Vec3Double.cpp" />
     <ClCompile Include="ViveController.cpp" />
+    <ClCompile Include="WelcomeBehavior.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h" />
-    <ClInclude Include="..\shared\Matrices.h" />
     <ClInclude Include="..\shared\pathtools.h" />
-    <ClInclude Include="..\shared\Texture.h" />
-    <ClInclude Include="..\shared\Vectors.h" />
+    <ClInclude Include="AdvectionProbe.h" />
     <ClInclude Include="arcball.h" />
-    <ClInclude Include="CGLRenderModel.h" />
-    <ClInclude Include="CleaningRoom.h" />
-    <ClInclude Include="CloudCollection.h" />
+    <ClInclude Include="BehaviorBase.h" />
+    <ClInclude Include="BehaviorList.h" />
+    <ClInclude Include="BehaviorManager.h" />
+    <ClInclude Include="CloudEditControllerTutorial.h" />
+    <ClInclude Include="CurateStudyDataBehavior.h" />
+    <ClInclude Include="DataLogger.h" />
+    <ClInclude Include="Dataset.h" />
+    <ClInclude Include="DemoBehavior.h" />
+    <ClInclude Include="DesktopCleanBehavior.h" />
+    <ClInclude Include="GrabDataVolumeBehavior.h" />
+    <ClInclude Include="GrabTutorial.h" />
+    <ClInclude Include="PointCleanProbe.h" />
+    <ClInclude Include="RenderModel.h" />
     <ClInclude Include="CMainApplication.h" />
     <ClInclude Include="ColorsAndSizes.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="CoordinateScaler.h" />
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="DebugDrawer.h" />
-    <ClInclude Include="EditingController.h" />
     <ClInclude Include="FlowGrid.h" />
-    <ClInclude Include="FlowRoom.h" />
+    <ClInclude Include="FlowProbe.h" />
+    <ClInclude Include="FlowVolume.h" />
+    <ClInclude Include="GLSLpreamble.h" />
     <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />
     <ClInclude Include="IllustrativeParticle.h" />
     <ClInclude Include="IllustrativeParticleEmitter.h" />
     <ClInclude Include="IllustrativeParticleSystem.h" />
     <ClInclude Include="LassoTool.h" />
-    <ClInclude Include="Observer.h" />
-    <ClInclude Include="LassoWindow.h" />
-    <ClInclude Include="ShaderUtils.h" />
+    <ClInclude Include="LightingSystem.h" />
+    <ClInclude Include="ProbeBehavior.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RunStudyBehavior.h" />
+    <ClInclude Include="ScaleDataVolumeBehavior.h" />
+    <ClInclude Include="ScaleTutorial.h" />
+    <ClInclude Include="SelectAreaBehavior.h" />
+    <ClInclude Include="shaderset.h" />
     <ClInclude Include="HolodeckBackground.h" />
-    <ClInclude Include="InteractionManager.h" />
-    <ClInclude Include="MatrixUtils.h" />
-    <ClInclude Include="Quaternion.h" />
+    <ClInclude Include="SnellenTest.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
-    <ClInclude Include="Subject.h" />
+    <ClInclude Include="StudyEditTutorial.h" />
+    <ClInclude Include="StudyIntroBehavior.h" />
+    <ClInclude Include="StudyTrialDesktopBehavior.h" />
+    <ClInclude Include="StudyTrialSittingBehavior.h" />
+    <ClInclude Include="StudyTrialStandingBehavior.h" />
+    <ClInclude Include="StudyTutorialBehavior.h" />
+    <ClInclude Include="TaskCompleteBehavior.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
-    <ClInclude Include="Vec3.h" />
-    <ClInclude Include="Vec3Double.h" />
     <ClInclude Include="ViveController.h" />
+    <ClInclude Include="WelcomeBehavior.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\windowtexture.frag" />
+    <None Include="shaders\desktopwindow.vert" />
+    <None Include="shaders\flat.frag" />
+    <None Include="shaders\flat.vert" />
+    <None Include="shaders\lighting.frag" />
+    <None Include="shaders\lighting.vert" />
+    <None Include="shaders\lightingWF.frag" />
+    <None Include="shaders\lightingWF.geom" />
+    <None Include="shaders\renderModels.frag" />
+    <None Include="shaders\renderModels.vert" />
+    <None Include="shaders\vrwindow.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -7,107 +7,97 @@
 class ViveController :
 	public TrackedDevice
 {
+	friend class TrackedDeviceManager;
 public:
 	ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels);
 	~ViveController();
 
+	// Overridden from TrackedDevice
 	bool BInit();
 
-	void update();
-	virtual bool updatePose(vr::TrackedDevicePose_t pose);
+	glm::mat4 getLastPose();
+	bool update(vr::TrackedDevicePose_t pose);
+	bool updateControllerState();
 
-	virtual void prepareForRendering();
-
-	virtual void systemButtonPressed();
-	virtual void systemButtonUnpressed();
 	bool isSystemButtonPressed();
-
-	virtual void menuButtonPressed();
-	virtual void menuButtonUnpressed();
 	bool isMenuButtonPressed();
-
-	virtual void gripButtonPressed();
-	virtual void gripButtonUnpressed();
 	bool isGripButtonPressed();
-
-	virtual void triggerEngaged(float amount);
-	virtual void triggerBeingPulled(float amount);
-	virtual void triggerDisengaged();
-	virtual void triggerClicked();
-	virtual void triggerUnclicked(float amount);
 	bool isTriggerEngaged();
 	bool isTriggerClicked();
-	float getTriggerPullAmount();
-	float getHairTriggerThreshold();
-	
-	virtual void touchpadInitialTouch(float x, float y);
-	virtual void touchpadTouch(float x, float y);
-	virtual void touchpadUntouched();
-	virtual void touchPadClicked(float x, float y);
-	virtual void touchPadUnclicked(float x, float y);
 	bool isTouchpadTouched();
 	bool isTouchpadClicked();
 
-	void renderModel(Matrix4 & matVP);
+	bool justClickedTrigger();
+	bool justUnclickedTrigger();
+
+	bool justPressedGrip();
+	bool justUnpressedGrip();
+
+	bool justTouchedTouchpad();
+	bool justUntouchedTouchpad();
+	bool justPressedTouchpad();
+	bool justUnpressedTouchpad();
+
+	bool justPressedMenu();
+	bool justUnpressedMenu();
+
+	glm::mat4 getLastDeviceToWorldTransform();
+
+	float getTriggerPullAmount();
+	float getHairTriggerThreshold();
+	glm::vec2 getCurrentTouchpadTouchPoint();
+	glm::vec2 getInitialTouchpadTouchPoint();
+	glm::vec3 getCurrentTouchpadTouchPointModelCoords();
+	glm::vec3 getInitialTouchpadTouchPointModelCoords();
+
+	void setScrollWheelVisibility(bool visible);
+
+	glm::vec3 getTriggerPoint();
+	glm::vec3 getLeftGripPoint();
+	glm::vec3 getRightGripPoint();
+
+	bool readyToRender();
 
 protected:
-	struct ControllerComponent {
-		uint32_t m_unComponentIndex;
-		std::string m_strComponentName;
-		CGLRenderModel *m_pComponentRenderModel;
-		vr::HmdMatrix34_t m_mat3PoseTransform;
-		bool m_bInitialized;
-		bool m_bHasRenderModel;
-		bool m_bStatic;
-		bool m_bVisible;
-		bool m_bTouched;
-		bool m_bPressed;
-		bool m_bScrolled;
+	struct CustomState {
+		glm::vec2 m_vec2TouchpadInitialTouchPoint;
+		glm::vec2 m_vec2TouchpadCurrentTouchPoint;
+		bool m_bTriggerEngaged;
+		bool m_bTriggerClicked;
+		float m_fTriggerPull;
 
-		ControllerComponent()
-			: m_unComponentIndex(0)
-			, m_strComponentName("No name")
-			, m_pComponentRenderModel(NULL)
-			, m_mat3PoseTransform(vr::HmdMatrix34_t())
-			, m_bInitialized(false)
-			, m_bHasRenderModel(false)
-			, m_bStatic(false)
-			, m_bVisible(false)
-			, m_bTouched(false)
-			, m_bPressed(false)
-			, m_bScrolled(false)
+		CustomState()
+			: m_vec2TouchpadInitialTouchPoint(glm::vec2(0.f, 0.f))
+			, m_vec2TouchpadCurrentTouchPoint(glm::vec2(0.f, 0.f))
+			, m_bTriggerEngaged(false)
+			, m_bTriggerClicked(false)
+			, m_fTriggerPull(0.f)
 		{}
 	};
 
-	std::vector<ControllerComponent> m_vComponents;
+	CustomState m_CustomState;
+	CustomState m_LastCustomState;
 
-	Vector4 transformTouchPointToModelCoords(Vector2 *pt);
-	void insertTouchpadCursor(std::vector<float> &vertices, unsigned int &nTriangleVertices, float r, float g, float b, float a);
-	
-	uint32_t m_unStatePacketNum;
+protected:
+	glm::vec4 transformTouchPointToModelCoords(glm::vec2 *pt);
 
-	bool m_bShowScrollWheel;
-	bool m_bSystemButtonClicked;
-	bool m_bMenuButtonClicked;
-	bool m_bGripButtonClicked;
-	bool m_bTouchpadTouched;
-	bool m_bTouchpadClicked;
-	Vector2 m_vec2TouchpadInitialTouchPoint;
-	Vector2 m_vec2TouchpadCurrentTouchPoint;
-	bool m_bTriggerEngaged;
-	bool m_bTriggerClicked;
+	bool m_bStateInitialized;
+
+	vr::TrackedDevicePose_t m_LastPose;
+	glm::mat4 m_mat4LastDeviceToWorldTransform;
+
+	vr::VRControllerState_t m_ControllerState;
+	vr::VRControllerState_t m_LastControllerState;
+	vr::RenderModel_ControllerMode_State_t m_ControllerScrollModeState;
+
+	int32_t m_nTriggerAxis;
+	int32_t m_nTouchpadAxis;
+
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
-	float m_fTriggerPull;
-	uint32_t m_unTriggerAxis;
-	uint32_t m_unTouchpadAxis;
 
-	Icosphere m_TouchPointSphere;
-
-	const Vector4 c_vec4TouchPadCenter;
-	const Vector4 c_vec4TouchPadLeft;
-	const Vector4 c_vec4TouchPadRight;
-	const Vector4 c_vec4TouchPadTop;
-	const Vector4 c_vec4TouchPadBottom;
-
-	vr::VROverlayHandle_t m_pOverlayHandle;
+	static const glm::vec4 c_vec4TouchPadCenter;
+	static const glm::vec4 c_vec4TouchPadLeft;
+	static const glm::vec4 c_vec4TouchPadRight;
+	static const glm::vec4 c_vec4TouchPadTop;
+	static const glm::vec4 c_vec4TouchPadBottom;
 };

@@ -4,56 +4,79 @@
 
 #include "TrackedDevice.h"
 #include "ViveController.h"
-#include "EditingController.h"
-#include "CGLRenderModel.h"
+#include "RenderModel.h"
 
+#include <glm.hpp>
 
-class TrackedDeviceManager : public Subject
+#include <map>
+
+#include <future>
+
+class TrackedDeviceManager
 {
 public:
 	TrackedDeviceManager(vr::IVRSystem* pHMD);
 	~TrackedDeviceManager();
 
-	bool BInit();
+	bool init();
 
 	void handleEvents();
 
-	void processVREvent(const vr::VREvent_t & event);
+	void update();
+	void draw();
 
-	void updateControllerStates();
+	void hideBaseStations(bool hidden);
 
-	bool cleaningModeActive();
-	bool getCleaningCursorData(Matrix4 *thisCursorPose, Matrix4 *lastCursorPose, float *radius);
-	Matrix4* getManipulationData();
-	void cleaningHit();
+	glm::mat4& getWorldToHMDTransform();
+	glm::mat4& getHMDToWorldTransform();
+	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);
+	glm::mat4 getDeviceComponentPose(uint32_t deviceID, uint32_t componentID);
+	ViveController* getPrimaryController();
+	ViveController* getSecondaryController();
+	glm::mat4& getPrimaryControllerPose();
+	glm::mat4& getSecondaryControllerPose();
+	bool isPrimaryControllerInRighthandPosition();
+	
+	glm::mat4 getHMDEyeProjection(vr::Hmd_Eye nEye, float nearClipPlane, float farClipPlane);
+	glm::mat4 getHMDEyeToHeadTransform(vr::Hmd_Eye nEye);
 
-	void renderTrackedDevices(Matrix4 & matVP);
-	void postRenderUpdate();
-
-	Matrix4 & getHMDPose();
-	Matrix4 & getEditControllerPose();
-	Matrix4 & getManipControllerPose();
-
-	void UpdateHMDMatrixPose();
 private:
 	void TrackedDeviceManager::initDevices();
-	void setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	bool setupTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
 	void removeTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex);
+	RenderModel* findOrLoadRenderModel(const char *pchRenderModelName);
 	
 	vr::IVRSystem *m_pHMD;
 	vr::IVRRenderModels *m_pRenderModels;
+	std::map<std::string, RenderModel*> m_mapModelCache;
+	std::future<RenderModel*> m_futRenderModel;
 
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
-	EditingController* m_pEditController;
-	ViveController* m_pManipController;
+	ViveController* m_pPrimaryController;
+	ViveController* m_pSecondaryController;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
 	int m_iTrackedControllerCount;
 	int m_iTrackedControllerCount_Last;
 
-	std::string m_strPoseClasses;                         // what classes we saw poses for this frame
+	std::string m_strPoseClasses;
 
-	Matrix4 m_mat4HMDPose;
+	glm::mat4 m_mat4WorldToHMDTransform;
+	glm::mat4 m_mat4HMDToWorldTransform;
+	
+	float m_fCursorRadius;
+	float m_fCursorRadiusMin;
+	float m_fCursorRadiusMax;
+	bool m_bCursorRadiusResizeMode;
+	float m_fCursorRadiusResizeModeInitialRadius;
+
+	float m_fCursorOffsetAmount;
+	float m_fCursorOffsetAmountMin;
+	float m_fCursorOffsetAmountMax;
+	glm::vec3 m_vec3CursorOffsetDirection;
+	bool m_bCursorOffsetMode;
+	float m_fCursorOffsetModeInitialOffset;
+	float m_fCursorHoopAngle;
 };
 

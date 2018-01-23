@@ -1,12 +1,13 @@
 #include "Icosphere.h"
 #include <list>
 
+#include "GLSLpreamble.h"
+
 Icosphere::Icosphere(int recursionLevel)
 	: index(0)
 {
 	this->recalculate(recursionLevel);
 }
-
 
 Icosphere::~Icosphere(void)
 {
@@ -23,25 +24,25 @@ void Icosphere::recalculate(int recursionLevel)
 	this->indices.clear();
 	this->index = 0;
 
-	std::unordered_map<int64_t, int> middlePointIndexCache;
+	std::unordered_map<int64_t, GLushort> middlePointIndexCache;
 
 	// create 12 vertices of a icosahedron
 	float t = (1.f + sqrt(5.f)) / 2.f;
 
-	addVertex(Vector3(-1.f, t, 0.f));
-	addVertex(Vector3(1.f, t, 0.f));
-	addVertex(Vector3(-1.f, -t, 0.f));
-	addVertex(Vector3(1.f, -t, 0.f));
+	addVertex(glm::vec3(-1.f, t, 0.f));
+	addVertex(glm::vec3(1.f, t, 0.f));
+	addVertex(glm::vec3(-1.f, -t, 0.f));
+	addVertex(glm::vec3(1.f, -t, 0.f));
 
-	addVertex(Vector3(0.f, -1.f, t));
-	addVertex(Vector3(0.f, 1.f, t));
-	addVertex(Vector3(0.f, -1.f, -t));
-	addVertex(Vector3(0.f, 1.f, -t));
+	addVertex(glm::vec3(0.f, -1.f, t));
+	addVertex(glm::vec3(0.f, 1.f, t));
+	addVertex(glm::vec3(0.f, -1.f, -t));
+	addVertex(glm::vec3(0.f, 1.f, -t));
 
-	addVertex(Vector3(t, 0.f, -1.f));
-	addVertex(Vector3(t, 0.f, 1.f));
-	addVertex(Vector3(-t, 0.f, -1.f));
-	addVertex(Vector3(-t, 0.f, 1.f));
+	addVertex(glm::vec3(t, 0.f, -1.f));
+	addVertex(glm::vec3(t, 0.f, 1.f));
+	addVertex(glm::vec3(-t, 0.f, -1.f));
+	addVertex(glm::vec3(-t, 0.f, 1.f));
 
 
 	// create 20 triangles of the icosahedron
@@ -83,9 +84,9 @@ void Icosphere::recalculate(int recursionLevel)
 		for (auto &tri : faces)
 		{
 			// replace triangle by 4 triangles
-			int a = getMiddlePoint(tri.v1, tri.v2, middlePointIndexCache);
-			int b = getMiddlePoint(tri.v2, tri.v3, middlePointIndexCache);
-			int c = getMiddlePoint(tri.v3, tri.v1, middlePointIndexCache);
+			GLushort a = getMiddlePoint(tri.v1, tri.v2, middlePointIndexCache);
+			GLushort b = getMiddlePoint(tri.v2, tri.v3, middlePointIndexCache);
+			GLushort c = getMiddlePoint(tri.v3, tri.v1, middlePointIndexCache);
 
 			faces2.push_back(TriangleIndices(tri.v1, a, c));
 			faces2.push_back(TriangleIndices(tri.v2, b, a));
@@ -104,31 +105,69 @@ void Icosphere::recalculate(int recursionLevel)
 	}
 }
 
-std::vector<Vector3> Icosphere::getVertices(void) { return vertices; }
+std::vector<glm::vec3> Icosphere::getVertices(void) { return vertices; }
 
-std::vector<unsigned int> Icosphere::getIndices(void) { return indices; }
+std::vector<GLushort> Icosphere::getIndices(void) { return indices; }
 
-std::vector<Vector3> Icosphere::getUnindexedVertices(void)
+GLuint Icosphere::getVAO()
 {
-	std::vector<Vector3> flatVerts;
-
-	for (size_t i = 0; i < indices.size(); ++i)
+	std::vector<IcoVert> buff(vertices.size());
+	for (int i = 0; i < int(vertices.size()); ++i)
 	{
-		flatVerts.push_back(vertices[indices[i]]);
+		IcoVert iv;
+		iv.v = vertices[i];
+		iv.n = vertices[i];
+		iv.c = glm::vec4(1.f);
+		iv.t = glm::vec2(0.5f);
+	
+		buff[i] = iv;
 	}
 
-	return flatVerts;
+	GLuint m_glVBO, m_glIBO;
+
+	// Populate a vertex buffer
+	glCreateBuffers(1, &m_glVBO);
+	glNamedBufferStorage(m_glVBO, sizeof(IcoVert) * buff.size(), &buff[0], GL_NONE);
+
+	// Create and populate the index buffer
+	glCreateBuffers(1, &m_glIBO);
+	glNamedBufferStorage(m_glIBO, sizeof(GLushort) * indices.size(), &indices[0], GL_NONE);
+
+	GLuint m_glVAO;
+
+	// create and bind a VAO to hold state for this model
+	glGenVertexArrays(1, &m_glVAO);
+	glBindVertexArray(m_glVAO);
+		
+		// Bind our VBO and IBO to this VAO
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIBO);
+
+		// Identify the components in the vertex buffer
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, v));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*)offsetof(IcoVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(IcoVert), (GLvoid*) offsetof(IcoVert, t));
+
+
+	glBindVertexArray(0);
+
+	return m_glVAO;
 }
 
 // add vertex to mesh, fix position to be on unit sphere, return index
-int Icosphere::addVertex(Vector3 p)
+GLushort Icosphere::addVertex(glm::vec3 p)
 {
-	vertices.push_back(p.normalize());
+	vertices.push_back(glm::normalize(p));
 	return index++;
 }
 
 // return index of point in the middle of p1 and p2
-int Icosphere::getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap)
+GLushort Icosphere::getMiddlePoint(GLushort p1, GLushort p2, std::unordered_map<int64_t, GLushort> &midPointMap)
 {
     // first check if we have it already
     bool firstIsSmaller = p1 < p2;
@@ -141,12 +180,12 @@ int Icosphere::getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &
     	return midPointMap[key];
 
     // not in cache, calculate it
-	Vector3 point1 = this->vertices[p1];
-	Vector3 point2 = this->vertices[p2];
-	Vector3 middle = (point1 + point2) / 2.f;
+	glm::vec3 point1 = this->vertices[p1];
+	glm::vec3 point2 = this->vertices[p2];
+	glm::vec3 middle = (point1 + point2) / 2.f;
 
     // add vertex makes sure point is on unit sphere
-    int i = addVertex(middle); 
+	GLushort i = addVertex(middle);
 
     // store it, return index
 	midPointMap[key] = i;

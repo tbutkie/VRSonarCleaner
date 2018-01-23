@@ -1,7 +1,10 @@
 #pragma once
 
-#include "../shared/Vectors.h"
 #include <unordered_map>
+
+#include <glm.hpp>
+
+#include <GL/glew.h>
 
 class Icosphere
 {
@@ -11,20 +14,20 @@ public:
 
 	void Icosphere::recalculate(int recursionLevel);
 
-	std::vector<Vector3> getVertices(void);
-	std::vector<unsigned int> getIndices(void);
+	std::vector<glm::vec3> getVertices(void);
+	std::vector<GLushort> getIndices(void);
 
-	std::vector<Vector3> getUnindexedVertices(void);
+	GLuint getVAO();
 
 private:	
 
     struct TriangleIndices
     {
-        int v1;
-        int v2;
-        int v3;
+        GLushort v1;
+		GLushort v2;
+		GLushort v3;
 
-        TriangleIndices(int v1, int v2, int v3)
+        TriangleIndices(GLushort v1, GLushort v2, GLushort v3)
         {
             this->v1 = v1;
             this->v2 = v2;
@@ -32,12 +35,20 @@ private:
         }
     };
 
-	int addVertex(Vector3 p);
-	int getMiddlePoint(int p1, int p2, std::unordered_map<int64_t, int> &midPointMap);
+	struct IcoVert
+	{
+		glm::vec3 v;
+		glm::vec3 n;
+		glm::vec4 c;
+		glm::vec2 t;
+	};
 
-	std::vector<Vector3> vertices;
-	std::vector<unsigned int> indices;
+	GLushort addVertex(glm::vec3 p);
+	GLushort getMiddlePoint(GLushort p1, GLushort p2, std::unordered_map<int64_t, GLushort> &midPointMap);
+
+	std::vector<glm::vec3> vertices;
+	std::vector<GLushort> indices;
 	
-    int index;
+	GLushort index;
 };
 

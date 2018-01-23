@@ -1,176 +1,246 @@
-/* Arcball, written by Bradley Smith, March 24, 2006
- * arcball.cpp is free to use and modify for any purpose, with no
- * restrictions of copyright or license.
- *
- * See arcball.h for usage details.
- */
+#include "ArcBall.h"
 
+#include <gtx/intersect.hpp>
+#include <sstream>
 
-#include "arcball.h"
+#include "Renderer.h"
+#include "DataLogger.h"
 
-#include <shared/glm/gtc/type_ptr.hpp> // glm::value_ptr
-#include <shared/glm/gtc/matrix_transform.hpp> // glm::unproject
+//------------------------------------------------------------------------------
+ArcBall::ArcBall(DataVolume *dataVolume)
+	: m_pDataVolume(dataVolume)
+	, m_pmat4Projection(NULL)
+	, m_pmat4View(NULL)
+	, m_vec3PivotPoint(dataVolume->getPosition())
+	, m_vec3DataVolumeInitialPos(dataVolume->getPosition())
+	, m_fTranslationTime(0.1f)
+	, m_bDragging(false)
+{
+	reset();
+}
 
-Arcball::Arcball(bool usePlanar)
-	: m_fZoom(1.f)
-	, m_fZoom_sq(1.f)
-	, m_fSphereRadius(1.f)
-	, m_fSphereRadius_sq(1.f)
-	, m_fEdgeDistance(1.f)
-	, m_bPlanar(usePlanar)
-	, m_fPlaneDistance(0.5f)	
-	, m_vec3Start(glm::vec3(0.f, 0.f, 1.f))
-	, m_vec3Current(glm::vec3(0.f, 0.f, 1.f))
-	, m_vec3Eye(glm::vec3(0.f, 0.f, 1.f))
-	, m_vec3Forward(glm::vec3(0.f, 0.f, 1.f))
-	, m_vec3Up(glm::vec3(0.f, 1.f, 0.f))
-	, m_vec3Out(glm::vec3(1.f, 0.f, 0.f))
-	, m_vec4Viewport(glm::vec4(0.f, 0.f, 640.f, 480.f))
+//------------------------------------------------------------------------------
+ArcBall::~ArcBall()
 {
 }
 
-Arcball::~Arcball()
+void ArcBall::reset()
 {
+	glm::quat qOne(1.0, 0.0, 0.0, 0.0);
+	glm::vec3 vZero(0.0, 0.0, 0.0);
+
+	mVDown = vZero;
+	mVNow = vZero;
+	mQDown = qOne;
+	mQNow = qOne;
+
+	m_pDataVolume->setPosition(m_vec3DataVolumeInitialPos);
+	m_vec3PivotPoint = m_vec3DataVolumeInitialPos;
+
+
+	m_bDragging = false;
 }
 
-void Arcball::setZoom(float radius, glm::vec3 eye, glm::vec3 up)
+void ArcBall::update()
 {
-	m_vec3Eye = eye; // store eye vector
-	m_fZoom_sq = glm::dot(m_vec3Eye, m_vec3Eye);
-	m_fZoom = sqrt(m_fZoom_sq); // store eye distance
-	m_fSphereRadius = radius; // sphere radius
-	m_fSphereRadius_sq = m_fSphereRadius * m_fSphereRadius;
-	m_vec3Forward = m_vec3Eye * (1.f / m_fZoom); // distance to eye
-	m_fEdgeDistance = m_fSphereRadius_sq / m_fZoom; // plane of visible edge
-  
-	if(m_fSphereRadius <= 0.f) // trackball mode
+	calculateRadius();
+
+	m_pDataVolume->setOrientation(getOrientation() * m_pDataVolume->getOriginalOrientation());
+
+	float timeElapsed = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_tpStartTrans).count();
+
+	if (timeElapsed <= m_fTranslationTime)
 	{
-		m_bPlanar = true;
-		m_vec3Up = up;
-		m_vec3Out = glm::cross(m_vec3Forward, m_vec3Up);
-		m_fPlaneDistance = (0.f - m_fSphereRadius) * m_fZoom;
-	} else
-		m_bPlanar = false;
-}
-
-// affect the arcball's orientation on openGL
-void Arcball::rotate()
-{ 
-	glMultMatrixf(glm::value_ptr(glm::mat4_cast(m_quatOrientation))); 
-}
-
-// find the intersection with the plane through the visible edge
-glm::vec3 Arcball::edge_coords(glm::vec3 m)
-{
-	// find the intersection of the edge plane and the ray
-	float t = (m_fEdgeDistance - m_fZoom) / glm::dot(m_vec3Forward, m);
-	glm::vec3 a = m_vec3Eye + (m*t);
-
-	// find the direction of the eye-axis from that point
-	// along the edge plane
-	glm::vec3 c = (m_vec3Forward * m_fEdgeDistance) - a;
-
-	// find the intersection of the sphere with the ray going from
-	// the plane outside the sphere toward the eye-axis.
-	float ac = glm::dot(a, c);
-	float c2 = glm::dot(c, c);
-	float q = (0.f - ac - sqrt( glm::dot(ac, ac) - c2*(glm::dot(a, a)- m_fSphereRadius_sq) ) ) / c2;
-  
-	return glm::normalize(a+(c*q));
-}
-
-// find the intersection with the sphere
-glm::vec3 Arcball::sphere_coords(GLdouble mx, GLdouble my)
-{
-	glm::vec3 window(mx, my, 0.f);
-
-	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
-	glm::vec3 m = coords_unProj - m_vec3Eye;
-  
-	// mouse position represents ray: eye + t*m
-	// intersecting with a sphere centered at the origin
-	GLfloat a = glm::dot(m, m);
-	GLfloat b = glm::dot(m_vec3Eye, m);
-	GLfloat root = (b*b) - a*(m_fZoom_sq - m_fSphereRadius_sq);
-	if(root <= 0) return edge_coords(m);
-	GLfloat t = (0.f - b - sqrt(root)) / a;
-	return glm::normalize(m_vec3Eye +(m*t));
-}
-
-// get intersection with plane for "trackball" style rotation
-glm::vec3 Arcball::planar_coords(GLdouble mx, GLdouble my)
-{
-	glm::vec3 window(mx, my, 0.f);
-	
-	glm::vec3 coords_unProj = glm::unProject(window, m_mat4Model, m_mat4Projection, m_vec4Viewport);
-	glm::vec3 m = coords_unProj - m_vec3Eye;
-	// intersect the point with the trackball plane
-	GLfloat t = (m_fPlaneDistance - m_fZoom) / glm::dot(m_vec3Forward, m);
-	glm::vec3 d = m_vec3Eye + m*t;
-
-	return glm::vec3(glm::dot(d, m_vec3Up), glm::dot(d, m_vec3Out),0.f);
-}
-
-// begin arcball rotation
-void Arcball::start(int mx, int my)
-{
-	// saves a copy of the current rotation for comparison
-	m_quatLast = m_quatOrientation;
-	if(m_bPlanar) m_vec3Start = planar_coords((GLdouble)mx,(GLdouble)my);
-	else m_vec3Start = sphere_coords((GLdouble)mx,(GLdouble)my);
-}
-
-// update current arcball rotation
-void Arcball::move(int mx, int my)
-{
-	if(m_bPlanar)
-	{
-		m_vec3Current = planar_coords((GLdouble)mx,(GLdouble)my);
-		if(m_vec3Current == m_vec3Start) return;
-    
-		// d is motion since the last position
-		glm::vec3 d = m_vec3Current - m_vec3Start;
-    
-		GLfloat angle = d.length() * 0.5f;
-		GLfloat cosa = cos( angle );
-		GLfloat sina = sin( angle );
-		// p is perpendicular to d
-		glm::vec3 p = glm::normalize((m_vec3Out*d.x)-(m_vec3Up*d.y)) * sina;
-
-		m_quatNext = glm::quat(cosa, p.x, p.y, p.z);
-		m_quatOrientation = m_quatNext * m_quatLast;
-		// planar style only ever relates to the last point
-		m_quatLast = m_quatOrientation;
-		m_vec3Start = m_vec3Current;
-    
-	} else {
-
-		m_vec3Current = sphere_coords((GLdouble)mx,(GLdouble)my);
-		if(m_vec3Current == m_vec3Start)
-		{ // avoid potential rare divide by tiny
-			m_quatOrientation = m_quatLast;
-			return;
-		}
-
-		// use a dot product to get the angle between them
-		// use a cross product to get the vector to rotate around
-		GLfloat cos2a = glm::dot(m_vec3Start, m_vec3Current);
-		GLfloat sina = sqrt((1.f - cos2a)*0.5f);
-		GLfloat cosa = sqrt((1.f + cos2a)*0.5f);
-		glm::vec3 cross = glm::normalize(glm::cross(m_vec3Start, m_vec3Current)) * sina;
-		m_quatNext = glm::quat(cosa, cross.x, cross.y, cross.z);
-
-		// update the rotation matrix
-		m_quatOrientation = m_quatNext * m_quatLast;
+		float ratio = timeElapsed / m_fTranslationTime;
+		glm::vec3 transDir = m_vec3EndTransPos - m_vec3StartTransPos;
+		m_pDataVolume->setPosition(m_vec3StartTransPos + transDir * ratio);
+		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_vec3PivotPoint - transDir * (1.f - ratio), 0.005f, glm::vec4(0.7f, 0.7f, 0.2f, 0.7f));
 	}
 }
 
-void Arcball::getViewport()
+void ArcBall::draw()
 {
-	glGetFloatv(GL_VIEWPORT, glm::value_ptr(m_vec4Viewport));
+	if (m_bDragging)
+		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_pDataVolume->getPosition(), 0.005f, glm::vec4(0.7f));
 }
 
-void Arcball::getProjectionMatrix()
+void ArcBall::setProjection(glm::mat4 * proj)
 {
-	glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(m_mat4Projection));
+	m_pmat4Projection = proj;
+}
+
+void ArcBall::setView(glm::mat4 * view)
+{
+	m_pmat4View = view;
+}
+
+void ArcBall::setViewport(glm::ivec4 & vp)
+{
+	m_ivec4Viewport = vp;
+
+	mCenter = glm::vec3(vp[2] - vp[0], vp[3] - vp[1], 0.f) * 0.5f;
+}
+
+void ArcBall::calculateRadius()
+{
+	float tableRad = m_pDataVolume->getBoundingRadius();
+
+	glm::vec3 right = glm::normalize(glm::inverse(*m_pmat4View)[0]);
+	glm::vec3 tableRadPt = m_vec3PivotPoint + right * tableRad;
+
+	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
+}
+
+//------------------------------------------------------------------------------
+glm::vec3 ArcBall::mouseOnSphere(const glm::vec3& tscMouse)
+{
+  glm::vec3 ballMouse;
+
+  // (m - C) / R
+  ballMouse.x = (tscMouse.x - mCenter.x) / mRadius;
+  ballMouse.y = (tscMouse.y - mCenter.y) / mRadius;
+
+  glm::float_t mag = glm::dot(ballMouse, ballMouse);
+  if (mag > 1.0)
+  {
+    // Since we are outside of the sphere, map to the visible boundary of
+    // the sphere.
+    ballMouse *= 1.0 / sqrtf(mag);
+    ballMouse.z = 0.0;
+  }
+  else
+  {
+    // We are not at the edge of the sphere, we are inside of it.
+    // Essentially, we are normalizing the vector by adding the missing z
+    // component.
+    ballMouse.z = sqrtf(1.0 - mag);
+  }
+
+  return ballMouse;
+}
+
+//------------------------------------------------------------------------------
+void ArcBall::beginDrag(const glm::vec2& msc)
+{
+  // The next two lines are usually a part of end drag. But end drag introduces
+  // too much statefullness, so we are shortcircuiting it.
+  mQDown      = mQNow;
+
+  // Normal 'begin' code.
+  mVDown      = (mScreenToTCS * glm::vec4(msc.x, msc.y, 0.0f, 1.0));
+
+  m_vec3StartRotateVec = m_pDataVolume->getPosition() - m_vec3PivotPoint;
+
+  m_bDragging = true;
+
+  if (DataLogger::getInstance().logging())
+  {
+	  std::stringstream ss;
+
+	  ss << "Arcball Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+	  ss << "\t";
+	  ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+	  ss << ";";
+	  ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+
+	  DataLogger::getInstance().logMessage(ss.str());
+  }
+}
+
+//------------------------------------------------------------------------------
+void ArcBall::drag(const glm::vec2& msc)
+{
+  // Regular drag code to follow...
+  mVNow       = (mScreenToTCS * glm::vec4(msc.x, msc.y, 0.0, 1.0));
+  mVSphereFrom= mouseOnSphere(mVDown);
+  mVSphereTo  = mouseOnSphere(mVNow);
+
+  // Construct a quaternion from two points on the unit sphere.
+  mQDrag = quatFromUnitSphere(mVSphereFrom, mVSphereTo); 
+  mQNow = mQDrag * mQDown;
+
+  // Perform complex conjugate (think inverse rotation matrix)
+  //glm::quat q = mQNow;
+  //q.x = -q.x;
+  //q.y = -q.y;
+  //q.z = -q.z;
+  //q.w =  q.w;
+
+  if (m_pDataVolume->getPosition() != m_vec3PivotPoint)
+  {
+	  glm::vec3 newVec = glm::rotate(mQDrag, glm::normalize(m_vec3StartRotateVec));
+	  m_pDataVolume->setPosition(m_vec3PivotPoint + newVec * glm::length(m_vec3StartRotateVec));
+  }
+}
+
+void ArcBall::endDrag()
+{
+	m_bDragging = false;
+
+	if (DataLogger::getInstance().logging())
+	{
+		std::stringstream ss;
+
+		ss << "Arcball End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
+}
+
+void ArcBall::translate(const glm::vec2 & mouseScreenCoords)
+{
+	glm::vec3 nearPt(mouseScreenCoords, 0.f);
+	glm::vec3 farPt(mouseScreenCoords, 1.f);
+
+	glm::vec3 nearPtWorld = glm::unProject(nearPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	glm::vec3 farPtWorld = glm::unProject(farPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+
+	glm::vec3 rayDir = glm::normalize(farPtWorld - nearPtWorld);
+	glm::vec3 planeNorm = glm::normalize(glm::vec3(glm::inverse(*m_pmat4View)[3]) - m_vec3PivotPoint);
+	float intersectionDist;
+
+	glm::intersectRayPlane(nearPtWorld, rayDir, m_vec3PivotPoint, planeNorm, intersectionDist);
+
+	glm::vec3 offsetVec = m_vec3PivotPoint - (nearPtWorld + rayDir * intersectionDist);
+
+	m_vec3StartTransPos = m_pDataVolume->getPosition();
+	m_vec3EndTransPos = m_pDataVolume->getPosition() + offsetVec;
+	m_tpStartTrans = std::chrono::high_resolution_clock::now();
+
+	if (DataLogger::getInstance().logging())
+	{
+		std::stringstream ss;
+
+		ss << "Translate" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		ss << "\t";
+		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << ";";
+		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << ";";
+		ss << "target-pos:\"" << m_vec3EndTransPos.x << "," << m_vec3EndTransPos.y << "," << m_vec3EndTransPos.z << "\"";
+
+		DataLogger::getInstance().logMessage(ss.str());
+	}
+}
+
+//------------------------------------------------------------------------------
+glm::quat ArcBall::quatFromUnitSphere(const glm::vec3& from, const glm::vec3& to)
+{
+  glm::quat q;
+  q.x = from.y*to.z - from.z*to.y;
+  q.y = from.z*to.x - from.x*to.z;
+  q.z = from.x*to.y - from.y*to.x;
+  q.w = from.x*to.x + from.y*to.y + from.z*to.z;
+  return q;
+}
+
+//------------------------------------------------------------------------------
+glm::quat ArcBall::getOrientation() const
+{
+  return mQNow;
 }

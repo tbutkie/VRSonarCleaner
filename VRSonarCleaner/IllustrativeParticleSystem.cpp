@@ -2,29 +2,32 @@
 
 //NOTE: modified from VTT4D to use x,z lat/long and y as depth dimension!
 
-IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector <FlowGrid *> *FlowGridCollection)
+#include <glm.hpp>
+#include <map>
+
+using namespace std::chrono_literals;
+
+IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection)
+	: m_bReadyToTransferData(false)
 {
-	scaler = Scaler;
+	m_pScaler = Scaler;
 
-	flowGridCollection = FlowGridCollection;
+	m_vpFlowGridCollection = FlowGridCollection;
 
-	lastSeeding = GetTickCount64();//timeGetTime();
-	lastParticleUpdate = lastSeeding;
+	m_tpLastParticleUpdate = std::chrono::high_resolution_clock::now();
+	
+	m_nMaxParticles = MAX_PARTICLES;
 
-	streakletBuffersGenerated = false;
-	particleBuffersGenerated = false;
-
-	maxNumParticles = MAX_PARTICLES;
-	ULONGLONG tick = GetTickCount64();
 	printf("Initializing particle system...");
-	for (int i=0;i<maxNumParticles;i++)
+	m_vpParticles.resize(MAX_PARTICLES);
+	for (auto &particle : m_vpParticles)
 	{
-		particles[i] = new IllustrativeParticle(0, 0, 0, 1, 100, tick);
-		particles[i]->flowGridIndex = -1;
-		particles[i]->kill();
+		particle = new IllustrativeParticle();
 	}
-	printf("Done!");
 
+	initGL();
+
+	printf("Done!\n");
 }
 
 IllustrativeParticleSystem::~IllustrativeParticleSystem()
@@ -32,11 +35,11 @@ IllustrativeParticleSystem::~IllustrativeParticleSystem()
 
 }
 
-void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, float lifetime)
+void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
 {
-	double thisX = scaler->getUnscaledLonX(x);
-	double thisY = scaler->getUnscaledLatY(y);
-	double thisZ = scaler->getUnscaledDepth(z);
+	double thisX = m_pScaler->getUnscaledLonX(x);
+	double thisY = m_pScaler->getUnscaledLatY(y);
+	double thisZ = -m_pScaler->getUnscaledDepth(z);
 
 	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
 	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
@@ -44,477 +47,313 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 	addDyeParticle(thisX, thisY, thisZ, r, g, b, lifetime);
 }
 
-void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, float lifetime)
+void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
 {
 	//find particle to replace:
-	int particleToReplace = -1;
-	for (int i=0;i<maxNumParticles;i++)
+	int deadParticleToReplace = -1;
+	int nonUserParticle = -1;
+	for (int i=0;i<m_nMaxParticles;i++)
 	{
-		if (particles[i]->dead)
+		if (m_vpParticles[i]->m_bDead)
 		{
-			particleToReplace = i;
+			deadParticleToReplace = i;
 			break;
 		}
-	}
-	if (particleToReplace == -1)
-	{
-		for (int i=0;i<maxNumParticles;i++)
+		else if (!m_vpParticles[i]->m_bUserCreated && nonUserParticle < 0)
 		{
-			if (!particles[i]->userCreated && !particles[i]->dead)
-			{
-				particleToReplace = i;
-				break;	
-			}
+			nonUserParticle = i;
 		}
 	}
-	if (particleToReplace == -1)
+
+	int particleIndexToReplace = deadParticleToReplace >= 0 ? deadParticleToReplace : nonUserParticle;
+
+	if (particleIndexToReplace == -1)
 	{
 		printf("YOU SHOULD NEVER SEE THIS! 18515 addDyeParticle()");
-		particleToReplace = 0;
+		particleIndexToReplace = 0;
 	}
-	
-	float tick = GetTickCount64();
-	lifetime = lifetime*((float)(rand()%25)/100) + lifetime*0.75;  //randomize the lifetimes by +\- 25% so they dont all die simultaneously					
-	IllustrativeParticle* tmpPart = new IllustrativeParticle(x, y, z, lifetime, 1000, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-	tmpPart->gravity = 0;
-	tmpPart->userCreated = true;
-	tmpPart->flowGridIndex = -1;
-	tmpPart->color[0] = r;
-	tmpPart->color[1] = g;
-	tmpPart->color[2] = b;
 
-	delete particles[particleToReplace];
-	particles[particleToReplace] = tmpPart;
+	//randomize the lifetimes by +\- 25% so they dont all die simultaneously	
+	lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(lifetime * ((float)(rand() % 25) / 100.f) + lifetime * 0.75f);				
+	
+	std::chrono::time_point<std::chrono::high_resolution_clock> tick = std::chrono::high_resolution_clock::now();
+
+	IllustrativeParticle* p = m_vpParticles[particleIndexToReplace];
+
+	p->m_bDead = false;
+	p->m_bDying = false;
+	p->m_bUserCreated = true;
+	p->m_fGravity = 0;
+	p->m_msTimeToLive;
+	p->m_msTrailTime = 1000ms;
+	p->m_iBufferHead = 1;
+	p->m_iBufferTail = 0;
+	p->m_pFlowGrid = NULL;
+	p->m_tpBirthTime = tick;
+	p->m_tpLastUpdateTimestamp;
+	p->m_msLiveTimeElapsed = 0ms;
+	p->m_tpTimeDeathBegan = std::chrono::time_point<std::chrono::high_resolution_clock>();
+	p->m_tpTimeToStartDying = tick + lifetime;
+	p->m_vec3Color = glm::vec3(0.25f, 0.95f, 1.f);
+	p->m_vec3StartingPosition = glm::vec3(x, y, z);
+	p->m_vtpTimes.clear();
+	p->m_vtpTimes[0] = tick;
+	p->m_vvec3Positions.clear();
+	p->m_vvec3Positions[0] = p->m_vec3StartingPosition;
+	p->m_vvec3Positions[1] = p->m_vec3StartingPosition;
 }
 
 void IllustrativeParticleSystem::update(float time)
 {
-	//if (flowGridCollection.size() < 1)
-	//  return;
-
-	//printf("Updating Particle System...\n");
-
-	float randX;
-	float randY;
-	float randZ;
-	float lifetime;	
-	ULONGLONG tick = GetTickCount64();
-	ULONGLONG timeSinceLastUpdate = tick - lastParticleUpdate;
+	std::chrono::time_point<std::chrono::high_resolution_clock> tick = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float, std::milli> timeSinceLastUpdate = tick - m_tpLastParticleUpdate;
 	//printf("time since last: %f\n", (float)timeSinceLastUpdate);
-	if (timeSinceLastUpdate > 1000)
-		timeSinceLastUpdate = 1000; //dont skip or jump start
-
+	if (timeSinceLastUpdate > 1000ms)
+		timeSinceLastUpdate = 1000ms; //dont skip or jump start
 
 	//dont update too often
 	if (timeSinceLastUpdate <= PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL)
 		return;
 	else
-		lastParticleUpdate = tick;
-
-
-	//keep seeding streaklets as needed
-
-	/*
-
-	//count current particles
-	int numParticlesAlive = 0;
-	int numUserParticlesAlive = 0;
-	int numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
+		m_tpLastParticleUpdate = tick;
+	
+	//printf("Updating existing particles..\n");
+	
+	glm::vec3 currentPos, newPos;
+	glm::vec3 vel;
+	float prodTimeVelocity;
+	
+	// Take inventory of dead particles and particles which can be killed
+	std::vector<IllustrativeParticle*> deadParticles;
+	std::vector<IllustrativeParticle*> recyclableParticles;
+	std::vector<IllustrativeParticle*> activeParticles;
+	for (auto const &particle : m_vpParticles)
 	{
-		if (particles[i]->dead)
-			numParticlesDead++;
+		if (particle->m_bDead)
+			deadParticles.push_back(particle);
 		else
 		{
-			numParticlesAlive++;
-			if (particles[i]->userCreated)
-				numUserParticlesAlive++;
+			if (!particle->m_bUserCreated)
+				recyclableParticles.push_back(particle);
 
+			activeParticles.push_back(particle);
 		}
 	}
 
-	*/
-
-	//lastCountLiveParticles = maxNumParticles - numParticlesDead;
-	//lastCountLiveSeeds = numSeedsActive;
-
-	/*
-
-	//printf("1seedsActive = %d, partsDead = %d\n", numSeedsActive, numParticlesDead);
-	if (numSeedsActive > numSeedsToMaintain) //kill off some seeds if too many exist
-	{
-		int numToKill = numSeedsActive - numSeedsToMaintain;
-		//printf("Need to kill %d seeds.\b", numToKill);
-		for (int i=0;i<maxNumParticles && numToKill > 0;i++)
-		{
-			if (!particles[i]->userCreated && !particles[i]->dead)
-			{
-				particles[i]->kill();
-				numToKill--;
-				numSeedsActive--;
-				numParticlesDead++;
-			}
-		}	
-	}
+	// initialize a map from flowgrids to active particle counts
+	std::map<FlowGrid*, int> activeWithinGridMap;
+	for (auto const &grid : m_vpFlowGridCollection)
+		activeWithinGridMap[grid] = 0;
 	
-	*/
 
-	//
-
-
-	//printf("Updating existing particles..\n");
-	
-	float x, y, z;
-	float u, v, w;
-	float newPos[3];
-	float prodTimeVelocity;
-	float prodTimeSeconds = 1000*timeSinceLastUpdate;
-	bool result;
+	std::vector<IllustrativeParticle*> removedParticles;
 	//Update all current particles
-	for (int i=0;i<maxNumParticles;i++)
+	for (auto const &particle : activeParticles)
 	{
-		if (!particles[i]->dead)
+		//get current position
+		currentPos = particle->getCurrentXYZ();
+
+		if (!particle->m_pFlowGrid) //if not attached to a flow grid
 		{
-			if (particles[i]->dying)
+			for (auto const &fg : m_vpFlowGridCollection)
 			{
-				//printf("Dying...\n");
-				particles[i]->updatePosition(tick, 0, 0, 0);
-			}
-			else if (particles[i]->flowGridIndex > -1) //if attached to a flow grid
-			{
-				//get current position
-				particles[i]->getCurrentXYZ(&x, &y, &z);
-				//get UVW at current position
-				result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVWat(x, y, z, time, &u, &v, &w);
-				//printf("Result: %d, U: %f, V: %f\n", result, u ,v);
-				//calc new position
-				prodTimeVelocity = timeSinceLastUpdate*flowGridCollection->at(particles[i]->flowGridIndex)->illustrativeParticleVelocityScale;
-				//printf("Current Pos: %f, %f, %f\n", x, y, z);
-				newPos[0] = x + u*prodTimeVelocity;
-				newPos[1] = y + v*prodTimeVelocity;
-				newPos[2] = z + w*prodTimeVelocity + (particles[i]->gravity/prodTimeSeconds);
-
-				//check in bounds or not
-				if (!flowGridCollection->at(particles[i]->flowGridIndex)->contains(newPos[0], newPos[1], newPos[2]))
+				if (fg->contains(currentPos.x, currentPos.y, currentPos.z))
 				{
-					//no begin killing off particle
-					//printf("OOB: ", newPos[0], newPos[1], newPos[2]);
-					particles[i]->dying = true;					
+					//found one
+					particle->m_pFlowGrid = fg;
+					break;
 				}
-				//printf("P %d, Pos: %f, %f, %f\n", i, newPos[0], newPos[1], newPos[2]);
-				particles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
+			}
+		}//end if not attached to flow grid
 
-			}//end if attached to flow grid
-			else //not attached to flow grid
+		if (particle->m_pFlowGrid) // did we find a flow grid?
+		{
+			//get UVW at current position
+			bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+
+			//calc new position
+			prodTimeVelocity = timeSinceLastUpdate.count() * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
+
+			newPos = currentPos + vel * prodTimeVelocity;
+
+			//check in bounds or not
+			if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
 			{
-				//if there are flow grids, check if in one of them
-				bool foundGrid = false;
-				if (flowGridCollection->size() > 0)
-				{
-					//get current position
-					particles[i]->getCurrentXYZ(&x, &y, &z);
-					//check in bounds or not
-					for (int grid = 0;grid<flowGridCollection->size();grid++)
-					{
-						if (flowGridCollection->at(grid)->contains(x, y, z))
-						{
-							//found one
-							particles[i]->flowGridIndex = grid;
-							//printf("particle %d moved to grid %d\n", i, grid);
-							//update
-							//get UVW at current position
-							result = flowGridCollection->at(particles[i]->flowGridIndex)->getUVWat(x, y, z, time, &u, &v, &w);
-							//calc new position
-							prodTimeVelocity = timeSinceLastUpdate*flowGridCollection->at(particles[i]->flowGridIndex)->illustrativeParticleVelocityScale;
-							newPos[0] = x + u*prodTimeVelocity;
-							newPos[1] = y + v*prodTimeVelocity;
-							newPos[2] = z + w*prodTimeVelocity + (particles[i]->gravity/prodTimeSeconds);
-							particles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
-							foundGrid = true;
-							break;
-						}
-					}//end for each grid					
-				}//end if flow grids to check
+				particle->m_bDying = true;
+			}
 
-				if (!foundGrid)
+			activeWithinGridMap[particle->m_pFlowGrid]++;
+		}
+		else
+		{
+			//if there are flow grids, lets kill it, so it doesn't clutter the scene
+			if (m_vpFlowGridCollection.size() > 0)
+			{
+				particle->reset();
+				removedParticles.push_back(particle);
+				deadParticles.push_back(particle);
+				continue;
+			}
+			else
+			{
+				newPos = currentPos; 
+				activeWithinGridMap[particle->m_pFlowGrid]++;
+			}
+		}
+
+		std::chrono::duration<float> prodTimeSeconds = timeSinceLastUpdate;
+
+		newPos.z += particle->m_fGravity / prodTimeSeconds.count();
+
+		particle->updatePosition(tick, newPos.x, newPos.y, newPos.z);		
+	}//end for all active particles
+
+	// Now remove non-active particles
+	for (auto const &p : removedParticles)
+		activeParticles.erase(std::remove(activeParticles.begin(), activeParticles.end(), p), activeParticles.end());
+
+	//handle dyepoles/emitters
+
+	// DYE POTS
+	for (auto const &pot : m_vpDyePots)
+	{
+		int numToSpawn = pot->getNumParticlesToEmit(tick);
+		if (numToSpawn > 0)
+		{
+			for (auto const &particlePos : pot->getParticlesToEmit(numToSpawn))
+			{
+				IllustrativeParticle* particleToUse = NULL;
+				if (deadParticles.size() > 0)
 				{
-					//if there are flow grids, lets kill it, so it doesn't clutter the scene
-					if (flowGridCollection->size() > 0)
+					particleToUse = deadParticles.back();
+					deadParticles.pop_back();
+					activeParticles.push_back(particleToUse);
+				}
+				else if (recyclableParticles.size() > 0)
+				{
+					particleToUse = recyclableParticles.back();
+					recyclableParticles.pop_back();
+				}
+				else
+				{
+					//no particles left, what do we do here?
+					//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
+				}
+
+				//randomize the lifetimes by +\- 50f% so they dont all die simultaneously
+				std::chrono::milliseconds lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(pot->getLifetime() * ((float)(rand() % 25) / 100.f) + pot->getLifetime() * 0.75f);
+				
+				particleToUse->reset();
+
+				particleToUse->init(particlePos, pot->getColor(), pot->getGravity(), lifetime, pot->m_msTrailTime, tick, true);
+
+			}//end for numToSpawn
+		}
+	}
+
+	// DYE POLES
+	for (auto const &pole : m_vpDyePoles)
+	{
+		for (auto const &emitter : pole->emitters)
+		{
+			int numToSpawn = emitter->getNumParticlesToEmit(tick);
+			if (numToSpawn > 0)
+			{
+				for (auto const &particlePos : emitter->getParticlesToEmit(numToSpawn))
+				{
+					IllustrativeParticle* particleToUse = NULL;
+					if (deadParticles.size() > 0)
 					{
-						particles[i]->kill();
+						particleToUse = deadParticles.back();
+						deadParticles.pop_back();
+					}
+					else if (recyclableParticles.size() > 0)
+					{
+						particleToUse = recyclableParticles.back();
+						recyclableParticles.pop_back();
 					}
 					else
 					{
-						//if no flow grids, just let it sit there and die out naturally
-						particles[i]->getCurrentXYZ(&x, &y, &z);
-						newPos[0] = x;
-						newPos[1] = y;
-						newPos[2] = z + (particles[i]->gravity/prodTimeSeconds); //only gravity for this one
-						particles[i]->updatePosition(tick, newPos[0], newPos[1], newPos[2]);
-					}
-				}
-
-			}//end else not attached to flow grid
-		}//end if not dead
-	}//end for all particles
-	//printf("Updated Particles in %f ms.\n", GetTickCount()-tick);
-
-
-	//handle dyepoles/emitters
-	int numToSpawn;
-
-	/*
-	//recount the available particles
-	int numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->dead)
-			numParticlesDead++;
-	}
-	*/
-	
-	//printf("Counting dead...\n");
-
-	bool resortedToKilling = false;
-	int* deadParticles = new int[maxNumParticles];
-	int numDeadParticles = 0;
-	int* killableSeeds = new int[maxNumParticles];
-	int numKillableSeeds = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->dead)
-		{
-			deadParticles[numDeadParticles] = i;
-			numDeadParticles++;
-		}
-		else if (!particles[i]->userCreated && !particles[i]->dead)
-		{
-			killableSeeds[numKillableSeeds] = i;
-			numKillableSeeds++;
-		}
-	}
-
-	//printf("Dead: %d\n", numDeadParticles);
-
-	//printf("Emitting from Emitters...\n");
-
-	for (int i=0;i<dyePoles.size();i++)
-	{
-		for (int j=0;j<dyePoles.at(i)->emitters.size();j++)
-		{
-			numToSpawn = dyePoles.at(i)->emitters.at(j)->getNumParticlesToEmit(tick);
-			if (numToSpawn > 0)
-			{
-				float* vertsToSpawn = dyePoles.at(i)->emitters.at(j)->getParticlesToEmit(numToSpawn);//new float[numToSpawn*3];
-				for (int k=0;k<numToSpawn;k++)
-				{
-					lifetime = dyePoles.at(i)->emitters.at(j)->getLifetime()*((float)(rand()%25)/100) + dyePoles.at(i)->emitters.at(j)->getLifetime()*0.75;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
-					IllustrativeParticle* tmpPart = new IllustrativeParticle(vertsToSpawn[k*3], vertsToSpawn[k*3+1], vertsToSpawn[k*3+2], lifetime, dyePoles.at(i)->emitters.at(j)->trailTime, tick);  //TO DO: edit existing particle instead of creating new particle, will be slightly faster I think
-					tmpPart->gravity = dyePoles.at(i)->emitters.at(j)->getGravity();
-					tmpPart->userCreated = true;
-					tmpPart->color[0] = 1;
-					tmpPart->color[1] = 1;
-					tmpPart->color[2] = 0;
-
-					//= dyePoles.at(i)->emitters.at(j)->getColor();
-					if (!resortedToKilling) //if we havent already resorted to killing particles because no dead ones left
-					{
-						if (numDeadParticles > 0)
-						{
-							delete particles[deadParticles[numDeadParticles-1]];
-							particles[deadParticles[numDeadParticles-1]] = tmpPart;
-							numDeadParticles--;
-						}
-						else
-						{
-							resortedToKilling = true;	
-						}
-					}
-					else //replace a live seed particle
-					{
-						if (numKillableSeeds > 0)
-						{
-							delete particles[killableSeeds[numKillableSeeds-1]];
-							particles[killableSeeds[numKillableSeeds-1]] = tmpPart;
-							numKillableSeeds--;
-						}
-						else
-						{
-							//no particles left, what do we do here?
-							//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
-						}
+						//no particles left, what do we do here?
+						//printf("ERROR: PARTICLE SYSTEM MAXXED OUT!\n  You can try to raise the max number of particles.\n");
 					}
 
+					std::chrono::milliseconds  lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(emitter->getLifetime() * ((float)(rand() % 25) / 100.f) + emitter->getLifetime() * 0.75f);  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously					
+					
+					particleToUse->reset();
+
+					particleToUse->init(particlePos, emitter->getColor(), emitter->getGravity(), lifetime, emitter->m_msTrailTime, tick, true);
+
+					activeParticles.push_back(particleToUse);
 				}//end for numToSpawn
-				delete vertsToSpawn;
 			}
 		}
 	}
 
-	delete[] deadParticles;
-	delete[] killableSeeds;
+	//finally add however many seeds we need to keep our desired amount and with however many particle slots we have left
 
-	//printf("Counting Again...\n");
-
- //finally add however many seeds we need to keep our desired amount and with however many particle slots we have left
-	//recount available slots:
-	int numSeedsActive = 0;
-	int numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (!particles[i]->userCreated && !particles[i]->dead)
-			numSeedsActive++;
-		else if (particles[i]->dead)
-			numParticlesDead++;
-	}
-	//lastCountLiveParticles = maxNumParticles - numParticlesDead;
-	//printf("After seedsActive = %d, partsDead = %d\n", numSeedsActive, numParticlesDead);
-
-	/*
-	int numSeedsToAdd = numSeedsToMaintain - numSeedsActive;
-	if (numSeedsToAdd < 1)
-		numSeedsToAdd = 0;
-	if (numParticlesDead < numSeedsToAdd)
-		numSeedsToAdd = numParticlesDead;
-	int searchIndex = 0;
-	//printf("Adding %d seeds..\n", numSeedsToAdd); 
-	int randZlevel;
-	*/
-
-
-	/*
-	float seedBBox[4];
-	if (onscreenModelCoordsBBox[0] < dataset->minLonVal)
-		seedBBox[0] = dataset->minLonVal;
-	else
-		seedBBox[0] = onscreenModelCoordsBBox[0];
-	if (onscreenModelCoordsBBox[1] > dataset->maxLonVal)
-		seedBBox[1] = dataset->maxLonVal;
-	else
-		seedBBox[1] = onscreenModelCoordsBBox[1];
-	if (onscreenModelCoordsBBox[2] < dataset->minLatVal)
-		seedBBox[2] = dataset->minLatVal;
-	else
-		seedBBox[2] = onscreenModelCoordsBBox[2];
-	if (onscreenModelCoordsBBox[3] > dataset->maxLatVal)
-		seedBBox[3] = dataset->maxLatVal;
-	else
-		seedBBox[3] = onscreenModelCoordsBBox[3];
-
-	float onscreenXRange = seedBBox[1]-seedBBox[0];
-	float onscreenYRange = seedBBox[3]-seedBBox[2];
-
-	if (onscreenXRange <= 0 || onscreenYRange <= 0)
-		numSeedsToAdd = 0;
-	*/
-	//printf("LatLonMinMAx: %f, %f, %f, %f\n", dataset->minLonVal, dataset->maxLonVal, dataset->minLatVal, dataset->maxLatVal);
-	//printf("CORners: %f, %f, %f, %f\n", seedBBox[0], seedBBox[1], seedBBox[2], seedBBox[3]);
-
-	float maxAddable = numParticlesDead;
-	//count particles in each grid
-	int *activeWithinGrid;
-	activeWithinGrid = new int[flowGridCollection->size()];
-	//count active in each grid
-	for (int i=0;i<flowGridCollection->size();i++)
-	{
-		activeWithinGrid[i] = 0;
-	}
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (!particles[i]->dead)
-		{
-			if (particles[i]->flowGridIndex > -1 && particles[i]->flowGridIndex < flowGridCollection->size())
-				activeWithinGrid[particles[i]->flowGridIndex]++;
-		}
-	}
-
+	glm::vec3 randPos;
 
 	//for each grid
-	int searchIndex = 0;
 	bool inWater, skipGrid;
 	int chancesNotInWater;
 	float minScaledZ, maxScaledZ, scaledZRange;
-	for (int i=0;i<flowGridCollection->size();i++)
+	for (auto const &grid : m_vpFlowGridCollection)
 	{
-		//printf("FG1, ");
-		//if particles enabled
-		if (flowGridCollection->at(i)->enableIllustrativeParticles)
+		if (grid->m_bIllustrativeParticlesEnabled)
 		{
 			//if more particles needed
-			int numNeeded =  flowGridCollection->at(i)->numIllustrativeParticles - activeWithinGrid[i];
-			//printf("Req: %d, Active: %d, Need: %d\n", flowGridCollection->at(i)->numIllustrativeParticles, activeWithinGrid[i], numNeeded);
+			int numNeeded = grid->m_nIllustrativeParticles - activeWithinGridMap[grid];
+
 			if (numNeeded > 0)
 			{
 				//spawn some here
 				skipGrid = false;
-				minScaledZ = abs(scaler->getScaledDepth(flowGridCollection->at(i)->getMinDepth()));
-				maxScaledZ = abs(scaler->getScaledDepth(flowGridCollection->at(i)->getMaxDepth()));
+				minScaledZ = abs(m_pScaler->getScaledDepth(grid->getMinDepth()));
+				maxScaledZ = abs(m_pScaler->getScaledDepth(grid->getMaxDepth()));
 				scaledZRange = maxScaledZ - minScaledZ;
-				//printf("minZ: %f, maxZ: %f, rangeZ: %f\n", flowGridCollection->at(i)->getMinDepth(), flowGridCollection->at(i)->getMaxDepth(), flowGridCollection->at(i)->getMaxDepth()-flowGridCollection->at(i)->getMinDepth());
-				//printf("minSZ: %f, maxSZ: %f, rangeSZ: %f\n", minScaledZ, maxScaledZ, scaledZRange);
-				//printf("NN: %d, SI: %d, MNP: %d, SG: %d\n", numNeeded, searchIndex, maxNumParticles, skipGrid);
-				while (numNeeded > 0 && searchIndex < maxNumParticles && !skipGrid)
+
+				while (numNeeded > 0 && !skipGrid && deadParticles.size() > 0u)
 				{
-					//printf("SI: %d");
-					if (particles[searchIndex]->dead)
+					inWater = false;
+					chancesNotInWater = 10000;
+					while (!inWater && chancesNotInWater > 0)
 					{
-						//printf(" dead\n");
-						inWater = false;
-						chancesNotInWater = 10000;
-						while (!inWater && chancesNotInWater > 0)
-						{
-							
-							//randX = seedBBox[0] + onscreenXRange*(((float)(rand()%10000))/10000);
-							///randY = seedBBox[2] + onscreenYRange*(((float)(rand()%10000))/10000);
+						randPos.x = grid->m_fXMin + grid->m_fXRange*(((float)(rand()%10000))/10000);
+						randPos.y = grid->m_fYMin + grid->m_fYRange*(((float)(rand()%10000))/10000);
 
-							randX = flowGridCollection->at(i)->xMin + flowGridCollection->at(i)->xRange*(((float)(rand()%10000))/10000);
-							randY = flowGridCollection->at(i)->yMin + flowGridCollection->at(i)->yRange*(((float)(rand()%10000))/10000);
-		
-							//randZ = dataset->minDepthVal + rand()%(int)dataset->rangeDepthVal; 
-							//randZlevel = rand()%(int)dataset->cellsD;
-							//randZ = dataset->getActualDepthAtLayer(randZlevel);
-
-							if ( (rand()%100) < 20) //20% surface particles
-								randZ = 0;
-							else
-								randZ = scaler->getUnscaledDepth( -1.0*  (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
-
-							//printf("Chance: %d, rand: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
-
-							if (flowGridCollection->at(i)->getIsWaterAt(randX, randY, randZ, time))
-								inWater = true;
-							else
-								chancesNotInWater--;
-						}
-						if (chancesNotInWater < 1)
-						{
-							//printf("Couldn't find water!!!\n");
-							skipGrid = true;
-						}
+						if ( (rand()%100) < 20) //20% surface particles
+							randPos.z = 0;
 						else
-						{
-							//printf("found water!\n");
-							//printf("C:%d, Spawning at: %f, %f, %f\n", chancesNotInWater, randX, randY, randZ);
-							lifetime = flowGridCollection->at(i)->illustrativeParticleLifetime*((float)(rand()%25)/100) + flowGridCollection->at(i)->illustrativeParticleLifetime*0.75;  //randomize the lifetimes by +\- 25f% so they dont all die simultaneously
-							IllustrativeParticle* tmpPart = new IllustrativeParticle(randX, randY, randZ, lifetime, flowGridCollection->at(i)->illustrativeParticleTrailTime, tick);
-							tmpPart->flowGridIndex = i;
-							tmpPart->color[0] = flowGridCollection->at(i)->colorIllustrativeParticles[0];
-							tmpPart->color[1] = flowGridCollection->at(i)->colorIllustrativeParticles[1];
-							tmpPart->color[2] = flowGridCollection->at(i)->colorIllustrativeParticles[2];
+							randPos.z = m_pScaler->getUnscaledDepth(-1.f * (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
+							
+						if (grid->getIsWaterAt(randPos.x, randPos.y, randPos.z, time))
+							inWater = true;
+						else
+							chancesNotInWater--;
+					}
 
-							if (searchIndex == 1234)
-								printf("Spawed at: %0.4f, %0.4f, %0.4f\n", randX, randY, randZ);
-
-							delete particles[searchIndex];
-							particles[searchIndex] = tmpPart;
-							numNeeded--;
-							searchIndex++;
-						}
-					}//if found dead particle
+					if (chancesNotInWater < 1)
+					{
+						skipGrid = true;
+					}
 					else
 					{
-						//printf("Live\n");
-						searchIndex++;
+						//randomize the lifetimes by +\- 25f% so they dont all die simultaneously
+						std::chrono::milliseconds lifetime = std::chrono::duration_cast<std::chrono::milliseconds>(grid->m_fIllustrativeParticleLifetime * ((float)(rand()%25) / 100.f) + grid->m_fIllustrativeParticleLifetime * 0.75f);
+
+						IllustrativeParticle* particleToUse = deadParticles.back();
+						deadParticles.pop_back();
+
+						particleToUse->reset();
+
+						particleToUse->init(randPos, grid->m_vec3IllustrativeParticlesColor, 0, lifetime, grid->m_fIllustrativeParticleTrailTime, tick, false);
+
+						particleToUse->m_pFlowGrid = grid;
+
+						activeParticles.push_back(particleToUse);
+							
+						numNeeded--;
 					}
 				}//while more seeds to add and not out of dead particles to revive
 				//printf("Added Seeds in %f ms.\n", GetTickCount()-tick);
@@ -522,482 +361,251 @@ void IllustrativeParticleSystem::update(float time)
 		}//end if illust. parts enabled
 	}//end for each flowgrid
 
-	/*
-	bool inWater;
-	int chancesNotInWater;
-	float minScaledZ = abs(getScaledDepth(dataset->minDepthVal));
-	float maxScaledZ = abs(getScaledDepth(dataset->maxDepthVal));
-	float scaledZRange = maxScaledZ - minScaledZ;
-	while (numSeedsToAdd > 0 && searchIndex < maxNumParticles)// && seeding)
+	m_nLastCountLiveParticles = m_nMaxParticles - deadParticles.size();
+	m_nLastCountLiveSeeds = activeParticles.size();
+
+	uint64_t count = 0ull;
+	for (int i = 0; i < m_vpParticles.size(); ++i)
 	{
-		if (particles[searchIndex]->dead)
+		int numPositions = m_vpParticles[i]->getNumLivePositions();
+		if (numPositions > 1)
 		{
-			inWater = false;
-			chancesNotInWater = 10000;
-			while (!inWater && chancesNotInWater > 0)
+			std::chrono::milliseconds timeElapsed = m_vpParticles[i]->m_msLiveTimeElapsed;
+
+			for (int j = 0; j < numPositions - 1; j++)
 			{
+				int posIndex1 = m_vpParticles[i]->getLivePosition(j);
+				int posIndex2 = m_vpParticles[i]->getLivePosition(j + 1);
 
-		//	randX = dataset->minLonVal + rand()%(int)dataset->rangeLonVal;
-		//	randY = dataset->minLatVal + rand()%(int)dataset->rangeLatVal;
-			randX = seedBBox[0] + onscreenXRange*(((float)(rand()%10000))/10000);
-			randY = seedBBox[2] + onscreenYRange*(((float)(rand()%10000))/10000);
-		
-			//randZ = dataset->minDepthVal + rand()%(int)dataset->rangeDepthVal; 
-			//randZlevel = rand()%(int)dataset->cellsD;
-			//randZ = dataset->getActualDepthAtLayer(randZlevel);
+				glm::vec3 pos1, pos2;
 
-			if ( (rand()%100) < 20) //10% surface particles
-				randZ = 0;
-			else
-				randZ = getUnscaledDepth(   (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
+				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
+				pos1.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y);
+				pos1.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);
 
-			//randZ = 50;
-				//randZ = 10;//TEMP TO MAKE ONLY SURFACE STREAKLETS
-				if (dataset->isWaterAt(randX, randY, randZ))
-					inWater = true;
-				else
-					chancesNotInWater--;
-			}
-			if (chancesNotInWater < 1)
-			{
-				numSeedsToAdd = 0; //if cant find a water spot in 10k chances, stop trying this frame
-			}
-			else
-			{
-				lifetime = SEED_LIFETIME*((float)(rand()%50)/100) + SEED_LIFETIME*0.5;  //randomize the lifetimes by +\- 50f% so they dont all die simultaneously
-				Particle* tmpPart = new Particle(randX, randY, randZ, lifetime, SEED_LENGTH);
-				delete particles[searchIndex];
-				particles[searchIndex] = tmpPart;
-				numSeedsToAdd--;
-			}
-		}//if found dead particle
-		else
-			searchIndex++;
-	}//while more seeds to add and not out of dead particles to revive
-	//printf("Added Seeds in %f ms.\n", GetTickCount()-tick);
-	*/
+				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
+				pos2.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);
+				pos2.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
 
-	//final count
-	numSeedsActive = 0;
-	numParticlesDead = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (!particles[i]->userCreated && !particles[i]->dead)
-			numSeedsActive++;
-		else if (particles[i]->dead)
-			numParticlesDead++;
-	}
-	lastCountLiveParticles = maxNumParticles - numParticlesDead;
-	lastCountLiveSeeds = numSeedsActive;
-	//printf("Live: %d, Dead: %d\n", numSeedsActive, numParticlesDead);
-}
+				float opacity1 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex1]) / std::chrono::duration<float>(timeElapsed);
+				float opacity2 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex2]) / std::chrono::duration<float>(timeElapsed);
 
-void IllustrativeParticleSystem::loadStreakVBOs()
-{
-	numStreakSegments = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		numStreakSegments += particles[i]->getNumLivePositions();
-	}
-	//printf("num Segs: %d\n", numSegments);
-	if (numStreakSegments < 1)
-	 return;
-	
-	
-	//printf("Loading Particle System VBOs...\n");
-	//if (GLEW_OK != glewInit())
-	//{
-	//	printf("ERROR with glew init!\n");
-	//	return;
-	//}
-	//glDeleteBuffers(1, &streakletPositionsVBO);
-	//glDeleteBuffers(1, &streakletColorsVBO);
+				glm::vec4 col1(m_vpParticles[i]->m_vec3Color, opacity1);
+				glm::vec4 col2(m_vpParticles[i]->m_vec3Color, opacity2);
 
-	if (!streakletBuffersGenerated)
-	{
-		glGenBuffers(1, &streakletPositionsVBO);
-		glGenBuffers(1, &streakletColorsVBO);
-		streakletBuffersGenerated = true;
-	}
-	else
-	{
-		glDeleteBuffers(1, &streakletPositionsVBO);
-		glDeleteBuffers(1, &streakletColorsVBO);
-		glGenBuffers(1, &streakletPositionsVBO);
-		glGenBuffers(1, &streakletColorsVBO);
-		streakletBuffersGenerated = true;
-	}
-	
-	
-	GLsizeiptr positionsSize = numStreakSegments * 6 * sizeof(GLfloat); //XYZ
-	GLsizeiptr colorsSize = numStreakSegments * 8 * sizeof(GLfloat);  //RGBA
-	
-	glBindBuffer(GL_ARRAY_BUFFER, streakletPositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+				m_arrvec3PositionsBuffer[count] = pos1;
+				m_arrvec4ColorBuffer[count] = col1;
+				m_arruiIndices[count] = count;
 
-	glBindBuffer(GL_ARRAY_BUFFER, streakletColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	
-	ULONGLONG currentTime = GetTickCount64();
+				count++;
 
-	int index = 0;
-	float timeElapsed;
-	float timeSinceNewest;
-	float opacity1, opacity2;
-	float depthColorFactor;
-	int numPositions;
-	
-	int posIndex1, posIndex2, posIndex1x3, posIndex2x3;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		numPositions = particles[i]->getNumLivePositions();
-		if (numPositions > 1)//particles[i]->liveIndex+1 < particles[i]->positions.size()-1)
-		{
-			timeElapsed = particles[i]->liveTimeElapsed;//particles[i]->times.at(particles[i]->times.size()-1)-particles[i]->times.at(particles[i]->liveIndex)+0.001;
-			for (int j=1;j<numPositions;j++)//(int j=particles[i]->liveIndex+1;j<particles[i]->positions.size();j++)
-			{
-				posIndex1 = particles[i]->getLivePosition(j-1);
-				posIndex2 = particles[i]->getLivePosition(j);
-				posIndex1x3 = posIndex1 * 3;
-				posIndex2x3 = posIndex2 * 3;
+				m_arrvec3PositionsBuffer[count] = pos2;
+				m_arrvec4ColorBuffer[count] = col2;
+				m_arruiIndices[count] = count;
 
-				positions[(index*6)] = scaler->getScaledLonX(particles[i]->positions[posIndex1x3]);
-				positions[(index*6)+1] = scaler->getScaledDepth(particles[i]->positions[posIndex1x3 + 2]);  //SWAPPED
-				positions[(index*6)+2] = scaler->getScaledLatY(particles[i]->positions[posIndex1x3 + 1]); //SWAPPED
-
-				positions[(index*6)+3] = scaler->getScaledLonX(particles[i]->positions[posIndex2x3]);
-				positions[(index*6)+4] = scaler->getScaledDepth(particles[i]->positions[posIndex2x3 + 2]); //SWAPPED //flowGridCollection->at(particles[i]->getFlowGridIndex())->getScaledMaxDepth() - 
-				positions[(index*6)+5] = scaler->getScaledLatY(particles[i]->positions[posIndex2x3 + 1]);  //SWAPPED
-
-				//printf("line at: %f, %f, %f - %f, %f, %f\n", positions[(index*6)], positions[(index*6)+1], positions[(index*6)+2], positions[(index*6)+3], positions[(index*6)+4], positions[(index*6)+5]);
-
-				opacity1 = 1 - (particles[i]->lastUpdateTimestamp - particles[i]->times[posIndex1]+0.001)/timeElapsed;
-				opacity2 = 1 - (particles[i]->lastUpdateTimestamp - particles[i]->times[posIndex2]+0.001)/timeElapsed;
-
-				//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
-					
-				colors[(index*8)+0] = particles[i]->color[0];
-				colors[(index*8)+1] = particles[i]->color[1];
-				colors[(index*8)+2] = particles[i]->color[2];
-				colors[(index*8)+3] = opacity1;
-
-				colors[(index*8)+4] = particles[i]->color[0];
-				colors[(index*8)+5] = particles[i]->color[1];
-				colors[(index*8)+6] = particles[i]->color[2];
-				colors[(index*8)+7] = opacity2;
-				
-				index++;
+				count++;
 			}//end for each position
 		}//end if two live positions (enough to draw 1 line segment)
 	}//end for each particle
 
-	glBindBuffer(GL_ARRAY_BUFFER, streakletPositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, streakletColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(4, GL_FLOAT, 0, NULL);
-	
-}//end loadVBOs()
-
-void IllustrativeParticleSystem::drawStreakVBOs()
-{
-	if (!streakletBuffersGenerated  || numStreakSegments < 1)
-		return;
-	//printf("Drawing Particle System VBOs...\n");
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glColor4f(1,1,1,1);
-	glLineWidth(1.5);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, streakletPositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, streakletColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_LINES, 0, numStreakSegments*2);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-	
+	m_bReadyToTransferData = true;
+	m_nIndexCount = count;
 }
 
-void IllustrativeParticleSystem::loadParticleVBOs()
+bool IllustrativeParticleSystem::prepareForRender()
 {
-	numParticlePoints = 0;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->getNumLivePositions() > 0)
-			numParticlePoints++;
-	}
-	if (numParticlePoints < 1)
-	 return;
+	if (!m_bReadyToTransferData)
+		return false;
 
-	////printf("Loading Particle System VBOs...\n");
-	//if (GLEW_OK != glewInit())
-	//{
-	//	printf("ERROR with glew init!\n");
-	//	return;
-	//}
-	//glDeleteBuffers(1, &streakletPositionsVBO);
-	//glDeleteBuffers(1, &streakletColorsVBO);
+	GLsizei numPositions, numColors;
+	numPositions = numColors = m_nIndexCount;
 
-	if (!particleBuffersGenerated)
-	{
-		glGenBuffers(1, &particlePositionsVBO);
-		glGenBuffers(1, &particleColorsVBO);
-		particleBuffersGenerated = true;
-	}
-	else
-	{
-		glDeleteBuffers(1, &particlePositionsVBO);
-		glDeleteBuffers(1, &particleColorsVBO);
-		glGenBuffers(1, &particlePositionsVBO);
-		glGenBuffers(1, &particleColorsVBO);
-		particleBuffersGenerated = true;
-	}
+	if (numPositions < 2)
+		return false;
+
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	// Buffer orphaning
+	// Sub buffer data for points, then colors
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numPositions * sizeof(glm::vec3), m_arrvec3PositionsBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), m_arrvec4ColorBuffer);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), m_arruiIndices, GL_STREAM_DRAW);
 	
-	
-	//printf("num Segs: %d\n", numSegments);
+	// Set color attribute pointer now that point array size is known
+	glBindVertexArray(this->m_glVAO);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(numPositions * sizeof(glm::vec3)));
+	glBindVertexArray(0);
 
-	GLsizeiptr positionsSize = numParticlePoints * 3 * sizeof(GLfloat); //XYZ
-	GLsizeiptr colorsSize = numParticlePoints * 4 * sizeof(GLfloat);  //RGBA
-	
-	glBindBuffer(GL_ARRAY_BUFFER, particlePositionsVBO);
-	glBufferData(GL_ARRAY_BUFFER, positionsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* positions = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	m_bReadyToTransferData = false;
 
-	glBindBuffer(GL_ARRAY_BUFFER, particleColorsVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorsSize, NULL, GL_STATIC_DRAW);
-	GLfloat* colors = (GLfloat*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	
-	ULONGLONG currentTime = GetTickCount64();
-
-	int index = 0;
-	float timeElapsed;
-	float timeSinceNewest;
-	float opacity;
-	float depthColorFactor;
-	int numPositions;
-	float currentX, currentY, currentZ;
-	for (int i=0;i<maxNumParticles;i++)
-	{
-		if (particles[i]->getNumLivePositions() > 0)
-		{
-			particles[i]->getCurrentXYZ(&currentX, &currentY, &currentZ);
-
-			positions[(index*3)] = scaler->getScaledLonX(currentX);
-			positions[(index*3)+1] = -scaler->getMaxScaledDepth()-scaler->getScaledDepth(currentZ); //SWAPPED and negated
-			positions[(index*3)+2] = scaler->getScaledLatY(currentY); //SWAPPED
-
-			opacity = particles[i]->getFadeInFadeOutOpacity();
-
-			//depthColorFactor = particles[i]->positions[particles[i]->getLivePosition(j) * 3 + 2]*.00015;//particles[i]->positions.at(j).z*.001;
-					
-			colors[(index*4)+0] = particles[i]->color[0];
-			colors[(index*4)+1] = particles[i]->color[1];//COLOR_0_G - depthColorFactor;
-			colors[(index*4)+2] = particles[i]->color[2];
-			colors[(index*4)+3] = opacity;
-			//printf("P %d's opacity is %f\n", i, opacity);
-							
-			index++;
-
-		}//end if has a live position	
-	}//end for each particle
-
-	glBindBuffer(GL_ARRAY_BUFFER, particlePositionsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, particleColorsVBO);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glColorPointer(4, GL_FLOAT, 0, NULL);
-	
-}//end loadVBOs()
-
-void IllustrativeParticleSystem::drawParticleVBOs()
-{
-	if (!particleBuffersGenerated || numParticlePoints < 1)
-		return;
-	//printf("Drawing Particle System VBOs...\n");
-
-	float ptSizes[2];
-	float ptQuadratic[3];
-	ptQuadratic[0] = 0.0000001;//a = -0.01 this is the "falloff" speed that decreases the point size as distance grows
-	ptQuadratic[1] = 0.001;//b = 0 center parabola on x (dist) = 0
-	ptQuadratic[2] = 0.0001;//c = 4 (this is the minimum size, when dist = 0)
-
-
-
-	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, ptSizes);
-    //glEnable( GL_POINT_SPRITE_ARB );
-    glPointParameterfARB(GL_POINT_SIZE_MIN_ARB, ptSizes[0]);
-	glPointParameterfARB(GL_POINT_SIZE_MAX_ARB, ptSizes[1]);
-    glPointParameterfvARB( GL_POINT_DISTANCE_ATTENUATION_ARB, ptQuadratic);
-    //glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
-
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glColor4f(1,1,1,1);
-	glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, particlePositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, particleColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, numParticlePoints);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-
-	glDisable(GL_POINT_SPRITE_ARB);
-	
-	/*
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	glColor4f(1,1,1,1);
-	glPointSize(3);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, particlePositionsVBO);
-	glVertexPointer(3, GL_FLOAT, 0, (char*)NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, particleColorsVBO);
-	glColorPointer(4, GL_FLOAT, 0, (char*)NULL);
-
-	glDrawArrays(GL_POINTS, 0, numParticlePoints);
-	
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );	
-	*/
-	
-
+	return true;
 }
+void IllustrativeParticleSystem::initGL()
+{
+	glGenVertexArrays(1, &m_glVAO);
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
 
+	glBindVertexArray(this->m_glVAO);
+	// Bind the array and allocate its storage
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	glNamedBufferStorage(m_glVBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * (sizeof(glm::vec3) + sizeof(glm::vec4)), NULL, GL_DYNAMIC_STORAGE_BIT);
+
+	// Now do the same with the element array buffer
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glNamedBufferStorage(m_glEBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+
+	// Enable attribute arrays (with layouts to be defined later)
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	// color attribute pointer will be set once position array size is known for attrib pointer offset
+
+	glBindVertexArray(0);
+}
+//end drawStreakVBOs()
 
 int IllustrativeParticleSystem::getNumLiveParticles()
 {
-	return lastCountLiveParticles;// maxNumParticles;//particles.size();
+	return m_nLastCountLiveParticles;// maxNumParticles;//particles.size();
 }
 
 int IllustrativeParticleSystem::getNumLiveSeeds()
 {
-	return lastCountLiveSeeds;// maxNumParticles;//particles.size();
+	return m_nLastCountLiveSeeds;// maxNumParticles;//particles.size();
 }
 
 int IllustrativeParticleSystem::getNumDyePoles()
 {
-	return dyePoles.size();
+	return m_vpDyePoles.size();
 }
 
 int IllustrativeParticleSystem::getNumDyeEmitters()
 {
 	int total = 0;
-	for (int i=0;i<dyePoles.size();i++)
-		total += dyePoles.at(i)->emitters.size();
+	for (int i=0;i<m_vpDyePoles.size();i++)
+		total += m_vpDyePoles.at(i)->emitters.size();
 	return total;
 }
 
 int IllustrativeParticleSystem::getNumDyeParticles()
 {
-	return lastCountLiveParticles-lastCountLiveSeeds;
+	return m_nLastCountLiveParticles - m_nLastCountLiveSeeds;
+}
+
+GLuint IllustrativeParticleSystem::getVAO()
+{
+	return m_glVAO;
+}
+
+GLsizei IllustrativeParticleSystem::getIndexCount()
+{
+	return m_nIndexCount;
 }
 
 int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float maxZ)
 {
-	IllustrativeDyePole* tempDP = new IllustrativeDyePole(x, y, minZ, maxZ, scaler);
+	IllustrativeDyePole* tempDP = new IllustrativeDyePole(x, y, minZ, maxZ, m_pScaler);
 	//tempDP->adddEmittersAlongEntireLength(100);
 	tempDP->addDefaultEmitter();
 	for (int i=0;i<tempDP->getNumEmitters();i++)
 	{
-		tempDP->changeEmitterColor(i,(dyePoles.size()%8)+1);	
+		tempDP->changeEmitterColor(i,(m_vpDyePoles.size()%8)+1);
 		//float rate = 300*((float)(rand()%100)/100) + 500;  //randomize the spawn rates so they dont all come out in sync
 		//tempDP->changeEmitterRate(i,5000);//rate);
 		//tempDP->changeEmitterLifetime(i, 40000);
 		//tempDP->changeEmitterTrailtime(i, 1000);
 
 	}
-	dyePoles.push_back(tempDP);
-	return dyePoles.size()-1;
+	m_vpDyePoles.push_back(tempDP);
+	return m_vpDyePoles.size()-1;
 }
 
 void IllustrativeParticleSystem::drawDyePoles()
 {
-	for (int i=0;i<dyePoles.size();i++)
-		dyePoles.at(i)->drawSmall3D();  //TEMP FOR CHRIS
+	//for (int i=0;i<m_vpDyePoles.size();i++)
+	//	m_vpDyePoles.at(i)->drawSmall3D();  //TEMP FOR CHRIS
+}
+
+void IllustrativeParticleSystem::drawDyePots()
+{
+	//for (auto const &dp : m_vpDyePots)
+	//	dp->drawSmall3D();
 }
 
 void IllustrativeParticleSystem::deleteAllDyePoles()
 {
-	for (int i=0;i<dyePoles.size();i++)
-		dyePoles.at(i)->kill();
-	dyePoles.clear();
+	for (int i=0;i<m_vpDyePoles.size();i++)
+		m_vpDyePoles.at(i)->kill();
+	m_vpDyePoles.clear();
 }
 
 void IllustrativeParticleSystem::deleteDyePole(int index)
 {
-	dyePoles.at(index)->kill();
-	dyePoles.erase(dyePoles.begin()+index);
+	m_vpDyePoles.at(index)->kill();
+	m_vpDyePoles.erase(m_vpDyePoles.begin()+index);
 }
 
 IllustrativeDyePole* IllustrativeParticleSystem::getDyePoleClosestTo(double x, double y)
 {
-	Vec3 target(x,y,0);
+	glm::vec3 target(x,y,0);
 	float minDist = 10000000;
 	int closestIndex;
 	float dist;
-	for (int i=0;i<dyePoles.size();i++)
+	for (int i=0;i<m_vpDyePoles.size();i++)
 	{
-		Vec3 candidate(dyePoles.at(i)->x, dyePoles.at(i)->y, 0);
-		dist = target.dist(candidate);
+		glm::vec3 candidate(m_vpDyePoles.at(i)->x, m_vpDyePoles.at(i)->y, 0);
+		dist = glm::length(target - candidate);
 		if (dist < minDist)
 		{
 			minDist = dist;
 			closestIndex = i;
 		}
 	}
-	return dyePoles.at(closestIndex);
+	return m_vpDyePoles.at(closestIndex);
+}
+
+IllustrativeParticleEmitter * IllustrativeParticleSystem::getDyePotClosestTo(float x, float y, float z)
+{
+	glm::vec3 target(x, y, z);
+	float minDist = 10000000.f;
+	int closestIndex = -1;
+	float dist;
+	for (int i = 0; i < m_vpDyePots.size(); i++)
+	{
+		glm::vec3 candidate(m_vpDyePots.at(i)->x, m_vpDyePots.at(i)->y, m_vpDyePots.at(i)->z);
+		dist = glm::length(target - candidate);
+		if (dist < minDist)
+		{
+			minDist = dist;
+			closestIndex = i;
+		}
+	}
+
+	if (closestIndex < 0)
+		return NULL;
+
+	return m_vpDyePots.at(closestIndex);
 }
 
 void IllustrativeParticleSystem::pause()
 {
-	pauseTime = GetTickCount64();	
+	m_tpPauseTime = std::chrono::high_resolution_clock::now();
 }
 
 void IllustrativeParticleSystem::unPause()
 {
-	ULONGLONG elapsedTime = GetTickCount64()-pauseTime;
+	std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_tpPauseTime);
 
-	for (int i=0;i<maxNumParticles;i++)
+	for (int i=0;i<m_nMaxParticles;i++)
 	{
-		if (!particles[i]->dead)
+		if (!m_vpParticles[i]->m_bDead)
 		{
-			particles[i]->birthTime += elapsedTime;
-			particles[i]->lastUpdateTimestamp += elapsedTime;
+			m_vpParticles[i]->m_tpBirthTime += elapsedTime;
+			m_vpParticles[i]->m_tpLastUpdateTimestamp += elapsedTime;
 			for (int j=0;j<100;j++)
-				particles[i]->times[j] += elapsedTime;
+				m_vpParticles[i]->m_vtpTimes[j] += elapsedTime;
 		}
 	}//end for each particle
 

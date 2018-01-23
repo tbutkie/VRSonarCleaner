@@ -5,11 +5,17 @@
 // GL Includes
 #define GLEW_STATIC      // use static GLEW libs
 #include <GL/glew.h> // Contains all the necessery OpenGL includes
-#include <shared/glm/glm.hpp>
-#include <shared/glm/gtc/matrix_transform.hpp>
-#include <shared/glm/gtc/type_ptr.hpp>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
 
-#include "ShaderUtils.h"
+#include <algorithm>
+#include <iterator>
+
+#include "GLSLpreamble.h"
+#include "Renderer.h"
+
+#define MAX_DEBUGDRAWER_PRIMITIVES_PER_TYPE 1
 
 class DebugDrawer
 {
@@ -49,31 +55,68 @@ public:
 	}
 
 	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
-	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec3 &col = glm::vec3(1.f))
+	void drawPoint(const glm::vec3 &pos, const glm::vec4 &col = glm::vec4(1.f))
+	{
+		glm::vec3 pos_xformed = glm::vec3(m_mat4Transform * glm::vec4(pos, 1.f));
+
+		m_vusPointIndices.push_back(m_vPointVertices.size());
+		m_vPointVertices.push_back(DebugVertex(pos_xformed, col));
+	}
+
+	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
+	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec4 &col = glm::vec4(1.f))
 	{
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vVertices.push_back(DebugVertex(from_xformed, col));
-		m_vVertices.push_back(DebugVertex(to_xformed, col));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(from_xformed, col));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(to_xformed, col));
 	}
 
-	void drawTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec3 &color)
+	// Draw a line using the debug drawer. To draw in a different coordinate space, use setTransform()
+	void drawLine(const glm::vec3 &from, const glm::vec3 &to, const glm::vec4 &colFrom, const glm::vec4 &colTo)
+	{
+		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
+		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
+
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(from_xformed, colFrom));
+		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vLineVertices.push_back(DebugVertex(to_xformed, colTo));
+	}
+
+	void drawTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec4 &color)
 	{
 		drawLine(v0, v1, color);
 		drawLine(v1, v2, color);
 		drawLine(v2, v0, color);
 	}
 
+	void drawSolidTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec4 &color)
+	{
+		glm::vec3 v0_xformed = glm::vec3(m_mat4Transform * glm::vec4(v0, 1.f));
+		glm::vec3 v1_xformed = glm::vec3(m_mat4Transform * glm::vec4(v1, 1.f));
+		glm::vec3 v2_xformed = glm::vec3(m_mat4Transform * glm::vec4(v2, 1.f));
+
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v0_xformed, color));
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v1_xformed, color));
+		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vTriangleVertices.push_back(DebugVertex(v2_xformed, color));
+	}
+
 	void drawTransform(float orthoLen)
 	{
 		glm::vec3 start(0.f);
-		drawLine(start, start + glm::vec3(glm::vec4(orthoLen, 0.f, 0.f, 0.f)), glm::vec3(0.7f, 0.f, 0.f));
-		drawLine(start, start + glm::vec3(glm::vec4(0.f, orthoLen, 0.f, 0.f)), glm::vec3(0.f, 0.7f, 0.f));
-		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec3(0.f, 0.f, 0.7f));
+		drawLine(start, start + glm::vec3(glm::vec4(orthoLen, 0.f, 0.f, 0.f)), glm::vec4(0.7f, 0.f, 0.f, 0.25f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, orthoLen, 0.f, 0.f)), glm::vec4(0.f, 0.7f, 0.f, 0.25f));
+		drawLine(start, start + glm::vec3(glm::vec4(0.f, 0.f, orthoLen, 0.f)), glm::vec4(0.f, 0.f, 0.7f, 0.25f));
 	}
 
-	void drawArc(float radiusX, float radiusY, float minAngle, float maxAngle, const glm::vec3 &color, bool drawSect, float stepDegrees = float(10.f))
+	void drawArc(float radiusX, float radiusY, float minAngle, float maxAngle, const glm::vec4 &color, bool drawSect, float stepDegrees = float(10.f))
 	{
 		glm::vec3 center(0.f);
 
@@ -100,7 +143,7 @@ public:
 		}
 	}
 
-	void drawSphere(float radius, float stepDegrees, glm::vec3 &color)
+	void drawSphere(float radius, float stepDegrees, glm::vec4 &color)
 	{
 		float minTh = -glm::half_pi<float>();
 		float maxTh = glm::half_pi<float>();
@@ -113,7 +156,7 @@ public:
 		drawSpherePatch(center, up, -axis, radius, minTh, maxTh, minPs, maxPs, color, stepDegrees, false);
 	}
 
-	virtual void drawBox(const glm::vec3 &bbMin, const glm::vec3 &bbMax, const glm::vec3 &color)
+	virtual void drawBox(const glm::vec3 &bbMin, const glm::vec3 &bbMax, const glm::vec4 &color)
 	{
 		drawLine(glm::vec3(bbMin[0], bbMin[1], bbMin[2]), glm::vec3(bbMax[0], bbMin[1], bbMin[2]), color);
 		drawLine(glm::vec3(bbMax[0], bbMin[1], bbMin[2]), glm::vec3(bbMax[0], bbMax[1], bbMin[2]), color);
@@ -130,56 +173,97 @@ public:
 	}
 
 	// Render the mesh
-	void render(glm::mat4 matVP)
+	void draw()
 	{
-		glUseProgram(m_glTransformProgramID);
+		Renderer::RendererSubmission rsPoints, rsLines, rsTriangles;
 
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBufferData(GL_ARRAY_BUFFER, m_vVertices.size() * sizeof(DebugVertex), m_vVertices.data(), GL_STREAM_DRAW);
+		rsPoints.shaderName = rsLines.shaderName = rsTriangles.shaderName = "debug";
 
-		glUniformMatrix4fv(m_glViewProjectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(matVP));
-		
-		// Draw mesh
-		glBindVertexArray(this->m_glVAO);
-		glDrawArrays(GL_LINES, 0, m_vVertices.size());
-		glBindVertexArray(0);
+		rsPoints.indexType = rsLines.indexType = rsTriangles.indexType = GL_UNSIGNED_SHORT;
 
-		glUseProgram(0);
+		rsPoints.modelToWorldTransform = rsLines.modelToWorldTransform = rsTriangles.modelToWorldTransform = glm::mat4();
+
+		if (m_vPointVertices.size() > 0u)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glPointVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vPointVertices.size() * sizeof(DebugVertex), m_vPointVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glPointEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusPointIndices.size() * sizeof(unsigned short), &m_vusPointIndices[0], GL_STREAM_DRAW);
+
+			rsPoints.glPrimitiveType = GL_POINTS;
+			rsPoints.VAO = m_glPointVAO;
+			rsPoints.vertCount = m_vPointVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsPoints);
+		}
+
+		if (m_vLineVertices.size() > 0u)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glLineVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vLineVertices.size() * sizeof(DebugVertex), m_vLineVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glLineEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusLineIndices.size() * sizeof(unsigned short), &m_vusLineIndices[0], GL_STREAM_DRAW);
+
+			rsLines.glPrimitiveType = GL_LINES;
+			rsLines.VAO = m_glLineVAO;
+			rsLines.vertCount = m_vLineVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsLines);
+		}
+
+		if (m_vTriangleVertices.size() > 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_glTriangleVBO);
+			glBufferData(GL_ARRAY_BUFFER, m_vTriangleVertices.size() * sizeof(DebugVertex), m_vTriangleVertices.data(), GL_STREAM_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glTriangleEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vusTriangleIndices.size() * sizeof(unsigned short), &m_vusTriangleIndices[0], GL_STREAM_DRAW);
+
+			rsTriangles.glPrimitiveType = GL_TRIANGLES;
+			rsTriangles.VAO = m_glTriangleVAO;
+			rsTriangles.vertCount = m_vTriangleVertices.size();
+			Renderer::getInstance().addToDynamicRenderQueue(rsTriangles);
+		}
 	}
 
 	void flushLines()
 	{
-		m_vVertices.clear();
+		m_vPointVertices.clear();
+		m_vusPointIndices.clear();
+		m_vLineVertices.clear();
+		m_vusLineIndices.clear();
+		m_vTriangleVertices.clear();
+		m_vusTriangleIndices.clear();
+	}
+	
+	void shutdown()
+	{
+		// todo: release OpenGL resources
 	}
 
 private:
 	struct DebugVertex {
 		glm::vec3 pos;
-		glm::vec3 col;
+		glm::vec4 col;
 
-		DebugVertex(glm::vec3 p, glm::vec3 c)
+		DebugVertex(glm::vec3 p, glm::vec4 c)
 			: pos(p)
 			, col(c)
 		{}
 	};
 
-	GLuint m_glVAO, m_glVBO;
-	GLuint m_glTransformProgramID;
-	GLint m_glViewProjectionMatrixLocation;
-	std::vector<DebugVertex> m_vVertices;
+	GLuint m_glPointVAO, m_glLineVAO, m_glTriangleVAO;
+	GLuint m_glPointVBO, m_glLineVBO, m_glTriangleVBO;
+	GLuint m_glPointEBO, m_glLineEBO, m_glTriangleEBO;
+	std::vector<DebugVertex> m_vPointVertices, m_vLineVertices, m_vTriangleVertices;
+	std::vector<GLushort> m_vusPointIndices, m_vusLineIndices, m_vusTriangleIndices;
 	glm::mat4 m_mat4Transform;
-
-	static DebugDrawer *s_instance;
 
 	// CTOR
 	DebugDrawer()
 	{
-		_createShader();
 		_initGL();
 	}
 
 	void drawSpherePatch(const glm::vec3 &center, const glm::vec3 &up, const glm::vec3 &axis, float radius,
-		float minTh, float maxTh, float minPs, float maxPs, const glm::vec3 &color, float stepDegrees = float(10.f), bool drawCenter = true)
+		float minTh, float maxTh, float minPs, float maxPs, const glm::vec4 &color, float stepDegrees = float(10.f), bool drawCenter = true)
 	{
 		glm::vec3 vA[74];
 		glm::vec3 vB[74];
@@ -287,59 +371,31 @@ private:
 	void _initGL()
 	{
 		// Create buffers/arrays
-		glGenVertexArrays(1, &this->m_glVAO);
-		glGenBuffers(1, &this->m_glVBO);
+		_initGLBuffer(&m_glPointVAO, &m_glPointVBO, &m_glPointEBO);
+		_initGLBuffer(&m_glLineVAO, &m_glLineVBO, &m_glLineEBO);
+		_initGLBuffer(&m_glTriangleVAO, &m_glTriangleVBO, &m_glTriangleEBO);
+	}
 
-		glBindVertexArray(this->m_glVAO);
+	void _initGLBuffer(GLuint* VAO, GLuint* VBO, GLuint* EBO)
+	{
+		glGenVertexArrays(1, VAO);
+		glGenBuffers(1, VBO);
+		glGenBuffers(1, EBO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBindVertexArray(*VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
 
 		// Set the vertex attribute pointers
 		// Vertex Positions
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)0);
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*) offsetof(DebugVertex, pos));
 		// Vertex Colors
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, col));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*) offsetof(DebugVertex, col));
 
 		glBindVertexArray(0);
-	}
-	
-	bool _createShader()
-	{
-		m_glTransformProgramID = CompileGLShader(
-			"Debugger",
-
-			// vertex shader
-			"#version 410\n"
-			"layout(location = 0) in vec3 v3Position;\n"
-			"layout(location = 1) in vec3 v3ColorIn;\n"
-			"uniform mat4 matVP;\n"
-			"out vec4 v4Color;\n"
-			"void main()\n"
-			"{\n"
-			"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
-			"	gl_Position = matVP * vec4(v3Position, 1.0);\n"
-			"}\n",
-
-			// fragment shader
-			"#version 410\n"
-			"in vec4 v4Color;\n"
-			"out vec4 outputColor;\n"
-			"void main()\n"
-			"{\n"
-			"   outputColor = v4Color;\n"
-			"}\n"
-		);
-
-		m_glViewProjectionMatrixLocation = glGetUniformLocation(m_glTransformProgramID, "matVP");
-		if (m_glViewProjectionMatrixLocation == -1)
-		{
-			printf("Unable to find view projection matrix uniform in debug shader\n");
-			return false;
-		}
-
-		return m_glTransformProgramID != 0;
 	}
 
 // DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

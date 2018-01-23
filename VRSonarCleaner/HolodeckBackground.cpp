@@ -1,346 +1,134 @@
 #include "HolodeckBackground.h"
 
-HolodeckBackground::HolodeckBackground(float SizeX, float SizeY, float SizeZ, float Spacing)
+#include <glm.hpp>
+
+#include "Renderer.h"
+
+HolodeckBackground::HolodeckBackground(glm::vec3 roomSizeMeters, float spacingMeters)
+	: m_vec3RoomSize(roomSizeMeters)
+	, m_fGridSpacing(spacingMeters)
 {
-	sizeX = SizeX;
-	sizeY = SizeY;
-	sizeZ = SizeZ;
+	m_vec3Spaces = floor(m_vec3RoomSize / m_fGridSpacing);
+	m_vec3RoomSpacings = m_vec3RoomSize / m_vec3Spaces;
 
-	spacing = Spacing;
+	m_vec3RoomMin = -m_vec3RoomSize * 0.5f;
+	m_vec3RoomMin.y = 0.f;
 
-	spacesX = floor(sizeX/spacing);
-	spacesY = floor(sizeY/spacing);
-	spacesZ = floor(sizeZ/spacing);
+	m_vec3RoomMax = m_vec3RoomSize * 0.5f;
+	m_vec3RoomMax.y = m_vec3RoomSize.y;
 
-	spacingX = sizeX / spacesX;
-	spacingY = sizeY / spacesY;
-	spacingZ = sizeZ / spacesZ;
+	draw();
 
-	minX = -sizeX/2;
-	minY = 0 ;
-	minZ = -sizeZ / 2;
+	Renderer::RendererSubmission rs;
+	rs.glPrimitiveType = GL_LINES;
+	rs.modelToWorldTransform = glm::mat4();
+	rs.shaderName = "flat";
+	rs.VAO = m_glVAO;
+	rs.vertCount = static_cast<GLuint>(m_vHolodeckGeometry.size());
 
-	maxX = (sizeX / 2);
-	maxY = sizeY;
-	maxZ = (sizeZ / 2);
-
+	Renderer::getInstance().addToStaticRenderQueue(rs);
 }
 
 HolodeckBackground::~HolodeckBackground()
 {
+}
 
+GLuint HolodeckBackground::getVAO()
+{
+	return m_glVAO;
+}
+
+GLuint HolodeckBackground::getVertexCount()
+{
+	return static_cast<GLuint>(m_vHolodeckGeometry.size());
 }
 
 void HolodeckBackground::draw()
 {
-	//printf("In Holodeck Draw()\n");
-	glColor3f(0.0, 1.0, 1.0);
-	glPointSize(2.0);
-	glBegin(GL_POINTS);
-	glVertex3f(0, 0, 0);
-	glEnd();
+	glm::vec3 majorGridColor(0.15f, 0.21f, 0.31f);
+	glm::vec3 minorGridColor(0.23f, 0.29f, 0.39f);
 
-	
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-		glColor3f(1.0, 0.0, 0.0);
-		glVertex3f(-0.25, 0, 0);
-		glVertex3f(0.5, 0, 0);
+	drawGrids(majorGridColor, 1.f);
+	drawGrids(minorGridColor, 0.25f);
 
-		glColor3f(0.0, 1.0, 0.0);
-		glVertex3f(0, -0.25, 0);
-		glVertex3f(0, 0.5, 0);
+	std::vector<GLushort> inds;
+	GLushort i = 0;
+	for (auto v : m_vHolodeckGeometry)
+		inds.push_back(i++);
 
-		glColor3f(0.0, 0.0, 1.0);
-		glVertex3f(0, 0, -0.25);
-		glVertex3f(0, 0, 0.5);
-	glEnd();
+	// Create buffers/arrays
+	glGenVertexArrays(1, &m_glVAO);
+	glGenBuffers(1, &m_glVBO);
+	glGenBuffers(1, &m_glEBO);
 
+	glBindVertexArray(this->m_glVAO);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(1.0, 1.0, 0.0, 0.45);
-	glLineWidth(2.0);
-	glEnable(GL_LINE_SMOOTH);
-	glBegin(GL_LINES);
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+	glBufferData(GL_ARRAY_BUFFER, m_vHolodeckGeometry.size() * sizeof(HolodeckVertex), m_vHolodeckGeometry.data(), GL_STATIC_DRAW);
 
-	float r = 1.0;
-	float g = 1.0;
-	float b = 0.0;
-	float floorOpacity = 0.30;
-	float ceilingOpacity = 0.03;
-	float inBetweenOpacity; 
-	
-	for (float x = minX; x <= maxX ; x += spacingX)
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size() * sizeof(GLushort), inds.data(), GL_STATIC_DRAW);
+
+	// Set the vertex attribute pointers
+	// Vertex Positions
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(HolodeckVertex), (GLvoid*)0);
+	// Vertex Colors
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(HolodeckVertex), (GLvoid*)offsetof(HolodeckVertex, col));
+
+	glBindVertexArray(0);
+}
+
+void HolodeckBackground::drawGrids(glm::vec3 color, float spacingFactor)
+{
+	glm::vec4 floorOpacity(color, 0.3f);
+	glm::vec4 ceilingOpacity(color, 0.03f);
+
+	for (float x = m_vec3RoomMin.x; x <= m_vec3RoomMax.x; x += m_vec3RoomSpacings.x * spacingFactor)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, maxZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, maxZ);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glVertex3f(x, minY, maxZ);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-		glVertex3f(x, maxY, maxZ);
-	}
-
-	for (float y = minY; y <= maxY; y += spacingY)
-	{
-		inBetweenOpacity = ((1-(y / maxY))*(floorOpacity - ceilingOpacity)) + ceilingOpacity;
-		glColor4f(r, g, b, inBetweenOpacity);
-		glVertex3f(minX, y, minZ);
-		glVertex3f(maxX, y, minZ);
-
-		glVertex3f(minX, y, maxZ);
-		glVertex3f(maxX, y, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMin.z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMin.z), ceilingOpacity));
 		
-		glVertex3f(minX, y, minZ);
-		glVertex3f(minX, y, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMax.z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMax.z), ceilingOpacity));
 
-		glVertex3f(maxX, y, minZ);
-		glVertex3f(maxX, y, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMin.z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMin.y, m_vec3RoomMax.z), floorOpacity));
+
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMin.z), ceilingOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(x, m_vec3RoomMax.y, m_vec3RoomMax.z), ceilingOpacity));
 	}
 
-	for (float z = minZ; z <= maxZ; z += spacingZ)
+	for (float y = m_vec3RoomMin.y; y <= m_vec3RoomMax.y; y += m_vec3RoomSpacings.y * spacingFactor)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glVertex3f(maxX, minY, z);
+		glm::vec4 inBetweenOpacity = ((1.f - (y / m_vec3RoomMax.y)) * (floorOpacity - ceilingOpacity)) + ceilingOpacity;
 
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-		glVertex3f(maxX, maxY, z);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMin.z), inBetweenOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMin.z), inBetweenOpacity));
 
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMax.z), inBetweenOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMax.z), inBetweenOpacity));
 
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(maxX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(maxX, maxY, z);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMin.z), inBetweenOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, y, m_vec3RoomMax.z), inBetweenOpacity));
+
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMin.z), inBetweenOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, y, m_vec3RoomMax.z), inBetweenOpacity));
 	}
 
-	glEnd();
-
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-
-	//std::vector<float> vertdataarray;
-
-	//
-	//vertdataarray.push_back(-0.5);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0.5);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(-0.5);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0.5);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-	//vertdataarray.push_back(0);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(-0.5);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0.5);
-
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(0);
-	//vertdataarray.push_back(1);
-
-	//int vertcount = 6;
-
-	//// Setup the VAO the first time through.
-	//if (m_unControllerVAO == 0)
-	//{
-	//	glGenVertexArrays(1, &m_unControllerVAO);
-	//	glBindVertexArray(m_unControllerVAO);
-
-	//	glGenBuffers(1, &m_glControllerVertBuffer);
-	//	glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-	//	GLuint stride = 2 * 3 * sizeof(float);
-	//	GLuint offset = 0;
-
-	//	glEnableVertexAttribArray(0);
-	//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	//	offset += (sizeof(float)*3);
-	//	glEnableVertexAttribArray(1);
-	//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
-
-	//	glBindVertexArray(0);
-	//}
-
-	//glBindBuffer(GL_ARRAY_BUFFER, m_glControllerVertBuffer);
-
-	//// set vertex data if we have some
-	//if (vertdataarray.size() > 0)
-	//{
-	//	//$ TODO: Use glBufferSubData for this...
-	//	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STREAM_DRAW);
-	//}
-
-	//// draw the controller axis lines
-	////glUseProgram(m_unControllerTransformProgramID);
-	////glUniformMatrix4fv(m_nControllerMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-	//glBindVertexArray(m_unControllerVAO);
-	//glDrawArrays(GL_LINES, 0, vertcount);
-	//glBindVertexArray(0);
-
-
-}
-
-
-void HolodeckBackground::drawSolid()
-{
-	//draw box
-	glColor4f(0.33, 0.39, 0.49, 1.0);
-
-	//printf("In Holodeck Draw()\n");
-
-	/*
-	glColor3f(0.0, 1.0, 1.0);
-	glPointSize(2.0);
-	glBegin(GL_POINTS);
-	glVertex3f(0, 0, 0);
-	glEnd();
-
-
-	glLineWidth(2.0);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(-0.25, 0, 0);
-	glVertex3f(0.5, 0, 0);
-
-	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(0, -0.25, 0);
-	glVertex3f(0, 0.5, 0);
-
-	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(0, 0, -0.25);
-	glVertex3f(0, 0, 0.5);
-	glEnd();
-
-	*/
-
-	drawGrids(0.15, 0.21, 0.31, 1);
-	drawGrids(0.23, 0.29, 0.39, 0.25);
-	
-}
-
-void HolodeckBackground::drawGrids(float r, float g, float b, float spacingFactor)
-{
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-	//glColor4f(0.22, 0.25, 0.32, 1.0);
-	glLineWidth(2.0);
-	glEnable(GL_LINE_SMOOTH);
-	glBegin(GL_LINES);
-
-	float floorOpacity = 0.30;
-	float ceilingOpacity = 0.03;
-	float inBetweenOpacity;
-
-	for (float x = minX; x <= maxX; x += spacingX*spacingFactor)
+	for (float z = m_vec3RoomMin.z; z <= m_vec3RoomMax.z; z += m_vec3RoomSpacings.z * spacingFactor)
 	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMin.y, z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, m_vec3RoomMin.y, z), floorOpacity));
 
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, maxZ);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMax.y, z), ceilingOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, m_vec3RoomMax.y, z), ceilingOpacity));
 
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(x, minY, minZ);
-		glVertex3f(x, minY, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMin.y, z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMin.x, m_vec3RoomMax.y, z), ceilingOpacity));
 
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(x, maxY, minZ);
-		glVertex3f(x, maxY, maxZ);
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, m_vec3RoomMin.y, z), floorOpacity));
+		m_vHolodeckGeometry.push_back(HolodeckVertex(glm::vec3(m_vec3RoomMax.x, m_vec3RoomMax.y, z), ceilingOpacity));
 	}
-
-	for (float y = minY; y <= maxY; y += spacingY*spacingFactor)
-	{
-		inBetweenOpacity = ((1 - (y / maxY))*(floorOpacity - ceilingOpacity)) + ceilingOpacity;
-		glColor4f(r, g, b, inBetweenOpacity);
-		glVertex3f(minX, y, minZ);
-		glVertex3f(maxX, y, minZ);
-
-		glVertex3f(minX, y, maxZ);
-		glVertex3f(maxX, y, maxZ);
-
-		glVertex3f(minX, y, minZ);
-		glVertex3f(minX, y, maxZ);
-
-		glVertex3f(maxX, y, minZ);
-		glVertex3f(maxX, y, maxZ);
-	}
-
-	for (float z = minZ; z <= maxZ; z += spacingZ*spacingFactor)
-	{
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glVertex3f(maxX, minY, z);
-
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-		glVertex3f(maxX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(minX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(minX, maxY, z);
-
-		glColor4f(r, g, b, floorOpacity);
-		glVertex3f(maxX, minY, z);
-		glColor4f(r, g, b, ceilingOpacity);
-		glVertex3f(maxX, maxY, z);
-	}
-
-	glEnd();
-
-	glColor4f(1.0, 1.0, 1.0, 1.0);
 }

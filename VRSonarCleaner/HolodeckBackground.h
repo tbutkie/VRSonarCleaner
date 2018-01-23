@@ -1,43 +1,47 @@
 #pragma once
 
-//#include <SDL.h>
 #include <GL/glew.h>
 #include <math.h>
-//#include <SDL_opengl.h>
-//#include <gl/glu.h>
 #include <stdio.h>
-//#include <string>
-//#include <cstdlib>
-
 #include <vector>
 
-//#include <openvr.h>
-
-//#include "../shared/lodepng.h"
-//#include "../shared/Matrices.h"
-//#include "../shared/pathtools.h"
+#include <glm.hpp>
 
 class HolodeckBackground
 {
 public:
-	HolodeckBackground(float SizeX, float SizeY, float SizeZ, float Spacing);
+	HolodeckBackground(glm::vec3 roomSizeMeters, float gridSpacingMeters);
 	virtual ~HolodeckBackground();
 
-	void draw();
-	void drawSolid();
-
-	void drawGrids(float r, float g, float b, float spacingFactor);
+	GLuint getVAO();
+	GLuint getVertexCount();
 
 private:
+	struct HolodeckVertex {
+		glm::vec3 pos;
+		glm::vec4 col;
 
-	GLuint m_unControllerVAO;
-	GLuint m_glControllerVertBuffer;
+		HolodeckVertex(glm::vec3 p, glm::vec4 c)
+			: pos(p)
+			, col(c)
+		{}
+	};
 
-	float sizeX, sizeY, sizeZ;
-	float spacing;
-	float spacingX, spacingY, spacingZ;
-	int spacesX, spacesY, spacesZ;
-	float minX, minY, minZ;
-	float maxX, maxY, maxZ;
 
+private:
+	void draw();
+	void drawGrids(glm::vec3 color, float spacingFactor);
+
+private:
+	glm::vec3 m_vec3RoomSize;
+	float m_fGridSpacing;
+	glm::vec3 m_vec3RoomSpacings;
+	glm::vec3 m_vec3Spaces;
+	glm::vec3 m_vec3RoomMin;
+	glm::vec3 m_vec3RoomMax;
+
+	std::vector<HolodeckVertex> m_vHolodeckGeometry;
+
+	GLuint m_glVAO;
+	GLuint m_glVBO, m_glEBO;
 };

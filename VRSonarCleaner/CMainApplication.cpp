@@ -1,11 +1,87 @@
 #include "CMainApplication.h"
-#include "ShaderUtils.h"
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
+
+#include "BehaviorManager.h"
+#include "StudyTutorialBehavior.h"
+#include "DemoBehavior.h"
+#include "SelectAreaBehavior.h"
+#include "GrabDataVolumeBehavior.h"
+#include "ScaleDataVolumeBehavior.h"
+#include "CurateStudyDataBehavior.h"
+#include "RunStudyBehavior.h"
+#include "StudyIntroBehavior.h"
+#include "ScaleTutorial.h"
+#include "StudyEditTutorial.h"
+#include "DesktopCleanBehavior.h"
+#include "StudyTrialDesktopBehavior.h"
+#include "arcball.h"
+#include "LassoTool.h"
+#include "SnellenTest.h"
+#include "CloudEditControllerTutorial.h"
+
+#include "HolodeckBackground.h"
 
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
+#include <filesystem>
+#include <limits>
+
+
+glm::vec3						g_vec3RoomSize(4.f, 3.f, 3.f);
+
+float							g_fNearClip = 0.001f;
+float							g_fFarClip = 10000.f;
+const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
+float							g_fDesktopWindowFOV(45.f);
+
+//-----------------------------------------------------------------------------
+// Purpose: OpenGL Debug Callback Function
+//-----------------------------------------------------------------------------
+void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
+{
+	// ignore non-significant error/warning codes
+	if (id == 131169 || id == 131184 || id == 131185 || id == 131218 || id == 131204) return;
+
+	std::cout << "---------------" << std::endl;
+	std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+	switch (source)
+	{
+	case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+	case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+	case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+	} std::cout << std::endl;
+
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+	case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+	case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+	case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+	case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+	case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+	case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+	} std::cout << std::endl;
+
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+	case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+	case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+	} std::cout << std::endl;
+	std::cout << std::endl;
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -19,8 +95,9 @@ void dprintf(const char *fmt, ...)
 	vsprintf_s(buffer, fmt, args);
 	va_end(args);
 
-	if (g_bPrintf)
-		printf("%s", buffer);
+#ifdef DEBUG
+	printf("%s", buffer);
+#endif // DEBUG
 
 	OutputDebugStringA(buffer);
 }
@@ -29,46 +106,72 @@ void dprintf(const char *fmt, ...)
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CMainApplication::CMainApplication(int argc, char *argv[], int Mode)
-	: m_pWindow(NULL)
-	, m_pContext(NULL)
-	, m_nWindowWidth(1280)
-	, m_nWindowHeight(720)
-	, m_unLensProgramID(0)
+CMainApplication::CMainApplication(int argc, char *argv[], int mode)
+	: m_bUseVR(false)
+	, m_bUseDesktop(false)
+	, m_bSonarCleaning(false)
+	, m_bFlowVis(false)
+	, m_bGreatBayModel(false)
+	, m_bShowDesktopFrustum(false)
+	, m_bStudyMode(false)
+	, m_bDemoMode(false)
+	, m_bGLInitialized(false)
+	, m_bLeftMouseDown(false)
+	, m_bRightMouseDown(false)
+	, m_bMiddleMouseDown(false)
+	, m_pVRCompanionWindow(NULL)
+	, m_pGLContext(NULL)
+	, m_pDesktopWindow(NULL)
+	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
-	, m_pTDM(NULL)
-	, m_bDebugOpenGL(false)
-	, m_bVerbose(false)
-	, m_bPerf(false)
-	, m_bVblank(false)
-	, m_bGlFinishHack(true)
-	, m_unLensVAO(0)
-{
-
-	mode = Mode;
-
-	for (int i = 1; i < argc; i++)
+{	
+	switch (mode)
 	{
-		if (!stricmp(argv[i], "-gldebug"))
-		{
-			m_bDebugOpenGL = true;
-		}
-		else if (!stricmp(argv[i], "-verbose"))
-		{
-			m_bVerbose = true;
-		}
-		else if (!stricmp(argv[i], "-novblank"))
-		{
-			m_bVblank = false;
-		}
-		else if (!stricmp(argv[i], "-noglfinishhack"))
-		{
-			m_bGlFinishHack = false;
-		}
-		else if (!stricmp(argv[i], "-noprintf"))
-		{
-			g_bPrintf = false;
-		}
+	case 1:
+		m_bUseVR = true;
+		m_bSonarCleaning = true;
+		break;
+	case 2:
+		m_bUseVR = true;
+		m_bSonarCleaning = true;
+		m_bStudyMode = true;
+		break;
+	case 3:
+		m_bUseVR = true;
+		m_bFlowVis = true;
+		break;
+	case 4:
+		m_bUseVR = true;
+		m_bFlowVis = true;
+		m_bGreatBayModel = true;
+		break;
+	case 5:
+		m_bUseVR = true;
+		m_bFlowVis = true;
+		m_bStudyMode = true;
+		break;
+	case 6:
+		m_bUseDesktop = true;
+		m_bSonarCleaning = true;
+		break;
+	case 7:
+		m_bUseDesktop = true;
+		m_bSonarCleaning = true;
+		m_bStudyMode = true;
+		break;
+	case 8:
+		m_bUseDesktop = true;
+		m_bFlowVis = true;
+		break;
+	case 9:
+		m_bUseDesktop = true;
+		m_bFlowVis = true;
+		m_bGreatBayModel = true;
+		break;
+	default:
+		dprintf("Invalid Selection, shutting down...");
+		Shutdown();
+		break;
 	}
 };
 
@@ -82,33 +185,168 @@ CMainApplication::~CMainApplication()
 	dprintf("Shutdown");
 }
 
-
 //-----------------------------------------------------------------------------
-// Purpose: Helper to get a string from a tracked device property and turn it
-//			into a std::string
+// Purpose:
 //-----------------------------------------------------------------------------
-std::string GetTrackedDeviceString(vr::IVRSystem *pHmd, vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError *peError = NULL)
+bool CMainApplication::init()
 {
-	uint32_t unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
-	if (unRequiredBufferLen == 0)
-		return "";
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+	{
+		printf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
 
-	char *pchBuffer = new char[unRequiredBufferLen];
-	unRequiredBufferLen = pHmd->GetStringTrackedDeviceProperty(unDevice, prop, pchBuffer, unRequiredBufferLen, peError);
-	std::string sResult = pchBuffer;
-	delete[] pchBuffer;
-	return sResult;
+	if (m_bUseVR && !initVR())
+	{
+		printf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		return false;
+	}
+
+	if (m_bUseDesktop && !initDesktop())
+	{
+		printf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
+		return false;
+	}
+
+	//if (m_bUseVR)
+	//{
+	//	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
+	//}
+
+	if (m_bSonarCleaning)
+	{
+		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
+		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
+		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
+		
+		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
+
+		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, 0.f);
+		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+		glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
+
+		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
+
+		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_Camera.lookat = tablePosition;
+
+		m_pColorScalerTPU = new ColorScaler();
+		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
+		//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
+		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
+		m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt"));
+
+		for (auto const &cloud : m_vpClouds)
+		{
+			m_pTableVolume->add(cloud);
+			m_pWallVolume->add(cloud);
+		}
+
+		m_vpDataVolumes.push_back(m_pTableVolume);
+		m_vpDataVolumes.push_back(m_pWallVolume);
+
+		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+
+		if (m_bUseDesktop)
+		{
+			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+
+			DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume, &m_sviDesktop3DViewInfo, vp);
+			BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
+			tmp->init();
+		}
+	}
+	else if (m_bFlowVis)
+	{
+		FlowGrid *tempFG;
+
+		if (m_bGreatBayModel)
+		{
+			tempFG = new FlowGrid("gb.fg", false);
+			tempFG->m_fIllustrativeParticleVelocityScale = 0.5f;
+		}
+		else
+		{
+			tempFG = new FlowGrid("test.fg", true);
+			tempFG->m_fIllustrativeParticleVelocityScale = 0.01f;
+		}
+
+		tempFG->setCoordinateScaler(new CoordinateScaler());
+		m_pFlowVolume = new FlowVolume(tempFG);
+
+		if (m_bGreatBayModel)
+			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
+
+		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		m_Camera.lookat = m_pFlowVolume->getPosition();
+	}
+
+	m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+	BehaviorManager::getInstance().init();
+
+	return true;
 }
 
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::BInit()
+bool CMainApplication::initGL()
 {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+	if (m_bGLInitialized)
+		return true;
+
+	glewExperimental = GL_TRUE;
+	GLenum nGlewError = glewInit();
+	if (nGlewError != GLEW_OK)
 	{
-		printf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		printf("%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
+		return false;
+	}
+
+	glGetError(); // to clear the error caused deep in GLEW
+
+#if _DEBUG
+		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+
+	if (!Renderer::getInstance().init())
+		return false;
+
+	m_bGLInitialized = true;
+
+	return true;
+}
+
+bool CMainApplication::initVR()
+{
+	m_pVRCompanionWindow = createFullscreenWindow(1);
+
+	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
+
+	if (!m_pGLContext)
+		m_pGLContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
+
+	if (m_pGLContext == NULL)
+	{
+		printf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+
+	if (!initGL())
+	{
+		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -125,149 +363,90 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	m_pTDM = new TrackedDeviceManager(m_pHMD);
-
-	int nWindowPosX = 10;// 700;
-	int nWindowPosY = 30;// 100;
-	m_nWindowWidth = 1660;// 1280;
-	m_nWindowHeight = 980;// 720;
-	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
-
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-	if (m_bDebugOpenGL)
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-
-	m_pWindow = SDL_CreateWindow("hellovr_sdl", nWindowPosX, nWindowPosY, m_nWindowWidth, m_nWindowHeight, unWindowFlags);
-	if (m_pWindow == NULL)
-	{
-		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
-
-	m_pContext = SDL_GL_CreateContext(m_pWindow);
-	if (m_pContext == NULL)
-	{
-		printf("%s - OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
-
-	glewExperimental = GL_TRUE;
-	GLenum nGlewError = glewInit();
-	if (nGlewError != GLEW_OK)
-	{
-		printf("%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
-		return false;
-	}
-	glGetError(); // to clear the error caused deep in GLEW
-
-	if (SDL_GL_SetSwapInterval(m_bVblank ? 1 : 0) < 0)
-	{
-		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
-
-	if (mode == 0)
-	{
-		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
-	}
-	else
-	{
-		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
-	}
-
-	m_fNearClip = 0.1f;
-	m_fFarClip = 30.0f;
-
-	// 		m_MillisecondsTimer.start(1, this);
-	// 		m_SecondsTimer.start(1000, this);
-
-	if (!BInitGL())
-	{
-		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
-		return false;
-	}
-
-	if (!BInitCompositor())
-	{
-		printf("%s - Failed to initialize VR Compositor!\n", __FUNCTION__);
-		return false;
-	}
-
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
-{
-	dprintf("GL Error: %s\n", message);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::BInitGL()
-{
-	if (m_bDebugOpenGL)
-	{
-		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	}
-
-	if (!CreateLensShader())
-		return false;
-
-	SetupCameras();
-	SetupStereoRenderTargets();
-	SetupDistortion();
-
-	if (!m_pTDM->BInit())
-	{
-		dprintf("Error initializing TrackedDeviceManager\n");
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not get render model interface", NULL);
-	}
-
-	InfoBoxManager::getInstance().BInit(m_pTDM);
-	m_pTDM->attach(&InfoBoxManager::getInstance());
-
-	if (mode == 0)
-	{
-		cleaningRoom = new CleaningRoom();
-	}
-	else if (mode == 1)
-	{
-		flowRoom = new FlowRoom();
-	}
-
-
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::BInitCompositor()
-{
-	vr::EVRInitError peError = vr::VRInitError_None;
-
 	if (!vr::VRCompositor())
 	{
 		printf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
+
+	m_pTDM = new TrackedDeviceManager(m_pHMD);
+
+	if (!m_pTDM->init())
+	{
+		dprintf("Error initializing TrackedDeviceManager\n");
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
+	}
+
+	InfoBoxManager::getInstance().BInit(m_pTDM);
+
+	createVRViews();
+
+	if (m_bSonarCleaning)
+	{
+		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
+	}
+	else if (m_bFlowVis)
+	{
+		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
+		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
+	}
+
+	return true;
+}
+
+
+bool CMainApplication::initDesktop()
+{
+	//m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
+	m_pDesktopWindow = createFullscreenWindow(0);
+	if (!m_pGLContext)
+		m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow);
+
+	SDL_GetWindowSize(m_pDesktopWindow, &m_ivec2DesktopWindowSize.x, &m_ivec2DesktopWindowSize.y);
+
+	if (!initGL())
+	{
+		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		return false;
+	}
+
+	m_pDesktopWindowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+	SDL_SetCursor(m_pDesktopWindowCursor);
+	
+	createDesktopView();
+
+	m_Camera.pos = glm::vec3(0.f, 0.f, 1.f);
+	m_Camera.up = glm::vec3(0.f, 1.f, 0.f);
+
+	return true;
+}
+
+bool CMainApplication::shutdownVR()
+{
+	SDL_DestroyWindow(m_pVRCompanionWindow);
+	m_pVRCompanionWindow = NULL;
+
+	if (m_pTDM)
+	{
+		delete m_pTDM;
+		m_pTDM = NULL;
+	}
+
+	vr::VR_Shutdown();
+	m_pHMD = NULL;
+
+	m_bUseVR = false;
+
+	return true;
+}
+
+bool CMainApplication::shutdownDesktop()
+{
+	SDL_DestroyWindow(m_pDesktopWindow);
+	m_pDesktopWindow = NULL;
+
+	m_bUseDesktop = false;
 
 	return true;
 }
@@ -278,54 +457,40 @@ bool CMainApplication::BInitCompositor()
 //-----------------------------------------------------------------------------
 void CMainApplication::Shutdown()
 {
-	if (m_pHMD)
+	BehaviorManager::getInstance().shutdown();
+
+	if (m_bUseVR)
 	{
-		vr::VR_Shutdown();
-		m_pHMD = NULL;
-	}
+		delete m_pLeftEyeFramebuffer;
+		delete m_pRightEyeFramebuffer;
 
-	if (m_pTDM)
-		delete m_pTDM;
-
-	if (m_pContext)
-	{
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
-		glDebugMessageCallback(nullptr, nullptr);
-		glDeleteBuffers(1, &m_glIDVertBuffer);
-		glDeleteBuffers(1, &m_glIDIndexBuffer);
-
-		if (m_unLensProgramID)
+		if (m_pHMD)
 		{
-			glDeleteProgram(m_unLensProgramID);
+			vr::VR_Shutdown();
+			m_pHMD = NULL;
 		}
 
-		glDeleteRenderbuffers(1, &leftEyeDesc.m_nDepthBufferId);
-		glDeleteTextures(1, &leftEyeDesc.m_nRenderTextureId);
-		glDeleteFramebuffers(1, &leftEyeDesc.m_nRenderFramebufferId);
-		glDeleteTextures(1, &leftEyeDesc.m_nResolveTextureId);
-		glDeleteFramebuffers(1, &leftEyeDesc.m_nResolveFramebufferId);
+		if (m_pTDM)
+			delete m_pTDM;
 
-		glDeleteRenderbuffers(1, &rightEyeDesc.m_nDepthBufferId);
-		glDeleteTextures(1, &rightEyeDesc.m_nRenderTextureId);
-		glDeleteFramebuffers(1, &rightEyeDesc.m_nRenderFramebufferId);
-		glDeleteTextures(1, &rightEyeDesc.m_nResolveTextureId);
-		glDeleteFramebuffers(1, &rightEyeDesc.m_nResolveFramebufferId);
-
-		if (m_unLensVAO != 0)
+		if (m_pGLContext)
 		{
-			glDeleteVertexArrays(1, &m_unLensVAO);
+			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+			glDebugMessageCallback(nullptr, nullptr);
+		}
+
+		if (m_pVRCompanionWindow)
+		{
+			SDL_DestroyWindow(m_pVRCompanionWindow);
+			m_pVRCompanionWindow = NULL;
 		}
 	}
 
-	
+	DebugDrawer::getInstance().shutdown();
+	Renderer::getInstance().shutdown();
+
 	fclose(stdout);
 	FreeConsole();
-
-	if (m_pWindow)
-	{
-		SDL_DestroyWindow(m_pWindow);
-		m_pWindow = NULL;
-	}
 
 	SDL_Quit();
 }
@@ -338,74 +503,627 @@ bool CMainApplication::HandleInput()
 	SDL_Event sdlEvent;
 	bool bRet = false;
 
+	if (m_bUseVR)
+		m_pTDM->handleEvents();
+
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
-		if (sdlEvent.type == SDL_QUIT)
+		ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
+		LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
+
+
+		if (m_bStudyMode)
 		{
-			bRet = true;
+			if (sdlEvent.type == SDL_KEYDOWN)
+			{
+				if ((sdlEvent.key.keysym.mod & KMOD_LSHIFT) && sdlEvent.key.keysym.sym == SDLK_ESCAPE
+					|| sdlEvent.key.keysym.sym == SDLK_q)
+				{
+					bRet = true;
+				}
+
+				if (m_bSonarCleaning)
+				{
+					if (sdlEvent.key.keysym.sym == SDLK_r)
+					{
+						if (arcball)
+						{
+							std::stringstream ss;
+
+							ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+
+							DataLogger::getInstance().logMessage(ss.str());
+
+							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+							m_Camera.lookat = m_pTableVolume->getPosition();
+
+							m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+							arcball->reset();
+						}
+					}
+					
+					if (sdlEvent.key.keysym.sym == SDLK_RETURN)
+					{
+						RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
+
+						if (study)
+							study->next();
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_SPACE)
+					{
+						DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
+
+						if (desktopEdit)
+							desktopEdit->activate();
+					}
+
+
+					if (sdlEvent.key.keysym.sym == SDLK_KP_1)
+					{
+						m_pWallVolume->setVisible(false);
+						m_pTableVolume->setVisible(false);
+						BehaviorManager::getInstance().clearBehaviors();
+						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
+						BehaviorManager::getInstance().addBehavior("Standing Study", rsb);
+						rsb->init();
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_KP_2)
+					{
+						m_pWallVolume->setVisible(false);
+						m_pTableVolume->setVisible(false);
+						BehaviorManager::getInstance().clearBehaviors();
+						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, true);
+						BehaviorManager::getInstance().addBehavior("Sitting Study", rsb);
+						rsb->init();
+					}
+					if (sdlEvent.key.keysym.sym == SDLK_KP_3)
+					{
+						m_pWallVolume->setVisible(false);
+						m_pTableVolume->setVisible(false);
+						BehaviorManager::getInstance().clearBehaviors();
+						RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera);
+						BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
+						rsb->init();
+					}
+				}
+			}
+
+			// MOUSE
+			if (m_bUseDesktop)
+			{
+				if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+				{
+					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+					{
+						m_bLeftMouseDown = true;
+
+						if (arcball)
+							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+
+						if (lasso)
+						{
+							if (m_bRightMouseDown)
+								lasso->end();
+
+							lasso->reset();
+						}
+
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+					{
+						m_bRightMouseDown = true;
+						if (lasso && !m_bLeftMouseDown)
+							lasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+					{
+						if (lasso && m_bRightMouseDown)
+						{
+							lasso->end();
+						}
+						m_bMiddleMouseDown = true;
+
+						if (arcball)
+							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					}
+
+				}//end mouse down 
+				else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+				{
+					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+					{
+						m_bLeftMouseDown = false;
+
+						if (arcball)
+							arcball->endDrag();
+
+						if (lasso)
+							lasso->reset();
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+					{
+						m_bRightMouseDown = false;
+
+						if (lasso)
+							lasso->end();
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+					{
+						m_bMiddleMouseDown = false;
+					}
+
+				}//end mouse up
+				if (sdlEvent.type == SDL_MOUSEMOTION)
+				{
+					if (m_bLeftMouseDown)
+					{
+						if (arcball)
+							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					}
+					if (m_bRightMouseDown && !m_bLeftMouseDown)
+					{
+						if (lasso)
+							lasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					}
+				}
+				if (sdlEvent.type == SDL_MOUSEWHEEL)
+				{
+					if (lasso)
+						lasso->reset();
+
+					glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
+					m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
+
+					float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+
+					if (newLen < 0.1f)
+						m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+					if (newLen > 10.f)
+						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+
+					m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+					if (DataLogger::getInstance().logging())
+					{
+						std::stringstream ss;
+
+						ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+						ss << "\t";
+						ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+						ss << ";";
+						ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+						ss << ";";
+						ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+
+						DataLogger::getInstance().logMessage(ss.str());
+					}
+				}
+			}
 		}
-		else if (sdlEvent.type == SDL_KEYDOWN)
+		else
 		{
-			if (sdlEvent.key.keysym.sym == SDLK_ESCAPE
-				|| sdlEvent.key.keysym.sym == SDLK_q)
+			if (sdlEvent.type == SDL_QUIT)
 			{
 				bRet = true;
 			}
-			
-			if (mode == 0) //cleaning
+			else if (sdlEvent.type == SDL_KEYDOWN)
 			{
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_s)
+				if (sdlEvent.key.keysym.sym == SDLK_ESCAPE
+					|| sdlEvent.key.keysym.sym == SDLK_q)
 				{
-					savePoints();
-				}
-				//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_l)
-				//{
-				//	loadPoints("test.txt");
-				//}
-				if (sdlEvent.key.keysym.sym == SDLK_r)
-				{
-					printf("Pressed r, resetting marks\n");
-					clouds->resetMarksInAllClouds();
-					cleaningRoom->resetVolumes();
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_g)
-				{
-					printf("Pressed g, generating fake test cloud\n");
-					clouds->clearAllClouds();
-					clouds->generateFakeTestCloud(150, 150, 25, 40000);
-					clouds->calculateCloudBoundsAndAlign();
-					cleaningRoom->recalcVolumeBounds();
-				}
-			}//end if mode==0
-			else if (mode == 1) //flow
-			{
-				if (sdlEvent.key.keysym.sym == SDLK_r)
-				{
-					printf("Pressed r, resetting something...\n");
-					flowRoom->reset();
+					bRet = true;
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_f)
-					printf("FPS: %u\n", m_uiCurrentFPS);
-			}
-			
-			if (sdlEvent.key.keysym.sym == SDLK_l)
-			{
-				/*
-				printf("Controller Locations:\n");
-				// Process SteamVR controller state
-				for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
 				{
-					printf("Controller %d\n", unDevice);										
+					using namespace std::experimental::filesystem::v1;
+					auto herePath = current_path();
+					std::cout << "Current directory: " << herePath << std::endl;
+					for (directory_iterator it(herePath); it != directory_iterator(); ++it)
+						if (is_regular_file(*it))
+							std::cout << (*it) << std::endl;
 				}
-				*/
+
+				if (sdlEvent.key.keysym.sym == SDLK_l)
+				{
+					if (m_bUseVR)
+					{
+						if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+							BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+						if (!BehaviorManager::getInstance().getBehavior("grab"))
+							BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+						if (!BehaviorManager::getInstance().getBehavior("scale"))
+							BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+					}
+					else m_pWallVolume->setVisible(false);
+
+					using namespace std::experimental::filesystem::v1;
+
+					//path dataset("south_santa_rosa");
+					//path dataset("santa_cruz_south");
+					path dataset("santa_cruz_basin");
+
+					auto basePath = current_path().append(path("data"));
+					std::cout << "Base study data directory: " << basePath << std::endl;
+
+					auto acceptsPath = path(basePath).append(path("accept"));
+					auto rejectsPath = path(basePath).append(path("reject"));
+
+					std::vector<SonarPointCloud*> tmpPointCloudCollection;
+
+					for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+					{
+						if (is_regular_file(*it))
+						{
+							if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+							{
+								SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+								m_vpClouds.push_back(tmp);
+								m_pTableVolume->add(tmp);
+								m_pWallVolume->add(tmp);
+								tmpPointCloudCollection.push_back(tmp);
+								break;
+							}
+						}
+					}
+
+					//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
+					//{
+					//	if (is_regular_file(*it))
+					//	{
+					//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+					//		{
+					//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+					//			m_vpClouds.push_back(tmp);
+					//			m_pTableVolume->add(tmp);
+					//			m_pWallVolume->add(tmp);
+					//			tmpPointCloudCollection.push_back(tmp);
+					//			break;
+					//		}
+					//	}
+					//}
+
+					refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+				}
+
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
+				{
+					if (!m_bUseVR)
+					{
+						m_bUseVR = true;
+						initVR();
+					}
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_KP_ENTER)
+				{
+					m_pTableVolume->setVisible(false);
+					m_pWallVolume->setVisible(false);
+					BehaviorManager::getInstance().clearBehaviors();
+					SnellenTest *st = new SnellenTest(m_pTDM, 10.f);
+					BehaviorManager::getInstance().addBehavior("snellen", st);
+					st->init();
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_UP)
+				{
+					SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+
+					if (snellen)
+					{
+						snellen->setVisualAngle(snellen->getVisualAngle() + 1.f);
+						snellen->newTest();
+					}
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_DOWN)
+				{
+					SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+
+					if (snellen)
+					{
+						float angle = snellen->getVisualAngle() - 1.f;
+						if (angle < 1.f) angle = 1.f;
+						snellen->setVisualAngle(angle);
+						snellen->newTest();
+					}
+				}
+
+
+				if (sdlEvent.key.keysym.sym == SDLK_y)
+				{
+					m_bDemoMode = true;
+					m_pTableVolume->setVisible(false);
+					m_pWallVolume->setVisible(false);
+					BehaviorManager::getInstance().clearBehaviors();
+					CloudEditControllerTutorial *cet = new CloudEditControllerTutorial(m_pTDM);
+					BehaviorManager::getInstance().addBehavior("Demo", cet);
+					cet->init();
+				}
+				if (sdlEvent.key.keysym.sym == SDLK_u)
+				{
+					BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_KP_0)
+				{
+					m_pWallVolume->setVisible(false);
+					m_pTableVolume->setVisible(false);
+					BehaviorManager::getInstance().clearBehaviors();
+					BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_KP_PERIOD)
+				{
+					m_pWallVolume->setVisible(false);
+					m_pTableVolume->setVisible(false);
+					BehaviorManager::getInstance().clearBehaviors();
+					StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
+					BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
+					stdb->init();
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_d)
+				{
+					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+					{
+						if (!m_bUseDesktop)
+						{
+							m_bUseDesktop = true;
+							initDesktop();
+						}
+					}
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_x)
+				{
+					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+					{
+						if (m_bUseVR)
+						{
+							shutdownVR();
+						}
+					}
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_z)
+				{
+					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+					{
+						if (m_bUseDesktop)
+						{
+							shutdownDesktop();
+						}
+					}
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_c)
+				{
+					std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
+				}
+
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
+				{
+					Renderer::getInstance().toggleWireframe();
+				}
+
+				if (!(sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
+				{
+					m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
+				}
+
+				if (m_bSonarCleaning)
+				{
+					if (sdlEvent.key.keysym.sym == SDLK_r)
+					{
+						printf("Pressed r, resetting marks\n");
+
+						if (!m_bStudyMode)
+						{
+							for (auto &cloud : m_vpClouds)
+								cloud->resetAllMarks();
+						}
+
+						for (auto &dv : m_vpDataVolumes)
+							dv->resetPositionAndOrientation();
+
+						if (arcball)
+						{
+							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+							m_Camera.lookat = m_pTableVolume->getPosition();
+
+							m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+							arcball->reset();
+						}
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_g)
+					{
+						printf("Pressed g, generating fake test cloud\n");
+						//m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
+						//m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_RETURN)
+					{
+						RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
+
+						if (study)
+							study->next();
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_SPACE)
+					{
+						DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
+
+						if (desktopEdit)
+							desktopEdit->activate();
+					}
+				}
+				else if (m_bFlowVis) //flow
+				{
+					if (sdlEvent.key.keysym.sym == SDLK_r)
+					{
+						printf("Pressed r, resetting something...\n");
+						m_pFlowVolume->resetPositionAndOrientation();
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_1)
+					{
+						if (m_bUseVR)
+						{
+							glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
+							m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
+							m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
+
+							glm::mat3 matOrientation;
+							matOrientation[0] = matHMD[0];
+							matOrientation[1] = matHMD[2];
+							matOrientation[2] = -matHMD[1];
+							m_pFlowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
+						}
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_2)
+					{
+						if (m_bUseVR)
+						{
+							m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
+							m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
+							m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+						}
+					}
+				}
+
+				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
+				{
+					std::cout << "Frame Time: " << m_msFrameTime.count() << "ms" << std::endl;
+					std::cout << "\t" << m_msInputHandleTime.count() << "ms\tInput Handling" << std::endl;
+					std::cout << "\t" << m_msUpdateTime.count() << "ms\tState Update" << std::endl;
+					std::cout << "\t" << m_msDrawTime.count() << "ms\tScene Drawing" << std::endl;
+					std::cout << "\t" << m_msRenderTime.count() << "ms\tRendering" << std::endl;
+					if (m_bUseVR)
+						std::cout << "\t" << m_msVRUpdateTime.count() << "ms\tVR System Update" << std::endl;
+				}
+			}
+
+
+			// MOUSE
+			if (m_bUseDesktop)
+			{
+				if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+				{
+					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+					{
+						m_bLeftMouseDown = true;
+
+						if (arcball)
+							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+
+						if (lasso)
+						{
+							if (m_bRightMouseDown)
+								lasso->end();
+
+							lasso->reset();
+						}
+
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+					{
+						m_bRightMouseDown = true;
+						if (lasso && !m_bLeftMouseDown)
+							lasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+					{
+						if (lasso && m_bRightMouseDown)
+						{
+							lasso->end();
+						}
+						m_bMiddleMouseDown = true;
+
+						if (arcball)
+							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					}
+
+				}//end mouse down 
+				else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+				{
+					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+					{
+						m_bLeftMouseDown = false;
+
+						if (arcball)
+							arcball->endDrag();
+
+						if (lasso)
+							lasso->reset();
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+					{
+						m_bRightMouseDown = false;
+
+						if (lasso)
+							lasso->end();
+					}
+					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+					{
+						m_bMiddleMouseDown = false;
+					}
+
+				}//end mouse up
+				if (sdlEvent.type == SDL_MOUSEMOTION)
+				{
+					if (m_bLeftMouseDown)
+					{
+						if (arcball)
+							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+					}
+					if (m_bRightMouseDown && !m_bLeftMouseDown)
+					{
+						if (lasso)
+							lasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+					}
+				}
+				if (sdlEvent.type == SDL_MOUSEWHEEL)
+				{
+					if (lasso)
+						lasso->reset();
+
+					glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
+					m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
+
+					float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+
+					if (newLen < 0.1f)
+						m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+					if (newLen > 10.f)
+						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+
+					m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+					if (DataLogger::getInstance().logging())
+					{
+						std::stringstream ss;
+
+						ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+						ss << "\t";
+						ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+						ss << ";";
+						ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+						ss << ";";
+						ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+
+						DataLogger::getInstance().logMessage(ss.str());
+					}
+				}
 			}
 		}
 	}
 	
-	m_pTDM->handleEvents();
-	
+		
 	return bRet;
 }
 
@@ -417,55 +1135,41 @@ void CMainApplication::RunMainLoop()
 	bool bQuit = false;
 
 	SDL_StartTextInput();
-	SDL_ShowCursor(SDL_DISABLE);
 
-	float fps_interval = 1.0; // sec
-	Uint32 fps_lasttime = SDL_GetTicks();
-	m_uiCurrentFPS = 0u;
-	Uint32 fps_frames = 0;
+	using clock = std::chrono::high_resolution_clock;
 
-	std::clock_t start;
+	clock::time_point start, lastTime;
+
+	start = lastTime = clock::now();
 
 	while (!bQuit)
 	{
-		start = std::clock();
+		auto currentTime = clock::now();
+		m_msFrameTime = currentTime - lastTime;
+		lastTime = currentTime;
 
-		//std::cout << "--------------------------------------------------" << std::endl;
-
+		auto a = clock::now();
 		bQuit = HandleInput();
+		m_msInputHandleTime = clock::now() - a;
 
-		if (mode == 0)
+		a = clock::now();
+		update();
+		m_msUpdateTime = clock::now() - a;
+
+		a = clock::now();
+		drawScene();
+		m_msDrawTime = clock::now() - a;
+
+		a = clock::now();
+		render();
+		m_msRenderTime = clock::now() - a;
+
+		if (m_bUseVR)
 		{
-			checkForHits();
-
-			checkForManipulations();
+			a = clock::now();
+			m_pTDM->update();
+			m_msVRUpdateTime = clock::now() - a;
 		}
-
-		if (mode == 1)
-		{
-			//grip rotate if needed
-			flowRoom->gripModel(m_pTDM->getManipulationData());
-
-			flowRoom->preRenderUpdates();
-		}
-		
-		//std::cout << "FlowRoom Update Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-		//start = std::clock();
-
-		RenderFrame();
-
-		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-
-		fps_frames++;
-		if (fps_lasttime < SDL_GetTicks() - fps_interval * 1000)
-		{
-			fps_lasttime = SDL_GetTicks();
-			m_uiCurrentFPS = fps_frames;
-			fps_frames = 0;
-		}
-
-		//std::cout << "FPS: " << m_uiCurrentFPS << std::endl;
-		//std::cout << "--------------------------------------------------" << std::endl << std::endl;
 	}
 
 	////doesn't help here either
@@ -475,650 +1179,321 @@ void CMainApplication::RunMainLoop()
 	SDL_StopTextInput();
 }
 
-void CMainApplication::checkForHits()
-{
-	Matrix4 currentCursorPose;
-	Matrix4 lastCursorPose;
-	float cursorRadius;
-	
-	// if editing controller not available or pose isn't valid, abort
-	if (!m_pTDM->getCleaningCursorData(&currentCursorPose, &lastCursorPose, &cursorRadius))
-		return;	
 
-	// check point cloud for hits
-	//if (cleaningRoom->checkCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, 10))
-	if (cleaningRoom->editCleaningTable(currentCursorPose, lastCursorPose, cursorRadius, m_pTDM->cleaningModeActive()))
-		m_pTDM->cleaningHit();
-}
-
-void CMainApplication::checkForManipulations()
+void CMainApplication::update()
 {
-	cleaningRoom->gripCleaningTable(m_pTDM->getManipulationData());
-}
+	BehaviorManager::getInstance().update();
 
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::RenderFrame()
-{
-	// for now as fast as possible
-	if (m_pHMD)
+	if (m_bUseDesktop)
 	{
-		RenderStereoTargets();
-		RenderDistortion();
+		
+	}
 
-		vr::Texture_t leftEyeTexture = { (void*)leftEyeDesc.m_nResolveTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
+	if (m_bSonarCleaning)
+	{
+		for (auto &cloud : m_vpClouds)
+			cloud->update();
+
+		for (auto &dv : m_vpDataVolumes)
+			dv->update();
+	}
+
+	if (m_bFlowVis)
+	{
+		m_pFlowVolume->preRenderUpdates();
+	}
+}
+
+void CMainApplication::drawScene()
+{
+	BehaviorManager::getInstance().draw();
+
+	if (m_bSonarCleaning)
+	{
+		if (m_bUseVR)
+		{
+			if (m_bShowDesktopFrustum)
+			{
+				// get frustum with near plane 1m out from view pos
+				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, 1.f, g_fFarClip);
+
+				// get world-space points for the viewing plane
+				glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x1y0 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, 0.f, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x1y1 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				
+				// draw the viewing plane
+				DebugDrawer::getInstance().setTransformDefault();
+				DebugDrawer::getInstance().drawLine(x0y0, x1y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x1y0, x1y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x1y1, x0y1, glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(x0y1, x0y0, glm::vec4(1.f, 0.f, 1.f, 1.f));
+
+				// connect the viewing plane corners to view pos
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x1y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x1y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x0y1, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+				DebugDrawer::getInstance().drawLine(m_Camera.pos, x0y0, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+
+				// draw the lasso points, if any
+				//std::vector<glm::vec3> pts = m_pLasso->getPoints();
+				//for (int i = 0; i < pts.size(); ++i)
+				//{
+				//	glm::vec3 pt1 = pts[i];
+				//	glm::vec3 pt2 = pts[(i + 1) % pts.size()];
+				//	DebugDrawer::getInstance().drawLine
+				//	(
+				//		glm::unProject(pt1, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)), 
+				//		glm::unProject(pt2, m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y)),
+				//		glm::vec4(0.f, 1.f, 0.f, 1.f)
+				//	);
+				//}
+			}
+		}
+
+		if (m_bUseDesktop && !m_bStudyMode)
+		{
+			std::stringstream ss;
+			ss.precision(2);
+
+			ss << std::fixed << m_msFrameTime.count() << "ms/frame | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps";
+
+			Renderer::getInstance().drawUIText(
+				ss.str(),
+				glm::vec4(1.f),
+				glm::vec3(0.f),
+				glm::quat(),
+				20.f,
+				Renderer::HEIGHT,
+				Renderer::CENTER,
+				Renderer::BOTTOM_LEFT
+			);
+		}
+
+		for (auto &dv : m_vpDataVolumes)
+		{
+			if (!dv->isVisible()) continue;
+
+			glm::mat4 trans;
+			
+			if (m_bUseDesktop)
+				trans = glm::inverse(m_sviDesktop3DViewInfo.view);
+
+			if (m_bUseVR)
+				trans = m_pTDM->getHMDToWorldTransform();
+
+			dv->drawVolumeBacking(trans, glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+			//dv->drawAxes();
+
+			//draw table
+			Renderer::RendererSubmission rs;
+			rs.glPrimitiveType = GL_POINTS;
+			rs.shaderName = "flat";
+			rs.indexType = GL_UNSIGNED_INT;
+
+			for (auto &cloud : dv->getDatasets())
+			{
+				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
+				rs.vertCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
+				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
+				Renderer::getInstance().addToDynamicRenderQueue(rs);
+			}
+		}
+	}
+
+	if (m_bFlowVis)
+	{
+		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
+		m_pFlowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+
+		m_pFlowVolume->draw();
+	}
+
+	if (m_bUseVR)
+	{
+		m_pTDM->draw();
+
+		InfoBoxManager::getInstance().draw();
+	}
+
+	if (m_bUseDesktop)
+	{
+	}
+
+	// MUST be run last to xfer previous debug draw calls to opengl buffers
+	DebugDrawer::getInstance().draw();
+}
+
+void CMainApplication::render()
+{
+	if (m_bUseVR)
+	{
+		SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pGLContext);
+
+		// Update eye positions using current HMD position
+		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
+		m_sviRightEyeInfo.view = m_sviRightEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
+
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+
+		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
+
+		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId, true);
+
+		vr::Texture_t leftEyeTexture = { (void*)m_pLeftEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::Texture_t rightEyeTexture = { (void*)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-		vr::Texture_t rightEyeTexture = { (void*)rightEyeDesc.m_nResolveTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
 		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+
+		//vr::VRCompositor()->PostPresentHandoff();
+		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+		
+		//glFinish();
+		
+		SDL_GL_SwapWindow(m_pVRCompanionWindow);
+
+		//glClearColor(0, 0, 0, 1);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//glFlush();
+		//glFinish();
 	}
 
-	if (m_bVblank && m_bGlFinishHack)
+	if (m_bUseDesktop)
 	{
-		//$ HACKHACK. From gpuview profiling, it looks like there is a bug where two renders and a present
-		// happen right before and after the vsync causing all kinds of jittering issues. This glFinish()
-		// appears to clear that up. Temporary fix while I try to get nvidia to investigate this problem.
-		// 1/29/2014 mikesart
-		glFinish();
+		SDL_GL_MakeCurrent(m_pDesktopWindow, m_pGLContext);
+
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviDesktop3DViewInfo.view)[3]));
+
+		Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
+
+		Renderer::getInstance().RenderFullscreenTexture(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, m_pDesktopFramebuffer->m_nResolveTextureId);
+
+		SDL_GL_SwapWindow(m_pDesktopWindow);
 	}
 
-	// SwapWindow
-	{
-		SDL_GL_SwapWindow(m_pWindow);
-	}
-
-	// Clear
-	{
-		// We want to make sure the glFinish waits for the entire present to complete, not just the submission
-		// of the command. So, we do a clear here right here so the glFinish will wait fully for the swap.
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	// Flush and wait for swap.
-	if (m_bVblank)
-	{
-		glFlush();
-		glFinish();
-	}
-
+	Renderer::getInstance().clearDynamicRenderQueue();
+	Renderer::getInstance().clearUIRenderQueue();
 	DebugDrawer::getInstance().flushLines();
-	m_pTDM->postRenderUpdate();
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: Creates all the shaders used by HelloVR SDL
-//-----------------------------------------------------------------------------
-bool CMainApplication::CreateLensShader()
+void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
 {
-	m_unLensProgramID = CompileGLShader(
-		"Distortion",
-
-		// vertex shader
-		"#version 410 core\n"
-		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec2 v2UVredIn;\n"
-		"layout(location = 2) in vec2 v2UVGreenIn;\n"
-		"layout(location = 3) in vec2 v2UVblueIn;\n"
-		"noperspective  out vec2 v2UVred;\n"
-		"noperspective  out vec2 v2UVgreen;\n"
-		"noperspective  out vec2 v2UVblue;\n"
-		"void main()\n"
-		"{\n"
-		"	v2UVred = v2UVredIn;\n"
-		"	v2UVgreen = v2UVGreenIn;\n"
-		"	v2UVblue = v2UVblueIn;\n"
-		"	gl_Position = position;\n"
-		"}\n",
-
-		// fragment shader
-		"#version 410 core\n"
-		"uniform sampler2D mytexture;\n"
-
-		"noperspective  in vec2 v2UVred;\n"
-		"noperspective  in vec2 v2UVgreen;\n"
-		"noperspective  in vec2 v2UVblue;\n"
-
-		"out vec4 outputColor;\n"
-
-		"void main()\n"
-		"{\n"
-		"	float fBoundsCheck = ( (dot( vec2( lessThan( v2UVgreen.xy, vec2(0.05, 0.05)) ), vec2(1.0, 1.0))+dot( vec2( greaterThan( v2UVgreen.xy, vec2( 0.95, 0.95)) ), vec2(1.0, 1.0))) );\n"
-		"	if( fBoundsCheck > 1.0 )\n"
-		"	{ outputColor = vec4( 0, 0, 0, 1.0 ); }\n"
-		"	else\n"
-		"	{\n"
-		"		float red = texture(mytexture, v2UVred).x;\n"
-		"		float green = texture(mytexture, v2UVgreen).y;\n"
-		"		float blue = texture(mytexture, v2UVblue).z;\n"
-		"		outputColor = vec4( red, green, blue, 1.0  ); }\n"
-		"}\n"
-	);
-
-
-	return m_unLensProgramID != 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::SetupCameras()
-{
-	m_mat4ProjectionLeft = GetHMDMatrixProjectionEye(vr::Eye_Left);
-	m_mat4ProjectionRight = GetHMDMatrixProjectionEye(vr::Eye_Right);
-	m_mat4eyePosLeft = GetHMDMatrixPoseEye(vr::Eye_Left);
-	m_mat4eyePosRight = GetHMDMatrixPoseEye(vr::Eye_Right);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc)
-{
-	glGenFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nRenderFramebufferId);
-
-	glGenRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
-	glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, nWidth, nHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-
-	glGenTextures(1, &framebufferDesc.m_nRenderTextureId);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, nWidth, nHeight, true);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId, 0);
-
-	glGenFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nResolveFramebufferId);
-
-	glGenTextures(1, &framebufferDesc.m_nResolveTextureId);
-	glBindTexture(GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId, 0);
-
-	// check FBO status
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		return false;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-bool CMainApplication::SetupStereoRenderTargets()
-{
-	if (!m_pHMD)
-		return false;
-
-	m_pHMD->GetRecommendedRenderTargetSize(&m_nRenderWidth, &m_nRenderHeight);
-
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, leftEyeDesc);
-	CreateFrameBuffer(m_nRenderWidth, m_nRenderHeight, rightEyeDesc);
-
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::SetupDistortion()
-{
-	if (!m_pHMD)
+	if (clouds.size() == 0ull)
 		return;
 
-	GLushort m_iLensGridSegmentCountH = 43;
-	GLushort m_iLensGridSegmentCountV = 43;
+	float minDepthTPU = (*std::min_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcDepthTPUMinCompare))->getMinDepthTPU();
+	float maxDepthTPU = (*std::max_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcDepthTPUMaxCompare))->getMaxDepthTPU();
 
-	float w = (float)(1.0 / float(m_iLensGridSegmentCountH - 1));
-	float h = (float)(1.0 / float(m_iLensGridSegmentCountV - 1));
+	float minPosTPU = (*std::min_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcPosTPUMinCompare))->getMinPositionalTPU();
+	float maxPosTPU = (*std::max_element(clouds.begin(), clouds.end(), SonarPointCloud::s_funcPosTPUMaxCompare))->getMaxPositionalTPU();
 
-	float u, v = 0;
+	colorScaler->resetMinMaxForColorScale(m_pTableVolume->getMinDataBound().z, m_pTableVolume->getMaxDataBound().z);
+	colorScaler->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
 
-	std::vector<VertexDataLens> vVerts(0);
-	VertexDataLens vert;
-
-	//left eye distortion verts
-	float Xoffset = -1;
-	for (int y = 0; y<m_iLensGridSegmentCountV; y++)
-	{
-		for (int x = 0; x<m_iLensGridSegmentCountH; x++)
-		{
-			u = x*w; v = 1 - y*h;
-			vert.position = Vector2(Xoffset + u, -1 + 2 * y*h);
-
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Left, u, v);
-
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen = Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
-
-			vVerts.push_back(vert);
-		}
-	}
-
-	//right eye distortion verts
-	Xoffset = 0;
-	for (int y = 0; y<m_iLensGridSegmentCountV; y++)
-	{
-		for (int x = 0; x<m_iLensGridSegmentCountH; x++)
-		{
-			u = x*w; v = 1 - y*h;
-			vert.position = Vector2(Xoffset + u, -1 + 2 * y*h);
-
-			vr::DistortionCoordinates_t dc0 = m_pHMD->ComputeDistortion(vr::Eye_Right, u, v);
-
-			vert.texCoordRed = Vector2(dc0.rfRed[0], 1 - dc0.rfRed[1]);
-			vert.texCoordGreen = Vector2(dc0.rfGreen[0], 1 - dc0.rfGreen[1]);
-			vert.texCoordBlue = Vector2(dc0.rfBlue[0], 1 - dc0.rfBlue[1]);
-
-			vVerts.push_back(vert);
-		}
-	}
-
-	std::vector<GLushort> vIndices;
-	GLushort a, b, c, d;
-
-	GLushort offset = 0;
-	for (GLushort y = 0; y<m_iLensGridSegmentCountV - 1; y++)
-	{
-		for (GLushort x = 0; x<m_iLensGridSegmentCountH - 1; x++)
-		{
-			a = m_iLensGridSegmentCountH*y + x + offset;
-			b = m_iLensGridSegmentCountH*y + x + 1 + offset;
-			c = (y + 1)*m_iLensGridSegmentCountH + x + 1 + offset;
-			d = (y + 1)*m_iLensGridSegmentCountH + x + offset;
-			vIndices.push_back(a);
-			vIndices.push_back(b);
-			vIndices.push_back(c);
-
-			vIndices.push_back(a);
-			vIndices.push_back(c);
-			vIndices.push_back(d);
-		}
-	}
-
-	offset = (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
-	for (GLushort y = 0; y<m_iLensGridSegmentCountV - 1; y++)
-	{
-		for (GLushort x = 0; x<m_iLensGridSegmentCountH - 1; x++)
-		{
-			a = m_iLensGridSegmentCountH*y + x + offset;
-			b = m_iLensGridSegmentCountH*y + x + 1 + offset;
-			c = (y + 1)*m_iLensGridSegmentCountH + x + 1 + offset;
-			d = (y + 1)*m_iLensGridSegmentCountH + x + offset;
-			vIndices.push_back(a);
-			vIndices.push_back(b);
-			vIndices.push_back(c);
-
-			vIndices.push_back(a);
-			vIndices.push_back(c);
-			vIndices.push_back(d);
-		}
-	}
-	m_uiIndexSize = vIndices.size();
-
-	glGenVertexArrays(1, &m_unLensVAO);
-	glBindVertexArray(m_unLensVAO);
-
-	glGenBuffers(1, &m_glIDVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glIDVertBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vVerts.size() * sizeof(VertexDataLens), &vVerts[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &m_glIDIndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIDIndexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, vIndices.size() * sizeof(GLushort), &vIndices[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordRed));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordGreen));
-
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(VertexDataLens), (void *)offsetof(VertexDataLens, texCoordBlue));
-
-	glBindVertexArray(0);
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(3);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	// apply new color scale
+	for (auto &cloud : clouds)
+		cloud->resetAllMarks();
 }
 
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::RenderStereoTargets()
+SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
 {
-	//glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
-	glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
-	glEnable(GL_MULTISAMPLE);
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
-	// Left Eye
-	glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
-	RenderScene(vr::Eye_Left);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-	glDisable(GL_MULTISAMPLE);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+	SDL_Rect displayBounds;
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftEyeDesc.m_nResolveFramebufferId);
+	if (SDL_GetDisplayBounds(displayIndex, &displayBounds) < 0)
+		SDL_GetDisplayBounds(0, &displayBounds);
 
-	glBlitFramebuffer(0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight,
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR);
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-	glEnable(GL_MULTISAMPLE);
-
-	// Right Eye
-	glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
-	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight);
-	RenderScene(vr::Eye_Right);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glDisable(GL_MULTISAMPLE);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightEyeDesc.m_nResolveFramebufferId);
-
-	glBlitFramebuffer(0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight,
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-
-	Matrix4 thisEyesProjectionMatrix = GetCurrentViewProjectionMatrix(nEye).get();
-
-	// IMMEDIATE MODE
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(thisEyesProjectionMatrix.get());
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	if (mode == 0)
+	if (win == NULL)
 	{
-		cleaningRoom->draw();
-	}
-	else if (mode == 1)
-	{
-		flowRoom->draw();
-	}
-
-
-	// END IMMEDIATE MODE
-
-	bool bIsInputCapturedByAnotherProcess = m_pHMD->IsInputFocusCapturedByAnotherProcess();
-
-	if (!bIsInputCapturedByAnotherProcess)
-	{
-		m_pTDM->renderTrackedDevices(thisEyesProjectionMatrix);
-	}
-
-	InfoBoxManager::getInstance().render(thisEyesProjectionMatrix.get());
-
-	// DEBUG DRAWER EXAMPLE USING A TEST SPHERE
-	if (0)
-	{
-		DebugDrawer::getInstance().setTransform(glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::mat4_cast(glm::angleAxis(glm::radians(45.f), glm::vec3(1.f, 0.f, 0.f))));
-		DebugDrawer::getInstance().drawSphere(1.f, 30.f, glm::vec3(0.7f, 0.f, 0.f));
-		DebugDrawer::getInstance().drawTransform(0.1f);
-	}
-
-	// DEBUG DRAWER RENDER CALL
-	DebugDrawer::getInstance().render(glm::make_mat4(thisEyesProjectionMatrix.get()));
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::RenderDistortion()
-{
-	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
-
-	glBindVertexArray(m_unLensVAO);
-	glUseProgram(m_unLensProgramID);
-
-	//render left lens (first half of index array )
-	glBindTexture(GL_TEXTURE_2D, leftEyeDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glDrawElements(GL_TRIANGLES, m_uiIndexSize / 2, GL_UNSIGNED_SHORT, 0);
-
-	//render right lens (second half of index array )
-	glBindTexture(GL_TEXTURE_2D, rightEyeDesc.m_nResolveTextureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glDrawElements(GL_TRIANGLES, m_uiIndexSize / 2, GL_UNSIGNED_SHORT, (const void *)(m_uiIndexSize));
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetHMDMatrixProjectionEye(vr::Hmd_Eye nEye)
-{
-	if (!m_pHMD)
-		return Matrix4();
-
-	vr::HmdMatrix44_t mat = m_pHMD->GetProjectionMatrix(nEye, m_fNearClip, m_fFarClip, vr::API_OpenGL);
-
-	return Matrix4(
-		mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
-		mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
-		mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
-		mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
-	);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetHMDMatrixPoseEye(vr::Hmd_Eye nEye)
-{
-	if (!m_pHMD)
-		return Matrix4();
-
-	vr::HmdMatrix34_t matEyeRight = m_pHMD->GetEyeToHeadTransform(nEye);
-	Matrix4 matrixObj(
-		matEyeRight.m[0][0], matEyeRight.m[1][0], matEyeRight.m[2][0], 0.0,
-		matEyeRight.m[0][1], matEyeRight.m[1][1], matEyeRight.m[2][1], 0.0,
-		matEyeRight.m[0][2], matEyeRight.m[1][2], matEyeRight.m[2][2], 0.0,
-		matEyeRight.m[0][3], matEyeRight.m[1][3], matEyeRight.m[2][3], 1.0f
-	);
-
-	return matrixObj.invert();
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-Matrix4 CMainApplication::GetCurrentViewProjectionMatrix(vr::Hmd_Eye nEye)
-{
-	Matrix4 matMVP;
-	if (nEye == vr::Eye_Left)
-	{
-		matMVP = m_mat4ProjectionLeft * m_mat4eyePosLeft * m_pTDM->getHMDPose();
-	}
-	else if (nEye == vr::Eye_Right)
-	{
-		matMVP = m_mat4ProjectionRight * m_mat4eyePosRight *  m_pTDM->getHMDPose();
-	}
-
-	return matMVP;
-}
-
-bool fileExists(const std::string &fname)
-{
-	struct stat buffer;
-	return (stat(fname.c_str(), &buffer) == 0);
-}
-
-std::string intToString(int i, unsigned int pad_to_magnitude)
-{
-	if (pad_to_magnitude < 1)
-		return std::to_string(i);
-
-	std::string ret;
-
-	int mag = i == 0 ? 0 : (int)log10(i);
-
-	for (int j = pad_to_magnitude - mag; j > 0; --j)
-		ret += std::to_string(0);
-
-	ret += std::to_string(i);
-
-	return ret;
-}
-
-std::string getTimeString()
-{
-	time_t t = time(0);   // get time now
-	struct tm *now = localtime(&t);
-
-	return 	  /*** DATE ***/
-		      intToString(now->tm_year + 1900, 3) + // year
-		"-" + intToString(now->tm_mon + 1, 1) +     // month
-		"-" + intToString(now->tm_mday, 1) +        // day
-		      /*** TIME ***/
-		"_" + intToString(now->tm_hour, 1) +        // hour
-		"-" + intToString(now->tm_min, 1) +         // minute
-		"-" + intToString(now->tm_sec, 1);          // second
-}
-
-void CMainApplication::savePoints()
-{	
-	std::vector<Vector3> points = clouds->getCloud(0)->getPointPositions();
-
-	// construct filename
-	std::string outFileName("saved_points_" + intToString(points.size(), 0) /*+ "_" + getTimeString()*/ + ".csv");
-
-	// if file exists, keep trying until we find a filename that doesn't already exist
-	for (int i = 0; fileExists(outFileName); ++i)
-		outFileName = std::string("saved_points_" + intToString(points.size(), 0) + "_" /*+ getTimeString() + "_"*/ + "(" + std::to_string(i + 1) + ")" + ".csv");
-	
-	std::ofstream outFile;
-	outFile.open(outFileName);
-
-	if (outFile.is_open())
-	{
-		std::cout << "Opened file " << outFileName << " for writing output" << std::endl;
-		outFile << "x,y,z,flag" << std::endl;
-	}
-	else
-		std::cout << "Error opening file " << outFileName << " for writing output" << std::endl;
-
-	for (size_t i = 0ull; i < points.size(); ++i)
-	{
-		outFile << points[i].x << "," << points[i].y << "," << points[i].z << "," << (clouds->getCloud(0)->getPointMark(i) == 1 ? "1" : "0") << std::endl;
-	}
-
-	outFile.close();
-
-	std::cout << "File " << outFileName << " successfully written" << std::endl;
-}
-
-bool CMainApplication::loadPoints(std::string fileName)
-{
-	std::ifstream inFile(fileName);
-
-	if (inFile.is_open())
-	{
-		std::cout << "Opened file " << fileName << " for reading" << std::endl;
-	}
-	else
-	{
-		std::cout << "Error opening file " << fileName << " for reading" << std::endl;
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
-	std::string line;
+	return win;
+}
 
-	if (!std::getline(inFile, line))
+SDL_Window * CMainApplication::createWindow(int width, int height, int displayIndex)
+{
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, unWindowFlags);
+
+	if (win == NULL)
 	{
-		std::cout << "Empty file; aborting..." << std::endl;
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
-	//make sure header is correct before proceeding
-	if (line.compare("x,y,z,flag"))
-	{
-		std::cout << "Unrecognized file header (expected: x,y,z,flag); aborting..." << std::endl;
-		return false;
-	}
-	
-	std::vector<Vector3> points;
-	std::vector<int> flags;
+	return win;
+}
 
-	int lineNo = 2; // already checked header at line 1
-	while (std::getline(inFile, line))
-	{
-		std::istringstream iss(line);
-		std::string xStr, yStr, zStr, flagStr;
+void CMainApplication::createVRViews()
+{
+	uint32_t renderWidth, renderHeight;
+	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
 
-		if (!std::getline(iss, xStr, ',')
-			|| !std::getline(iss, yStr, ',')
-			|| !std::getline(iss, zStr, ',')
-			|| !std::getline(iss, flagStr, ',')
-			)
-		{
-			std::cout << "Error reading line " << lineNo << " from file " << fileName << std::endl;
-			return false;
-		}
+	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
 
-		points.push_back(Vector3(std::stof(xStr), std::stof(yStr), std::stof(zStr)));
-		flags.push_back(std::stoi(flagStr));
+	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
 
-		lineNo++;
-	}
+	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
+	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
 
-	inFile.close();
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
+		dprintf("Could not create left eye framebuffer!\n");
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
+		dprintf("Could not create right eye framebuffer!\n");
+}
 
-	std::cout << "Successfully read " << points.size() << " points from file " << fileName << std::endl;
+void CMainApplication::createDesktopView()
+{
+	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
+	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
 
-	return true;
+	m_sviDesktop2DOverlayViewInfo.view = glm::mat4();
+	m_sviDesktop2DOverlayViewInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderHeight), -1.f, 1.f);
+
+
+	m_sviDesktop3DViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
+	m_sviDesktop3DViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
+	m_sviDesktop3DViewInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
+
+	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().CreateFrameBuffer(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth, m_sviDesktop2DOverlayViewInfo.m_nRenderHeight, *m_pDesktopFramebuffer))
+		dprintf("Could not create desktop view framebuffer!\n");	
 }
