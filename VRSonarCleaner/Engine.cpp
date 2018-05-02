@@ -1,4 +1,4 @@
-#include "CMainApplication.h"
+#include "Engine.h"
 #include "DebugDrawer.h"
 #include "InfoBoxManager.h"
 
@@ -106,7 +106,7 @@ void dprintf(const char *fmt, ...)
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CMainApplication::CMainApplication(int argc, char *argv[], int mode)
+Engine::Engine()
 	: m_bUseVR(false)
 	, m_bUseDesktop(false)
 	, m_bSonarCleaning(false)
@@ -125,6 +125,8 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
 {	
+	int mode = 1;
+
 	switch (mode)
 	{
 	case 1:
@@ -179,7 +181,7 @@ CMainApplication::CMainApplication(int argc, char *argv[], int mode)
 //-----------------------------------------------------------------------------
 // Purpose: Destructor
 //-----------------------------------------------------------------------------
-CMainApplication::~CMainApplication()
+Engine::~Engine()
 {
 	// work is done in Shutdown
 	dprintf("Shutdown");
@@ -188,36 +190,36 @@ CMainApplication::~CMainApplication()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::init()
+bool Engine::init()
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
-		printf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
 	if (m_bUseVR && !initVR())
 	{
-		printf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
 		return false;
 	}
 
 	if (m_bUseDesktop && !initDesktop())
 	{
-		printf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
+		dprintf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
 		return false;
 	}
 
-	//if (m_bUseVR)
-	//{
-	//	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
-	//}
+	if (m_bUseVR)
+	{
+		vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
+	}
 
 	if (m_bSonarCleaning)
 	{
 		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
 		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
-		glm::vec3 wallPosition(0.f, (g_vec3RoomSize.y * 0.5f) + (g_vec3RoomSize.y * 0.09f), (g_vec3RoomSize.z * 0.5f) - 0.42f);
+		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 
@@ -230,22 +232,33 @@ bool CMainApplication::init()
 		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = tablePosition;
 
-		m_pColorScalerTPU = new ColorScaler();
-		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
-		//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
-		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
-		m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+		{
+			if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+				BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+			if (!BehaviorManager::getInstance().getBehavior("grab"))
+				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+			if (!BehaviorManager::getInstance().getBehavior("scale"))
+				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+		}
 
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt"));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt"));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt"));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt"));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt"));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt"));
+		m_pColorScalerTPU = new ColorScaler();
+		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
+		m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
+		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
+		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+
+		m_pTableVolume->add(m_vpClouds.front());
 
 		for (auto const &cloud : m_vpClouds)
 		{
-			m_pTableVolume->add(cloud);
 			m_pWallVolume->add(cloud);
 		}
 
@@ -299,7 +312,7 @@ bool CMainApplication::init()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::initGL()
+bool Engine::initGL()
 {
 	if (m_bGLInitialized)
 		return true;
@@ -328,7 +341,7 @@ bool CMainApplication::initGL()
 	return true;
 }
 
-bool CMainApplication::initVR()
+bool Engine::initVR()
 {
 	m_pVRCompanionWindow = createFullscreenWindow(1);
 
@@ -339,14 +352,14 @@ bool CMainApplication::initVR()
 
 	if (m_pGLContext == NULL)
 	{
-		printf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
 
 	if (!initGL())
 	{
-		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -365,7 +378,7 @@ bool CMainApplication::initVR()
 
 	if (!vr::VRCompositor())
 	{
-		printf("Compositor initialization failed. See log file for details\n");
+		dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
 
@@ -396,7 +409,7 @@ bool CMainApplication::initVR()
 }
 
 
-bool CMainApplication::initDesktop()
+bool Engine::initDesktop()
 {
 	//m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
 	m_pDesktopWindow = createFullscreenWindow(0);
@@ -407,7 +420,7 @@ bool CMainApplication::initDesktop()
 
 	if (!initGL())
 	{
-		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -422,7 +435,7 @@ bool CMainApplication::initDesktop()
 	return true;
 }
 
-bool CMainApplication::shutdownVR()
+bool Engine::shutdownVR()
 {
 	SDL_DestroyWindow(m_pVRCompanionWindow);
 	m_pVRCompanionWindow = NULL;
@@ -441,7 +454,7 @@ bool CMainApplication::shutdownVR()
 	return true;
 }
 
-bool CMainApplication::shutdownDesktop()
+bool Engine::shutdownDesktop()
 {
 	SDL_DestroyWindow(m_pDesktopWindow);
 	m_pDesktopWindow = NULL;
@@ -455,7 +468,7 @@ bool CMainApplication::shutdownDesktop()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void CMainApplication::Shutdown()
+void Engine::Shutdown()
 {
 	BehaviorManager::getInstance().shutdown();
 
@@ -489,16 +502,13 @@ void CMainApplication::Shutdown()
 	DebugDrawer::getInstance().shutdown();
 	Renderer::getInstance().shutdown();
 
-	fclose(stdout);
-	FreeConsole();
-
 	SDL_Quit();
 }
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CMainApplication::HandleInput()
+bool Engine::HandleInput()
 {
 	SDL_Event sdlEvent;
 	bool bRet = false;
@@ -738,7 +748,8 @@ bool CMainApplication::HandleInput()
 						if (!BehaviorManager::getInstance().getBehavior("scale"))
 							BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 					}
-					else m_pWallVolume->setVisible(false);
+					else 
+						m_pWallVolume->setVisible(false);
 
 					using namespace std::experimental::filesystem::v1;
 
@@ -752,8 +763,6 @@ bool CMainApplication::HandleInput()
 					auto acceptsPath = path(basePath).append(path("accept"));
 					auto rejectsPath = path(basePath).append(path("reject"));
 
-					std::vector<SonarPointCloud*> tmpPointCloudCollection;
-
 					for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
 					{
 						if (is_regular_file(*it))
@@ -764,7 +773,6 @@ bool CMainApplication::HandleInput()
 								m_vpClouds.push_back(tmp);
 								m_pTableVolume->add(tmp);
 								m_pWallVolume->add(tmp);
-								tmpPointCloudCollection.push_back(tmp);
 								break;
 							}
 						}
@@ -780,7 +788,6 @@ bool CMainApplication::HandleInput()
 					//			m_vpClouds.push_back(tmp);
 					//			m_pTableVolume->add(tmp);
 					//			m_pWallVolume->add(tmp);
-					//			tmpPointCloudCollection.push_back(tmp);
 					//			break;
 					//		}
 					//	}
@@ -1130,7 +1137,7 @@ bool CMainApplication::HandleInput()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void CMainApplication::RunMainLoop()
+void Engine::RunMainLoop()
 {
 	bool bQuit = false;
 
@@ -1171,16 +1178,10 @@ void CMainApplication::RunMainLoop()
 			m_msVRUpdateTime = clock::now() - a;
 		}
 	}
-
-	////doesn't help here either
-	fclose(stdout);
-	FreeConsole();
-	
-	SDL_StopTextInput();
 }
 
 
-void CMainApplication::update()
+void Engine::update()
 {
 	BehaviorManager::getInstance().update();
 
@@ -1204,7 +1205,7 @@ void CMainApplication::update()
 	}
 }
 
-void CMainApplication::drawScene()
+void Engine::drawScene()
 {
 	BehaviorManager::getInstance().draw();
 
@@ -1326,7 +1327,7 @@ void CMainApplication::drawScene()
 	DebugDrawer::getInstance().draw();
 }
 
-void CMainApplication::render()
+void Engine::render()
 {
 	if (m_bUseVR)
 	{
@@ -1380,7 +1381,7 @@ void CMainApplication::render()
 	DebugDrawer::getInstance().flushLines();
 }
 
-void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
+void Engine::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
 {
 	if (clouds.size() == 0ull)
 		return;
@@ -1399,7 +1400,7 @@ void CMainApplication::refreshColorScale(ColorScaler * colorScaler, std::vector<
 		cloud->resetAllMarks();
 }
 
-SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
+SDL_Window * Engine::createFullscreenWindow(int displayIndex)
 {
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
@@ -1429,7 +1430,7 @@ SDL_Window * CMainApplication::createFullscreenWindow(int displayIndex)
 	return win;
 }
 
-SDL_Window * CMainApplication::createWindow(int width, int height, int displayIndex)
+SDL_Window * Engine::createWindow(int width, int height, int displayIndex)
 {
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
@@ -1455,7 +1456,7 @@ SDL_Window * CMainApplication::createWindow(int width, int height, int displayIn
 	return win;
 }
 
-void CMainApplication::createVRViews()
+void Engine::createVRViews()
 {
 	uint32_t renderWidth, renderHeight;
 	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
@@ -1479,7 +1480,7 @@ void CMainApplication::createVRViews()
 		dprintf("Could not create right eye framebuffer!\n");
 }
 
-void CMainApplication::createDesktopView()
+void Engine::createDesktopView()
 {
 	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
 	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;

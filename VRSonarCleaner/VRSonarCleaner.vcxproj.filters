@@ -51,9 +51,6 @@
     <ClCompile Include="..\shared\pathtools.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="CMainApplication.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="HolodeckBackground.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -201,6 +198,9 @@
     <ClCompile Include="LassoTool.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -208,9 +208,6 @@
     </ClInclude>
     <ClInclude Include="..\shared\pathtools.h">
       <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="CMainApplication.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HolodeckBackground.h">
       <Filter>Header Files</Filter>
@@ -370,6 +367,9 @@
     </ClInclude>
     <ClInclude Include="LassoTool.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -178,7 +178,7 @@
     <ClCompile Include="GrabTutorial.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="RenderModel.cpp" />
-    <ClCompile Include="CMainApplication.cpp" />
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
     <ClCompile Include="CoordinateScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
@@ -234,7 +234,7 @@
     <ClInclude Include="GrabTutorial.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />
-    <ClInclude Include="CMainApplication.h" />
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="ColorsAndSizes.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="CoordinateScaler.h" />

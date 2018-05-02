@@ -20,11 +20,11 @@
 //-----------------------------------------------------------------------------
 // Purpose:
 //------------------------------------------------------------------------------
-class CMainApplication
+class Engine
 {
 public:
-	CMainApplication(int argc, char *argv[], int Mode);
-	virtual ~CMainApplication();
+	Engine();
+	virtual ~Engine();
 
 	bool init();
 	bool initGL();
