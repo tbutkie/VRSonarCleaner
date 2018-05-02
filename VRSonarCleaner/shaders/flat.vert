@@ -17,8 +17,22 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 
 out vec4 v4Color;
 
+float spriteSize = 50.f;
+
+const float minPointScale = 0.1f;
+const float maxPointScale = 1.f;
+const float maxDistance   = 1.f;
+
 void main()
 {
 	v4Color = v4ColorIn;
-	gl_Position = m4ViewProjection * m4Model * vec4(v3Position, 1.0);
+	
+	float cameraDist = distance(v3Position, -(m4View[3].xyz));
+    float pointScale = 1.f - (cameraDist / maxDistance);
+	pointScale = clamp(minPointScale, maxPointScale, pointScale);
+
+    // Set GL globals and forward the color:
+    gl_PointSize = spriteSize * pointScale;
+
+	gl_Position = m4ViewProjection * m4Model * vec4(v3Position, 1.f);
 }

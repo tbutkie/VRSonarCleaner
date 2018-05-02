@@ -60,6 +60,8 @@ bool Renderer::init()
 
 	setupText();
 
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
 	return true;
 }
 
