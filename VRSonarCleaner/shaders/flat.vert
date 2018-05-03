@@ -25,7 +25,7 @@ void main()
 	
 	vec4 v4EyePos = m4View * m4Model * vec4(v3Position, 1.f);
 
-	gl_PointSize = spriteSize / -v4EyePos.z;
+	gl_PointSize = spriteSize / length(v4EyePos.xyz);
 
 	gl_Position = m4Projection * v4EyePos;
 }

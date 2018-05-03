@@ -39,12 +39,8 @@ bool Renderer::init()
 	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
 	m_pLighting->addDirectLight()->ambientCoefficient = 0.5f;
-		
-	if (SDL_GL_SetSwapInterval(0) < 0)
-	{
-		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glCreateBuffers(1, &m_glFrameUBO);
 	glNamedBufferData(m_glFrameUBO, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
@@ -69,20 +65,20 @@ void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
 {
 	if (m_mapTextures[rs.diffuseTexName] == NULL)
 	{
-		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName);
+		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName.c_str());
 		return;
 	}
 
 	if (m_mapTextures[rs.specularTexName] == NULL)
 	{
-		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName);
+		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName.c_str());
 		return;
 	}
 
 	GLTexture* diff = m_mapTextures[rs.diffuseTexName];
 	GLTexture* spec = m_mapTextures[rs.diffuseTexName];
 
-	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f)
 	{
 		m_vStaticRenderQueue_Transparency.push_back(rs);
 		m_vTransparentRenderQueue.push_back(rs);
@@ -95,20 +91,20 @@ void Renderer::addToDynamicRenderQueue(RendererSubmission &rs)
 {
 	if (m_mapTextures[rs.diffuseTexName] == NULL)
 	{
-		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName);
+		printf("Error: Renderer submission diffuse texture \"%s\" not found\n", rs.diffuseTexName.c_str());
 		return;
 	}
 
 	if (m_mapTextures[rs.specularTexName] == NULL)
 	{
-		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName);
+		printf("Error: Renderer submission specular texture \"%s\" not found\n", rs.specularTexName.c_str());
 		return;
 	}
 
 	GLTexture* diff = m_mapTextures[rs.diffuseTexName];
 	GLTexture* spec = m_mapTextures[rs.diffuseTexName];
 
-	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f || rs.specularColor.a < 1.f)
+	if (rs.hasTransparency || diff->hasTransparency() || spec->hasTransparency() || rs.diffuseColor.a < 1.f)
 	{
 		m_vDynamicRenderQueue_Transparency.push_back(rs);
 		m_vTransparentRenderQueue.push_back(rs);
@@ -135,17 +131,23 @@ void Renderer::clearUIRenderQueue()
 	m_vUIRenderQueue.clear();
 }
 
+void Renderer::showMessage(std::string message, float duration)
+{
+	m_vMessages.push_back(std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point>(message, duration, std::chrono::high_resolution_clock::now()));
+}
+
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
 {
-	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+	GLuint vao = getPrimitiveVAO(primName);
+	if (vao == 0u)
 		return false;
 
 	RendererSubmission rs;
-	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = m_mapPrimitives[primName].first;
-	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.VAO = vao;
+	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseTexName = diffuseTextureName;
 	rs.specularTexName = specularTextureName;
@@ -162,19 +164,21 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent)
 {
-	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+	GLuint vao = getPrimitiveVAO(primName);
+	if (vao == 0u)
 		return false;
 
 	RendererSubmission rs;
-	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = m_mapPrimitives[primName].first;
-	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.VAO = vao;
+	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = diffuseColor;
 	rs.specularColor = specularColor;
 	rs.specularExponent = specularExponent;
+	rs.hasTransparency = diffuseColor.a != 1.f;
 
 	if (primName.find("inverse") != std::string::npos)
 		rs.vertWindingOrder = GL_CW;
@@ -186,18 +190,46 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm
 
 bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color)
 {
-	if (m_mapPrimitives.find(primName) == m_mapPrimitives.end())
+	GLuint vao = getPrimitiveVAO(primName);
+	if (vao == 0u)
 		return false;
-
 
 	RendererSubmission rs;
 	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "flat";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = m_mapPrimitives[primName].first;
-	rs.vertCount = m_mapPrimitives[primName].second;
+	rs.VAO = vao;
+	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = color;
+	rs.hasTransparency = color.a != 1.f;
+
+	if (primName.find("_inverse") != std::string::npos)
+		rs.vertWindingOrder = GL_CW;
+
+	addToDynamicRenderQueue(rs);
+
+	return true;
+}
+
+bool Renderer::drawPrimitiveCustom(std::string primName, glm::mat4 modelTransform, std::string shaderName, std::string diffuseTexName, glm::vec4 diffuseColor)
+{
+	GLuint vao = getPrimitiveVAO(primName);
+	if (vao == 0u)
+		return false;
+
+
+	RendererSubmission rs;
+	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
+	rs.shaderName = shaderName;
+	rs.modelToWorldTransform = modelTransform;
+	rs.VAO = vao;
+	rs.vertCount = getPrimitiveIndexCount(primName);
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.diffuseTexName = diffuseTexName;
+	rs.diffuseColor = diffuseColor;
+	rs.specularTexName = "white";
+	rs.specularExponent = 110.f;
 
 	if (primName.find("_inverse") != std::string::npos)
 		rs.vertWindingOrder = GL_CW;
@@ -247,7 +279,7 @@ bool Renderer::addTexture(GLTexture * tex)
 	}
 	else
 	{
-		printf("Error: Adding texture \"%s\" which already exists\n", tex->getName());
+		printf("Error: Adding texture \"%s\" which already exists\n", tex->getName().c_str());
 		return false;
 	}
 }
@@ -367,20 +399,19 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		processRenderQueue(m_vStaticRenderQueue_Opaque);
 		processRenderQueue(m_vDynamicRenderQueue_Opaque);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		processRenderQueue(m_vTransparentRenderQueue);
-
-		// UI ELEMENTS
-		if (sceneViewUIInfo)
+		if (m_vTransparentRenderQueue.size() > 0 || sceneViewUIInfo)
 		{
+			glEnable(GL_BLEND);
 			glDisable(GL_DEPTH_TEST);
-			RenderUI(sceneViewUIInfo, frameBuffer);
-			glEnable(GL_DEPTH_TEST);
-		}
+			processRenderQueue(m_vTransparentRenderQueue);
 
-		glDisable(GL_BLEND);
+			// UI ELEMENTS
+			if (sceneViewUIInfo)
+				RenderUI(sceneViewUIInfo, frameBuffer);
+
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+		}
 
 		glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -397,6 +428,70 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		GL_LINEAR);
 }
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
+{
+	GLuint* shader;
+
+	if (textureAspectPortrait)
+		shader = m_mapShaders["vrwindow"];
+	else
+		shader = m_mapShaders["desktopwindow"];
+
+	if (shader == NULL)
+		return;
+
+	glDisable(GL_DEPTH_TEST);
+	glViewport(0, 0, width, height);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
+
+	glUseProgram(*shader);
+	glBindVertexArray(m_glFullscreenTextureVAO);
+
+	// render left eye (first half of index array )
+	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
+	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void Renderer::RenderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID)
+{
+	GLuint* shader = m_mapShaders["desktopwindow"];
+
+	if (shader == NULL)
+		return;
+
+	glDisable(GL_DEPTH_TEST);
+	glViewport(0, 0, width, height);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
+
+	glUseProgram(*shader);
+	glBindVertexArray(m_glFullscreenTextureVAO);
+
+	glDrawBuffer(GL_BACK_LEFT);
+
+	// render left eye
+	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeTextureID);
+	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+
+	glDrawBuffer(GL_BACK_RIGHT);
+
+	// render left eye (first half of index array )
+	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeTextureID);
+	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
 void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBuffer)
 {
 	glm::mat4 vpMat = sceneViewInfo->projection * sceneViewInfo->view;
@@ -404,6 +499,56 @@ void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBu
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewInfo->view));
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
+
+	auto tick = std::chrono::high_resolution_clock::now();
+	unsigned maxLines = 50;
+	float msgHeight = sceneViewInfo->m_nRenderHeight / maxLines;
+	float fadeIn = 0.1f;
+	float fadeOut = 1.f;
+
+	// this function finds expired messages
+	auto cleanFunc = [&fadeOut, &tick](std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point> msg)
+	{
+		float lifetime = (std::get<1>(msg) + fadeOut) * 1000.f;
+		float timeAlive = std::chrono::duration<float, std::milli>(tick - std::get<2>(msg)).count();
+		return timeAlive > lifetime;
+	};
+
+	// delete expired messages using our function
+	m_vMessages.erase(
+		std::remove_if(
+			m_vMessages.begin(),
+			m_vMessages.end(),
+			cleanFunc),
+		m_vMessages.end()
+	);
+
+	int msgCount = m_vMessages.size();
+
+	for (unsigned i = msgCount; i-- > 0; )
+	{
+		float timeAlive = (std::chrono::duration<float, std::milli>(tick - std::get<2>(m_vMessages[i])).count() / 1000.f);
+		float msgTime = std::get<1>(m_vMessages[i]);
+		float alpha = 1.f;
+
+		// fade in
+		if (timeAlive < fadeIn)
+			alpha = timeAlive / fadeIn;
+
+		// fade out
+		if (fadeOut > 0.f && timeAlive > msgTime)
+			alpha = (fadeOut - (timeAlive - msgTime)) / fadeOut;
+
+		drawUIText(
+			std::get<0>(m_vMessages[i]),
+			glm::vec4(1.f, 1.f, 1.f, alpha),
+			glm::vec3(0.f, sceneViewInfo->m_nRenderHeight - msgHeight * (msgCount - i - 1), 0.f),
+			glm::quat(),
+			msgHeight,
+			HEIGHT,
+			LEFT,
+			TOP_LEFT);
+	}
 
 	processRenderQueue(m_vUIRenderQueue);
 }
@@ -458,6 +603,7 @@ void Renderer::setupPrimitives()
 	generateCylinder(32);
 	generateTorus(1.f, 0.025f, 32, 8);
 	generatePlane();
+	generateCube();
 	generateBBox();
 }
 
@@ -531,8 +677,8 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 		{
 			float u = i / (numCoreSegments - 1.f);
 			float v = j / (numMeridianSegments - 1.f);
-			float theta = u * 2.f * M_PI;
-			float rho = v * 2.f * M_PI;
+			float theta = u * 2.f * glm::pi<float>();
+			float rho = v * 2.f * glm::pi<float>();
 			float x = cos(theta) * (coreRadius + meridianRadius*cos(rho));
 			float y = sin(theta) * (coreRadius + meridianRadius*cos(rho));
 			float z = meridianRadius*sin(rho);
@@ -746,6 +892,115 @@ void Renderer::generatePlane()
 	m_mapPrimitives["planedouble"] = m_mapPrimitives["quaddouble"] = std::make_pair(m_glPlaneVAO, 12); // two sided
 }
 
+void Renderer::generateCube()
+{
+	std::vector<PrimVert> verts;
+
+	glm::vec3 bboxMin(-0.5f);
+	glm::vec3 bboxMax(0.5f);
+
+	std::vector<GLushort> inds;
+
+	// Bottom
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	// Top
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	// Left
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	// Right
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	// Front
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	// Back
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f) }));
+	inds.push_back(verts.size() - 4);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 1);
+	inds.push_back(verts.size() - 3);
+	inds.push_back(verts.size() - 2);
+	inds.push_back(verts.size() - 1);
+
+	glGenVertexArrays(1, &m_glCubeVAO);
+	glGenBuffers(1, &m_glCubeVBO);
+	glGenBuffers(1, &m_glCubeEBO);
+
+	// Setup VAO
+	glBindVertexArray(m_glCubeVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, m_glCubeVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCubeEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+	glBindVertexArray(0);
+
+	// Alloc buffer and store data
+	glNamedBufferStorage(m_glCubeVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
+	// Element array buffer
+	glNamedBufferStorage(m_glCubeEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
+
+	m_mapPrimitives["cube"] = m_mapPrimitives["box"] = std::make_pair(m_glCubeVAO, inds.size());
+}
 
 // Essentially a unit cube wireframe
 void Renderer::generateBBox()
@@ -1029,7 +1284,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 	if (alignment == TextAlignment::RIGHT)
 		cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
 	else if (alignment == TextAlignment::CENTER)
-		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5f - anchorPt.x;
 
 	for (c = text.begin(); c != text.end(); c++)
 	{
@@ -1039,7 +1294,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 			if (alignment == TextAlignment::RIGHT)
 				cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
 			else if (alignment == TextAlignment::CENTER)
-				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5f - anchorPt.x;
 			else
 				cursor.x = -anchorPt.x;
 
@@ -1052,8 +1307,8 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		GLfloat xpos = cursor.x + (ch->Bearing.x + 0.5f * ch->Size.x);
 		GLfloat ypos = cursor.y + (ch->Bearing.y - 0.5f * ch->Size.y);
 
-		GLfloat w = ch->Size.x;
-		GLfloat h = ch->Size.y;
+		GLfloat w = static_cast<GLfloat>(ch->Size.x);
+		GLfloat h = static_cast<GLfloat>(ch->Size.y);
 
 		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
 
@@ -1165,7 +1420,7 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 	if (alignment == TextAlignment::RIGHT)
 		cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
 	else if (alignment == TextAlignment::CENTER)
-		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+		cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5f - anchorPt.x;
 
 	for (c = text.begin(); c != text.end(); c++)
 	{
@@ -1175,7 +1430,7 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 			if (alignment == TextAlignment::RIGHT)
 				cursor.x = (textDims.x - vLineLengths[lineNum]) - anchorPt.x;
 			else if (alignment == TextAlignment::CENTER)
-				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5 - anchorPt.x;
+				cursor.x = (textDims.x - vLineLengths[lineNum]) * 0.5f - anchorPt.x;
 			else
 				cursor.x = -anchorPt.x;
 
@@ -1188,8 +1443,8 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 		GLfloat xpos = cursor.x + (ch.Bearing.x + 0.5f * ch.Size.x);
 		GLfloat ypos = cursor.y + (ch.Bearing.y - 0.5f * ch.Size.y);
 
-		GLfloat w = ch.Size.x;
-		GLfloat h = ch.Size.y;
+		GLfloat w = static_cast<GLfloat>(ch.Size.x);
+		GLfloat h = static_cast<GLfloat>(ch.Size.y);
 
 		glm::mat4 trans = glm::scale(glm::translate(glm::mat4(), glm::vec3(xpos, ypos, 0.f)), glm::vec3(w, h, 1.f));
 
@@ -1251,6 +1506,32 @@ glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim 
 	return textDims * scale;
 }
 
+GLuint Renderer::getPrimitiveVAO(std::string primName)
+{
+	auto prim = m_mapPrimitives.find(primName);
+
+	if (prim == m_mapPrimitives.end())
+	{
+		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
+		return 0;
+	}
+
+	return prim->second.first;
+}
+
+GLsizei Renderer::getPrimitiveIndexCount(std::string primName)
+{
+	auto prim = m_mapPrimitives.find(primName);
+
+	if (prim == m_mapPrimitives.end())
+	{
+		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
+		return 0;
+	}
+
+	return prim->second.second;
+}
+
 glm::mat4 Renderer::getBillBoardTransform(const glm::vec3 & pos, const glm::vec3 & at, const glm::vec3 &up, bool lockToUpVector)
 {
 	glm::vec3 f(glm::normalize(at - pos));
@@ -1292,34 +1573,4 @@ glm::mat4 Renderer::getUnprojectionMatrix(glm::mat4 & proj, glm::mat4 & view, gl
 	perspDivMat[3][3] = perspDiv;
 
 	return perspDivMat * beforePerspDivide;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
-{
-	GLuint* shader;
-
-	if (textureAspectPortrait)
-		shader = m_mapShaders["vrwindow"];
-	else
-		shader = m_mapShaders["desktopwindow"];
-
-	if (shader == NULL)
-		return;
-
-	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, width, height); 
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
-
-	glUseProgram(*shader);
-	glBindVertexArray(m_glFullscreenTextureVAO);
-
-	// render left eye (first half of index array )
-	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
 }

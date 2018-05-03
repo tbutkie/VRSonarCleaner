@@ -355,7 +355,10 @@ bool Engine::initVR()
 		dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
-
+	
+	if (SDL_GL_SetSwapInterval(0) < 0)
+		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+	
 
 	if (!initGL())
 	{
@@ -415,6 +418,10 @@ bool Engine::initDesktop()
 	m_pDesktopWindow = createFullscreenWindow(0);
 	if (!m_pGLContext)
 		m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow);
+	
+	if (SDL_GL_SetSwapInterval(0) < 0)
+		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+	
 
 	SDL_GetWindowSize(m_pDesktopWindow, &m_ivec2DesktopWindowSize.x, &m_ivec2DesktopWindowSize.y);
 
@@ -1424,7 +1431,6 @@ SDL_Window * Engine::createFullscreenWindow(int displayIndex)
 	if (win == NULL)
 	{
 		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
 	}
 
 	return win;
