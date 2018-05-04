@@ -72,9 +72,6 @@
     <ClCompile Include="TrackedDeviceManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Icosphere.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="InfoBoxManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -228,9 +225,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TrackedDeviceManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Icosphere.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DebugDrawer.h">

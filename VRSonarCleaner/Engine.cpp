@@ -1279,6 +1279,8 @@ void Engine::drawScene()
 			);
 		}
 
+		Renderer::getInstance().drawPrimitive("icosphere", glm::scale(glm::mat4(), glm::vec3(0.1f)), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f), 10.f);
+
 		for (auto &dv : m_vpDataVolumes)
 		{
 			if (!dv->isVisible()) continue;

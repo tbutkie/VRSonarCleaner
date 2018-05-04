@@ -1,17 +1,12 @@
 #include "AdvectionProbe.h"
 #include "DebugDrawer.h"
-#include "Icosphere.h"
 #include "Renderer.h"
 #include <gtc/matrix_transform.hpp>
 
 AdvectionProbe::AdvectionProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
 	: ProbeBehavior(pTDM, flowVolume)
 	, m_pFlowVolume(flowVolume)
-	, m_glIcoSphereVAO(0)
 {
-	Icosphere s(1);
-	m_glIcoSphereVAO = s.getVAO();
-	m_glIcoSphereVertCount = s.getIndices().size();
 }
 
 
@@ -26,8 +21,8 @@ void AdvectionProbe::update()
 	Renderer::RendererSubmission rs;
 
 	rs.glPrimitiveType = GL_TRIANGLES;
-	rs.VAO = m_glIcoSphereVAO;
-	rs.vertCount = m_glIcoSphereVertCount;
+	rs.VAO = Renderer::getInstance().getPrimitiveVAO("icoshpere");
+	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("icosphere");
 	rs.diffuseTexName = "gray";
 	rs.specularTexName = "white";
 	rs.specularExponent = 32.f;

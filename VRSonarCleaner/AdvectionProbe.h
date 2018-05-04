@@ -1,7 +1,6 @@
 #pragma once
 #include "ProbeBehavior.h"
 #include "FlowVolume.h"
-#include "Icosphere.h"
 
 class AdvectionProbe :
 	public ProbeBehavior
@@ -16,9 +15,6 @@ public:
 
 private:
 	FlowVolume* m_pFlowVolume;
-	GLuint m_glIcoSphereVAO;
-	size_t m_glIcoSphereVertCount;
-	GLuint m_glIcoSphereDiffuse, m_glIcoSphereSpecular;
 
 private:
 	void activateProbe();

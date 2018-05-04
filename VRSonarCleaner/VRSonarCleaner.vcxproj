@@ -186,7 +186,6 @@
     <ClCompile Include="FlowProbe.cpp" />
     <ClCompile Include="FlowVolume.cpp" />
     <ClCompile Include="HolodeckBackground.cpp" />
-    <ClCompile Include="Icosphere.cpp" />
     <ClCompile Include="IllustrativeDyePole.cpp" />
     <ClCompile Include="IllustrativeParticle.cpp" />
     <ClCompile Include="IllustrativeParticleEmitter.cpp" />
@@ -244,7 +243,6 @@
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
     <ClInclude Include="GLSLpreamble.h" />
-    <ClInclude Include="Icosphere.h" />
     <ClInclude Include="IllustrativeDyePole.h" />
     <ClInclude Include="IllustrativeParticle.h" />
     <ClInclude Include="IllustrativeParticleEmitter.h" />

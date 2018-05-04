@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "Icosphere.h"
 #include "GLSLpreamble.h"
 
 #include <glm.hpp>
