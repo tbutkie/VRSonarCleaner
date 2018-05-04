@@ -124,6 +124,7 @@ Engine::Engine()
 	, m_pDesktopWindow(NULL)
 	, m_pDesktopWindowCursor(NULL)
 	, m_pHMD(NULL)
+	, m_bInitialColorRefresh(false)
 {	
 	int mode = 1;
 
@@ -217,15 +218,15 @@ bool Engine::init()
 
 	if (m_bSonarCleaning)
 	{
-		glm::vec3 wallSize((g_vec3RoomSize.x * 0.9f), (g_vec3RoomSize.y * 0.8f), 0.8f);
-		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
+		glm::vec3 wallSize((g_vec3RoomSize.x * 1.5f), (g_vec3RoomSize.y * 1.f), 0.5f);
+		glm::quat wallOrientation;// (glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 
 		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, 0.f);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-		glm::vec3 tableSize = glm::vec3(2.25f, 2.25f, 0.75f);
+		glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
 
 		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
 
@@ -253,13 +254,11 @@ bool Engine::init()
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
-
-		m_pTableVolume->add(m_vpClouds.front());
 
 		for (auto const &cloud : m_vpClouds)
 		{
 			m_pWallVolume->add(cloud);
+			m_pTableVolume->add(cloud);
 		}
 
 		m_vpDataVolumes.push_back(m_pTableVolume);
@@ -1279,7 +1278,7 @@ void Engine::drawScene()
 			);
 		}
 
-		Renderer::getInstance().drawPrimitive("icosphere", glm::scale(glm::mat4(), glm::vec3(0.1f)), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f), 10.f);
+		bool unloadedData = false;
 
 		for (auto &dv : m_vpDataVolumes)
 		{
@@ -1303,13 +1302,26 @@ void Engine::drawScene()
 			rs.shaderName = "flat";
 			rs.indexType = GL_UNSIGNED_INT;
 
+
 			for (auto &cloud : dv->getDatasets())
 			{
+				if (!static_cast<SonarPointCloud*>(cloud)->ready())
+				{
+					unloadedData = true;
+					continue;
+				}
+
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
 				rs.vertCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
+		}
+
+		if (!unloadedData && !m_bInitialColorRefresh)
+		{
+			refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+			m_bInitialColorRefresh = true;
 		}
 	}
 

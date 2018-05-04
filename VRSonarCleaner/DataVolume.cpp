@@ -511,9 +511,16 @@ void DataVolume::updateTransforms()
 		m_dmat4RawDomainToVolumeTransformPrevious = m_dmat4RawDomainToVolumeTransform;
 		m_dmat4RawDomainToVolumeTransform = glm::translate(glm::dmat4(), glm::dvec3(m_vec3Position)) * glm::dmat4(glm::mat4(m_qOrientation)) * glm::scale(glm::dvec3(scalingFactors)) * glm::translate(glm::dmat4(), -combinedDataCenter);
 		
+		bool unloadedData = false;
 
 		for (auto &dataset : m_vpDatasets)
 		{
+			if (!dataset->isLoaded())
+			{
+				unloadedData = true;
+				continue;
+			}
+
 			glm::dvec3 dataCenterRaw = dataset->getRawMinBounds() + dataset->getRawDimensions() * 0.5;
 
 			glm::vec3 dataPositionOffsetInVolume = dataCenterRaw - combinedDataCenter;
@@ -551,6 +558,6 @@ void DataVolume::updateTransforms()
 			m_bFirstRun = false;
 		}
 
-		m_bDirty = false;
+		m_bDirty = unloadedData;
 	}
 }

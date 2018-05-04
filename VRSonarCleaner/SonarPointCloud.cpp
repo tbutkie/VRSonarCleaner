@@ -10,6 +10,10 @@
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
 	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
+	, m_glVAO(0u)
+	, m_glPreviewVAO(0u)
+	, m_glVBO(0u)
+	, m_glEBO(0u)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
@@ -27,13 +31,13 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	switch (filetype)
 	{
 	case SonarPointCloud::CARIS:
-		loadCARISTxt();
+		m_Future = std::async(std::launch::async, &SonarPointCloud::loadCARISTxt, this);
 		break;
 	case SonarPointCloud::XYZF:
-		loadStudyCSV();
+		m_Future = std::async(std::launch::async, &SonarPointCloud::loadStudyCSV, this);
 		break;
 	case SonarPointCloud::QIMERA:
-		loadQimeraTxt();
+		m_Future = std::async(std::launch::async, &SonarPointCloud::loadQimeraTxt, this);
 		break;
 	default:
 		break;
@@ -47,6 +51,7 @@ SonarPointCloud::~SonarPointCloud()
 void SonarPointCloud::initPoints(int numPointsToAllocate)
 {
 	m_nPoints = numPointsToAllocate;
+	
 	if (m_bPointsAllocated)
 	{
 		m_vdvec3RawPointsPositions.clear();
@@ -57,7 +62,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 		m_vfPointsPositionTPU.clear();
 		m_vuiIndicesFull.clear();
 	}
-
+	
 	m_vdvec3RawPointsPositions.resize(m_nPoints);
 	m_vvec3AdjustedPointsPositions.resize(m_nPoints);
 	m_vvec4PointsColors.resize(m_nPoints);
@@ -206,8 +211,6 @@ bool SonarPointCloud::loadCARISTxt()
 		adjustPoints();
 
 		setRefreshNeeded();
-
-		createAndLoadBuffers();
 	}
 
 	return true;
@@ -296,8 +299,6 @@ bool SonarPointCloud::loadQimeraTxt()
 		adjustPoints();
 
 		setRefreshNeeded();
-
-		createAndLoadBuffers();
 	}
 
 	return true;
@@ -387,8 +388,6 @@ bool SonarPointCloud::loadStudyCSV()
 		adjustPoints();
 
 		setRefreshNeeded();
-
-		createAndLoadBuffers();
 	}
 
 	return true;
@@ -413,7 +412,10 @@ GLuint SonarPointCloud::getVAO()
 
 unsigned int SonarPointCloud::getPointCount()
 {
-	return m_nPoints;
+	if (!ready())
+		return 0;
+	else
+		return m_nPoints;
 }
 
 GLuint SonarPointCloud::getPreviewVAO()
@@ -423,7 +425,7 @@ GLuint SonarPointCloud::getPreviewVAO()
 
 unsigned int SonarPointCloud::getPreviewPointCount()
 {
-	return m_nPoints / m_iPreviewReductionFactor;
+	return getPointCount() / m_iPreviewReductionFactor;
 }
 
 bool SonarPointCloud::getRefreshNeeded()
@@ -574,6 +576,27 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
 		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);
+}
+
+bool SonarPointCloud::ready()
+{
+	if (m_bLoaded)
+		return true;
+
+	if (m_Future.valid() && m_Future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+	{
+		if (m_Future.get())
+		{
+			printf("Successfully loaded file %s", getName().c_str());
+			createAndLoadBuffers();
+			m_bLoaded = true;
+			return true;
+		}
+		else
+			printf("ERROR: Could not load file %s", getName().c_str());
+	}
+
+	return false;
 }
 
 void SonarPointCloud::markPoint(unsigned int index, int code)

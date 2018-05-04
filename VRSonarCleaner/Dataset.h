@@ -16,6 +16,8 @@ public:
 
 	std::string getName();
 
+	bool isLoaded();
+
 	glm::dvec3 getRawMinBounds();
 	double getRawXMin();
 	double getRawYMin();
@@ -52,6 +54,9 @@ public:
 
 	bool isDataRightHanded();
 	bool isOutputRightHanded();
+
+protected:
+	bool m_bLoaded;
 
 private:
 	void setRawMinBounds(glm::dvec3 minBounds);

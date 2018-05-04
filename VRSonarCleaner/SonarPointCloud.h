@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <functional>
+#include <future>
 #include "Dataset.h"
 #include "ColorScaler.h"
 
@@ -25,6 +26,8 @@ public:
 	public:
 		SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype);
 		~SonarPointCloud();
+
+		bool ready();
 		
 		bool getRefreshNeeded();
 		void setRefreshNeeded();
@@ -73,6 +76,8 @@ public:
 		static bool s_funcPosTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 
 	private:
+		std::future<bool> m_Future;
+
 		//variables
 		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 

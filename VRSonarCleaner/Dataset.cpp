@@ -4,6 +4,7 @@
 
 Dataset::Dataset(std::string name, bool coord_sys_right_handed)
 	: m_strName(name)
+	, m_bLoaded(false)
 	, m_bRHCoordSys_input(coord_sys_right_handed)
 	, m_bRHCoordSys_output(true)
 	, m_bNeedsUpdate(true)
@@ -21,6 +22,11 @@ Dataset::~Dataset()
 std::string Dataset::getName()
 {
 	return m_strName;
+}
+
+bool Dataset::isLoaded()
+{
+	return m_bLoaded;
 }
 
 void Dataset::setRawMinBounds(glm::dvec3 minBounds)

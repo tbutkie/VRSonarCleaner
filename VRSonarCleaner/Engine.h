@@ -90,6 +90,8 @@ private: // SDL bookkeeping
 	bool m_bRightMouseDown;
 	bool m_bMiddleMouseDown;
 
+	bool m_bInitialColorRefresh;
+
 private: // OpenGL bookkeeping
 	void createVRViews();
 	void createDesktopView();
