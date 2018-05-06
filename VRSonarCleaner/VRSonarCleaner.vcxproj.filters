@@ -367,37 +367,55 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\flat.frag">
+    <None Include="shaders\skybox.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\flat.vert">
+    <None Include="shaders\skybox.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\lighting.frag">
+    <None Include="resources\shaders\desktopwindow.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\lighting.vert">
+    <None Include="resources\shaders\flat.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\lightingWF.frag">
+    <None Include="resources\shaders\flat.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\lightingWF.geom">
+    <None Include="resources\shaders\lighting.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\renderModels.frag">
+    <None Include="resources\shaders\lighting.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\renderModels.vert">
+    <None Include="resources\shaders\lightingWF.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\vrwindow.vert">
+    <None Include="resources\shaders\lightingWF.geom">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\desktopwindow.vert">
+    <None Include="resources\shaders\renderModels.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\windowtexture.frag">
+    <None Include="resources\shaders\renderModels.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\skybox.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\skybox.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\text.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\text.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\vrwindow.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\windowtexture.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

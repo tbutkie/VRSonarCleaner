@@ -6,6 +6,7 @@
 #include <glm.hpp>
 #include <gtc/type_ptr.hpp>
 #include <gtx/norm.hpp>
+#include <lodepng.h>
 
 #include <string>
 #include <sstream>
@@ -134,6 +135,42 @@ void Renderer::clearUIRenderQueue()
 void Renderer::showMessage(std::string message, float duration)
 {
 	m_vMessages.push_back(std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point>(message, duration, std::chrono::high_resolution_clock::now()));
+}
+
+void Renderer::setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back)
+{
+	std::vector<std::string> faces({right, left, top, bottom, front, back});
+
+	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_Skybox.texID);
+
+	unsigned int width, height;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		std::vector<unsigned char> image;
+
+		unsigned error = lodepng::decode(image, width, height, faces[i]);
+
+		if (error != 0)
+			std::cerr << "error " << error << ": " << lodepng_error_text(error) << std::endl;
+		else
+		{
+			if (i == 0)
+			{
+				int diffuseMipMapLevels = (int)floor(log2((std::max)(width, height))) + 1;
+				glTextureStorage2D(m_Skybox.texID, 1, GL_RGBA8, width, height);
+			}
+			glTextureSubImage3D(m_Skybox.texID, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+		}
+		
+	}
+
+	glGenerateTextureMipmap(m_Skybox.texID);
+
+	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
@@ -301,14 +338,15 @@ void Renderer::setupShaders()
 
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
-	m_mapShaders["vrwindow"] = m_Shaders.AddProgramFromExts({ "shaders/vrwindow.vert", "shaders/windowtexture.frag" });
-	m_mapShaders["desktopwindow"] = m_Shaders.AddProgramFromExts({ "shaders/desktopwindow.vert", "shaders/windowtexture.frag" });
-	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lighting.frag" });
-	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "shaders/lightingWF.geom", "shaders/lightingWF.frag" });
-	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
-	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "shaders/flat.vert", "shaders/flat.frag" });
-	m_mapShaders["solid"] = m_Shaders.AddProgramFromExts({ "shaders/solid.vert", "shaders/flat.frag" });
-	m_mapShaders["text"] = m_Shaders.AddProgramFromExts({ "shaders/text.vert", "shaders/text.frag" });
+	m_mapShaders["vrwindow"] = m_Shaders.AddProgramFromExts({ "resources/shaders/vrwindow.vert", "resources/shaders/windowtexture.frag" });
+	m_mapShaders["desktopwindow"] = m_Shaders.AddProgramFromExts({ "resources/shaders/desktopwindow.vert", "resources/shaders/windowtexture.frag" });
+	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "resources/shaders/lighting.vert", "resources/shaders/lighting.frag" });
+	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "resources/shaders/lightingWF.geom", "shaders/lightingWF.frag" });
+	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
+	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
+	m_mapShaders["solid"] = m_Shaders.AddProgramFromExts({ "resources/shaders/solid.vert", "resources/shaders/flat.frag" });
+	m_mapShaders["text"] = m_Shaders.AddProgramFromExts({ "resources/shaders/text.vert", "resources/shaders/text.frag" });
+	m_mapShaders["skybox"] = m_Shaders.AddProgramFromExts({ "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
@@ -411,6 +449,21 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 
 			glEnable(GL_DEPTH_TEST);
 			glDisable(GL_BLEND);
+		}
+
+		// skybox last
+		if (m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
+		{
+			glDepthFunc(GL_LEQUAL); 
+
+			glUseProgram(*m_mapShaders["skybox"]);
+
+			glBindVertexArray(getPrimitiveVAO("skybox"));
+				glBindTextureUnit(0, m_Skybox.texID);
+				glDrawElements(GL_TRIANGLES, getPrimitiveIndexCount("skybox"), GL_UNSIGNED_SHORT, 0);
+			glBindVertexArray(0);
+
+			glDepthFunc(GL_LESS);
 		}
 
 		glUseProgram(0);
@@ -1148,7 +1201,7 @@ void Renderer::generateCube()
 	// Element array buffer
 	glNamedBufferStorage(m_glCubeEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	m_mapPrimitives["cube"] = m_mapPrimitives["box"] = std::make_pair(m_glCubeVAO, inds.size());
+	m_mapPrimitives["cube"] = m_mapPrimitives["box"] = m_mapPrimitives["skybox"] = std::make_pair(m_glCubeVAO, inds.size());
 }
 
 // Essentially a unit cube wireframe
@@ -1226,7 +1279,7 @@ void Renderer::setupText()
 
 	// Load font as face
 	FT_Face face;
-	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
+	if (FT_New_Face(ft, "resources/fonts/arial.ttf", 0, &face))
 		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
 	// Set size to load glyphs as
@@ -1286,7 +1339,7 @@ void Renderer::setupText()
 
 	// Load Snellen optotype font as face
 	{
-		if (FT_New_Face(ft, "fonts/sloan.ttf", 0, &face))
+		if (FT_New_Face(ft, "resources/fonts/sloan.ttf", 0, &face))
 			std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
 		// Set size to load glyphs as

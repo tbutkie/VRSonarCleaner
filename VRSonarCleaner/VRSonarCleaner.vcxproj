@@ -273,17 +273,23 @@
     <ClInclude Include="WelcomeBehavior.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\windowtexture.frag" />
-    <None Include="shaders\desktopwindow.vert" />
-    <None Include="shaders\flat.frag" />
-    <None Include="shaders\flat.vert" />
-    <None Include="shaders\lighting.frag" />
-    <None Include="shaders\lighting.vert" />
-    <None Include="shaders\lightingWF.frag" />
-    <None Include="shaders\lightingWF.geom" />
-    <None Include="shaders\renderModels.frag" />
-    <None Include="shaders\renderModels.vert" />
-    <None Include="shaders\vrwindow.vert" />
+    <None Include="resources\shaders\desktopwindow.vert" />
+    <None Include="resources\shaders\flat.frag" />
+    <None Include="resources\shaders\flat.vert" />
+    <None Include="resources\shaders\lighting.frag" />
+    <None Include="resources\shaders\lighting.vert" />
+    <None Include="resources\shaders\lightingWF.frag" />
+    <None Include="resources\shaders\lightingWF.geom" />
+    <None Include="resources\shaders\renderModels.frag" />
+    <None Include="resources\shaders\renderModels.vert" />
+    <None Include="resources\shaders\skybox.frag" />
+    <None Include="resources\shaders\skybox.vert" />
+    <None Include="resources\shaders\text.frag" />
+    <None Include="resources\shaders\text.vert" />
+    <None Include="resources\shaders\vrwindow.vert" />
+    <None Include="resources\shaders\windowtexture.frag" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

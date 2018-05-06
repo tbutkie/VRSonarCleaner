@@ -216,6 +216,15 @@ bool Engine::init()
 		vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
 	}
 
+	Renderer::getInstance().setSkybox(
+		"resources/skybox/sea/right.png",
+		"resources/skybox/sea/left.png",
+		"resources/skybox/sea/top.png",
+		"resources/skybox/sea/bottom.png",
+		"resources/skybox/sea/front.png",
+		"resources/skybox/sea/back.png"
+	);
+
 	if (m_bSonarCleaning)
 	{
 		glm::vec3 wallSize((g_vec3RoomSize.x * 1.5f), (g_vec3RoomSize.y * 1.f), 0.5f);
@@ -249,11 +258,11 @@ bool Engine::init()
 		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		
 
 
@@ -757,12 +766,12 @@ bool Engine::HandleInput()
 
 				if (sdlEvent.key.keysym.sym == SDLK_f)
 				{
-					using namespace std::experimental::filesystem::v1;
-					auto herePath = current_path();
-					std::cout << "Current directory: " << herePath << std::endl;
-					for (directory_iterator it(herePath); it != directory_iterator(); ++it)
-						if (is_regular_file(*it))
-							std::cout << (*it) << std::endl;
+					//using namespace std::experimental::filesystem::v1;
+					//auto herePath = current_path();
+					//std::cout << "Current directory: " << herePath << std::endl;
+					//for (directory_iterator it(herePath); it != directory_iterator(); ++it)
+					//	if (is_regular_file(*it))
+					//		std::cout << (*it) << std::endl;
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_l)

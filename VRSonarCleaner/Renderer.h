@@ -156,6 +156,8 @@ public:
 
 	void showMessage(std::string message, float duration = 5.f);
 
+	void setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back);
+
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
@@ -219,6 +221,13 @@ private:
 		glm::vec2 t; // texture coord
 	};
 
+	struct Skybox {
+		std::string right, left, top, bottom, front, back;
+		GLuint texID;
+
+		Skybox() : texID(0) {}
+	};
+
 	struct Character {
 		GLuint TextureID;   // ID handle of the glyph texture
 		glm::ivec2 Size;    // Size of glyph
@@ -250,6 +259,8 @@ private:
 	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
 
 	std::vector<std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point>> m_vMessages;
+
+	Skybox m_Skybox;
 
 	GLuint m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
 	GLuint m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
