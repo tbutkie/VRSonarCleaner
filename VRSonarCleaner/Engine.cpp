@@ -254,6 +254,30 @@ bool Engine::init()
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		
+
+
+		//using namespace std::experimental::filesystem::v1;
+		//
+		////path dataset("south_santa_rosa");
+		////path dataset("santa_cruz_south");
+		//path dataset("santa_cruz_basin");
+		//
+		//auto basePath = current_path().append(path("data"));
+		//
+		//auto acceptsPath = path(basePath).append(path("accept"));
+		//
+		//for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+		//{
+		//	if (is_regular_file(*it))
+		//	{
+		//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+		//		{
+		//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+		//			m_vpClouds.push_back(tmp);
+		//		}
+		//	}
+		//}
 
 		for (auto const &cloud : m_vpClouds)
 		{
@@ -263,8 +287,6 @@ bool Engine::init()
 
 		m_vpDataVolumes.push_back(m_pTableVolume);
 		m_vpDataVolumes.push_back(m_pWallVolume);
-
-		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
 
 		if (m_bUseDesktop)
 		{
