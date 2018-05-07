@@ -38,7 +38,7 @@ RunStudyBehavior::~RunStudyBehavior()
 
 void RunStudyBehavior::init()
 {
-	auto basePath = current_path().append(path("data/study"));
+	auto basePath = current_path().append(path("resources/data/sonar/study"));
 
 	for (directory_iterator it(basePath); it != directory_iterator(); ++it)
 	{
@@ -72,7 +72,7 @@ void RunStudyBehavior::init()
 		return;
 	}
 
-	DataLogger::getInstance().setLogDirectory("data");
+	DataLogger::getInstance().setLogDirectory("logs");
 	DataLogger::getInstance().openLog("study", true);
 	DataLogger::getInstance().start();
 

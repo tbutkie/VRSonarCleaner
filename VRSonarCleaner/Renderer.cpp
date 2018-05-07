@@ -39,7 +39,7 @@ bool Renderer::init()
 {
 	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
-	m_pLighting->addDirectLight()->ambientCoefficient = 0.5f;
+	m_pLighting->addDirectLight(glm::vec4(1.f, -1.f, 1.f, 0.f))->ambientCoefficient = 0.5f;
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

@@ -30,10 +30,10 @@
 #include <limits>
 
 
-glm::vec3						g_vec3RoomSize(4.f, 3.f, 3.f);
+glm::vec3						g_vec3RoomSize(1.f, 3.f, 1.f);
 
 float							g_fNearClip = 0.001f;
-float							g_fFarClip = 10000.f;
+float							g_fFarClip = 1000000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
 
@@ -214,15 +214,16 @@ bool Engine::init()
 	if (m_bUseVR)
 	{
 		vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
+		dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
 	}
 
 	Renderer::getInstance().setSkybox(
-		"resources/skybox/sea/right.png",
-		"resources/skybox/sea/left.png",
-		"resources/skybox/sea/top.png",
-		"resources/skybox/sea/bottom.png",
-		"resources/skybox/sea/front.png",
-		"resources/skybox/sea/back.png"
+		"resources/images/skybox/sea/right.png",
+		"resources/images/skybox/sea/left.png",
+		"resources/images/skybox/sea/top.png",
+		"resources/images/skybox/sea/bottom.png",
+		"resources/images/skybox/sea/front.png",
+		"resources/images/skybox/sea/back.png"
 	);
 
 	if (m_bSonarCleaning)
@@ -257,12 +258,12 @@ bool Engine::init()
 		//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
 		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		
 
 
@@ -272,7 +273,7 @@ bool Engine::init()
 		////path dataset("santa_cruz_south");
 		//path dataset("santa_cruz_basin");
 		//
-		//auto basePath = current_path().append(path("data"));
+		//auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
 		//
 		//auto acceptsPath = path(basePath).append(path("accept"));
 		//
@@ -293,7 +294,7 @@ bool Engine::init()
 			m_pWallVolume->add(cloud);
 			m_pTableVolume->add(cloud);
 		}
-
+			
 		m_vpDataVolumes.push_back(m_pTableVolume);
 		m_vpDataVolumes.push_back(m_pWallVolume);
 
@@ -312,12 +313,12 @@ bool Engine::init()
 
 		if (m_bGreatBayModel)
 		{
-			tempFG = new FlowGrid("gb.fg", false);
+			tempFG = new FlowGrid("resources/data/flowgrid/gb.fg", false);
 			tempFG->m_fIllustrativeParticleVelocityScale = 0.5f;
 		}
 		else
 		{
-			tempFG = new FlowGrid("test.fg", true);
+			tempFG = new FlowGrid("resources/data/flowgrid/test.fg", true);
 			tempFG->m_fIllustrativeParticleVelocityScale = 0.01f;
 		}
 
@@ -794,8 +795,8 @@ bool Engine::HandleInput()
 					//path dataset("santa_cruz_south");
 					path dataset("santa_cruz_basin");
 
-					auto basePath = current_path().append(path("data"));
-					std::cout << "Base study data directory: " << basePath << std::endl;
+					auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+					std::cout << "Base data directory: " << basePath << std::endl;
 
 					auto acceptsPath = path(basePath).append(path("accept"));
 					auto rejectsPath = path(basePath).append(path("reject"));
@@ -1250,6 +1251,8 @@ void Engine::drawScene()
 	{
 		if (m_bUseVR)
 		{
+			Renderer::getInstance().drawPrimitive("plane", glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(g_vec3RoomSize.x * 2.f, g_vec3RoomSize.z * 2.f, 1.f)), glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(1.f), 132.f);
+			
 			if (m_bShowDesktopFrustum)
 			{
 				// get frustum with near plane 1m out from view pos
