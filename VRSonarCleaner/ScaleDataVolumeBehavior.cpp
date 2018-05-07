@@ -184,12 +184,15 @@ void ScaleDataVolumeBehavior::draw()
 			rot[1] = v;
 			rot[2] = w;
 
-			std::string scaleMagStr(std::to_string(exp((controllerDistance() - m_fInitialDistance) * 10.f)) + "x");
+			std::stringstream scaleMagStr;
+			
+			scaleMagStr.precision(2);
+			scaleMagStr << std::fixed << std::to_string(exp((controllerDistance() - m_fInitialDistance) * 10.f)) + "x";
 
 			float textHeight = 0.025f;
 
 			Renderer::getInstance().drawText(
-				scaleMagStr,
+				scaleMagStr.str(),
 				color,
 				midPt + w * 0.025f,
 				glm::quat(rot),

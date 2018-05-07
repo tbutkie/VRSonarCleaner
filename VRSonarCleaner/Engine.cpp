@@ -228,7 +228,7 @@ bool Engine::init()
 
 	if (m_bSonarCleaning)
 	{
-		glm::vec3 wallSize((g_vec3RoomSize.x * 1.5f), (g_vec3RoomSize.y * 1.f), 0.5f);
+		glm::vec3 wallSize((g_vec3RoomSize.x * 2.5f), (g_vec3RoomSize.y * 0.9f), 0.5f);
 		glm::quat wallOrientation;// (glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
 		

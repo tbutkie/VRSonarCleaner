@@ -270,7 +270,7 @@ void SelectAreaBehavior::reset()
 
 void SelectAreaBehavior::updateState()
 {
-	if (!m_pTDM->getPrimaryController())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
 
 	if (m_pTDM->getPrimaryController()->justClickedTrigger())

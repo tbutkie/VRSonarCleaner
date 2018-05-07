@@ -437,20 +437,6 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		processRenderQueue(m_vStaticRenderQueue_Opaque);
 		processRenderQueue(m_vDynamicRenderQueue_Opaque);
 
-		if (m_vTransparentRenderQueue.size() > 0 || sceneViewUIInfo)
-		{
-			glEnable(GL_BLEND);
-			glDisable(GL_DEPTH_TEST);
-			processRenderQueue(m_vTransparentRenderQueue);
-
-			// UI ELEMENTS
-			if (sceneViewUIInfo)
-				RenderUI(sceneViewUIInfo, frameBuffer);
-
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_BLEND);
-		}
-
 		// skybox last
 		if (m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
 		{
@@ -464,6 +450,20 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 			glBindVertexArray(0);
 
 			glDepthFunc(GL_LESS);
+		}
+
+		if (m_vTransparentRenderQueue.size() > 0 || sceneViewUIInfo)
+		{
+			glEnable(GL_BLEND);
+			//glDisable(GL_DEPTH_TEST);
+			processRenderQueue(m_vTransparentRenderQueue);
+
+			// UI ELEMENTS
+			if (sceneViewUIInfo)
+				RenderUI(sceneViewUIInfo, frameBuffer);
+
+			//glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
 		}
 
 		glUseProgram(0);
