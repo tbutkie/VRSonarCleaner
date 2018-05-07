@@ -395,7 +395,7 @@ bool SonarPointCloud::loadStudyCSV()
 
 void SonarPointCloud::update()
 {
-	if (refreshNeeded || previewRefreshNeeded)
+	if (m_bLoaded && (refreshNeeded || previewRefreshNeeded))
 	{
 		// Sub buffer data for colors...
 		glNamedBufferSubData(m_glVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
