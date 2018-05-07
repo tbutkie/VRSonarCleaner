@@ -557,8 +557,9 @@ void SonarPointCloud::createAndLoadBuffers()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
 		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
 		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);
@@ -571,8 +572,9 @@ void SonarPointCloud::createAndLoadBuffers()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
 		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
+		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
+		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
 		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
 		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
 	glBindVertexArray(0);

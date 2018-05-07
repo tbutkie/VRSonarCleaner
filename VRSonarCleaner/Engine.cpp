@@ -1332,9 +1332,10 @@ void Engine::drawScene()
 
 			//draw table
 			Renderer::RendererSubmission rs;
-			rs.glPrimitiveType = GL_POINTS;
-			rs.shaderName = "flat";
+			rs.glPrimitiveType = GL_TRIANGLES;
+			rs.shaderName = "instanced";
 			rs.indexType = GL_UNSIGNED_INT;
+			rs.instanced = true;
 
 
 			for (auto &cloud : dv->getDatasets())
@@ -1346,8 +1347,9 @@ void Engine::drawScene()
 				}
 
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
-				rs.vertCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
+				rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
+				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
 		}

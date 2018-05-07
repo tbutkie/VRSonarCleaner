@@ -418,5 +418,11 @@
     <None Include="resources\shaders\windowtexture.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\instanced.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\instanced.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

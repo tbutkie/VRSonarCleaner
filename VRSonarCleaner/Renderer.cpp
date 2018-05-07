@@ -344,9 +344,9 @@ void Renderer::setupShaders()
 	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "resources/shaders/lightingWF.geom", "shaders/lightingWF.frag" });
 	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
 	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
-	m_mapShaders["solid"] = m_Shaders.AddProgramFromExts({ "resources/shaders/solid.vert", "resources/shaders/flat.frag" });
 	m_mapShaders["text"] = m_Shaders.AddProgramFromExts({ "resources/shaders/text.vert", "resources/shaders/text.frag" });
 	m_mapShaders["skybox"] = m_Shaders.AddProgramFromExts({ "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
+	m_mapShaders["instanced"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
@@ -635,7 +635,10 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glFrontFace(i.vertWindingOrder);
 
 			glBindVertexArray(i.VAO);
-			glDrawElements(i.glPrimitiveType, i.vertCount, i.indexType, 0);
+			if (i.instanced)
+				glDrawElementsInstanced(i.glPrimitiveType, i.vertCount, i.indexType, 0, i.instanceCount);
+			else
+				glDrawElements(i.glPrimitiveType, i.vertCount, i.indexType, 0);
 			glBindVertexArray(0);
 		}
 	}
