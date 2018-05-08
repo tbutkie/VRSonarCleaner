@@ -8,6 +8,7 @@
 #include "Renderer.h"
 #include "TaskCompleteBehavior.h"
 #include <algorithm>
+#include "utilities.h"
 
 GrabTutorial::GrabTutorial(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
@@ -116,7 +117,7 @@ void GrabTutorial::draw()
 		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
 		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
 		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
-		glm::mat4 dvPromptTrans = Renderer::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+		glm::mat4 dvPromptTrans = ccomutils::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 		Renderer::getInstance().drawText(
 			"Data Volume",
@@ -164,7 +165,7 @@ void GrabTutorial::draw()
 			float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
 			float tmp1 = std::sqrt(goalMaxSide * goalMaxSide * 2.f);
 			float goalOffset = std::sqrt(tmp1 * tmp1 + goalMaxSide * goalMaxSide) * 0.5f;
-			glm::mat4 goalTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			glm::mat4 goalTrans = ccomutils::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 			Renderer::getInstance().drawText(
 				"GOAL",
@@ -177,7 +178,7 @@ void GrabTutorial::draw()
 				Renderer::TextAnchor::CENTER_TOP
 			);
 
-			glm::mat4 goalPromptTrans = Renderer::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			glm::mat4 goalPromptTrans = ccomutils::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 			Renderer::getInstance().drawText(
 				"Align and place\nthe data volume\ninside of the goal!",

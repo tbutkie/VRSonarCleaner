@@ -84,14 +84,13 @@ public:
 		std::vector<glm::dvec3> m_vdvec3RawPointsPositions;
 		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
 		std::vector<glm::vec4> m_vvec4PointsColors;
-		std::vector<GLuint> m_vuiIndicesFull;
 		std::vector<GLuint> m_vuiPointsMarks;
 		std::vector<float> m_vfPointsDepthTPU;
 		std::vector<float> m_vfPointsPositionTPU;
 		unsigned int m_nPoints;
 		bool m_bPointsAllocated;
 
-		GLuint m_glInstancedSpriteVAO, m_glInstancedSpriteVBO, m_glInstancedSpriteEBO;
+		GLuint m_glInstancedSpriteVBO;
 
 		int colorMode;
 		int colorScope;

@@ -3,7 +3,7 @@
 #include <gtc\matrix_transform.hpp>
 
 #include "GLSLpreamble.h"
-
+#include "utilities.h"
 #include "Renderer.h"
 
 InfoBoxManager & InfoBoxManager::getInstance()
@@ -75,7 +75,7 @@ void InfoBoxManager::draw()
 		glm::mat4 scaleMat = glm::scale(glm::mat4(), glm::vec3(sizeM, sizeM / ar, 1.f));
 
 		if (std::get<IBIndex::BILLBOARDED>(ib.second))
-			infoBoxMat = Renderer::getBillBoardTransform(glm::vec3(infoBoxMat[3]), glm::vec3(HMDXform[3]), glm::vec3(0.f, 1.f, 0.f), true);
+			infoBoxMat = ccomutils::getBillBoardTransform(glm::vec3(infoBoxMat[3]), glm::vec3(HMDXform[3]), glm::vec3(0.f, 1.f, 0.f), true);
 
 		glm::mat4 modelTransform = relXform * infoBoxMat * scaleMat;
 		Renderer::getInstance().drawPrimitive("quad", modelTransform, std::get<IBIndex::TEXTURE>(ib.second)->getName(), "black", 0.f);

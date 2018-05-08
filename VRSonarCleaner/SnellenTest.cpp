@@ -5,6 +5,7 @@
 #include <gtc/random.hpp>
 #include <gtc/quaternion.hpp>
 #include "Renderer.h"
+#include "utilities.h"
 
 #include <random>
 #include <sstream>
@@ -54,7 +55,7 @@ void SnellenTest::draw()
 		m_strCurrent,
 		glm::vec4(1.f),
 		stringPos,
-		glm::quat(Renderer::getBillBoardTransform(stringPos, hmdTrans[3], glm::vec3(0.f, 1.f, 0.f), true)),
+		glm::quat(ccomutils::getBillBoardTransform(stringPos, hmdTrans[3], glm::vec3(0.f, 1.f, 0.f), true)),
 		getHeightForOptotype(m_fVisualAngle),
 		Renderer::TextSizeDim::HEIGHT,
 		Renderer::TextAlignment::CENTER,

@@ -334,6 +334,8 @@ unsigned int PointCleanProbe::checkPoints()
 
 	for (auto &pc : m_pDataVolume->getDatasets())
 	{
+		if (!pc->isLoaded()) continue;
+
 		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(pc);
 
 		glm::vec3 cloudMinBound = m_pDataVolume->convertToWorldCoords(cloud->getAdjustedMinBounds());

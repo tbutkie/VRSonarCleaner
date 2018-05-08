@@ -244,12 +244,14 @@ bool Engine::init()
 		m_Camera.lookat = tablePosition;
 
 		{
-			if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
-				BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+			//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+			//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
 				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+
+			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
 		}
 
 		m_pColorScalerTPU = new ColorScaler();
@@ -265,7 +267,7 @@ bool Engine::init()
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		
-		Renderer::getInstance().addTexture(new GLTexture("circle.png", true));
+		//Renderer::getInstance().addTexture(new GLTexture("circle.png", true));
 
 		//using namespace std::experimental::filesystem::v1;
 		//
@@ -1334,9 +1336,9 @@ void Engine::drawScene()
 			Renderer::RendererSubmission rs;
 			rs.glPrimitiveType = GL_TRIANGLES;
 			rs.shaderName = "instanced";
-			rs.indexType = GL_UNSIGNED_INT;
+			rs.indexType = GL_UNSIGNED_SHORT;
 			rs.instanced = true;
-			rs.diffuseTexName = "circle.png";
+			//rs.diffuseTexName = "circle.png";
 
 
 			for (auto &cloud : dv->getDatasets())
@@ -1348,7 +1350,7 @@ void Engine::drawScene()
 				}
 
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
-				rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
+				rs.vertCount = 6;
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
 				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);

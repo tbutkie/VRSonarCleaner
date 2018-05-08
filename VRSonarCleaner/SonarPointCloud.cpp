@@ -60,7 +60,6 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 		m_vuiPointsMarks.clear();
 		m_vfPointsDepthTPU.clear();
 		m_vfPointsPositionTPU.clear();
-		m_vuiIndicesFull.clear();
 	}
 	
 	m_vdvec3RawPointsPositions.resize(m_nPoints);
@@ -69,7 +68,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	m_vuiPointsMarks.resize(m_nPoints);
 	m_vfPointsDepthTPU.resize(m_nPoints);
 	m_vfPointsPositionTPU.resize(m_nPoints);
-	m_vuiIndicesFull.resize(m_nPoints);
+
 
 	m_bPointsAllocated = true;
 }
@@ -196,8 +195,6 @@ bool SonarPointCloud::loadCARISTxt()
 		}
 		averageDepth /= m_nPoints;
 
-		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
-
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
@@ -283,8 +280,6 @@ bool SonarPointCloud::loadQimeraTxt()
 			assert(depth < 0.);
 		}
 		averageDepth /= m_nPoints;
-
-		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
 
 		printf("Loaded %d points\n", index);
 
@@ -372,8 +367,6 @@ bool SonarPointCloud::loadStudyCSV()
 			assert(depth < 0.);
 		}
 		averageDepth /= m_nPoints;
-
-		std::iota(m_vuiIndicesFull.begin(), m_vuiIndicesFull.end(), 0u);
 
 		printf("Loaded %d points\n", index);
 
@@ -555,36 +548,33 @@ void SonarPointCloud::createAndLoadBuffers()
 	verts.push_back(PrimVert({ glm::vec3(0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(-0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f),	glm::vec4(1.f), glm::vec2(0.f, 0.f) }));
 
-	inds.push_back(0);
-	inds.push_back(1);
-	inds.push_back(2);
-
-	inds.push_back(2);
-	inds.push_back(3);
-	inds.push_back(0);
+	inds.push_back(0u);
+	inds.push_back(1u);
+	inds.push_back(2u);
+	inds.push_back(2u);
+	inds.push_back(3u);
+	inds.push_back(0u);
 
 	// Create data buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glVBO);
-	glCreateBuffers(1, &m_glInstancedSpriteVBO);
 	glCreateBuffers(1, &m_glEBO);
-	glCreateBuffers(1, &m_glInstancedSpriteEBO);
 
 	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
 	glNamedBufferSubData(m_glVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
 	glNamedBufferSubData(m_glVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
-	
-	glNamedBufferStorage(m_glInstancedSpriteVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
+	glNamedBufferStorage(m_glEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	// Create index buffer, allocate storage, and upload initial data
-	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(GLuint), &m_vuiIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
-	glNamedBufferStorage(m_glInstancedSpriteEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
+	glCreateBuffers(1, &m_glInstancedSpriteVBO);
+
+	glNamedBufferStorage(m_glInstancedSpriteVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
 	glBindVertexArray(m_glVAO);
-		// load sprite verts
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+		// Describe sprite verts
 		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glInstancedSpriteEBO);
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
@@ -595,11 +585,9 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 
-		// Load data into vertex buffers
+		// Describe instanced verts
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
-		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
@@ -611,9 +599,10 @@ void SonarPointCloud::createAndLoadBuffers()
 	// Create preview VAO
 	glGenVertexArrays(1, &m_glPreviewVAO);
 	glBindVertexArray(m_glPreviewVAO);
-		// load sprite verts
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+		// Describe sprite verts
 		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glInstancedSpriteEBO);
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
@@ -624,11 +613,9 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
 		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 
-		// Load data into vertex buffers
+		// Describe instanced verts
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
-		// Set the vertex attribute pointers
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
 		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);

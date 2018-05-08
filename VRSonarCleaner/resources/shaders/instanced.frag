@@ -1,5 +1,7 @@
 layout(location = DIFFUSE_COLOR_UNIFORM_LOCATION)
 	uniform vec4 diffColor;
+	layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
+	uniform vec4 specColor;
 layout(binding = DIFFUSE_TEXTURE_BINDING)
 	uniform sampler2D diffuseTex;
 

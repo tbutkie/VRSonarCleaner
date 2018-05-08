@@ -5,6 +5,7 @@
 #include <gtc/random.hpp>
 #include <gtc/quaternion.hpp>
 #include "Renderer.h"
+#include "utilities.h"
 
 StudyIntroBehavior::StudyIntroBehavior(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
@@ -91,7 +92,7 @@ void StudyIntroBehavior::draw()
 
 	glm::vec3 anchorPt(0.f, m_pTDM->getHMDToWorldTransform()[3].y, 0.f);
 
-	glm::mat4 textTrans = Renderer::getBillBoardTransform(anchorPt, m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+	glm::mat4 textTrans = ccomutils::getBillBoardTransform(anchorPt, m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 	Renderer::getInstance().drawText(
 		"Sonar Data Cleaning",
