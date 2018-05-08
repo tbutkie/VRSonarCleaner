@@ -266,6 +266,7 @@ private:
 
 	Skybox m_Skybox;
 
+	GLuint m_glFullscreenTextureVAO, m_glFullscreenTextureVBO, m_glFullscreenTextureEBO;
 	GLuint m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
 	GLuint m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	GLuint m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
@@ -275,9 +276,6 @@ private:
 
 	GLuint m_glFrameUBO;
 	
-	GLuint m_glFullscreenTextureVAO;
-	GLuint m_glFullscreenTextureVBO;
-	GLuint m_glFullscreenTextureEBO;
 	unsigned int m_uiCompanionWindowVertCount;
 
 public:

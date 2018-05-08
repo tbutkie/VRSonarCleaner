@@ -91,6 +91,8 @@ public:
 		unsigned int m_nPoints;
 		bool m_bPointsAllocated;
 
+		GLuint m_glInstancedSpriteVAO, m_glInstancedSpriteVBO, m_glInstancedSpriteEBO;
+
 		int colorMode;
 		int colorScope;
 

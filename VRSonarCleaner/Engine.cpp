@@ -265,7 +265,7 @@ bool Engine::init()
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		
-
+		Renderer::getInstance().addTexture(new GLTexture("circle.png", true));
 
 		//using namespace std::experimental::filesystem::v1;
 		//
@@ -1336,6 +1336,7 @@ void Engine::drawScene()
 			rs.shaderName = "instanced";
 			rs.indexType = GL_UNSIGNED_INT;
 			rs.instanced = true;
+			rs.diffuseTexName = "circle.png";
 
 
 			for (auto &cloud : dv->getDatasets())

@@ -539,19 +539,62 @@ void SonarPointCloud::adjustPoints()
 
 void SonarPointCloud::createAndLoadBuffers()
 {
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
+	std::vector<PrimVert> verts;
+	std::vector<GLushort> inds;
+
+	// Front face
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
+	verts.push_back(PrimVert({ glm::vec3(0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
+	verts.push_back(PrimVert({ glm::vec3(-0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f),	glm::vec4(1.f), glm::vec2(0.f, 0.f) }));
+
+	inds.push_back(0);
+	inds.push_back(1);
+	inds.push_back(2);
+
+	inds.push_back(2);
+	inds.push_back(3);
+	inds.push_back(0);
+
 	// Create data buffer, allocate storage, and upload initial data
 	glCreateBuffers(1, &m_glVBO);
+	glCreateBuffers(1, &m_glInstancedSpriteVBO);
+	glCreateBuffers(1, &m_glEBO);
+	glCreateBuffers(1, &m_glInstancedSpriteEBO);
+
 	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
 	glNamedBufferSubData(m_glVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
 	glNamedBufferSubData(m_glVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+	
+	glNamedBufferStorage(m_glInstancedSpriteVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 
 	// Create index buffer, allocate storage, and upload initial data
-	glCreateBuffers(1, &m_glEBO);
 	glNamedBufferStorage(m_glEBO, m_nPoints * sizeof(GLuint), &m_vuiIndicesFull[0], GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_glInstancedSpriteEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
 	glBindVertexArray(m_glVAO);
+		// load sprite verts
+		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glInstancedSpriteEBO);
+
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+
 		// Load data into vertex buffers
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
@@ -560,13 +603,27 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+		glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+		glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_LOCATION, 1);
 	glBindVertexArray(0);
 
 	// Create preview VAO
 	glGenVertexArrays(1, &m_glPreviewVAO);
 	glBindVertexArray(m_glPreviewVAO);
+		// load sprite verts
+		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glInstancedSpriteEBO);
+
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+
 		// Load data into vertex buffers
 		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
@@ -575,8 +632,9 @@ void SonarPointCloud::createAndLoadBuffers()
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
 		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+		glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
+		glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_LOCATION, 1);
 	glBindVertexArray(0);
 }
 
@@ -589,13 +647,13 @@ bool SonarPointCloud::ready()
 	{
 		if (m_Future.get())
 		{
-			printf("Successfully loaded file %s", getName().c_str());
+			printf("Successfully loaded file %s\n", getName().c_str());
 			createAndLoadBuffers();
 			m_bLoaded = true;
 			return true;
 		}
 		else
-			printf("ERROR: Could not load file %s", getName().c_str());
+			printf("ERROR: Could not load file %s\n", getName().c_str());
 	}
 
 	return false;
