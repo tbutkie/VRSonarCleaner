@@ -203,6 +203,7 @@ private:
 
 	void setupPrimitives();
 	void generateIcosphere(int recursionLevel);
+	void generateDisc();
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
 	void generateCylinder(int numSegments);
 	void generatePlane();
@@ -269,6 +270,7 @@ private:
 
 	GLuint m_glFullscreenTextureVAO, m_glFullscreenTextureVBO, m_glFullscreenTextureEBO;
 	GLuint m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
+	GLuint m_glDiscVAO, m_glDiscVBO, m_glDiscEBO;
 	GLuint m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
 	GLuint m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
 	GLuint m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;

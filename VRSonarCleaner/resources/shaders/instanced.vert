@@ -32,5 +32,5 @@ void main()
 	v4Color = v4InstanceCol;
 	v2TexCoord = v2TexCoordsIn;
 	
-    gl_Position = m4Projection * (vec4(v3Position * size, 1.f) + m4View * m4DataVolumeTransform * vec4(v3InstancePos, 1.f));
+    gl_Position = m4Projection * (vec4(-v3Position * size, 1.f) + m4View * m4DataVolumeTransform * vec4(v3InstancePos, 1.f));
 }

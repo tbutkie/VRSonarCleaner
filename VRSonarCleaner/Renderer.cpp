@@ -656,6 +656,7 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 void Renderer::setupPrimitives()
 {
 	generateIcosphere(3);
+	generateDisc();
 	generateCylinder(32);
 	generateTorus(1.f, 0.025f, 32, 8);
 	generatePlane();
@@ -872,6 +873,101 @@ void Renderer::generateIcosphere(int recursionLevel)
 		m_mapPrimitiveVBOs[primname] = m_glIcosphereVBO;
 		m_mapPrimitiveEBOs[primname] = m_glIcosphereEBO;
 		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(indices.size());
+	}
+}
+
+void Renderer::generateDisc()
+{
+	std::vector<PrimVert> verts;
+	std::vector<GLushort> inds;
+
+	int numSegments = 16;
+	
+	glm::vec3 p(0.f, 0.f, 0.f);
+	glm::vec3 n(0.f, 0.f, 1.f);
+	glm::vec4 c(1.f);
+	glm::vec2 t(0.5f, 0.5f);
+
+	verts.push_back(PrimVert({ p, n, c, t }));
+
+	// Front 
+	for (float i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments)) * glm::two_pi<float>();
+
+		p = glm::vec3(sin(angle), cos(angle), 0.f);
+		t = (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f;
+
+		verts.push_back(PrimVert({ p, n, c, t }));
+
+		if (i > 0)
+		{
+			inds.push_back(0); // ctr pt of endcap
+			inds.push_back(verts.size() - 1);
+			inds.push_back(verts.size() - 2);
+		}
+	}
+	inds.push_back(0);
+	inds.push_back(1);
+	inds.push_back(verts.size() - 1);
+
+	//Back
+	//verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	//for (float i = 0; i < numSegments; ++i)
+	//{
+	//	float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+	//	verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
+	//
+	//	if (i > 0)
+	//	{
+	//		inds.push_back(verts.size() - (i + 2));
+	//		inds.push_back(verts.size() - 2);
+	//		inds.push_back(verts.size() - 1);
+	//	}
+	//}
+	//inds.push_back(0);
+	//inds.push_back(verts.size() - 1);
+	//inds.push_back(1);
+
+
+	glGenVertexArrays(1, &m_glDiscVAO);
+	glGenBuffers(1, &m_glDiscVBO);
+	glGenBuffers(1, &m_glDiscEBO);
+
+	// Setup VAO
+	glBindVertexArray(this->m_glDiscVAO);
+	// Load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, this->m_glDiscVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glDiscEBO);
+
+	// Set the vertex attribute pointers
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+	glBindVertexArray(0);
+
+	// Alloc buffer and store data
+	glNamedBufferStorage(m_glDiscVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
+	// Element array buffer
+	glNamedBufferStorage(m_glDiscEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
+
+	for (auto primname : { "disc", "circlesprite" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glDiscVAO;
+		m_mapPrimitiveVBOs[primname] = m_glDiscVBO;
+		m_mapPrimitiveEBOs[primname] = m_glDiscEBO;
+		//m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() / 2);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+
+		//m_mapPrimitiveVAOs[primname + std::string("double")] = m_glDiscVAO;
+		//m_mapPrimitiveVBOs[primname + std::string("double")] = m_glDiscVBO;
+		//m_mapPrimitiveEBOs[primname + std::string("double")] = m_glDiscEBO;
+		//m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size());
 	}
 }
 

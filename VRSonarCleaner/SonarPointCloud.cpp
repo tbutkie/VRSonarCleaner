@@ -550,10 +550,10 @@ void SonarPointCloud::createAndLoadBuffers()
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
 	glBindVertexArray(m_glVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("sprite"));
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("disc"));
 
 		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("sprite"));
+		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("disc"));
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
@@ -578,10 +578,10 @@ void SonarPointCloud::createAndLoadBuffers()
 	// Create preview VAO
 	glGenVertexArrays(1, &m_glPreviewVAO);
 	glBindVertexArray(m_glPreviewVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("sprite"));
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("disc"));
 
 		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("sprite"));
+		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("disc"));
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
