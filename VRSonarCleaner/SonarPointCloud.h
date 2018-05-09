@@ -104,7 +104,7 @@ public:
 		bool previewRefreshNeeded;
 
 		//OpenGL
-		GLuint m_glVAO, m_glVBO, m_glEBO;
+		GLuint m_glVAO, m_glPointsVBO;
 		GLuint m_glPreviewVAO;		
 
 		bool loadCARISTxt();

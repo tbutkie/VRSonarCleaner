@@ -172,6 +172,8 @@ public:
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
 
 	GLuint getPrimitiveVAO(std::string primName);
+	GLuint getPrimitiveVBO(std::string primName);
+	GLuint getPrimitiveEBO(std::string primName);
 	GLsizei getPrimitiveIndexCount(std::string primName);
 
 	void toggleWireframe();
@@ -254,7 +256,10 @@ private:
 
 	std::map<std::string, GLuint*> m_mapShaders;
 
-	std::map<std::string, std::pair<GLuint, GLsizei>> m_mapPrimitives;
+	std::map<std::string, GLuint> m_mapPrimitiveVAOs;
+	std::map<std::string, GLuint> m_mapPrimitiveVBOs;
+	std::map<std::string, GLuint> m_mapPrimitiveEBOs;
+	std::map<std::string, GLsizei> m_mapPrimitiveIndexCounts;
 
 	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
 

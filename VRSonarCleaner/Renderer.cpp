@@ -655,7 +655,7 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 
 void Renderer::setupPrimitives()
 {
-	generateIcosphere(6);
+	generateIcosphere(3);
 	generateCylinder(32);
 	generateTorus(1.f, 0.025f, 32, 8);
 	generatePlane();
@@ -866,7 +866,13 @@ void Renderer::generateIcosphere(int recursionLevel)
 	glNamedBufferStorage(m_glIcosphereVBO, buff.size() * sizeof(PrimVert), &buff[0], GL_NONE);
 	glNamedBufferStorage(m_glIcosphereEBO, indices.size() * sizeof(GLushort), &indices[0], GL_NONE);
 
-	m_mapPrimitives["icosphere"] = m_mapPrimitives["inverse_icosphere"] = std::make_pair(m_glIcosphereVAO, indices.size());
+	for (auto primname : { "icosphere", "inverse_icosphere", "icosphere_inverse" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glIcosphereVAO;
+		m_mapPrimitiveVBOs[primname] = m_glIcosphereVBO;
+		m_mapPrimitiveEBOs[primname] = m_glIcosphereEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(indices.size());
+	}
 }
 
 
@@ -934,7 +940,13 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 	glNamedBufferStorage(m_glTorusVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 	glNamedBufferStorage(m_glTorusEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	m_mapPrimitives["torus"] = std::make_pair(m_glTorusVAO, inds.size());
+	for (auto primname : { "torus", "donut", "doughnut" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glTorusVAO;
+		m_mapPrimitiveVBOs[primname] = m_glTorusVBO;
+		m_mapPrimitiveEBOs[primname] = m_glTorusEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+	}
 }
 
 void Renderer::generateCylinder(int numSegments)
@@ -1030,8 +1042,14 @@ void Renderer::generateCylinder(int numSegments)
 	glNamedBufferStorage(m_glCylinderVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
 	// Element array buffer
 	glNamedBufferStorage(m_glCylinderEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	m_mapPrimitives["cylinder"] = std::make_pair(m_glCylinderVAO, inds.size());
+	
+	for (auto primname : { "cylinder", "rod" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glCylinderVAO;
+		m_mapPrimitiveVBOs[primname] = m_glCylinderVBO;
+		m_mapPrimitiveEBOs[primname] = m_glCylinderEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+	}
 }
 
 void Renderer::generatePlane()
@@ -1093,8 +1111,18 @@ void Renderer::generatePlane()
 	// Element array buffer
 	glNamedBufferStorage(m_glPlaneEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	m_mapPrimitives["plane"] = m_mapPrimitives["quad"] = std::make_pair(m_glPlaneVAO, 6); // one sided
-	m_mapPrimitives["planedouble"] = m_mapPrimitives["quaddouble"] = std::make_pair(m_glPlaneVAO, 12); // two sided
+	for (auto primname : { "plane", "quad", "sprite" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glPlaneVAO;
+		m_mapPrimitiveVBOs[primname] = m_glPlaneVBO;
+		m_mapPrimitiveEBOs[primname] = m_glPlaneEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() / 2);
+
+		m_mapPrimitiveVAOs[primname + std::string("double")] = m_glPlaneVAO;
+		m_mapPrimitiveVBOs[primname + std::string("double")] = m_glPlaneVBO;
+		m_mapPrimitiveEBOs[primname + std::string("double")] = m_glPlaneEBO;
+		m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size());
+	}
 }
 
 void Renderer::generateCube()
@@ -1204,7 +1232,13 @@ void Renderer::generateCube()
 	// Element array buffer
 	glNamedBufferStorage(m_glCubeEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	m_mapPrimitives["cube"] = m_mapPrimitives["box"] = m_mapPrimitives["skybox"] = std::make_pair(m_glCubeVAO, inds.size());
+	for (auto primname : { "cube", "box", "skybox" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glCubeVAO;
+		m_mapPrimitiveVBOs[primname] = m_glCubeVBO;
+		m_mapPrimitiveEBOs[primname] = m_glCubeEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+	}
 }
 
 // Essentially a unit cube wireframe
@@ -1269,7 +1303,13 @@ void Renderer::generateBBox()
 	// Element array buffer
 	glNamedBufferStorage(m_glBBoxEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
 
-	m_mapPrimitives["bbox_lines"] = std::make_pair(m_glBBoxVAO, inds.size()); 
+	for (auto primname : { "bbox_lines" })
+	{
+		m_mapPrimitiveVAOs[primname] = m_glBBoxVAO;
+		m_mapPrimitiveVBOs[primname] = m_glBBoxVBO;
+		m_mapPrimitiveEBOs[primname] = m_glBBoxEBO;
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+	}
 }
 
 void Renderer::setupText()
@@ -1531,8 +1571,8 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
 		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
-		rs.VAO = m_mapPrimitives["quaddouble"].first;
-		rs.vertCount = m_mapPrimitives["quaddouble"].second;
+		rs.VAO = m_mapPrimitiveVAOs["quaddouble"];
+		rs.vertCount = m_mapPrimitiveIndexCounts["quaddouble"];
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = diffTexName.str();
 		rs.diffuseColor = color;
@@ -1657,8 +1697,8 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
 		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
-		rs.VAO = m_mapPrimitives["quaddouble"].first;
-		rs.vertCount = m_mapPrimitives["quaddouble"].second;
+		rs.VAO = m_mapPrimitiveVAOs["quaddouble"];
+		rs.vertCount = m_mapPrimitiveIndexCounts["quaddouble"];
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = *c;
 		rs.diffuseColor = color;
@@ -1713,26 +1753,52 @@ glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim 
 
 GLuint Renderer::getPrimitiveVAO(std::string primName)
 {
-	auto prim = m_mapPrimitives.find(primName);
+	auto prim = m_mapPrimitiveVAOs.find(primName);
 
-	if (prim == m_mapPrimitives.end())
+	if (prim == m_mapPrimitiveVAOs.end())
 	{
 		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
 		return 0;
 	}
 
-	return prim->second.first;
+	return prim->second;
+}
+
+GLuint Renderer::getPrimitiveVBO(std::string primName)
+{
+	auto prim = m_mapPrimitiveVBOs.find(primName);
+
+	if (prim == m_mapPrimitiveVBOs.end())
+	{
+		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
+		return 0;
+	}
+
+	return prim->second;
+}
+
+GLuint Renderer::getPrimitiveEBO(std::string primName)
+{
+	auto prim = m_mapPrimitiveEBOs.find(primName);
+
+	if (prim == m_mapPrimitiveEBOs.end())
+	{
+		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
+		return 0;
+	}
+
+	return prim->second;
 }
 
 GLsizei Renderer::getPrimitiveIndexCount(std::string primName)
 {
-	auto prim = m_mapPrimitives.find(primName);
+	auto prim = m_mapPrimitiveIndexCounts.find(primName);
 
-	if (prim == m_mapPrimitives.end())
+	if (prim == m_mapPrimitiveIndexCounts.end())
 	{
 		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
 		return 0;
 	}
 
-	return prim->second.second;
+	return prim->second;
 }

@@ -1,6 +1,7 @@
 #include "SonarPointCloud.h"
 
 #include "GLSLpreamble.h"
+#include "Renderer.h"
 
 #include <iostream>
 #include <fstream>
@@ -12,8 +13,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
 	, m_glVAO(0u)
 	, m_glPreviewVAO(0u)
-	, m_glVBO(0u)
-	, m_glEBO(0u)
+	, m_glPointsVBO(0u)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
@@ -391,7 +391,7 @@ void SonarPointCloud::update()
 	if (m_bLoaded && (refreshNeeded || previewRefreshNeeded))
 	{
 		// Sub buffer data for colors...
-		glNamedBufferSubData(m_glVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+		glNamedBufferSubData(m_glPointsVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
 
 		refreshNeeded = false;
 		previewRefreshNeeded = false;
@@ -539,42 +539,21 @@ void SonarPointCloud::createAndLoadBuffers()
 		glm::vec2 t; // texture coord
 	};
 
-	std::vector<PrimVert> verts;
-	std::vector<GLushort> inds;
-
-	// Front face
-	verts.push_back(PrimVert({ glm::vec3(-0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
-	verts.push_back(PrimVert({ glm::vec3(0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
-	verts.push_back(PrimVert({ glm::vec3(0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
-	verts.push_back(PrimVert({ glm::vec3(-0.5f, 0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f),	glm::vec4(1.f), glm::vec2(0.f, 0.f) }));
-
-	inds.push_back(0u);
-	inds.push_back(1u);
-	inds.push_back(2u);
-	inds.push_back(2u);
-	inds.push_back(3u);
-	inds.push_back(0u);
-
 	// Create data buffer, allocate storage, and upload initial data
-	glCreateBuffers(1, &m_glVBO);
-	glCreateBuffers(1, &m_glEBO);
+	glCreateBuffers(1, &m_glPointsVBO);
 
-	glNamedBufferStorage(m_glVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
-	glNamedBufferSubData(m_glVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
-	glNamedBufferSubData(m_glVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
-	glNamedBufferStorage(m_glEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	glCreateBuffers(1, &m_glInstancedSpriteVBO);
-
-	glNamedBufferStorage(m_glInstancedSpriteVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
+	glNamedBufferStorage(m_glPointsVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferSubData(m_glPointsVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
+	glNamedBufferSubData(m_glPointsVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+	
 
 	// Create main VAO
 	glGenVertexArrays(1, &m_glVAO);
 	glBindVertexArray(m_glVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("sprite"));
 
 		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("sprite"));
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
@@ -586,7 +565,7 @@ void SonarPointCloud::createAndLoadBuffers()
 		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 
 		// Describe instanced verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glPointsVBO);
 
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
@@ -599,10 +578,10 @@ void SonarPointCloud::createAndLoadBuffers()
 	// Create preview VAO
 	glGenVertexArrays(1, &m_glPreviewVAO);
 	glBindVertexArray(m_glPreviewVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("sprite"));
 
 		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glInstancedSpriteVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("sprite"));
 
 		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
@@ -614,7 +593,7 @@ void SonarPointCloud::createAndLoadBuffers()
 		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 
 		// Describe instanced verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glPointsVBO);
 
 		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
 		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);

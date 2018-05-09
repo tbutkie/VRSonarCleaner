@@ -25,28 +25,12 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 out vec4 v4Color;
 out vec2 v2TexCoord;
 
-float aspect = 1.f;
+float size = 0.0025f;
 
 void main()
 {
 	v4Color = v4InstanceCol;
 	v2TexCoord = v2TexCoordsIn;
 	
-	mat4 MVMat = m4View * m4DataVolumeTransform;
-
-	vec2 scale = vec2(
-		length(MVMat[0]) / aspect,
-		length(MVMat[1])
-	 ) * 0.5f;
-
-	vec4 posViewSpace = m4View * m4DataVolumeTransform * vec4(v3InstancePos, 1.f);
-	
-    gl_Position = m4Projection * (vec4(v3Position * 0.0025f, 1.f) + posViewSpace);
-  
-//	vec4 billboard = (MVMat * vec4(v3InstancePos, 1.0));
-//  vec4 newPosition = m4Projection
-//    * billboard
-//    + vec4(scale * v3Position.xy, 0.0, 1.0);
-//  
-//  gl_Position = newPosition;
+    gl_Position = m4Projection * (vec4(v3Position * size, 1.f) + m4View * m4DataVolumeTransform * vec4(v3InstancePos, 1.f));
 }
