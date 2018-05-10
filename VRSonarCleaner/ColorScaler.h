@@ -36,8 +36,8 @@ public:
 	void getScaledColor(float factor, float *r, float *g, float *b, ColorMap colorMapEnum);
 	void submitMinMaxForColorScale(double minVal, double maxVal);
 	void resetMinMaxForColorScale(double minVal, double maxVal);
-	float getColorScaleMin();
-	float getColorScaleMax();
+	double getColorScaleMin();
+	double getColorScaleMax();
 	float getColorScaleFactor(double value);
 
 	void submitBiValueScaleMinMax(double MinVal1, double MaxVal1, double MinVal2, double MaxVal2);

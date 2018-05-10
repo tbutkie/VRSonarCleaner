@@ -85,54 +85,54 @@ void ColorScaler::getScaledColorForValue(double value, float *r, float *g, float
 
 void ColorScaler::getOrangeBrownScaledColor(float factor, float *r, float *g, float *b)
 {
-	*r = 1 - pow((factor / 1.35), 5);
-	*g = 1 - pow((factor / 1.2), 3);
-	*b = 1 - (factor*1.25);
-	if (*b < 0)
-		*b = 0;
+	*r = 1.f - powf((factor / 1.35f), 5.f);
+	*g = 1.f - powf((factor / 1.2f), 3.f);
+	*b = 1.f - (factor*1.25f);
+	if (*b < 0.f)
+		*b = 0.f;
 }
 
 void ColorScaler::getRainbowScaledColor(float factor, float *r, float *g, float *b)
 {
 	int sextant;
-	double vsf, mid1, mid2;
+	float vsf, mid1, mid2;
 
-	factor *= 6.0;
+	factor *= 6.f;
 	sextant = (int)factor;
-	vsf = factor - sextant;
+	vsf = factor - floorf(factor);
 	mid1 = vsf;
-	mid2 = 1 - vsf;
+	mid2 = 1.f - vsf;
 	switch (sextant)
 	{
 	case 0:
-		*r = 1;
-		*g = 0;
+		*r = 1.f;
+		*g = 0.f;
 		*b = mid2;
 		break;
 	case 1:
-		*r = 1;
+		*r = 1.f;
 		*g = mid1;
-		*b = 0;
+		*b = 0.f;
 		break;
 	case 2:
 		*r = mid2;
-		*g = 1;
-		*b = 0;
+		*g = 1.f;
+		*b = 0.f;
 		break;
 	case 3:
-		*r = 0;
-		*g = 1;
+		*r = 0.f;
+		*g = 1.f;
 		*b = mid1;
 		break;
 	case 4:
-		*r = 0;
+		*r = 0.f;
 		*g = mid2;
-		*b = 1;
+		*b = 1.f;
 		break;
 	case 5:
 		*r = mid1;
-		*g = 0;
-		*b = 1;
+		*g = 0.f;
+		*b = 1.f;
 		break;
 
 	}
@@ -144,89 +144,89 @@ void ColorScaler::getRainbowScaledColor(float factor, float *r, float *g, float 
 
 void ColorScaler::getBandedRainbowScaledColor(float factor, float *r, float *g, float *b)
 {
-	if (factor < 0.071) //violet
+	if (factor < 0.071f) //violet
 	{
-		*r = 0.33;
-		*g = 0;
-		*b = 0.62;
+		*r = 0.33f;
+		*g = 0.f;
+		*b = 0.62f;
 	}
-	else if (factor < 0.143)
+	else if (factor < 0.143f)
 	{
-		*r = 0.18;
-		*g = 0;
-		*b = 0.91;
+		*r = 0.18f;
+		*g = 0.f;
+		*b = 0.91f;
 	}
-	else if (factor < 0.214)
+	else if (factor < 0.214f)
 	{
-		*r = 0;
-		*g = 0.18;
-		*b = 1;
+		*r = 0.f;
+		*g = 0.18f;
+		*b = 1.f;
 	}
-	else if (factor < 0.286) //ltblue
+	else if (factor < 0.286f) //ltblue
 	{
-		*r = 0;
-		*g = 0.55;
-		*b = 1;
+		*r = 0.f;
+		*g = 0.55f;
+		*b = 1.f;
 	}
-	else if (factor < 0.357)
+	else if (factor < 0.357f)
 	{
-		*r = 0;
-		*g = 0.78;
-		*b = 1;
+		*r = 0.f;
+		*g = 0.78f;
+		*b = 1.f;
 	}
-	else if (factor < 0.429)
+	else if (factor < 0.429f)
 	{
-		*r = 0;
-		*g = 1;
-		*b = 0.83; //cyan
+		*r = 0.f;
+		*g = 1.f;
+		*b = 0.83f; //cyan
 	}
-	else if (factor < 0.500) //green
+	else if (factor < 0.5f) //green
 	{
-		*r = 0.1;
-		*g = 1;
-		*b = 0;
+		*r = 0.1f;
+		*g = 1.f;
+		*b = 0.f;
 	}
-	else if (factor < 0.571) //yellowish green
+	else if (factor < 0.571f) //yellowish green
 	{
-		*r = 0.63;
-		*g = 1;
-		*b = 0;
+		*r = 0.63f;
+		*g = 1.f;
+		*b = 0.f;
 	}
-	else if (factor < 0.643) //very yellowish green
+	else if (factor < 0.643f) //very yellowish green
 	{
-		*r = 0.87;
-		*g = 1;
-		*b = 0;
+		*r = 0.87f;
+		*g = 1.f;
+		*b = 0.f;
 	}
-	else if (factor < 0.714) //very yellow
+	else if (factor < 0.714f) //very yellow
+	{
+		*r = 1.f;
+		*g = 0.98f;
+		*b = 0.f;
+	}
+	else if (factor < 0.786f) //lt orange
 	{
 		*r = 1;
-		*g = 0.98;
-		*b = 0;
+		*g = 0.85f;
+		*b = 0.f;
 	}
-	else if (factor < 0.786) //lt orange
+	else if (factor < 0.857f) //orange
 	{
-		*r = 1;
-		*g = 0.85;
-		*b = 0;
+		*r = 1.f;
+		*g = 0.6f;
+		*b = 0.f;
 	}
-	else if (factor < 0.857) //orange
+	else if (factor < 0.929f) //dark orange
 	{
-		*r = 1;
-		*g = 0.6;
-		*b = 0;
-	}
-	else if (factor < 0.929) //dark orange
-	{
-		*r = 1;
-		*g = 0.42;
-		*b = 0;
+		*r = 1.f;
+		*g = 0.42f;
+		*b = 0.f;
 	}
 	else //red
 	{
-		*r = 1;
-		*g = 0;
-		*b = 0;
+		*r = 1.f;
+		*g = 0.f;
+		*b = 0.f;
 	}
 	return;
 
@@ -234,65 +234,65 @@ void ColorScaler::getBandedRainbowScaledColor(float factor, float *r, float *g, 
 
 void ColorScaler::getBandedBlueScaledColor(float factor, float *r, float *g, float *b)
 {
-	if (factor < 0.10)
+	if (factor < 0.1f)
 	{
-		*r = 0.01;
-		*g = 0.05;
-		*b = 0.20;
+		*r = 0.01f;
+		*g = 0.05f;
+		*b = 0.20f;
 	}
-	else if (factor < 0.20)
+	else if (factor < 0.2f)
 	{
-		*r = 0.03;
-		*g = 0.19;
-		*b = 0.42;
+		*r = 0.03f;
+		*g = 0.19f;
+		*b = 0.42f;
 	}
-	else if (factor < 0.30)
+	else if (factor < 0.3f)
 	{
-		*r = 0.03;
-		*g = 0.32;
-		*b = 0.61;
+		*r = 0.03f;
+		*g = 0.32f;
+		*b = 0.61f;
 	}
-	else if (factor < 0.40)
+	else if (factor < 0.4f)
 	{
-		*r = 0.13;
-		*g = 0.44;
-		*b = 0.71;
+		*r = 0.13f;
+		*g = 0.44f;
+		*b = 0.71f;
 	}
-	else if (factor < 0.50)
+	else if (factor < 0.5f)
 	{
-		*r = 0.26;
-		*g = 0.57;
-		*b = 0.78;
+		*r = 0.26f;
+		*g = 0.57f;
+		*b = 0.78f;
 	}
-	else if (factor < 0.60)
+	else if (factor < 0.6f)
 	{
-		*r = 0.42;
-		*g = 0.68;
-		*b = 0.84;
+		*r = 0.42f;
+		*g = 0.68f;
+		*b = 0.84f;
 	}
-	else if (factor < 0.70)
+	else if (factor < 0.7f)
 	{
-		*r = 0.62;
-		*g = 0.79;
-		*b = 0.88;
+		*r = 0.62f;
+		*g = 0.79f;
+		*b = 0.88f;
 	}
-	else if (factor < 0.80)
+	else if (factor < 0.8f)
 	{
-		*r = 0.78;
-		*g = 0.86;
-		*b = 0.94;
+		*r = 0.78f;
+		*g = 0.86f;
+		*b = 0.94f;
 	}
-	else if (factor < 0.90)
+	else if (factor < 0.9f)
 	{
-		*r = 0.87;
-		*g = 0.92;
-		*b = 0.97;
+		*r = 0.87f;
+		*g = 0.92f;
+		*b = 0.97f;
 	}
 	else
 	{
-		*r = 0.97;
-		*g = 0.98;
-		*b = 1.0;
+		*r = 0.97f;
+		*g = 0.98f;
+		*b = 1.f;
 	}
 	return;
 }
@@ -333,12 +333,12 @@ void ColorScaler::resetMinMaxForColorScale(double minVal, double maxVal)
 	m_bColorScaleMinMaxSet = true;
 }
 
-float ColorScaler::getColorScaleMin()
+double ColorScaler::getColorScaleMin()
 {
 	return minColorScaleValue;
 }
 
-float ColorScaler::getColorScaleMax()
+double ColorScaler::getColorScaleMax()
 {
 	return maxColorScaleValue;
 }
@@ -346,11 +346,11 @@ float ColorScaler::getColorScaleMax()
 float ColorScaler::getColorScaleFactor(double value)
 {
 	if (value <= minColorScaleValue)
-		return 0;
+		return 0.f;
 	else if (value >= maxColorScaleValue)
-		return 1;
+		return 1.f;
 	else
-		return ((value - minColorScaleValue) / rangeColorScaleValue);
+		return static_cast<float>((value - minColorScaleValue) / rangeColorScaleValue);
 }
 
 //BI VALUE SCALER:
@@ -418,158 +418,158 @@ void ColorScaler::getBiValueScaledColor(double val1, double val2, float *r, floa
 	float factor1, factor2;
 	
 	if (val1 <= minVal1)
-		factor1 = 0;
+		factor1 = 0.f;
 	else if (val1 >= maxVal1)
-		factor1 = 1;
+		factor1 = 1.f;
 	else
-		factor1 = ((val1 - minVal1) / rangeVal1);
+		factor1 = static_cast<float>((val1 - minVal1) / rangeVal1);
 	
 	if (val2 <= minVal2)
-		factor2 = 0;
+		factor2 = 0.f;
 	else if (val2 >= maxVal2)
-		factor2 = 1;
+		factor2 = 1.f;
 	else
-		factor2 = ((val2 - minVal2) / rangeVal2);
+		factor2 = static_cast<float>((val2 - minVal2) / rangeVal2);
 
 	switch (m_ColorMap_BiValue)
 	{
 	case RedBlue:
 	{
-		*r = val1;
-		*g = 0;
-		*b = val2;
+		*r = static_cast<float>(val1);
+		*g = 0.f;
+		*b = static_cast<float>(val2);
 		break;
 	}
 	case PurpleGreen:
 	{
-		if (factor1 < 0.333)
+		if (factor1 < 0.333f)
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 0.95;
-				*g = 0.95;
-				*b = 0.95;
+				*r = 0.95f;
+				*g = 0.95f;
+				*b = 0.95f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 0.76;
-				*g = 0.94;
-				*b = 0.81;
+				*r = 0.76f;
+				*g = 0.94f;
+				*b = 0.81f;
 			}
 			else
 			{
-				*r = 0.54;
-				*g = 0.88;
-				*b = 0.68;
+				*r = 0.54f;
+				*g = 0.88f;
+				*b = 0.68f;
 			}
 		}
-		else if (factor1 < 0.666)
+		else if (factor1 < 0.666f)
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 0.92;
-				*g = 0.77;
-				*b = 0.87;
+				*r = 0.92f;
+				*g = 0.77f;
+				*b = 0.87f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 0.62;
-				*g = 0.77;
-				*b = 0.83;
+				*r = 0.62f;
+				*g = 0.77f;
+				*b = 0.83f;
 			}
 			else
 			{
-				*r = 0.49;
-				*g = 0.77;
-				*b = 0.69;
+				*r = 0.49f;
+				*g = 0.77f;
+				*b = 0.69f;
 			}
 		}
 		else
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 0.90;
-				*g = 0.64;
-				*b = 0.82;
+				*r = 0.9f;
+				*g = 0.64f;
+				*b = 0.82f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 0.73;
-				*g = 0.62;
-				*b = 0.81;
+				*r = 0.73f;
+				*g = 0.62f;
+				*b = 0.81f;
 			}
 			else
 			{
-				*r = 0.48;
-				*g = 0.57;
-				*b = 0.68;
+				*r = 0.48f;
+				*g = 0.57f;
+				*b = 0.68f;
 			}
 		}
 		break;
 	}
 	case Custom:
 	{
-		if (factor1 < 0.333)
+		if (factor1 < 0.333f)
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 1.0;
-				*g = 1.0;
-				*b = 1.0;
+				*r = 1.f;
+				*g = 1.f;
+				*b = 1.f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 1.0;
-				*g = 1.0;
-				*b = 0.65;
+				*r = 1.f;
+				*g = 1.f;
+				*b = 0.65f;
 			}
 			else
 			{
-				*r = 1.0;
-				*g = 0.75;
-				*b = 0.45;
+				*r = 1.f;
+				*g = 0.75f;
+				*b = 0.45f;
 			}
 		}
-		else if (factor1 < 0.666)
+		else if (factor1 < 0.666f)
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 1.0;
-				*g = 0.85;
-				*b = 0.15;
+				*r = 1.f;
+				*g = 0.85f;
+				*b = 0.15f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 1.0;
-				*g = 0.75;
-				*b = 0.25;
+				*r = 1.f;
+				*g = 0.75f;
+				*b = 0.25f;
 			}
 			else
 			{
-				*r = 1.0;
-				*g = 0.50;
-				*b = 0.40;
+				*r = 1.f;
+				*g = 0.5f;
+				*b = 0.4f;
 			}
 		}
 		else
 		{
-			if (factor2 < 0.333)
+			if (factor2 < 0.333f)
 			{
-				*r = 1.0;
-				*g = 0.50;
-				*b = 0.50;
+				*r = 1.f;
+				*g = 0.5f;
+				*b = 0.5f;
 			}
-			else if (factor2 < 0.666)
+			else if (factor2 < 0.666f)
 			{
-				*r = 1.0;
-				*g = 0.35;
-				*b = 0.35;
+				*r = 1.f;
+				*g = 0.35f;
+				*b = 0.35f;
 			}
 			else
 			{
-				*r = 1.0;
-				*g = 0.15;
-				*b = 0.15;
+				*r = 1.f;
+				*g = 0.15f;
+				*b = 0.15f;
 			}
 		}
 		break;

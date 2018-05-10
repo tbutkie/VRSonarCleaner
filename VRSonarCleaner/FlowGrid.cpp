@@ -628,22 +628,22 @@ void FlowGrid::setCoordinateScaler(CoordinateScaler *Scaler)
 }
 float FlowGrid::getScaledXMin()
 {
-	return scaler->getScaledLonX(m_fXMin);
+	return static_cast<float>(scaler->getScaledLonX(m_fXMin));
 }
 
 float FlowGrid::getScaledXMax()
 {
-	return scaler->getScaledLonX(m_fXMax);
+	return static_cast<float>(scaler->getScaledLonX(m_fXMax));
 }
 
 float FlowGrid::getScaledYMin()
 {
-	return scaler->getScaledLatY(m_fYMin);
+	return static_cast<float>(scaler->getScaledLatY(m_fYMin));
 }
 
 float FlowGrid::getScaledYMax()
 {
-	return scaler->getScaledLatY(m_fYMax);
+	return static_cast<float>(scaler->getScaledLatY(m_fYMax));
 }
 
 float FlowGrid::getScaledMinDepth()
@@ -699,18 +699,18 @@ int FlowGrid::getNumXYCells()
 void FlowGrid::getXYZofCell(int cellIndex, float *lonX, float *latY, float *depth)
 {
 	int x = cellIndex%m_nXCells;
-	int y = floor((float)cellIndex/(float)m_nXCells);
+	int y = cellIndex/m_nXCells;
 	
 	*lonX = m_fXMin + (x * m_fXCellSize);
 	*latY = m_fYMin + (y * m_fYCellSize);
 
 	//*depth = bathyDepth2d[(y*xCells) + x];
 
-	int z = 0;
+	float z = 0;
 	for (int i=0;i<m_nZCells;i++)
 	{
 		if (*depth >= m_vDepthValues[i])
-			z = i;
+			z = static_cast<float>(i);
 	}
 	*depth = z;
 

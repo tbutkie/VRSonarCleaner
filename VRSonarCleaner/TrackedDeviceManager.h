@@ -27,14 +27,14 @@ public:
 
 	void hideBaseStations(bool hidden);
 
-	glm::mat4& getWorldToHMDTransform();
-	glm::mat4& getHMDToWorldTransform();
+	glm::mat4 getWorldToHMDTransform();
+	glm::mat4 getHMDToWorldTransform();
 	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);
 	glm::mat4 getDeviceComponentPose(uint32_t deviceID, uint32_t componentID);
 	ViveController* getPrimaryController();
 	ViveController* getSecondaryController();
-	glm::mat4& getPrimaryControllerPose();
-	glm::mat4& getSecondaryControllerPose();
+	glm::mat4 getPrimaryControllerPose();
+	glm::mat4 getSecondaryControllerPose();
 	bool isPrimaryControllerInRighthandPosition();
 	
 	glm::mat4 getHMDEyeProjection(vr::Hmd_Eye nEye, float nearClipPlane, float farClipPlane);

@@ -455,7 +455,7 @@ unsigned int PointCleanProbe::checkPoints()
 				}
 				else
 				{
-					cloud->markPoint(i, 100.f + 100.f * m_fPtHighlightAmt);
+					cloud->markPoint(i, static_cast<int>(100.f + 100.f * m_fPtHighlightAmt));
 					selectedPoints++;
 				}
 

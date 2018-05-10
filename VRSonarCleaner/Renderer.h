@@ -49,7 +49,7 @@ public:
 	{
 		GLenum			glPrimitiveType;
 		GLuint			VAO;
-		int				vertCount;
+		GLsizei				vertCount;
 		GLenum			indexType;
 		std::string		shaderName;
 		GLenum			vertWindingOrder;
@@ -60,7 +60,7 @@ public:
 		float			specularExponent;
 		bool			hasTransparency;
 		bool			instanced;
-		unsigned int	instanceCount;
+		GLsizei			instanceCount;
 		glm::vec4		transparencySortPosition;
 		glm::mat4		modelToWorldTransform;
 

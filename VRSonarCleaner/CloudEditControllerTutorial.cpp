@@ -108,7 +108,7 @@ void CloudEditControllerTutorial::update()
 		double minZ = std::numeric_limits<double>::max();
 		double maxZ = -std::numeric_limits<double>::max();
 
-		for (int i = 0; i < m_pDemoCloud->getPointCount(); ++i)
+		for (unsigned int i = 0; i < static_cast<unsigned int>(m_pDemoCloud->getPointCount()); ++i)
 		{
 			if (m_pDemoCloud->getPointMark(i) != 1)
 			{

@@ -39,7 +39,7 @@ void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, d
 {
 	double thisX = m_pScaler->getUnscaledLonX(x);
 	double thisY = m_pScaler->getUnscaledLatY(y);
-	double thisZ = -m_pScaler->getUnscaledDepth(z);
+	double thisZ = static_cast<double>(-m_pScaler->getUnscaledDepth(static_cast<float>(z)));
 
 	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
 	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
@@ -361,11 +361,11 @@ void IllustrativeParticleSystem::update(float time)
 		}//end if illust. parts enabled
 	}//end for each flowgrid
 
-	m_nLastCountLiveParticles = m_nMaxParticles - deadParticles.size();
-	m_nLastCountLiveSeeds = activeParticles.size();
+	m_nLastCountLiveParticles = m_nMaxParticles - static_cast<int>(deadParticles.size());
+	m_nLastCountLiveSeeds = static_cast<int>(activeParticles.size());
 
-	uint64_t count = 0ull;
-	for (int i = 0; i < m_vpParticles.size(); ++i)
+	size_t count = 0;
+	for (size_t i = 0; i < m_vpParticles.size(); ++i)
 	{
 		int numPositions = m_vpParticles[i]->getNumLivePositions();
 		if (numPositions > 1)
@@ -379,13 +379,13 @@ void IllustrativeParticleSystem::update(float time)
 
 				glm::vec3 pos1, pos2;
 
-				pos1.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x);
-				pos1.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y);
-				pos1.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z);
+				pos1.x = static_cast<float>(m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x));
+				pos1.y = static_cast<float>(m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y));
+				pos1.z = static_cast<float>(-m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z));
 
-				pos2.x = m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x);
-				pos2.y = m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y);
-				pos2.z = -m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z);
+				pos2.x = static_cast<float>(m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x));
+				pos2.y = static_cast<float>(m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y));
+				pos2.z = static_cast<float>(-m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z));
 
 				float opacity1 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex1]) / std::chrono::duration<float>(timeElapsed);
 				float opacity2 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex2]) / std::chrono::duration<float>(timeElapsed);
@@ -395,13 +395,13 @@ void IllustrativeParticleSystem::update(float time)
 
 				m_arrvec3PositionsBuffer[count] = pos1;
 				m_arrvec4ColorBuffer[count] = col1;
-				m_arruiIndices[count] = count;
+				m_arruiIndices[count] = static_cast<GLuint>(count);
 
 				count++;
 
 				m_arrvec3PositionsBuffer[count] = pos2;
 				m_arrvec4ColorBuffer[count] = col2;
-				m_arruiIndices[count] = count;
+				m_arruiIndices[count] = static_cast<GLuint>(count);
 
 				count++;
 			}//end for each position
@@ -409,7 +409,7 @@ void IllustrativeParticleSystem::update(float time)
 	}//end for each particle
 
 	m_bReadyToTransferData = true;
-	m_nIndexCount = count;
+	m_nIndexCount = static_cast<GLsizei>(count);
 }
 
 bool IllustrativeParticleSystem::prepareForRender()
@@ -478,15 +478,15 @@ int IllustrativeParticleSystem::getNumLiveSeeds()
 
 int IllustrativeParticleSystem::getNumDyePoles()
 {
-	return m_vpDyePoles.size();
+	return static_cast<int>(m_vpDyePoles.size());
 }
 
 int IllustrativeParticleSystem::getNumDyeEmitters()
 {
-	int total = 0;
-	for (int i=0;i<m_vpDyePoles.size();i++)
+	size_t total = 0;
+	for (size_t i = 0; i < m_vpDyePoles.size(); i++)
 		total += m_vpDyePoles.at(i)->emitters.size();
-	return total;
+	return static_cast<int>(total);
 }
 
 int IllustrativeParticleSystem::getNumDyeParticles()
@@ -506,7 +506,7 @@ GLsizei IllustrativeParticleSystem::getIndexCount()
 
 int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float maxZ)
 {
-	IllustrativeDyePole* tempDP = new IllustrativeDyePole(x, y, minZ, maxZ, m_pScaler);
+	IllustrativeDyePole* tempDP = new IllustrativeDyePole(static_cast<float>(x), static_cast<float>(y), minZ, maxZ, m_pScaler);
 	//tempDP->adddEmittersAlongEntireLength(100);
 	tempDP->addDefaultEmitter();
 	for (int i=0;i<tempDP->getNumEmitters();i++)
@@ -519,7 +519,7 @@ int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float
 
 	}
 	m_vpDyePoles.push_back(tempDP);
-	return m_vpDyePoles.size()-1;
+	return static_cast<int>(m_vpDyePoles.size())-1;
 }
 
 void IllustrativeParticleSystem::drawDyePoles()

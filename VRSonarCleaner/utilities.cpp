@@ -16,7 +16,7 @@ namespace ccomutils
 		for (int i = 0; i < pts.size(); ++i)
 		{
 			glm::vec3 pa, pb;
-			double mua, mub;
+			float mua, mub;
 			LineLineIntersect(viewPosL, iL[i], viewPosR, iR[i], &pa, &pb, &mua, &mub);
 			ret.push_back((pa + pb) / 2.f);
 		}
@@ -46,11 +46,11 @@ namespace ccomutils
 	// Pb = P3 + mub (P4 - P3)												   //
 	// Return false if no solution exists.									   //
 	/////////////////////////////////////////////////////////////////////////////
-	bool LineLineIntersect(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, glm::vec3 *pa, glm::vec3 *pb, double *mua, double *mub)
+	bool LineLineIntersect(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 p4, glm::vec3 *pa, glm::vec3 *pb, float *mua, float *mub)
 	{
 		glm::vec3 p13, p43, p21;
-		double d1343, d4321, d1321, d4343, d2121;
-		double numer, denom;
+		float d1343, d4321, d1321, d4343, d2121;
+		float numer, denom;
 
 		p13.x = p1.x - p3.x;
 		p13.y = p1.y - p3.y;

@@ -29,8 +29,8 @@ namespace ccomutils
 		glm::vec3 p4,
 		glm::vec3* pa,
 		glm::vec3* pb,
-		double* mua,
-		double* mub
+		float* mua,
+		float* mub
 	);
 
 

@@ -57,7 +57,7 @@ void LassoTool::update()
 
 void LassoTool::draw()
 {
-	int n = m_vvec3LassoPoints.size();
+	size_t n = m_vvec3LassoPoints.size();
 
 	if (n < 3)
 		return;
@@ -67,10 +67,10 @@ void LassoTool::draw()
 	m_vvec4Colors = std::vector<glm::vec4>(m_vvec3LassoPoints.size(), m_bLassoActive ? g_vec4ActiveLineColor : g_vec4LineColor);
 
 	// Lasso segments
-	for (int i = 0; i < n - 1; ++i)
+	for (size_t i = 0; i < n - 1; ++i)
 	{
-		m_vusLassoIndices.push_back((unsigned short)i);
-		m_vusLassoIndices.push_back((unsigned short)i + 1);
+		m_vusLassoIndices.push_back((GLushort)i);
+		m_vusLassoIndices.push_back((GLushort)i + 1);
 	}
 
 	// connecting line from last to first points
@@ -82,16 +82,16 @@ void LassoTool::draw()
 			m_vvec4Colors.push_back(g_vec4ConnectorColor);
 			m_vvec3LassoPoints.push_back(m_vvec3LassoPoints.front());
 			m_vvec4Colors.push_back(g_vec4ConnectorColor);
-			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-			m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+			m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 1);
+			m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 2);
 
 			ptsToErase += 2;
 		}
 	}
 	else if (n > 2)
 	{
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vusLassoIndices.push_back((unsigned short)0);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 1);
+		m_vusLassoIndices.push_back(0);
 	}
 
 	// Lasso bounding box
@@ -110,17 +110,17 @@ void LassoTool::draw()
 		ptsToErase += 4;
 
 		// Push bbox indices
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 4);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 3);
 
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 3);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 3);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 2);
 
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 2);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 2);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 1);
 
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 1);
-		m_vusLassoIndices.push_back((unsigned short)m_vvec3LassoPoints.size() - 4);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 1);
+		m_vusLassoIndices.push_back(static_cast<GLushort>(m_vvec3LassoPoints.size()) - 4);
 	}
 
 	assert(m_vvec3LassoPoints.size() == m_vvec4Colors.size());
@@ -146,7 +146,7 @@ void LassoTool::draw()
 	rs.glPrimitiveType = GL_LINES;
 	rs.shaderName = "flat";
 	rs.VAO = m_glVAO;
-	rs.vertCount = m_vusLassoIndices.size();
+	rs.vertCount = static_cast<GLsizei>(m_vusLassoIndices.size());
 	Renderer::getInstance().addToUIRenderQueue(rs);
 
 	m_vvec3LassoPoints.erase(m_vvec3LassoPoints.end() - ptsToErase, m_vvec3LassoPoints.end());
@@ -256,10 +256,10 @@ bool LassoTool::checkPoint(glm::vec2 testPt)
 		return false;
 
 	// within bounding box, so do a full check
-	int j = n - 1;
+	size_t j = n - 1;
 	bool oddNodes = false;
 
-	for (int i = 0; i < n; ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		if ((m_vvec3LassoPoints[i].y < testPt.y && m_vvec3LassoPoints[j].y >= testPt.y
 			|| m_vvec3LassoPoints[j].y < testPt.y && m_vvec3LassoPoints[i].y >= testPt.y)) {
 			oddNodes ^= (testPt.y * m_vfMultiplicands[i] + m_vfConstants[i] < testPt.x);
@@ -277,8 +277,8 @@ void LassoTool::precalc()
 	m_vfConstants.resize(n);
 	m_vfMultiplicands.resize(n);
 
-	int j = n - 1;
-	for (int i = 0; i < n; ++i) {
+	size_t j = n - 1;
+	for (size_t i = 0; i < n; ++i) {
 		if (m_vvec3LassoPoints[j].y == m_vvec3LassoPoints[i].y) {
 			m_vfConstants[i] = m_vvec3LassoPoints[i].x;
 			m_vfMultiplicands[i] = 0;

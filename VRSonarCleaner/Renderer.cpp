@@ -555,7 +555,7 @@ void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBu
 
 	auto tick = std::chrono::high_resolution_clock::now();
 	unsigned maxLines = 50;
-	float msgHeight = sceneViewInfo->m_nRenderHeight / maxLines;
+	float msgHeight = static_cast<float>(sceneViewInfo->m_nRenderHeight) / static_cast<float>(maxLines);
 	float fadeIn = 0.1f;
 	float fadeOut = 1.f;
 
@@ -576,9 +576,9 @@ void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBu
 		m_vMessages.end()
 	);
 
-	int msgCount = m_vMessages.size();
+	size_t msgCount = m_vMessages.size();
 
-	for (unsigned i = msgCount; i-- > 0; )
+	for (size_t i = msgCount; i-- > 0; )
 	{
 		float timeAlive = (std::chrono::duration<float, std::milli>(tick - std::get<2>(m_vMessages[i])).count() / 1000.f);
 		float msgTime = std::get<1>(m_vMessages[i]);
@@ -903,13 +903,13 @@ void Renderer::generateDisc()
 		if (i > 0)
 		{
 			inds.push_back(0); // ctr pt of endcap
-			inds.push_back(verts.size() - 1);
-			inds.push_back(verts.size() - 2);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
 		}
 	}
 	inds.push_back(0);
 	inds.push_back(1);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	//Back
 	//verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
@@ -1052,7 +1052,7 @@ void Renderer::generateCylinder(int numSegments)
 
 	// Front endcap
 	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	for (float i = 0; i < numSegments; ++i)
+	for (int i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
@@ -1060,34 +1060,34 @@ void Renderer::generateCylinder(int numSegments)
 		if (i > 0)
 		{
 			inds.push_back(0);
-			inds.push_back(verts.size() - 2);
-			inds.push_back(verts.size() - 1);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 		}
 	}
 	inds.push_back(0);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 	inds.push_back(1);
 
 	// Back endcap
 	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	for (float i = 0; i < numSegments; ++i)
+	for (int i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
 
 		if (i > 0)
 		{
-			inds.push_back(verts.size() - (i + 2)); // ctr pt of endcap
-			inds.push_back(verts.size() - 1);
-			inds.push_back(verts.size() - 2);
+			inds.push_back(static_cast<GLushort>(verts.size()) - (i + 2)); // ctr pt of endcap
+			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
 		}
 	}
-	inds.push_back(verts.size() - (numSegments + 1));
-	inds.push_back(verts.size() - (numSegments));
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - (numSegments + 1));
+	inds.push_back(static_cast<GLushort>(verts.size()) - (numSegments));
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Shaft
-	for (float i = 0; i < numSegments; ++i)
+	for (int i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
@@ -1096,22 +1096,22 @@ void Renderer::generateCylinder(int numSegments)
 
 		if (i > 0)
 		{
-			inds.push_back(verts.size() - 4);
-			inds.push_back(verts.size() - 3);
-			inds.push_back(verts.size() - 2);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
 
-			inds.push_back(verts.size() - 2);
-			inds.push_back(verts.size() - 3);
-			inds.push_back(verts.size() - 1);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 		}
 	}
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - numSegments * 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
-	inds.push_back(verts.size() - numSegments * 2);
-	inds.push_back(verts.size() - numSegments * 2 + 1);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2 + 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	glGenVertexArrays(1, &m_glCylinderVAO);
 	glGenBuffers(1, &m_glCylinderVBO);
@@ -1235,72 +1235,72 @@ void Renderer::generateCube()
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Top
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Left
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Right
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Front
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	// Back
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f) }));
-	inds.push_back(verts.size() - 4);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 1);
-	inds.push_back(verts.size() - 3);
-	inds.push_back(verts.size() - 2);
-	inds.push_back(verts.size() - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
 
 	glGenVertexArrays(1, &m_glCubeVAO);
 	glGenBuffers(1, &m_glCubeVBO);
@@ -1558,7 +1558,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 
 		if (charCurrent == '\n')
 		{
-			vLineLengths.push_back(cursorDistOnBaseline);
+			vLineLengths.push_back(static_cast<float>(cursorDistOnBaseline));
 			cursorDistOnBaseline = 0;
 			numLines++;
 			lastLinePadding = 0;
@@ -1578,7 +1578,7 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		if (cursorDistOnBaseline > maxCursorDist)
 			maxCursorDist = cursorDistOnBaseline;
 	}
-	vLineLengths.push_back(cursorDistOnBaseline);
+	vLineLengths.push_back(static_cast<float>(cursorDistOnBaseline));
 
 	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
 		
@@ -1696,7 +1696,7 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 	{
 		if (*c == '\n')
 		{
-			vLineLengths.push_back(cursorDistOnBaseline);
+			vLineLengths.push_back(static_cast<float>(cursorDistOnBaseline));
 			cursorDistOnBaseline = 0;
 			numLines++;
 			lastLinePadding = 0;
@@ -1714,7 +1714,7 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 		if (cursorDistOnBaseline > maxCursorDist)
 			maxCursorDist = cursorDistOnBaseline;
 	}
-	vLineLengths.push_back(cursorDistOnBaseline);
+	vLineLengths.push_back(static_cast<float>(cursorDistOnBaseline));
 
 	glm::vec2 textDims(maxCursorDist, firstLineMaxHeight + (numLines - 1) * lineSpacing + lastLinePadding);
 

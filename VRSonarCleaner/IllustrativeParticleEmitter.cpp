@@ -106,7 +106,7 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(std::chrono::time_point<s
 	std::chrono::milliseconds timeSinceLast = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastEmission);
 	if (timeSinceLast > 100ms) //only spawn 10 times per second
 	{
-		int toEmit = std::chrono::duration_cast<std::chrono::seconds>(timeSinceLast).count() * particlesPerSecond;
+		int toEmit = static_cast<int>(floor(std::chrono::duration<float>(timeSinceLast).count() * particlesPerSecond / 1000.f));
 		if (toEmit > 1000) //sanity check for times where there is too long between spawnings
 		{
 			m_tpLastEmission = tick;
@@ -134,10 +134,10 @@ std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int numbe
 
 		if (i > 0)
 		{
-			float randAngle = rand() % 100;
+			float randAngle = static_cast<float>(rand() % 100);
 			randAngle = randAngle * 0.01f * 6.28318f; //2pi
 
-			float randDist = rand() % 100;
+			float randDist = static_cast<float>(rand() % 100);
 			randDist = randDist * 0.01f * radius;
 
 			verts.back().x += randDist * cos(randAngle);
@@ -168,6 +168,8 @@ glm::vec3 IllustrativeParticleEmitter::getColor()
 		return glm::vec3(COLOR_7_R, COLOR_7_G, COLOR_7_B);
 	else if (color == 8)
 		return glm::vec3(COLOR_8_R, COLOR_8_G, COLOR_8_B);
+	else
+		return glm::vec3(1.f);
 }
 
 glm::vec3 IllustrativeParticleEmitter::getMutedColor()

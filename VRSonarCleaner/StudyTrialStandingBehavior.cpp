@@ -115,7 +115,7 @@ void StudyTrialStandingBehavior::update()
 	unsigned int prevPointCount = m_nPointsLeft;
 	m_nPointsLeft = m_nCleanedGoodPoints = m_nPointsCleaned = 0u;
 
-	for (int i = 0; i < m_pPointCloud->getPointCount(); ++i)
+	for (unsigned int i = 0; i < m_pPointCloud->getPointCount(); ++i)
 	{
 		if (m_pPointCloud->getPointDepthTPU(i) == 1.f)
 		{

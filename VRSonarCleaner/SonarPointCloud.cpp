@@ -526,7 +526,7 @@ void SonarPointCloud::adjustPoints()
 {
 	glm::dvec3 adjustment = getDataCenteringAdjustments();
 
-	for (int i = 0; i < m_nPoints; ++i)
+	for (unsigned int i = 0; i < m_nPoints; ++i)
 		m_vvec3AdjustedPointsPositions[i] = m_vdvec3RawPointsPositions[i] + adjustment;
 }
 
@@ -664,7 +664,7 @@ void SonarPointCloud::markPoint(unsigned int index, int code)
 
 void SonarPointCloud::resetAllMarks()
 {
-	for (int i = 0; i < m_nPoints; i++)
+	for (unsigned int i = 0; i < m_nPoints; i++)
 		markPoint(i, 0);	
 }
 

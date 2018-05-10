@@ -72,7 +72,7 @@ void IllustrativeDyePole::changeEmitterTrailtime(int emitterIndex, std::chrono::
 
 int IllustrativeDyePole::getNumEmitters()
 {
-	return emitters.size();
+	return static_cast<int>(emitters.size());
 }
 
 float IllustrativeDyePole::getBottomActualDepth()

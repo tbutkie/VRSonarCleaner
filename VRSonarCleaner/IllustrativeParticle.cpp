@@ -150,7 +150,7 @@ float IllustrativeParticle::getFadeInFadeOutOpacity()
 {
 	if (m_bDying)
 	{
-		float opacity = (m_tpLastUpdateTimestamp - m_tpTimeDeathBegan) / m_msTrailTime;
+		float opacity = std::chrono::duration<float, std::milli>(m_tpLastUpdateTimestamp - m_tpTimeDeathBegan).count() / m_msTrailTime.count();
 		if (opacity > 1.f)
 			return 0.f;
 		else if (opacity < 0.f)
@@ -163,7 +163,7 @@ float IllustrativeParticle::getFadeInFadeOutOpacity()
 		std::chrono::milliseconds timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(m_tpLastUpdateTimestamp - m_tpBirthTime);
 		if (timeSinceStart < 200ms) //first 200 ms
 		{
-			return timeSinceStart / 200ms;
+			return static_cast<float>(timeSinceStart / 200ms);
 		}
 		else
 			return 1.f;

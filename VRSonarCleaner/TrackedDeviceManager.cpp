@@ -306,12 +306,12 @@ void TrackedDeviceManager::draw()
 	}
 }
 
-glm::mat4 & TrackedDeviceManager::getWorldToHMDTransform()
+glm::mat4 TrackedDeviceManager::getWorldToHMDTransform()
 {
 	return m_mat4WorldToHMDTransform;
 }
 
-glm::mat4 & TrackedDeviceManager::getHMDToWorldTransform()
+glm::mat4 TrackedDeviceManager::getHMDToWorldTransform()
 {
 	return m_mat4HMDToWorldTransform;
 }
@@ -347,7 +347,7 @@ ViveController * TrackedDeviceManager::getSecondaryController()
 	return m_pSecondaryController;
 }
 
-glm::mat4 & TrackedDeviceManager::getPrimaryControllerPose()
+glm::mat4 TrackedDeviceManager::getPrimaryControllerPose()
 {
 	if(m_pPrimaryController)
 		return m_pPrimaryController->getDeviceToWorldTransform();
@@ -355,7 +355,7 @@ glm::mat4 & TrackedDeviceManager::getPrimaryControllerPose()
 	return glm::mat4();
 }
 
-glm::mat4 & TrackedDeviceManager::getSecondaryControllerPose()
+glm::mat4 TrackedDeviceManager::getSecondaryControllerPose()
 {
 	if (m_pSecondaryController)
 		return m_pSecondaryController->getDeviceToWorldTransform();

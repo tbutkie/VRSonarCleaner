@@ -59,7 +59,7 @@ public:
 	{
 		glm::vec3 pos_xformed = glm::vec3(m_mat4Transform * glm::vec4(pos, 1.f));
 
-		m_vusPointIndices.push_back(m_vPointVertices.size());
+		m_vusPointIndices.push_back(static_cast<GLushort>(m_vPointVertices.size()));
 		m_vPointVertices.push_back(DebugVertex(pos_xformed, col));
 	}
 
@@ -69,9 +69,9 @@ public:
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vusLineIndices.push_back(static_cast<GLushort>(m_vLineVertices.size()));
 		m_vLineVertices.push_back(DebugVertex(from_xformed, col));
-		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vusLineIndices.push_back(static_cast<GLushort>(m_vLineVertices.size()));
 		m_vLineVertices.push_back(DebugVertex(to_xformed, col));
 	}
 
@@ -81,9 +81,9 @@ public:
 		glm::vec3 from_xformed = glm::vec3(m_mat4Transform * glm::vec4(from, 1.f));
 		glm::vec3 to_xformed = glm::vec3(m_mat4Transform * glm::vec4(to, 1.f));
 
-		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vusLineIndices.push_back(static_cast<GLushort>(m_vLineVertices.size()));
 		m_vLineVertices.push_back(DebugVertex(from_xformed, colFrom));
-		m_vusLineIndices.push_back(m_vLineVertices.size());
+		m_vusLineIndices.push_back(static_cast<GLushort>(m_vLineVertices.size()));
 		m_vLineVertices.push_back(DebugVertex(to_xformed, colTo));
 	}
 
@@ -100,11 +100,11 @@ public:
 		glm::vec3 v1_xformed = glm::vec3(m_mat4Transform * glm::vec4(v1, 1.f));
 		glm::vec3 v2_xformed = glm::vec3(m_mat4Transform * glm::vec4(v2, 1.f));
 
-		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vusTriangleIndices.push_back(static_cast<GLushort>(m_vTriangleVertices.size()));
 		m_vTriangleVertices.push_back(DebugVertex(v0_xformed, color));
-		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vusTriangleIndices.push_back(static_cast<GLushort>(m_vTriangleVertices.size()));
 		m_vTriangleVertices.push_back(DebugVertex(v1_xformed, color));
-		m_vusTriangleIndices.push_back(m_vTriangleVertices.size());
+		m_vusTriangleIndices.push_back(static_cast<GLushort>(m_vTriangleVertices.size()));
 		m_vTriangleVertices.push_back(DebugVertex(v2_xformed, color));
 	}
 
@@ -192,7 +192,7 @@ public:
 
 			rsPoints.glPrimitiveType = GL_POINTS;
 			rsPoints.VAO = m_glPointVAO;
-			rsPoints.vertCount = m_vPointVertices.size();
+			rsPoints.vertCount = static_cast<GLsizei>(m_vPointVertices.size());
 			Renderer::getInstance().addToDynamicRenderQueue(rsPoints);
 		}
 
@@ -205,7 +205,7 @@ public:
 
 			rsLines.glPrimitiveType = GL_LINES;
 			rsLines.VAO = m_glLineVAO;
-			rsLines.vertCount = m_vLineVertices.size();
+			rsLines.vertCount = static_cast<GLsizei>(m_vLineVertices.size());
 			Renderer::getInstance().addToDynamicRenderQueue(rsLines);
 		}
 
@@ -218,7 +218,7 @@ public:
 
 			rsTriangles.glPrimitiveType = GL_TRIANGLES;
 			rsTriangles.VAO = m_glTriangleVAO;
-			rsTriangles.vertCount = m_vTriangleVertices.size();
+			rsTriangles.vertCount = static_cast<GLsizei>(m_vTriangleVertices.size());
 			Renderer::getInstance().addToDynamicRenderQueue(rsTriangles);
 		}
 	}

@@ -16,7 +16,7 @@ ScaleTutorial::ScaleTutorial(TrackedDeviceManager* pTDM)
 	, m_pGoalVolume(NULL)
 	, m_bWaitForTriggerRelease(true)
 {
-	srand(time(NULL));
+	//srand(time(NULL));
 	m_tpTimestamp = std::chrono::high_resolution_clock::now();
 }
 

@@ -101,20 +101,20 @@ glm::vec3 ArcBall::mouseOnSphere(const glm::vec3& tscMouse)
   ballMouse.x = (tscMouse.x - mCenter.x) / mRadius;
   ballMouse.y = (tscMouse.y - mCenter.y) / mRadius;
 
-  glm::float_t mag = glm::dot(ballMouse, ballMouse);
-  if (mag > 1.0)
+  float mag = glm::dot(ballMouse, ballMouse);
+  if (mag > 1.f)
   {
     // Since we are outside of the sphere, map to the visible boundary of
     // the sphere.
-    ballMouse *= 1.0 / sqrtf(mag);
-    ballMouse.z = 0.0;
+    ballMouse *= 1.f / sqrtf(mag);
+    ballMouse.z = 0.f;
   }
   else
   {
     // We are not at the edge of the sphere, we are inside of it.
     // Essentially, we are normalizing the vector by adding the missing z
     // component.
-    ballMouse.z = sqrtf(1.0 - mag);
+    ballMouse.z = sqrtf(1.f - mag);
   }
 
   return ballMouse;

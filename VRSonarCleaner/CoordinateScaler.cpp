@@ -1,23 +1,25 @@
 #include "CoordinateScaler.h"
 
+#include <cmath>
+
 CoordinateScaler::CoordinateScaler()
 {
 	//scale stuff
-	lonXOrigin = 0;
-	latYOrigin = 0;
-	latlonscale = 1;
+	lonXOrigin = 0.0;
+	latYOrigin = 0.0;
+	latlonscale = 1.0;
 	depthScaleMode = 1;
-	maxRealDepth = 5000;
-	maxScaledDepth = 125;
-	minLogScaleFactor1 = 1;
-	maxLogScaleFactor1 = 500;
-	logScaleFactor1 = 50.0;
-	minLogScaleFactor2 = 1;
-	maxLogScaleFactor2 = 30;
-	logScaleFactor2 = 12.5;
-	linScaleFactor = 1;//3.28084;//1;//.01;	
-	minLinScaleFactor = 0.1;
-	maxLinScaleFactor = 10.0;
+	maxRealDepth = 5000.f;
+	maxScaledDepth = 125.f;
+	minLogScaleFactor1 = 1.f;
+	maxLogScaleFactor1 = 500.f;
+	logScaleFactor1 = 50.f;
+	minLogScaleFactor2 = 1.f;
+	maxLogScaleFactor2 = 30.f;
+	logScaleFactor2 = 12.5f;
+	linScaleFactor = 1.f;//3.28084f;//1.f;//.01f;	
+	minLinScaleFactor = 0.1f;
+	maxLinScaleFactor = 10.f;
 }
 
 CoordinateScaler::~CoordinateScaler()
@@ -106,7 +108,7 @@ float CoordinateScaler::getUnscaledDepth(float scaledDepth)
 		if (scaledDepth < 0)
 		{
 			scaledDepth = fabsf(scaledDepth);
-			return ((exp(scaledDepth / logScaleFactor2) * logScaleFactor1) - logScaleFactor1)*-1.0;  //check this sometime
+			return -((exp(scaledDepth / logScaleFactor2) * logScaleFactor1) - logScaleFactor1);  //check this sometime
 		}
 		else
 		{
@@ -123,7 +125,7 @@ float CoordinateScaler::getUnscaledDepth(float scaledDepth)
 		}
 		else
 		{
-			return (scaledDepth / linScaleFactor)*-1.0; //works on plane
+			return -(scaledDepth / linScaleFactor); //works on plane
 														//return (scaledDepth/linScaleFactor); //works on flow
 		}
 	}
@@ -135,11 +137,11 @@ void CoordinateScaler::submitOriginCandidate(double lonX, double latY)
 {
 	printf("Old Origin %f, %f\n", lonXOrigin, latYOrigin);
 
-	if (fabsf(lonX - lonXOrigin) > 50000)
+	if (abs(lonX - lonXOrigin) > 50000.0)
 	{
 		lonXOrigin = lonX;
 	}
-	if (fabsf(latY - latYOrigin) > 50000)
+	if (abs(latY - latYOrigin) > 50000.0)
 	{
 		latYOrigin = latY;
 	}
@@ -149,7 +151,7 @@ void CoordinateScaler::submitOriginCandidate(double lonX, double latY)
 
 double CoordinateScaler::getScaledLonX(double realLonX)
 {
-	return (realLonX - lonXOrigin)*latlonscale;
+	return (realLonX - lonXOrigin) * latlonscale;
 }
 double CoordinateScaler::getUnscaledLonX(double scaledLonX)
 {
@@ -158,7 +160,7 @@ double CoordinateScaler::getUnscaledLonX(double scaledLonX)
 
 double CoordinateScaler::getScaledLatY(double realLatY)
 {
-	return (realLatY - latYOrigin)*latlonscale;
+	return (realLatY - latYOrigin) * latlonscale;
 }
 double CoordinateScaler::getUnscaledLatY(double scaledLatY)
 {
@@ -167,11 +169,11 @@ double CoordinateScaler::getUnscaledLatY(double scaledLatY)
 
 float CoordinateScaler::getScaledLength(float realLength)
 {
-	return realLength*latlonscale;
+	return realLength * static_cast<float>(latlonscale);
 }
 float CoordinateScaler::getUnscaledLength(float scaledLength)
 {
-	return scaledLength / latlonscale;
+	return scaledLength / static_cast<float>(latlonscale);
 }
 
 

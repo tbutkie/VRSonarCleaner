@@ -65,10 +65,10 @@ std::string DataLogger::getTimeSinceLogStartString()
 
 	int hours, minutes, seconds, milliseconds;
 
-	hours = fmod(std::chrono::duration_cast<std::chrono::hours>(elapsedTime).count(), 24);
-	minutes = fmod(std::chrono::duration_cast<std::chrono::minutes>(elapsedTime).count(), 60);
-	seconds = fmod(std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count(), 60);
-	milliseconds = fmod(std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime).count(), 1000);
+	hours = std::chrono::duration_cast<std::chrono::hours>(elapsedTime).count() % 24;
+	minutes = std::chrono::duration_cast<std::chrono::minutes>(elapsedTime).count() % 60;
+	seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count() % 60;
+	milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime).count() % 1000;
 
 	std::stringstream ss;
 	ss << std::setw(2) << std::setfill('0') << hours;

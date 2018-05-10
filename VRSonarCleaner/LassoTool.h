@@ -34,7 +34,7 @@ private:
 	void precalc();
 
 	std::vector<glm::vec3> m_vvec3LassoPoints;
-	std::vector<unsigned short> m_vusLassoIndices;
+	std::vector<GLushort> m_vusLassoIndices;
 	std::vector<glm::vec4> m_vvec4Colors;
 
 	bool m_bLassoActive, m_bShowBBox, m_bShowConnector, m_bPrecalcsDone;

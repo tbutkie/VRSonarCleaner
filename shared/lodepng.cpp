@@ -791,7 +791,7 @@ unsigned lodepng_huffman_code_lengths(unsigned* lengths, const unsigned* frequen
     init_coins(prev_row, coinmem);
 
     /*first row, lowest denominator*/
-    error = append_symbol_coins(coins, frequencies, numcodes, sum);
+    error = append_symbol_coins(coins, frequencies, (unsigned)numcodes, sum);
     numcoins = numpresent;
     qsort(coins, numcoins, sizeof(Coin), coin_compare);
     if(!error)
@@ -803,7 +803,7 @@ unsigned lodepng_huffman_code_lengths(unsigned* lengths, const unsigned* frequen
         Coin* tempcoins;
         /*swap prev_row and coins, and their amounts*/
         tempcoins = prev_row; prev_row = coins; coins = tempcoins;
-        tempnum = numprev; numprev = numcoins; numcoins = tempnum;
+        tempnum = numprev; numprev = (unsigned)numcoins; numcoins = tempnum;
 
         cleanup_coins(coins, numcoins);
         init_coins(coins, numcoins);
@@ -821,7 +821,7 @@ unsigned lodepng_huffman_code_lengths(unsigned* lengths, const unsigned* frequen
         /*fill in all the original symbols again*/
         if(j < maxbitlen)
         {
-          error = append_symbol_coins(coins + numcoins, frequencies, numcodes, sum);
+          error = append_symbol_coins(coins + numcoins, frequencies, (unsigned)numcodes, sum);
           numcoins += numpresent;
         }
         qsort(coins, numcoins, sizeof(Coin), coin_compare);
@@ -1429,11 +1429,11 @@ static void updateHashChain(Hash* hash, size_t wpos, unsigned hashval, unsigned 
 {
   hash->val[wpos] = (int)hashval;
   if(hash->head[hashval] != -1) hash->chain[wpos] = hash->head[hashval];
-  hash->head[hashval] = wpos;
+  hash->head[hashval] = (unsigned)wpos;
 
   hash->zeros[wpos] = numzeros;
   if(hash->headz[numzeros] != -1) hash->chainz[wpos] = hash->headz[numzeros];
-  hash->headz[numzeros] = wpos;
+  hash->headz[numzeros] = (unsigned)wpos;
 }
 
 /*
@@ -1505,7 +1505,7 @@ static unsigned encodeLZ77(uivector* out, Hash* hash,
     for(;;)
     {
       if(chainlength++ >= maxchainlength) break;
-      current_offset = hashpos <= wpos ? wpos - hashpos : wpos - hashpos + windowsize;
+      current_offset = hashpos <= (unsigned)wpos ? (unsigned)wpos - hashpos : (unsigned)wpos - hashpos + windowsize;
 
       if(current_offset < prev_offset) break; /*stop when went completely around the circular buffer*/
       prev_offset = current_offset;
@@ -3423,13 +3423,13 @@ unsigned lodepng_convert(unsigned char* out, const unsigned char* in,
 
   if(mode_out->colortype == LCT_PALETTE)
   {
-    size_t palsize = 1u << mode_out->bitdepth;
+    size_t palsize = 1ull << mode_out->bitdepth;
     if(mode_out->palettesize < palsize) palsize = mode_out->palettesize;
     color_tree_init(&tree);
     for(i = 0; i < palsize; i++)
     {
       unsigned char* p = &mode_out->palette[i * 4];
-      color_tree_add(&tree, p[0], p[1], p[2], p[3], i);
+      color_tree_add(&tree, p[0], p[1], p[2], p[3], (unsigned)i);
     }
   }
 
@@ -4209,7 +4209,7 @@ static unsigned readChunk_tEXt(LodePNGInfo* info, const unsigned char* data, siz
     unsigned length, string2_begin;
 
     length = 0;
-    while(length < chunkLength && data[length] != 0) length++;
+    while(length < (unsigned)chunkLength && data[length] != 0) length++;
     /*even though it's not allowed by the standard, no error is thrown if
     there's no null termination char, if the text is empty*/
     if(length < 1 || length > 79) CERROR_BREAK(error, 89); /*keyword too short or long*/
@@ -4222,7 +4222,7 @@ static unsigned readChunk_tEXt(LodePNGInfo* info, const unsigned char* data, siz
 
     string2_begin = length + 1; /*skip keyword null terminator*/
 
-    length = chunkLength < string2_begin ? 0 : chunkLength - string2_begin;
+    length = (unsigned)chunkLength < string2_begin ? 0 : (unsigned)chunkLength - string2_begin;
     str = (char*)lodepng_malloc(length + 1);
     if(!str) CERROR_BREAK(error, 83); /*alloc fail*/
 
@@ -4255,8 +4255,8 @@ static unsigned readChunk_zTXt(LodePNGInfo* info, const LodePNGDecompressSetting
 
   while(!error) /*not really a while loop, only used to break on error*/
   {
-    for(length = 0; length < chunkLength && data[length] != 0; length++) ;
-    if(length + 2 >= chunkLength) CERROR_BREAK(error, 75); /*no null termination, corrupt?*/
+    for(length = 0; length < (unsigned)chunkLength && data[length] != 0; length++) ;
+    if(length + 2 >= (unsigned)chunkLength) CERROR_BREAK(error, 75); /*no null termination, corrupt?*/
     if(length < 1 || length > 79) CERROR_BREAK(error, 89); /*keyword too short or long*/
 
     key = (char*)lodepng_malloc(length + 1);
@@ -4268,9 +4268,9 @@ static unsigned readChunk_zTXt(LodePNGInfo* info, const LodePNGDecompressSetting
     if(data[length + 1] != 0) CERROR_BREAK(error, 72); /*the 0 byte indicating compression must be 0*/
 
     string2_begin = length + 2;
-    if(string2_begin > chunkLength) CERROR_BREAK(error, 75); /*no null termination, corrupt?*/
+    if(string2_begin >(unsigned)chunkLength) CERROR_BREAK(error, 75); /*no null termination, corrupt?*/
 
-    length = chunkLength - string2_begin;
+    length = (unsigned)chunkLength - string2_begin;
     /*will fail if zlib error, e.g. if length is too small*/
     error = zlib_decompress(&decoded.data, &decoded.size,
                             (unsigned char*)(&data[string2_begin]),
@@ -4308,8 +4308,8 @@ static unsigned readChunk_iTXt(LodePNGInfo* info, const LodePNGDecompressSetting
     if(chunkLength < 5) CERROR_BREAK(error, 30); /*iTXt chunk too short*/
 
     /*read the key*/
-    for(length = 0; length < chunkLength && data[length] != 0; length++) ;
-    if(length + 3 >= chunkLength) CERROR_BREAK(error, 75); /*no null termination char, corrupt?*/
+    for(length = 0; length < (unsigned)chunkLength && data[length] != 0; length++) ;
+    if(length + 3 >= (unsigned)chunkLength) CERROR_BREAK(error, 75); /*no null termination char, corrupt?*/
     if(length < 1 || length > 79) CERROR_BREAK(error, 89); /*keyword too short or long*/
 
     key = (char*)lodepng_malloc(length + 1);
@@ -4328,7 +4328,7 @@ static unsigned readChunk_iTXt(LodePNGInfo* info, const LodePNGDecompressSetting
     /*read the langtag*/
     begin = length + 3;
     length = 0;
-    for(i = begin; i < chunkLength && data[i] != 0; i++) length++;
+    for(i = begin; i < (unsigned)chunkLength && data[i] != 0; i++) length++;
 
     langtag = (char*)lodepng_malloc(length + 1);
     if(!langtag) CERROR_BREAK(error, 83); /*alloc fail*/
@@ -4339,7 +4339,7 @@ static unsigned readChunk_iTXt(LodePNGInfo* info, const LodePNGDecompressSetting
     /*read the transkey*/
     begin += length + 1;
     length = 0;
-    for(i = begin; i < chunkLength && data[i] != 0; i++) length++;
+    for(i = begin; i < (unsigned)chunkLength && data[i] != 0; i++) length++;
 
     transkey = (char*)lodepng_malloc(length + 1);
     if(!transkey) CERROR_BREAK(error, 83); /*alloc fail*/
@@ -4350,7 +4350,7 @@ static unsigned readChunk_iTXt(LodePNGInfo* info, const LodePNGDecompressSetting
     /*read the actual text*/
     begin += length + 1;
 
-    length = chunkLength < begin ? 0 : chunkLength - begin;
+    length = (unsigned)chunkLength < begin ? 0 : (unsigned)chunkLength - begin;
 
     if(compressed)
     {
@@ -5271,7 +5271,7 @@ static unsigned filter(unsigned char* out, const unsigned char* in, unsigned w, 
     {
       for(type = 0; type < 5; type++)
       {
-        unsigned testsize = attempt[type].size;
+        size_t testsize = attempt[type].size;
         /*if(testsize > 8) testsize /= 8;*/ /*it already works good enough by testing a part of the row*/
 
         filterScanline(attempt[type].data, &in[y * linebytes], prevline, linebytes, bytewidth, type);
