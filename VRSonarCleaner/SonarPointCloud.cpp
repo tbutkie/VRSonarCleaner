@@ -13,7 +13,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
 	, m_glVAO(0u)
 	, m_glPreviewVAO(0u)
-	, m_glPointsVBO(0u)
+	, m_glPointsBufferVBO(0u)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
@@ -391,7 +391,7 @@ void SonarPointCloud::update()
 	if (m_bLoaded && (refreshNeeded || previewRefreshNeeded))
 	{
 		// Sub buffer data for colors...
-		glNamedBufferSubData(m_glPointsVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
+		glNamedBufferSubData(m_glPointsBufferVBO, m_vvec3AdjustedPointsPositions.size() * sizeof(glm::vec3), m_vvec4PointsColors.size() * sizeof(glm::vec4), m_vvec4PointsColors.data());
 
 		refreshNeeded = false;
 		previewRefreshNeeded = false;
@@ -532,76 +532,10 @@ void SonarPointCloud::adjustPoints()
 
 void SonarPointCloud::createAndLoadBuffers()
 {
-	struct PrimVert {
-		glm::vec3 p; // point
-		glm::vec3 n; // normal
-		glm::vec4 c; // color
-		glm::vec2 t; // texture coord
-	};
+	m_glPointsBufferVBO = Renderer::getInstance().createInstancedDataBufferVBO(&m_vvec3AdjustedPointsPositions, &m_vvec4PointsColors);
 
-	// Create data buffer, allocate storage, and upload initial data
-	glCreateBuffers(1, &m_glPointsVBO);
-
-	glNamedBufferStorage(m_glPointsVBO, m_nPoints * sizeof(glm::vec3) + m_nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
-	glNamedBufferSubData(m_glPointsVBO, 0, m_nPoints * sizeof(glm::vec3), &m_vvec3AdjustedPointsPositions[0]);
-	glNamedBufferSubData(m_glPointsVBO, m_nPoints * sizeof(glm::vec3), m_nPoints * sizeof(glm::vec4), &m_vvec4PointsColors[0]);
-	
-
-	// Create main VAO
-	glGenVertexArrays(1, &m_glVAO);
-	glBindVertexArray(m_glVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("disc"));
-
-		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("disc"));
-
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-
-		// Describe instanced verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glPointsVBO);
-
-		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
-		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
-		glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
-		glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_LOCATION, 1);
-	glBindVertexArray(0);
-
-	// Create preview VAO
-	glGenVertexArrays(1, &m_glPreviewVAO);
-	glBindVertexArray(m_glPreviewVAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveEBO("disc"));
-
-		// Describe sprite verts
-		glBindBuffer(GL_ARRAY_BUFFER, Renderer::getInstance().getPrimitiveVBO("disc"));
-
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-
-		// Describe instanced verts
-		glBindBuffer(GL_ARRAY_BUFFER, m_glPointsVBO);
-
-		glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * m_iPreviewReductionFactor, (GLvoid*)0);
-		glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
-		glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * m_iPreviewReductionFactor, (GLvoid*)(m_nPoints * sizeof(glm::vec3)));
-		glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_LOCATION, 1);
-	glBindVertexArray(0);
+	m_glVAO = Renderer::getInstance().createInstancedPrimitiveVAO("disc", m_glPointsBufferVBO, static_cast<GLsizei>(m_nPoints));
+	m_glPreviewVAO = Renderer::getInstance().createInstancedPrimitiveVAO("disc", m_glPointsBufferVBO, static_cast<GLsizei>(m_nPoints), m_iPreviewReductionFactor);	
 }
 
 bool SonarPointCloud::ready()

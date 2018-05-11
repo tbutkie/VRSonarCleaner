@@ -5,6 +5,8 @@
 
 namespace ccomutils
 {
+	void dprintf(const char *fmt, ...);
+
 	std::vector<glm::vec3> transformStereoscopicPoints(
 		glm::vec3 centerOfProjA,
 		glm::vec3 centerOfProjB,

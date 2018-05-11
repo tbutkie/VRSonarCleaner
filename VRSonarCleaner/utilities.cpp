@@ -4,9 +4,30 @@
 
 #include <gtx/intersect.hpp>
 #include <gtx/vector_angle.hpp>
+#include <cstdarg>
+#include <Windows.h>
 
 namespace ccomutils
 {
+	//-----------------------------------------------------------------------------
+	// Purpose:
+	//-----------------------------------------------------------------------------
+	void dprintf(const char *fmt, ...)
+	{
+		va_list args;
+		char buffer[2048];
+
+		va_start(args, fmt);
+		vsprintf_s(buffer, fmt, args);
+		va_end(args);
+
+#ifdef DEBUG
+		printf("%s", buffer);
+#endif // DEBUG
+
+		OutputDebugStringA(buffer);
+	}
+
 	std::vector<glm::vec3> transformStereoscopicPoints(glm::vec3 centerOfProjL, glm::vec3 centerOfProjR, glm::vec3 viewPosL, glm::vec3 viewPosR, glm::vec3 screenCtr, glm::vec3 screenNorm, const std::vector<glm::vec3> pts)
 	{
 		std::vector<glm::vec3> iL(getScreenIntersections(centerOfProjL, screenCtr, screenNorm, pts));

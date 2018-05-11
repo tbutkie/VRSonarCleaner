@@ -15,6 +15,7 @@
 
 #include "DebugDrawer.h"
 #include "GLSLpreamble.h"
+#include "utilities.h"
 
 Renderer::Renderer()
 	: m_pLighting(NULL)
@@ -636,9 +637,9 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 
 			glBindVertexArray(i.VAO);
 			if (i.instanced)
-				glDrawElementsInstanced(i.glPrimitiveType, i.vertCount, i.indexType, 0, i.instanceCount);
+				glDrawElementsInstancedBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, 0, i.instanceCount, 0);
 			else
-				glDrawElements(i.glPrimitiveType, i.vertCount, i.indexType, 0);
+				glDrawElementsBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, 0, 0);
 			glBindVertexArray(0);
 		}
 	}
@@ -1845,6 +1846,71 @@ glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim 
 	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
 
 	return textDims * scale;
+}
+
+GLuint Renderer::createInstancedDataBufferVBO(std::vector<glm::vec3>* instancePositions, std::vector<glm::vec4>* instanceColors)
+{
+	size_t nPoints = instancePositions->size();
+
+	assert(nPoints == instanceColors->size());
+
+
+	GLuint buffer;
+	glCreateBuffers(1, &buffer);
+
+	glNamedBufferStorage(buffer, nPoints * sizeof(glm::vec3) + nPoints * sizeof(glm::vec4), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferSubData(buffer, 0, nPoints * sizeof(glm::vec3), instancePositions->data());
+	glNamedBufferSubData(buffer, nPoints * sizeof(glm::vec3), nPoints * sizeof(glm::vec4), instanceColors->data());
+
+	return buffer;
+}
+
+GLuint Renderer::createInstancedPrimitiveVAO(std::string primitiveName, GLuint instanceDataVBO, GLsizei instanceCount, GLsizei instanceStride)
+{
+	if (!instanceDataVBO)
+	{
+		ccomutils::dprintf("%s ERROR: Supplied data buffer for creating instanced %s primitives is invalid!\n", __FUNCTION__, primitiveName.c_str());
+		return 0;
+	}
+
+	// Check if primitive exists
+	GLuint primVBO = Renderer::getInstance().getPrimitiveVBO(primitiveName);
+	GLuint primEBO = Renderer::getInstance().getPrimitiveEBO(primitiveName);
+
+	if (!primVBO || !primEBO)
+	{
+		ccomutils::dprintf("%s ERROR: Primitive %s not found!\n", __FUNCTION__, primitiveName.c_str());
+		return 0;
+	}	
+
+	// Create  VAO
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primEBO);
+
+		// Describe primitive verts
+		glBindBuffer(GL_ARRAY_BUFFER, primVBO);
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+
+		// Describe instanced primitives
+		glBindBuffer(GL_ARRAY_BUFFER, instanceDataVBO);
+			glEnableVertexAttribArray(INSTANCE_POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(INSTANCE_POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * instanceStride, (GLvoid*)0);
+			glVertexAttribDivisor(INSTANCE_POSITION_ATTRIB_LOCATION, 1);
+			glEnableVertexAttribArray(INSTANCE_COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(INSTANCE_COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * instanceStride, (GLvoid*)(instanceCount * sizeof(glm::vec3)));
+			glVertexAttribDivisor(INSTANCE_COLOR_ATTRIB_LOCATION, 1);
+	glBindVertexArray(0);
+
+	return vao;
 }
 
 GLuint Renderer::getPrimitiveVAO(std::string primName)

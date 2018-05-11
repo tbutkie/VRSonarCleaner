@@ -104,8 +104,8 @@ public:
 		bool previewRefreshNeeded;
 
 		//OpenGL
-		GLuint m_glVAO, m_glPointsVBO;
-		GLuint m_glPreviewVAO;		
+		GLuint m_glVAO, m_glPreviewVAO;
+		GLuint m_glPointsBufferVBO;
 
 		bool loadCARISTxt();
 		bool loadQimeraTxt();

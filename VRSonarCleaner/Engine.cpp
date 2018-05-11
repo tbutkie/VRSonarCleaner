@@ -21,6 +21,7 @@
 #include "CloudEditControllerTutorial.h"
 
 #include "HolodeckBackground.h"
+#include "utilities.h"
 
 #include <fstream>
 #include <sstream>
@@ -79,27 +80,6 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 	case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
 	} std::cout << std::endl;
 	std::cout << std::endl;
-}
-
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void dprintf(const char *fmt, ...)
-{
-	va_list args;
-	char buffer[2048];
-
-	va_start(args, fmt);
-	vsprintf_s(buffer, fmt, args);
-	va_end(args);
-
-#ifdef DEBUG
-	printf("%s", buffer);
-#endif // DEBUG
-
-	OutputDebugStringA(buffer);
 }
 
 
@@ -172,7 +152,7 @@ Engine::Engine()
 		m_bGreatBayModel = true;
 		break;
 	default:
-		dprintf("Invalid Selection, shutting down...");
+		ccomutils::dprintf("Invalid Selection, shutting down...");
 		Shutdown();
 		break;
 	}
@@ -185,7 +165,7 @@ Engine::Engine()
 Engine::~Engine()
 {
 	// work is done in Shutdown
-	dprintf("Shutdown");
+	ccomutils::dprintf("Shutdown");
 }
 
 //-----------------------------------------------------------------------------
@@ -195,26 +175,26 @@ bool Engine::init()
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
-		dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		ccomutils::dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
 	if (m_bUseVR && !initVR())
 	{
-		dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		ccomutils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
 		return false;
 	}
 
 	if (m_bUseDesktop && !initDesktop())
 	{
-		dprintf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
+		ccomutils::dprintf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
 		return false;
 	}
 
 	if (m_bUseVR)
 	{
 		vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
-		dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
+		ccomutils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
 	}
 
 	Renderer::getInstance().setSkybox(
@@ -251,7 +231,7 @@ bool Engine::init()
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
-			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
+			//BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
 		}
 
 		m_pColorScalerTPU = new ColorScaler();
@@ -262,13 +242,12 @@ bool Engine::init()
 
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		
-		Renderer::getInstance().addTexture(new GLTexture("resources/images/circle.png", true));
-
+		
 		//using namespace std::experimental::filesystem::v1;
 		//
 		////path dataset("south_santa_rosa");
@@ -385,7 +364,7 @@ bool Engine::initVR()
 
 	if (m_pGLContext == NULL)
 	{
-		dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		ccomutils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 	
@@ -395,7 +374,7 @@ bool Engine::initVR()
 
 	if (!initGL())
 	{
-		dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -414,7 +393,7 @@ bool Engine::initVR()
 
 	if (!vr::VRCompositor())
 	{
-		dprintf("Compositor initialization failed. See log file for details\n");
+		ccomutils::dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
 
@@ -422,7 +401,7 @@ bool Engine::initVR()
 
 	if (!m_pTDM->init())
 	{
-		dprintf("Error initializing TrackedDeviceManager\n");
+		ccomutils::dprintf("Error initializing TrackedDeviceManager\n");
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
 	}
 
@@ -460,7 +439,7 @@ bool Engine::initDesktop()
 
 	if (!initGL())
 	{
-		dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -1351,7 +1330,7 @@ void Engine::drawScene()
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
 				rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
-				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
 		}
@@ -1533,9 +1512,9 @@ void Engine::createVRViews()
 	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
-		dprintf("Could not create left eye framebuffer!\n");
+		ccomutils::dprintf("Could not create left eye framebuffer!\n");
 	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
-		dprintf("Could not create right eye framebuffer!\n");
+		ccomutils::dprintf("Could not create right eye framebuffer!\n");
 }
 
 void Engine::createDesktopView()
@@ -1554,5 +1533,5 @@ void Engine::createDesktopView()
 	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().CreateFrameBuffer(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth, m_sviDesktop2DOverlayViewInfo.m_nRenderHeight, *m_pDesktopFramebuffer))
-		dprintf("Could not create desktop view framebuffer!\n");	
+		ccomutils::dprintf("Could not create desktop view framebuffer!\n");	
 }

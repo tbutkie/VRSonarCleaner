@@ -84,6 +84,46 @@ public:
 		{}
 	};
 
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
+	enum TextAlignment {
+		LEFT,
+		CENTER,
+		RIGHT
+	};
+
+	/*
+	*--------*--------*
+	|				 |
+	|				 |
+	*		*		 *
+	|				 |
+	|				 |
+	*--------*--------*
+	Where * = an anchor point for the text box
+	*/
+	enum TextAnchor {
+		CENTER_MIDDLE,
+		CENTER_TOP,
+		CENTER_BOTTOM,
+		CENTER_LEFT,
+		CENTER_RIGHT,
+		TOP_LEFT,
+		TOP_RIGHT,
+		BOTTOM_LEFT,
+		BOTTOM_RIGHT
+	};
+
+	enum TextSizeDim {
+		WIDTH,
+		HEIGHT
+	};
+
 	class ObjectSorter {
 		glm::vec3 _HMDPos;
 	public:
@@ -114,39 +154,6 @@ public:
 		static Renderer s_instance;
 		return s_instance;
 	}
-
-	enum TextAlignment {
-		LEFT,
-		CENTER,
-		RIGHT
-	};
-
-	/* 
-	   *--------*--------*
-	   |				 |
-	   |				 |
-	   *		*		 *
-	   |				 |
-	   |				 |
-	   *--------*--------*
-	   Where * = an anchor point for the text box
-	*/
-	enum TextAnchor {
-		CENTER_MIDDLE,
-		CENTER_TOP,
-		CENTER_BOTTOM,
-		CENTER_LEFT,
-		CENTER_RIGHT,
-		TOP_LEFT,
-		TOP_RIGHT,
-		BOTTOM_LEFT,
-		BOTTOM_RIGHT
-	};
-
-	enum TextSizeDim {
-		WIDTH,
-		HEIGHT
-	};
 	
 	bool init();
 
@@ -170,6 +177,9 @@ public:
 	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE, bool snellenFont = false);
 	void drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE);
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
+
+	GLuint createInstancedDataBufferVBO(std::vector<glm::vec3> *instancePositions, std::vector<glm::vec4> *instanceColors);
+	GLuint createInstancedPrimitiveVAO(std::string primitiveName, GLuint instanceDataVBO, GLsizei instanceCount, GLsizei instanceStride = 1);
 
 	GLuint getPrimitiveVAO(std::string primName);
 	GLuint getPrimitiveVBO(std::string primName);
@@ -217,12 +227,6 @@ private:
 	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
 
 private:
-	struct PrimVert {
-		glm::vec3 p; // point
-		glm::vec3 n; // normal
-		glm::vec4 c; // color
-		glm::vec2 t; // texture coord
-	};
 
 	struct Skybox {
 		std::string right, left, top, bottom, front, back;
