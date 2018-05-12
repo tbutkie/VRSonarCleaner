@@ -1314,9 +1314,14 @@ void Engine::drawScene()
 			//draw table
 			Renderer::RendererSubmission rs;
 			rs.glPrimitiveType = GL_TRIANGLES;
-			rs.shaderName = "instanced";
+			rs.shaderName = "instanced_lit";
 			rs.indexType = GL_UNSIGNED_SHORT;
+			rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("icosphere");
+			rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("icosphere");
+			rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("icosphere");
 			rs.instanced = true;
+			rs.specularExponent = 32.f;
+			//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
 			//rs.diffuseTexName = "resources/images/circle.png";
 
 			for (auto &cloud : dv->getDatasets())
@@ -1327,12 +1332,9 @@ void Engine::drawScene()
 					continue;
 				}
 
-				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
-				rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
-				rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
-				rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
+				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
-				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
+				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
 		}

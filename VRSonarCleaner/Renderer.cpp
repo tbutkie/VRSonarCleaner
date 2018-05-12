@@ -339,9 +339,11 @@ void Renderer::setupShaders()
 	m_mapShaders["text"] = m_Shaders.AddProgramFromExts({ "resources/shaders/text.vert", "resources/shaders/text.frag" });
 	m_mapShaders["skybox"] = m_Shaders.AddProgramFromExts({ "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
 	m_mapShaders["instanced"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
+	m_mapShaders["instanced_lit"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/lighting.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
+	m_pLighting->addShaderToUpdate(m_mapShaders["instanced_lit"]);
 }
 
 void Renderer::setupTextures()
@@ -448,6 +450,7 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		{
 			glEnable(GL_BLEND);
 			//glDisable(GL_DEPTH_TEST);
+			//glDepthMask(GL_FALSE);
 			processRenderQueue(m_vTransparentRenderQueue);
 
 			// UI ELEMENTS
@@ -455,6 +458,7 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 				RenderUI(sceneViewUIInfo, frameBuffer);
 
 			//glEnable(GL_DEPTH_TEST);
+			//glDepthMask(GL_TRUE);
 			glDisable(GL_BLEND);
 		}
 
@@ -587,7 +591,7 @@ void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBu
 		drawUIText(
 			std::get<0>(m_vMessages[i]),
 			glm::vec4(1.f, 1.f, 1.f, alpha),
-			glm::vec3(0.f, sceneViewInfo->m_nRenderHeight - msgHeight * (msgCount - i - 1), 0.f),
+			glm::vec3(0.f, sceneViewInfo->m_nRenderHeight/2 - msgHeight * (msgCount - i - 1), 0.f),
 			glm::quat(),
 			msgHeight,
 			HEIGHT,
@@ -753,7 +757,7 @@ void Renderer::setupPrimitives()
 
 	baseInd = inds.size();
 	baseVert = verts.size();
-	generateIcosphere(4, verts, inds);
+	generateIcosphere(3, verts, inds);
 
 	for (auto primname : { "icosphere", "inverse_icosphere", "icosphere_inverse" })
 	{
@@ -1269,7 +1273,7 @@ void Renderer::setupText()
 	for (GLubyte c = 0; c < 128; c++)
 	{
 		// Load character glyph 
-		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		if (FT_Load_Char(face, c + 32, FT_LOAD_RENDER))
 		{
 			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 			continue;
@@ -1303,9 +1307,9 @@ void Renderer::setupText()
 		};
 		m_arrCharacters[c] = character;
 		char tmp[2];
-		tmp[0] = c;
+		tmp[0] = c + 32;
 		tmp[1] = '\0';
-		//std::cout << "Adding character \'" << std::string((const char*)&c) << "\' to text renderer..." << std::endl;
+		//std::cout << "Adding character \'" << tmp << "\' to text renderer..." << std::endl;
 		addTexture(new GLTexture(std::string(tmp), face->glyph->bitmap.width, face->glyph->bitmap.rows, texture, true));
 	}
 	glBindTexture(GL_TEXTURE_2D, 0);

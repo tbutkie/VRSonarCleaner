@@ -15,6 +15,7 @@ layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
 
 in vec3 v3Normal;
 in vec3 v3FragPos;
+in vec4 v4Color;
 in vec2 v2TexCoords;
 
 out vec4 color;
@@ -56,7 +57,7 @@ void main()
 {
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
-	vec4 surfaceDiffColor = texture(diffuseTex, v2TexCoords) * diffColor;
+	vec4 surfaceDiffColor = v4Color * texture(diffuseTex, v2TexCoords) * diffColor;
 
 	if (surfaceDiffColor.a == 0.f)
 	    discard;

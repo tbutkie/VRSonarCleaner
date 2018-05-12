@@ -19,6 +19,7 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 
 out vec3 v3FragPos;
 out vec3 v3Normal;
+out vec4 v4Color;
 out vec2 v2TexCoords;
 
 void main()
@@ -26,5 +27,6 @@ void main()
 	gl_Position = m4ViewProjection * m4Model * vec4(v3Position, 1.f);
 	v3FragPos = vec3(m4View * m4Model * vec4(v3Position, 1.f));
 	v3Normal =  mat3(transpose(inverse(m4View * m4Model))) * v3NormalIn;
+	v4Color = vec4(1.f);
 	v2TexCoords = v2TexCoordsIn;
 }

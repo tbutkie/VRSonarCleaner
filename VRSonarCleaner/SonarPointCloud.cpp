@@ -538,13 +538,13 @@ void SonarPointCloud::createAndLoadBuffers()
 	);
 
 	m_glVAO = Renderer::getInstance().createInstancedPrimitiveVAO(
-		"disc",
+		"icosphere",
 		m_glPointsBufferVBO,
 		static_cast<GLsizei>(m_nPoints)
 	);
 
 	m_glPreviewVAO = Renderer::getInstance().createInstancedPrimitiveVAO(
-		"disc",
+		"icosphere",
 		m_glPointsBufferVBO,
 		static_cast<GLsizei>(m_nPoints),
 		m_iPreviewReductionFactor
