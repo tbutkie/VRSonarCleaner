@@ -47,27 +47,31 @@ public:
 
 	struct RendererSubmission
 	{
-		GLenum			glPrimitiveType;
-		GLuint			VAO;
+		GLenum				glPrimitiveType;
+		GLuint				VAO;
 		GLsizei				vertCount;
-		GLenum			indexType;
-		std::string		shaderName;
-		GLenum			vertWindingOrder;
-		glm::vec4		diffuseColor;
-		glm::vec4		specularColor;
-		std::string		diffuseTexName;
-		std::string		specularTexName;
-		float			specularExponent;
-		bool			hasTransparency;
-		bool			instanced;
-		GLsizei			instanceCount;
-		glm::vec4		transparencySortPosition;
-		glm::mat4		modelToWorldTransform;
+		unsigned long long	indexByteOffset;
+		GLint				indexBaseVertex;
+		GLenum				indexType;
+		std::string			shaderName;
+		GLenum				vertWindingOrder;
+		glm::vec4			diffuseColor;
+		glm::vec4			specularColor;
+		std::string			diffuseTexName;
+		std::string			specularTexName;
+		float				specularExponent;
+		bool				hasTransparency;
+		bool				instanced;
+		GLsizei				instanceCount;
+		glm::vec4			transparencySortPosition;
+		glm::mat4			modelToWorldTransform;
 
 		RendererSubmission()
 			: glPrimitiveType(GL_NONE)
 			, VAO(0)
 			, vertCount(0)
+			, indexByteOffset(0ull)
+			, indexBaseVertex(0)
 			, indexType(GL_UNSIGNED_SHORT)
 			, shaderName("")
 			, vertWindingOrder(GL_CCW)
@@ -181,9 +185,11 @@ public:
 	GLuint createInstancedDataBufferVBO(std::vector<glm::vec3> *instancePositions, std::vector<glm::vec4> *instanceColors);
 	GLuint createInstancedPrimitiveVAO(std::string primitiveName, GLuint instanceDataVBO, GLsizei instanceCount, GLsizei instanceStride = 1);
 
-	GLuint getPrimitiveVAO(std::string primName);
-	GLuint getPrimitiveVBO(std::string primName);
-	GLuint getPrimitiveEBO(std::string primName);
+	GLuint getPrimitiveVAO();
+	GLuint getPrimitiveVBO();
+	GLuint getPrimitiveEBO();
+	unsigned long long getPrimitiveIndexByteOffset(std::string primName);
+	GLint getPrimitiveIndexBaseVertex(std::string primName);
 	GLsizei getPrimitiveIndexCount(std::string primName);
 
 	void toggleWireframe();
@@ -212,13 +218,13 @@ private:
 	void setupFullscreenQuad();
 
 	void setupPrimitives();
-	void generateIcosphere(int recursionLevel);
-	void generateDisc();
-	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments);
-	void generateCylinder(int numSegments);
-	void generatePlane();
-	void generateCube();
-	void generateBBox();
+	void generateIcosphere(int recursionLevel, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateDisc(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateCylinder(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 
 	void setupText();
 
@@ -261,9 +267,8 @@ private:
 
 	std::map<std::string, GLuint*> m_mapShaders;
 
-	std::map<std::string, GLuint> m_mapPrimitiveVAOs;
-	std::map<std::string, GLuint> m_mapPrimitiveVBOs;
-	std::map<std::string, GLuint> m_mapPrimitiveEBOs;
+	std::map<std::string, unsigned long long> m_mapPrimitiveIndexByteOffsets;
+	std::map<std::string, GLint> m_mapPrimitiveIndexBaseVertices;
 	std::map<std::string, GLsizei> m_mapPrimitiveIndexCounts;
 
 	std::map<std::string, GLTexture*> m_mapTextures; // holds a flag for texture with transparency
@@ -272,14 +277,10 @@ private:
 
 	Skybox m_Skybox;
 
+	GLuint m_glPrimitivesVAO, m_glPrimitivesVBO, m_glPrimitivesEBO;
+
 	GLuint m_glFullscreenTextureVAO, m_glFullscreenTextureVBO, m_glFullscreenTextureEBO;
-	GLuint m_glIcosphereVAO, m_glIcosphereVBO, m_glIcosphereEBO;
-	GLuint m_glDiscVAO, m_glDiscVBO, m_glDiscEBO;
-	GLuint m_glTorusVAO, m_glTorusVBO, m_glTorusEBO;
-	GLuint m_glCylinderVAO, m_glCylinderVBO, m_glCylinderEBO;
-	GLuint m_glPlaneVAO, m_glPlaneVBO, m_glPlaneEBO;
-	GLuint m_glCubeVAO, m_glCubeVBO, m_glCubeEBO;
-	GLuint m_glBBoxVAO, m_glBBoxVBO, m_glBBoxEBO;
+	GLuint m_iIcosphereIndexOffset, m_iDiscIndexOffset, m_iTorusIndexOffset, m_iCylinderIndexOffset, m_iPlaneIndexOffset, m_iCubeIndexOffset, m_iBBoxIndexOffset;
 
 	GLuint m_glFrameUBO;
 	

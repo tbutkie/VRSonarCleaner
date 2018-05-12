@@ -231,7 +231,7 @@ bool Engine::init()
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
-			//BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
+			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
 		}
 
 		m_pColorScalerTPU = new ColorScaler();
@@ -1328,6 +1328,8 @@ void Engine::drawScene()
 				}
 
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
+				rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+				rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
 				rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
 				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();

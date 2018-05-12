@@ -532,10 +532,23 @@ void SonarPointCloud::adjustPoints()
 
 void SonarPointCloud::createAndLoadBuffers()
 {
-	m_glPointsBufferVBO = Renderer::getInstance().createInstancedDataBufferVBO(&m_vvec3AdjustedPointsPositions, &m_vvec4PointsColors);
+	m_glPointsBufferVBO = Renderer::getInstance().createInstancedDataBufferVBO(
+		&m_vvec3AdjustedPointsPositions, 
+		&m_vvec4PointsColors
+	);
 
-	m_glVAO = Renderer::getInstance().createInstancedPrimitiveVAO("disc", m_glPointsBufferVBO, static_cast<GLsizei>(m_nPoints));
-	m_glPreviewVAO = Renderer::getInstance().createInstancedPrimitiveVAO("disc", m_glPointsBufferVBO, static_cast<GLsizei>(m_nPoints), m_iPreviewReductionFactor);	
+	m_glVAO = Renderer::getInstance().createInstancedPrimitiveVAO(
+		"disc",
+		m_glPointsBufferVBO,
+		static_cast<GLsizei>(m_nPoints)
+	);
+
+	m_glPreviewVAO = Renderer::getInstance().createInstancedPrimitiveVAO(
+		"disc",
+		m_glPointsBufferVBO,
+		static_cast<GLsizei>(m_nPoints),
+		m_iPreviewReductionFactor
+	);	
 }
 
 bool SonarPointCloud::ready()

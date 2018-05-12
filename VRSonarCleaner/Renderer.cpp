@@ -176,15 +176,13 @@ void Renderer::setSkybox(std::string right, std::string left, std::string top, s
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
 {
-	GLuint vao = getPrimitiveVAO(primName);
-	if (vao == 0u)
-		return false;
-
 	RendererSubmission rs;
 	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = vao;
+	rs.VAO = m_glPrimitivesVAO;
+	rs.indexByteOffset = getPrimitiveIndexByteOffset(primName);
+	rs.indexBaseVertex = getPrimitiveIndexBaseVertex(primName);
 	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseTexName = diffuseTextureName;
@@ -202,15 +200,13 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent)
 {
-	GLuint vao = getPrimitiveVAO(primName);
-	if (vao == 0u)
-		return false;
-
 	RendererSubmission rs;
 	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "lighting";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = vao;
+	rs.VAO = m_glPrimitivesVAO;
+	rs.indexByteOffset = getPrimitiveIndexByteOffset(primName);
+	rs.indexBaseVertex = getPrimitiveIndexBaseVertex(primName);
 	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = diffuseColor;
@@ -228,15 +224,13 @@ bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, glm
 
 bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color)
 {
-	GLuint vao = getPrimitiveVAO(primName);
-	if (vao == 0u)
-		return false;
-
 	RendererSubmission rs;
 	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = "flat";
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = vao;
+	rs.VAO = m_glPrimitivesVAO;
+	rs.indexByteOffset = getPrimitiveIndexByteOffset(primName);
+	rs.indexBaseVertex = getPrimitiveIndexBaseVertex(primName);
 	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseColor = color;
@@ -252,16 +246,13 @@ bool Renderer::drawFlatPrimitive(std::string primName, glm::mat4 modelTransform,
 
 bool Renderer::drawPrimitiveCustom(std::string primName, glm::mat4 modelTransform, std::string shaderName, std::string diffuseTexName, glm::vec4 diffuseColor)
 {
-	GLuint vao = getPrimitiveVAO(primName);
-	if (vao == 0u)
-		return false;
-
-
 	RendererSubmission rs;
 	rs.glPrimitiveType = primName.find("_line") != std::string::npos ? GL_LINES : GL_TRIANGLES;
 	rs.shaderName = shaderName;
 	rs.modelToWorldTransform = modelTransform;
-	rs.VAO = vao;
+	rs.VAO = m_glPrimitivesVAO;
+	rs.indexByteOffset = getPrimitiveIndexByteOffset(primName);
+	rs.indexBaseVertex = getPrimitiveIndexBaseVertex(primName);
 	rs.vertCount = getPrimitiveIndexCount(primName);
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.diffuseTexName = diffuseTexName;
@@ -445,9 +436,9 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 
 			glUseProgram(*m_mapShaders["skybox"]);
 
-			glBindVertexArray(getPrimitiveVAO("skybox"));
+			glBindVertexArray(m_glPrimitivesVAO);
 				glBindTextureUnit(0, m_Skybox.texID);
-				glDrawElements(GL_TRIANGLES, getPrimitiveIndexCount("skybox"), GL_UNSIGNED_SHORT, 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, getPrimitiveIndexCount("skybox"), GL_UNSIGNED_SHORT, (GLvoid*)getPrimitiveIndexByteOffset("skybox"), getPrimitiveIndexBaseVertex("skybox"));
 			glBindVertexArray(0);
 
 			glDepthFunc(GL_LESS);
@@ -637,9 +628,9 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 
 			glBindVertexArray(i.VAO);
 			if (i.instanced)
-				glDrawElementsInstancedBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, 0, i.instanceCount, 0);
+				glDrawElementsInstancedBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, (GLvoid*)i.indexByteOffset, i.instanceCount, i.indexBaseVertex);
 			else
-				glDrawElementsBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, 0, 0);
+				glDrawElementsBaseVertex(i.glPrimitiveType, i.vertCount, i.indexType, (GLvoid*)i.indexByteOffset, i.indexBaseVertex);
 			glBindVertexArray(0);
 		}
 	}
@@ -651,18 +642,6 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 	glm::vec3 rhsPos = rsRHS.transparencySortPosition.w == -1.f ? glm::vec3(rsRHS.modelToWorldTransform[3]) : glm::vec3(rsRHS.transparencySortPosition);
 
 	return glm::length2(lhsPos - HMDPos) > glm::length2(rhsPos - HMDPos);
-}
-
-
-void Renderer::setupPrimitives()
-{
-	generateIcosphere(3);
-	generateDisc();
-	generateCylinder(32);
-	generateTorus(1.f, 0.025f, 32, 8);
-	generatePlane();
-	generateCube();
-	generateBBox();
 }
 
 
@@ -700,11 +679,11 @@ void Renderer::setupFullscreenQuad()
 	glGenVertexArrays(1, &m_glFullscreenTextureVAO);
 	glBindVertexArray(m_glFullscreenTextureVAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
 
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
+	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
 
 	glBindVertexArray(0);
 
@@ -713,10 +692,126 @@ void Renderer::setupFullscreenQuad()
 }
 
 
-void Renderer::generateIcosphere(int recursionLevel)
+void Renderer::setupPrimitives()
+{
+	std::vector<PrimVert> verts;
+	std::vector<GLushort> inds;
+
+	size_t baseInd = inds.size();
+	size_t baseVert = verts.size();
+	generateDisc(16, verts, inds);
+
+	for (auto primname : { "disc", "circlesprite" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+		//m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() / 2);
+
+		//m_mapPrimitiveVAOs[primname + std::string("double")] = m_glDiscVAO;
+		//m_mapPrimitiveVBOs[primname + std::string("double")] = m_glDiscVBO;
+		//m_mapPrimitiveEBOs[primname + std::string("double")] = m_glDiscEBO;
+		//m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size());
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateCube(verts, inds);
+
+	for (auto primname : { "cube", "box", "skybox" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+	
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generatePlane(verts, inds);
+
+	for (auto primname : { "plane", "quad", "sprite" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd) / 2;
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+
+		m_mapPrimitiveIndexBaseVertices[primname + std::string("double")] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname + std::string("double")] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateBBox(verts, inds);
+
+	for (auto primname : { "bbox_lines" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateIcosphere(4, verts, inds);
+
+	for (auto primname : { "icosphere", "inverse_icosphere", "icosphere_inverse" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateCylinder(32, verts, inds);
+
+	for (auto primname : { "cylinder", "rod" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateTorus(1.f, 0.025f, 32, 8, verts, inds);
+
+	for (auto primname : { "torus", "donut", "doughnut" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	glCreateBuffers(1, &m_glPrimitivesVBO);
+	glCreateBuffers(1, &m_glPrimitivesEBO);
+	// Allocate and store buffer data and indices
+	glNamedBufferStorage(m_glPrimitivesVBO, verts.size() * sizeof(PrimVert), verts.data(), GL_NONE);
+	glNamedBufferStorage(m_glPrimitivesEBO, inds.size() * sizeof(GLushort), inds.data(), GL_NONE);
+
+	glGenVertexArrays(1, &m_glPrimitivesVAO);
+	glBindVertexArray(this->m_glPrimitivesVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glPrimitivesVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPrimitivesEBO);
+
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+	glBindVertexArray(0);
+}
+
+
+void Renderer::generateIcosphere(int recursionLevel, std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
 	std::vector<glm::vec3> vertices;
-	std::vector<GLushort> indices;
 	int index = 0;
 
 	auto addVertex = [&](glm::vec3 pt) { vertices.push_back(glm::normalize(pt)); return index++; };
@@ -826,64 +921,29 @@ void Renderer::generateIcosphere(int recursionLevel)
 	// done, now add triangles to mesh
 	for (auto &tri : faces)
 	{
-		indices.push_back(tri.v1);
-		indices.push_back(tri.v2);
-		indices.push_back(tri.v3);
+		inds.push_back(tri.v1);
+		inds.push_back(tri.v2);
+		inds.push_back(tri.v3);
 	}
 
 
-	std::vector<PrimVert> buff(vertices.size());
-	for (int i = 0; i < int(vertices.size()); ++i)
+	
+	for (auto v : vertices)
 	{
 		PrimVert iv;
-		iv.p = vertices[i];
-		iv.n = vertices[i];
+		iv.p = v;
+		iv.n = v;
 		iv.c = glm::vec4(1.f);
 		iv.t = glm::vec2(0.5f);
 
-		buff[i] = iv;
-	}
-
-	glGenVertexArrays(1, &m_glIcosphereVAO);
-	glGenBuffers(1, &m_glIcosphereVBO);
-	glGenBuffers(1, &m_glIcosphereEBO);
-
-	glBindVertexArray(this->m_glIcosphereVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glIcosphereVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glIcosphereEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Allocate and store buffer data and indices
-	glNamedBufferStorage(m_glIcosphereVBO, buff.size() * sizeof(PrimVert), &buff[0], GL_NONE);
-	glNamedBufferStorage(m_glIcosphereEBO, indices.size() * sizeof(GLushort), &indices[0], GL_NONE);
-
-	for (auto primname : { "icosphere", "inverse_icosphere", "icosphere_inverse" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glIcosphereVAO;
-		m_mapPrimitiveVBOs[primname] = m_glIcosphereVBO;
-		m_mapPrimitiveEBOs[primname] = m_glIcosphereEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(indices.size());
+		verts.push_back(iv);
 	}
 }
 
-void Renderer::generateDisc()
+void Renderer::generateDisc(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
-	std::vector<PrimVert> verts;
-	std::vector<GLushort> inds;
+	size_t baseInd = verts.size();
 
-	int numSegments = 16;
-	
 	glm::vec3 p(0.f, 0.f, 0.f);
 	glm::vec3 n(0.f, 0.f, 1.f);
 	glm::vec4 c(1.f);
@@ -904,13 +964,13 @@ void Renderer::generateDisc()
 		if (i > 0)
 		{
 			inds.push_back(0); // ctr pt of endcap
-			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
 		}
 	}
 	inds.push_back(0);
 	inds.push_back(1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 
 	//Back
 	//verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
@@ -929,56 +989,80 @@ void Renderer::generateDisc()
 	//inds.push_back(0);
 	//inds.push_back(verts.size() - 1);
 	//inds.push_back(1);
+}
 
+void Renderer::generateCylinder(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
+{
+	size_t baseInd = verts.size();
 
-	glGenVertexArrays(1, &m_glDiscVAO);
-	glGenBuffers(1, &m_glDiscVBO);
-	glGenBuffers(1, &m_glDiscEBO);
-
-	// Setup VAO
-	glBindVertexArray(this->m_glDiscVAO);
-	// Load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, this->m_glDiscVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glDiscEBO);
-
-	// Set the vertex attribute pointers
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Alloc buffer and store data
-	glNamedBufferStorage(m_glDiscVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	// Element array buffer
-	glNamedBufferStorage(m_glDiscEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	for (auto primname : { "disc", "circlesprite" })
+	// Front endcap
+	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	for (int i = 0; i < numSegments; ++i)
 	{
-		m_mapPrimitiveVAOs[primname] = m_glDiscVAO;
-		m_mapPrimitiveVBOs[primname] = m_glDiscVBO;
-		m_mapPrimitiveEBOs[primname] = m_glDiscEBO;
-		//m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() / 2);
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
 
-		//m_mapPrimitiveVAOs[primname + std::string("double")] = m_glDiscVAO;
-		//m_mapPrimitiveVBOs[primname + std::string("double")] = m_glDiscVBO;
-		//m_mapPrimitiveEBOs[primname + std::string("double")] = m_glDiscEBO;
-		//m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size());
+		if (i > 0)
+		{
+			inds.push_back(0);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+		}
 	}
+	inds.push_back(0);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+	inds.push_back(1);
+
+	// Back endcap
+	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
+
+		if (i > 0)
+		{
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (i + 2)); // ctr pt of endcap
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+		}
+	}
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments + 1));
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments));
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+
+	// Shaft
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
+
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
+
+		if (i > 0)
+		{
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 4);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+		}
+	}
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2 + 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 }
 
 
-void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments)
+void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
 	int nVerts = numCoreSegments * numMeridianSegments;
-
-	std::vector<PrimVert> verts;
-	std::vector<GLushort> inds;
 
 	for (int i = 0; i < numCoreSegments; i++)
 		for (int j = 0; j < numMeridianSegments; j++)
@@ -1012,148 +1096,10 @@ void Renderer::generateTorus(float coreRadius, float meridianRadius, int numCore
 			inds.push_back(uvpInd);  // (u    , v + 1)
 			inds.push_back(umvpInd); // (u - 1, v + 1)
 		}
-
-	glGenVertexArrays(1, &m_glTorusVAO);
-	glGenBuffers(1, &m_glTorusVBO);
-	glGenBuffers(1, &m_glTorusEBO);
-
-	glBindVertexArray(this->m_glTorusVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glTorusVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glTorusEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Allocate and store buffer data and indices
-	glNamedBufferStorage(m_glTorusVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	glNamedBufferStorage(m_glTorusEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	for (auto primname : { "torus", "donut", "doughnut" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glTorusVAO;
-		m_mapPrimitiveVBOs[primname] = m_glTorusVBO;
-		m_mapPrimitiveEBOs[primname] = m_glTorusEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
-	}
 }
 
-void Renderer::generateCylinder(int numSegments)
+void Renderer::generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
-	std::vector<PrimVert> verts;
-	std::vector<GLushort> inds;
-
-	// Front endcap
-	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	for (int i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
-
-		if (i > 0)
-		{
-			inds.push_back(0);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-		}
-	}
-	inds.push_back(0);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(1);
-
-	// Back endcap
-	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	for (int i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
-
-		if (i > 0)
-		{
-			inds.push_back(static_cast<GLushort>(verts.size()) - (i + 2)); // ctr pt of endcap
-			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-		}
-	}
-	inds.push_back(static_cast<GLushort>(verts.size()) - (numSegments + 1));
-	inds.push_back(static_cast<GLushort>(verts.size()) - (numSegments));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-
-	// Shaft
-	for (int i = 0; i < numSegments; ++i)
-	{
-		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
-
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
-
-		if (i > 0)
-		{
-			inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-
-			inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-			inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-		}
-	}
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-
-	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - numSegments * 2 + 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-
-	glGenVertexArrays(1, &m_glCylinderVAO);
-	glGenBuffers(1, &m_glCylinderVBO);
-	glGenBuffers(1, &m_glCylinderEBO);
-
-	// Setup VAO
-	glBindVertexArray(this->m_glCylinderVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glCylinderVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glCylinderEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Allocate buffer data
-	glNamedBufferStorage(m_glCylinderVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	// Element array buffer
-	glNamedBufferStorage(m_glCylinderEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-	
-	for (auto primname : { "cylinder", "rod" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glCylinderVAO;
-		m_mapPrimitiveVBOs[primname] = m_glCylinderVBO;
-		m_mapPrimitiveEBOs[primname] = m_glCylinderEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
-	}
-}
-
-void Renderer::generatePlane()
-{
-	std::vector<PrimVert> verts;
-	std::vector<GLushort> inds;
-
 	// Front face
 	verts.push_back(PrimVert({ glm::vec3(-0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(0.5f, -0.5f, 0.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
@@ -1181,167 +1127,92 @@ void Renderer::generatePlane()
 	inds.push_back(6);
 	inds.push_back(7);
 	inds.push_back(4);
-
-	glGenVertexArrays(1, &m_glPlaneVAO);
-	glGenBuffers(1, &m_glPlaneVBO);
-	glGenBuffers(1, &m_glPlaneEBO);
-
-	// Setup VAO
-	glBindVertexArray(this->m_glPlaneVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glPlaneVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glPlaneEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*) offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Alloc buffer and store data
-	glNamedBufferStorage(m_glPlaneVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	// Element array buffer
-	glNamedBufferStorage(m_glPlaneEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	for (auto primname : { "plane", "quad", "sprite" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glPlaneVAO;
-		m_mapPrimitiveVBOs[primname] = m_glPlaneVBO;
-		m_mapPrimitiveEBOs[primname] = m_glPlaneEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() / 2);
-
-		m_mapPrimitiveVAOs[primname + std::string("double")] = m_glPlaneVAO;
-		m_mapPrimitiveVBOs[primname + std::string("double")] = m_glPlaneVBO;
-		m_mapPrimitiveEBOs[primname + std::string("double")] = m_glPlaneEBO;
-		m_mapPrimitiveIndexCounts[primname + std::string("double")] = static_cast<GLsizei>(inds.size());
-	}
 }
 
-void Renderer::generateCube()
+void Renderer::generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
-	std::vector<PrimVert> verts;
+	size_t baseVert = verts.size();
 
 	glm::vec3 bboxMin(-0.5f);
 	glm::vec3 bboxMax(0.5f);
-
-	std::vector<GLushort> inds;
 
 	// Bottom
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, -1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 
 	// Top
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 1.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 
 	// Left
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(-1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 
 	// Right
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(1.f, 0.f, 0.f), glm::vec4(1.f), glm::vec2(1.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 
 	// Front
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 
 	// Back
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f, 0.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMax[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f, 1.f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMax[0], bboxMin[1], bboxMin[2]), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.f) }));
-	inds.push_back(static_cast<GLushort>(verts.size()) - 4);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 3);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size()) - 1);
-
-	glGenVertexArrays(1, &m_glCubeVAO);
-	glGenBuffers(1, &m_glCubeVBO);
-	glGenBuffers(1, &m_glCubeEBO);
-
-	// Setup VAO
-	glBindVertexArray(m_glCubeVAO);
-	// Load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, m_glCubeVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glCubeEBO);
-
-	// Set the vertex attribute pointers
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Alloc buffer and store data
-	glNamedBufferStorage(m_glCubeVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	// Element array buffer
-	glNamedBufferStorage(m_glCubeEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	for (auto primname : { "cube", "box", "skybox" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glCubeVAO;
-		m_mapPrimitiveVBOs[primname] = m_glCubeVBO;
-		m_mapPrimitiveEBOs[primname] = m_glCubeEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
-	}
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 4);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 3);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseVert) - 1);
 }
 
 // Essentially a unit cube wireframe
-void Renderer::generateBBox()
+void Renderer::generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
-	std::vector<PrimVert> verts;
+	size_t baseVert = verts.size();
 
 	glm::vec3 bboxMin(-0.5f);
 	glm::vec3 bboxMax(0.5f);
@@ -1371,42 +1242,8 @@ void Renderer::generateBBox()
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMax[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
 	verts.push_back(PrimVert({ glm::vec3(bboxMin[0], bboxMin[1], bboxMax[2]), glm::vec3(0.f), glm::vec4(1.f), glm::vec2(0.5f) }));
 
-	std::vector<GLushort> inds(12 * 2);
-	std::iota(inds.begin(), inds.end(), 0u);
-
-	glGenVertexArrays(1, &m_glBBoxVAO);
-	glGenBuffers(1, &m_glBBoxVBO);
-	glGenBuffers(1, &m_glBBoxEBO);
-
-	// Setup VAO
-	glBindVertexArray(m_glBBoxVAO);
-	// Load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, m_glBBoxVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glBBoxEBO);
-
-	// Set the vertex attribute pointers
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-	glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-	glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-	glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-	glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-	glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-	glBindVertexArray(0);
-
-	// Alloc buffer and store data
-	glNamedBufferStorage(m_glBBoxVBO, verts.size() * sizeof(PrimVert), &verts[0], GL_NONE);
-	// Element array buffer
-	glNamedBufferStorage(m_glBBoxEBO, inds.size() * sizeof(GLushort), &inds[0], GL_NONE);
-
-	for (auto primname : { "bbox_lines" })
-	{
-		m_mapPrimitiveVAOs[primname] = m_glBBoxVAO;
-		m_mapPrimitiveVBOs[primname] = m_glBBoxVBO;
-		m_mapPrimitiveEBOs[primname] = m_glBBoxEBO;
-		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size());
-	}
+	for (size_t i = 0; i < (12 * 2); ++i)
+		inds.push_back(static_cast<GLushort>(i));
 }
 
 void Renderer::setupText()
@@ -1668,7 +1505,9 @@ void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::q
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
 		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
-		rs.VAO = m_mapPrimitiveVAOs["quaddouble"];
+		rs.VAO = m_glPrimitivesVAO;
+		rs.indexByteOffset = m_mapPrimitiveIndexByteOffsets["quaddouble"];
+		rs.indexBaseVertex = m_mapPrimitiveIndexBaseVertices["quaddouble"];
 		rs.vertCount = m_mapPrimitiveIndexCounts["quaddouble"];
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = diffTexName.str();
@@ -1794,7 +1633,9 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "text";
 		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
-		rs.VAO = m_mapPrimitiveVAOs["quaddouble"];
+		rs.VAO = m_glPrimitivesVAO;
+		rs.indexByteOffset = m_mapPrimitiveIndexByteOffsets["quaddouble"];
+		rs.indexBaseVertex = m_mapPrimitiveIndexBaseVertices["quaddouble"];
 		rs.vertCount = m_mapPrimitiveIndexCounts["quaddouble"];
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = *c;
@@ -1873,24 +1714,14 @@ GLuint Renderer::createInstancedPrimitiveVAO(std::string primitiveName, GLuint i
 		return 0;
 	}
 
-	// Check if primitive exists
-	GLuint primVBO = Renderer::getInstance().getPrimitiveVBO(primitiveName);
-	GLuint primEBO = Renderer::getInstance().getPrimitiveEBO(primitiveName);
-
-	if (!primVBO || !primEBO)
-	{
-		ccomutils::dprintf("%s ERROR: Primitive %s not found!\n", __FUNCTION__, primitiveName.c_str());
-		return 0;
-	}	
-
 	// Create  VAO
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primEBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glPrimitivesEBO);
 
 		// Describe primitive verts
-		glBindBuffer(GL_ARRAY_BUFFER, primVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glPrimitivesVBO);
 			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
 			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
 			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
@@ -1913,11 +1744,26 @@ GLuint Renderer::createInstancedPrimitiveVAO(std::string primitiveName, GLuint i
 	return vao;
 }
 
-GLuint Renderer::getPrimitiveVAO(std::string primName)
+GLuint Renderer::getPrimitiveVAO()
 {
-	auto prim = m_mapPrimitiveVAOs.find(primName);
+	return m_glPrimitivesVAO;
+}
 
-	if (prim == m_mapPrimitiveVAOs.end())
+GLuint Renderer::getPrimitiveVBO()
+{
+	return m_glPrimitivesVBO;
+}
+
+GLuint Renderer::getPrimitiveEBO()
+{
+	return m_glPrimitivesEBO;
+}
+
+unsigned long long Renderer::getPrimitiveIndexByteOffset(std::string primName)
+{
+	auto prim = m_mapPrimitiveIndexByteOffsets.find(primName);
+
+	if (prim == m_mapPrimitiveIndexByteOffsets.end())
 	{
 		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
 		return 0;
@@ -1926,24 +1772,11 @@ GLuint Renderer::getPrimitiveVAO(std::string primName)
 	return prim->second;
 }
 
-GLuint Renderer::getPrimitiveVBO(std::string primName)
+GLint Renderer::getPrimitiveIndexBaseVertex(std::string primName)
 {
-	auto prim = m_mapPrimitiveVBOs.find(primName);
+	auto prim = m_mapPrimitiveIndexBaseVertices.find(primName);
 
-	if (prim == m_mapPrimitiveVBOs.end())
-	{
-		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
-		return 0;
-	}
-
-	return prim->second;
-}
-
-GLuint Renderer::getPrimitiveEBO(std::string primName)
-{
-	auto prim = m_mapPrimitiveEBOs.find(primName);
-
-	if (prim == m_mapPrimitiveEBOs.end())
+	if (prim == m_mapPrimitiveIndexBaseVertices.end())
 	{
 		std::cerr << "Primitive \"" << primName << "\" not found!" << std::endl;
 		return 0;

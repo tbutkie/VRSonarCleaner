@@ -21,7 +21,9 @@ void AdvectionProbe::update()
 	Renderer::RendererSubmission rs;
 
 	rs.glPrimitiveType = GL_TRIANGLES;
-	rs.VAO = Renderer::getInstance().getPrimitiveVAO("icoshpere");
+	rs.VAO = Renderer::getInstance().getPrimitiveVAO();
+	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("icosphere");
+	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("icosphere");
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("icosphere");
 	rs.diffuseTexName = "gray";
 	rs.specularTexName = "white";
