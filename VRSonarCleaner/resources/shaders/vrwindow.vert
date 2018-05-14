@@ -1,5 +1,5 @@
 layout(location = POSITION_ATTRIB_LOCATION)
-	in vec4 position;
+	in vec3 position;
 layout(location = TEXCOORD_ATTRIB_LOCATION)
 	in vec2 v2UVIn;
 	
@@ -17,22 +17,9 @@ noperspective out vec2 v2UV;
 void main()
 {
 	float aspect = v4Viewport[3] / v4Viewport[2];
-		
-	switch(gl_VertexID)
-	{
-	case 0:
-		v2UV = vec2(0.f, 0.5f - 0.5f * aspect);
-		break;
-	case 1:
-		v2UV = vec2(1.f, 0.5f - 0.5f * aspect);
-		break;
-	case 2:
-		v2UV = vec2(0.f, 0.5f + 0.5f * aspect);
-		break;
-	case 3:
-		v2UV = vec2(1.f, 0.5f + 0.5f * aspect);	
-		break;
-	};
+
+	v2UV = v2UVIn;
+	//v2UV.y = 0.5f + aspect * (v2UV.y - 0.5f);
 	
-	gl_Position = position;
+	gl_Position = vec4(position, 1.f);
 }

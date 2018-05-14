@@ -25,24 +25,6 @@ public:
 		GLuint m_nRenderFramebufferId;
 		GLuint m_nResolveTextureId;
 		GLuint m_nResolveFramebufferId;
-
-		FramebufferDesc()
-		{
-			glCreateRenderbuffers(1, &m_nDepthBufferId);
-			glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_nRenderTextureId);
-			glCreateFramebuffers(1, &m_nRenderFramebufferId);
-			glCreateTextures(GL_TEXTURE_2D, 1, &m_nResolveTextureId);
-			glCreateFramebuffers(1, &m_nResolveFramebufferId);
-		}
-
-		~FramebufferDesc()
-		{
-			glDeleteFramebuffers(1, &m_nResolveFramebufferId);
-			glDeleteTextures(1, &m_nResolveTextureId);
-			glDeleteFramebuffers(1, &m_nRenderFramebufferId);
-			glDeleteTextures(1, &m_nRenderTextureId);
-			glDeleteRenderbuffers(1, &m_nDepthBufferId);
-		}
 	};
 
 	struct RendererSubmission
@@ -160,8 +142,10 @@ public:
 	}
 	
 	bool init();
+	void update();
 
-	bool CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
+	bool createFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
+	void destroyFrameBuffer(FramebufferDesc &framebufferDesc);
 
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
@@ -199,10 +183,10 @@ public:
 
 	void sortTransparentObjects(glm::vec3 HMDPos);
 
-	void RenderFrame(SceneViewInfo *sceneViewInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
-	void RenderUI(SceneViewInfo *sceneViewInfo, FramebufferDesc *frameBuffer);
-	void RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait = false);
-	void RenderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID);
+	void renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *frameBuffer);
+	void renderUI(SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
+	void renderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait = false);
+	void renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID);
 
 
 	void shutdown();
@@ -215,7 +199,6 @@ private:
 
 	void setupTextures();
 	
-	void setupFullscreenQuad();
 
 	void setupPrimitives();
 	void generateIcosphere(int recursionLevel, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
@@ -225,8 +208,11 @@ private:
 	void generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateFullscreenQuad(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 
 	void setupText();
+
+	void updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick);
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
@@ -279,12 +265,7 @@ private:
 
 	GLuint m_glPrimitivesVAO, m_glPrimitivesVBO, m_glPrimitivesEBO;
 
-	GLuint m_glFullscreenTextureVAO, m_glFullscreenTextureVBO, m_glFullscreenTextureEBO;
-	GLuint m_iIcosphereIndexOffset, m_iDiscIndexOffset, m_iTorusIndexOffset, m_iCylinderIndexOffset, m_iPlaneIndexOffset, m_iCubeIndexOffset, m_iBBoxIndexOffset;
-
 	GLuint m_glFrameUBO;
-	
-	unsigned int m_uiCompanionWindowVertCount;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

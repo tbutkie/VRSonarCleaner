@@ -20,7 +20,6 @@
 Renderer::Renderer()
 	: m_pLighting(NULL)
 	, m_glFrameUBO(0)
-	, m_glFullscreenTextureVAO(0)
 	, m_bShowWireframe(false)
 	, m_uiFontPointSize(144u)
 {
@@ -32,8 +31,6 @@ Renderer::~Renderer()
 
 void Renderer::shutdown()
 {
-	glDeleteBuffers(1, &m_glFullscreenTextureVBO);
-	glDeleteBuffers(1, &m_glFullscreenTextureEBO);
 }
 
 bool Renderer::init()
@@ -54,13 +51,16 @@ bool Renderer::init()
 
 	setupPrimitives();
 
-	setupFullscreenQuad();
-
 	setupText();
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	return true;
+}
+
+void Renderer::update()
+{
+	m_Shaders.UpdatePrograms();
 }
 
 void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
@@ -363,8 +363,14 @@ void Renderer::setupTextures()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc)
+bool Renderer::createFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc)
 {
+	glCreateRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
+	glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &framebufferDesc.m_nRenderTextureId);
+	glCreateFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
+	glCreateTextures(GL_TEXTURE_2D, 1, &framebufferDesc.m_nResolveTextureId);
+	glCreateFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
+
 	// Create the multisample depth buffer as a render buffer
 	glNamedRenderbufferStorageMultisample(framebufferDesc.m_nDepthBufferId, 4, GL_DEPTH_COMPONENT, nWidth, nHeight);
 	// Allocate render texture storage
@@ -396,14 +402,21 @@ bool Renderer::CreateFrameBuffer(int nWidth, int nHeight, FramebufferDesc &frame
 	return true;
 }
 
+void Renderer::destroyFrameBuffer(FramebufferDesc & framebufferDesc)
+{
+	glDeleteFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
+	glDeleteTextures(1, &framebufferDesc.m_nResolveTextureId);
+	glDeleteFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
+	glDeleteTextures(1, &framebufferDesc.m_nRenderTextureId);
+	glDeleteRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer)
-{
-	m_Shaders.UpdatePrograms();
-	
+void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *frameBuffer)
+{	
 	// Set viewport for and send it as a shader uniform
 	glViewport(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight);
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight)));
@@ -446,16 +459,13 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 			glDepthFunc(GL_LESS);
 		}
 
-		if (m_vTransparentRenderQueue.size() > 0 || sceneViewUIInfo)
+		if (m_vTransparentRenderQueue.size() > 0)
 		{
 			glEnable(GL_BLEND);
 			//glDisable(GL_DEPTH_TEST);
 			//glDepthMask(GL_FALSE);
-			processRenderQueue(m_vTransparentRenderQueue);
 
-			// UI ELEMENTS
-			if (sceneViewUIInfo)
-				RenderUI(sceneViewUIInfo, frameBuffer);
+			processRenderQueue(m_vTransparentRenderQueue);
 
 			//glEnable(GL_DEPTH_TEST);
 			//glDepthMask(GL_TRUE);
@@ -477,10 +487,48 @@ void Renderer::RenderFrame(SceneViewInfo *sceneView3DInfo, SceneViewInfo *sceneV
 		GL_LINEAR);
 }
 
+void Renderer::renderUI(SceneViewInfo * sceneViewUIInfo, FramebufferDesc * frameBuffer)
+{
+	updateUI(glm::ivec2(sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight), std::chrono::high_resolution_clock::now());
+
+	glm::mat4 vpMat = sceneViewUIInfo->projection * sceneViewUIInfo->view;
+
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight)));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewUIInfo->view));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewUIInfo->projection));
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
+
+	glViewport(0, 0, sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight);
+
+	glEnable(GL_MULTISAMPLE);
+
+	// Render to framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->m_nRenderFramebufferId);
+	glDisable(GL_DEPTH_TEST);
+
+	processRenderQueue(m_vUIRenderQueue);
+
+	glUseProgram(0);
+	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glDisable(GL_MULTISAMPLE);
+
+	// Blit Framebuffer to resolve framebuffer
+	glBlitNamedFramebuffer(
+		frameBuffer->m_nRenderFramebufferId,
+		frameBuffer->m_nResolveFramebufferId,
+		0, 0, sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight,
+		0, 0, sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight,
+		GL_COLOR_BUFFER_BIT,
+		GL_LINEAR);
+
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
+void Renderer::renderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
 {
 	GLuint* shader;
 
@@ -493,15 +541,16 @@ void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, 
 		return;
 
 	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width, height);
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
 
 	glUseProgram(*shader);
-	glBindVertexArray(m_glFullscreenTextureVAO);
+	glBindVertexArray(m_glPrimitivesVAO);
 
 	// render left eye (first half of index array )
 	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, textureID);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+	glDrawElementsBaseVertex(GL_TRIANGLES, m_mapPrimitiveIndexCounts["fullscreenquad"], GL_UNSIGNED_SHORT, (GLvoid*)m_mapPrimitiveIndexByteOffsets["fullscreenquad"], m_mapPrimitiveIndexBaseVertices["fullscreenquad"]);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -511,7 +560,7 @@ void Renderer::RenderFullscreenTexture(int width, int height, GLuint textureID, 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::RenderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID)
+void Renderer::renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID)
 {
 	GLuint* shader = m_mapShaders["desktopwindow"];
 
@@ -523,83 +572,22 @@ void Renderer::RenderStereoTexture(int width, int height, GLuint leftEyeTextureI
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
 
 	glUseProgram(*shader);
-	glBindVertexArray(m_glFullscreenTextureVAO);
+	glBindVertexArray(m_glPrimitivesVAO);
 
 	glDrawBuffer(GL_BACK_LEFT);
 
 	// render left eye
 	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, leftEyeTextureID);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+	glDrawElementsBaseVertex(GL_TRIANGLES, m_mapPrimitiveIndexCounts["fullscreenquad"], GL_UNSIGNED_SHORT, (GLvoid*)m_mapPrimitiveIndexByteOffsets["fullscreenquad"], m_mapPrimitiveIndexBaseVertices["fullscreenquad"]);
 
 	glDrawBuffer(GL_BACK_RIGHT);
 
 	// render left eye (first half of index array )
 	glBindTextureUnit(DIFFUSE_TEXTURE_BINDING, rightEyeTextureID);
-	glDrawElements(GL_TRIANGLES, m_uiCompanionWindowVertCount, GL_UNSIGNED_SHORT, 0);
+	glDrawElementsBaseVertex(GL_TRIANGLES, m_mapPrimitiveIndexCounts["fullscreenquad"], GL_UNSIGNED_SHORT, (GLvoid*)m_mapPrimitiveIndexByteOffsets["fullscreenquad"], m_mapPrimitiveIndexBaseVertices["fullscreenquad"]);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-}
-
-void Renderer::RenderUI(SceneViewInfo * sceneViewInfo, FramebufferDesc * frameBuffer)
-{
-	glm::mat4 vpMat = sceneViewInfo->projection * sceneViewInfo->view;
-
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneViewInfo->view));
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneViewInfo->projection));
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
-
-	auto tick = std::chrono::high_resolution_clock::now();
-	unsigned maxLines = 50;
-	float msgHeight = static_cast<float>(sceneViewInfo->m_nRenderHeight) / static_cast<float>(maxLines);
-	float fadeIn = 0.1f;
-	float fadeOut = 1.f;
-
-	// this function finds expired messages
-	auto cleanFunc = [&fadeOut, &tick](std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point> msg)
-	{
-		float lifetime = (std::get<1>(msg) + fadeOut) * 1000.f;
-		float timeAlive = std::chrono::duration<float, std::milli>(tick - std::get<2>(msg)).count();
-		return timeAlive > lifetime;
-	};
-
-	// delete expired messages using our function
-	m_vMessages.erase(
-		std::remove_if(
-			m_vMessages.begin(),
-			m_vMessages.end(),
-			cleanFunc),
-		m_vMessages.end()
-	);
-
-	size_t msgCount = m_vMessages.size();
-
-	for (size_t i = msgCount; i-- > 0; )
-	{
-		float timeAlive = (std::chrono::duration<float, std::milli>(tick - std::get<2>(m_vMessages[i])).count() / 1000.f);
-		float msgTime = std::get<1>(m_vMessages[i]);
-		float alpha = 1.f;
-
-		// fade in
-		if (timeAlive < fadeIn)
-			alpha = timeAlive / fadeIn;
-
-		// fade out
-		if (fadeOut > 0.f && timeAlive > msgTime)
-			alpha = (fadeOut - (timeAlive - msgTime)) / fadeOut;
-
-		drawUIText(
-			std::get<0>(m_vMessages[i]),
-			glm::vec4(1.f, 1.f, 1.f, alpha),
-			glm::vec3(0.f, sceneViewInfo->m_nRenderHeight/2 - msgHeight * (msgCount - i - 1), 0.f),
-			glm::quat(),
-			msgHeight,
-			HEIGHT,
-			LEFT,
-			TOP_LEFT);
-	}
-
-	processRenderQueue(m_vUIRenderQueue);
 }
 
 void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
@@ -649,53 +637,6 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 }
 
 
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void Renderer::setupFullscreenQuad()
-{
-	glm::vec2 vVerts[4];
-
-	// left eye verts	
-	vVerts[0] = glm::vec2(-1, -1);
-	vVerts[1] = glm::vec2(1, -1);
-	vVerts[2] = glm::vec2(-1, 1);
-	vVerts[3] = glm::vec2(1, 1);
-
-	// right eye verts
-	//vVerts.push_back(VertexDataWindow(glm::vec2(0, -1), glm::vec2(0, 0)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(1, -1), glm::vec2(1, 0)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(0, 1), glm::vec2(0, 1)));
-	//vVerts.push_back(VertexDataWindow(glm::vec2(1, 1), glm::vec2(1, 1)));
-
-	GLushort vIndices[] = { 0, 1, 3,   0, 3, 2 };//,   4, 5, 7,   4, 7, 6 };
-	m_uiCompanionWindowVertCount = _countof(vIndices);
-
-	// Generate/allocate and fill vertex buffer object
-	glCreateBuffers(1, &m_glFullscreenTextureVBO);
-	glNamedBufferStorage(m_glFullscreenTextureVBO, sizeof(vVerts) * sizeof(glm::vec2), &vVerts[0], GL_NONE);
-
-	// Generate/allocate and fill index buffer object
-	glCreateBuffers(1, &m_glFullscreenTextureEBO);
-	glNamedBufferStorage(m_glFullscreenTextureEBO, m_uiCompanionWindowVertCount * sizeof(GLushort), &vIndices[0], GL_NONE);
-
-	// Define our Vertex Attribute Object
-	glGenVertexArrays(1, &m_glFullscreenTextureVAO);
-	glBindVertexArray(m_glFullscreenTextureVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_glFullscreenTextureVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glFullscreenTextureEBO);
-
-	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-	glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void *)0);
-
-	glBindVertexArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-
 void Renderer::setupPrimitives()
 {
 	std::vector<PrimVert> verts;
@@ -703,6 +644,17 @@ void Renderer::setupPrimitives()
 
 	size_t baseInd = inds.size();
 	size_t baseVert = verts.size();
+	generateFullscreenQuad(verts, inds);
+
+	for (auto primname : { "fullscreen", "fullscreenquad" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
 	generateDisc(16, verts, inds);
 
 	for (auto primname : { "disc", "circlesprite" })
@@ -1133,6 +1085,26 @@ void Renderer::generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort>
 	inds.push_back(4);
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void Renderer::generateFullscreenQuad(std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
+{
+	verts.push_back({ glm::vec3(-1.f, -1.f, 0.f), glm::vec3(), glm::vec4(1.f), glm::vec2(0.f, 0.f) });
+	verts.push_back({ glm::vec3(1.f, -1.f, 0.f), glm::vec3(), glm::vec4(1.f), glm::vec2(1.f, 0.f) });
+	verts.push_back({ glm::vec3(1.f, 1.f, 0.f), glm::vec3(), glm::vec4(1.f), glm::vec2(1.f, 1.f) });
+	verts.push_back({ glm::vec3(-1.f, 1.f, 0.f), glm::vec3(), glm::vec4(1.f), glm::vec2(0.f, 1.f) });
+
+	inds.push_back(0);
+	inds.push_back(1);
+	inds.push_back(2);
+
+	inds.push_back(2);
+	inds.push_back(3);
+	inds.push_back(0);
+}
+
 void Renderer::generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds)
 {
 	size_t baseVert = verts.size();
@@ -1377,6 +1349,58 @@ void Renderer::setupText()
 	}
 
 	FT_Done_FreeType(ft);
+}
+
+void Renderer::updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick)
+{
+	unsigned maxLines = 20;
+	float msgHeight = static_cast<float>(dims.y) / static_cast<float>(maxLines);
+	float fadeIn = 0.1f;
+	float fadeOut = 1.f;
+
+	// this function finds expired messages
+	auto cleanFunc = [&fadeOut, &tick](std::tuple<std::string, float, std::chrono::high_resolution_clock::time_point> msg)
+	{
+		float lifetime = (std::get<1>(msg) + fadeOut) * 1000.f;
+		float timeAlive = std::chrono::duration<float, std::milli>(tick - std::get<2>(msg)).count();
+		return timeAlive > lifetime;
+	};
+
+	// delete expired messages using our function
+	m_vMessages.erase(
+		std::remove_if(
+			m_vMessages.begin(),
+			m_vMessages.end(),
+			cleanFunc),
+		m_vMessages.end()
+	);
+
+	size_t msgCount = m_vMessages.size();
+
+	for (size_t i = msgCount; i-- > 0; )
+	{
+		float timeAlive = (std::chrono::duration<float, std::milli>(tick - std::get<2>(m_vMessages[i])).count() / 1000.f);
+		float msgTime = std::get<1>(m_vMessages[i]);
+		float alpha = 1.f;
+
+		// fade in
+		if (timeAlive < fadeIn)
+			alpha = timeAlive / fadeIn;
+
+		// fade out
+		if (fadeOut > 0.f && timeAlive > msgTime)
+			alpha = (fadeOut - (timeAlive - msgTime)) / fadeOut;
+
+		drawUIText(
+			std::get<0>(m_vMessages[i]),
+			glm::vec4(1.f, 1.f, 1.f, alpha),
+			glm::vec3(0.f, dims.y - msgHeight * (msgCount - i - 1), 0.f),
+			glm::quat(),
+			msgHeight,
+			HEIGHT,
+			LEFT,
+			TOP_LEFT);
+	}
 }
 
 void Renderer::drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment, TextAnchor anchor, bool snellenFont)
@@ -1638,9 +1662,9 @@ void Renderer::drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm:
 		rs.shaderName = "text";
 		rs.modelToWorldTransform = glm::translate(glm::mat4(), pos) * glm::mat4(rot) * glm::scale(glm::mat4(), glm::vec3(scale, scale, 1.f)) * trans;
 		rs.VAO = m_glPrimitivesVAO;
-		rs.indexByteOffset = m_mapPrimitiveIndexByteOffsets["quaddouble"];
-		rs.indexBaseVertex = m_mapPrimitiveIndexBaseVertices["quaddouble"];
-		rs.vertCount = m_mapPrimitiveIndexCounts["quaddouble"];
+		rs.indexByteOffset = m_mapPrimitiveIndexByteOffsets["quad"];
+		rs.indexBaseVertex = m_mapPrimitiveIndexBaseVertices["quad"];
+		rs.vertCount = m_mapPrimitiveIndexCounts["quad"];
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.diffuseTexName = *c;
 		rs.diffuseColor = color;

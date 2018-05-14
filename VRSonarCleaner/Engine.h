@@ -27,17 +27,10 @@ public:
 	virtual ~Engine();
 
 	bool init();
-	bool initGL();
-	bool initVR();
-	bool initDesktop();
-
-	bool shutdownVR();
-	bool shutdownDesktop();
 
 	void Shutdown();
 
 	void RunMainLoop();
-	bool HandleInput();
 	
 private:
 	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msVRUpdateTime, m_msDrawTime, m_msRenderTime;
@@ -56,9 +49,18 @@ private:
 
 	TrackedDeviceManager *m_pTDM;
 
+	bool initGL();
+	bool initVR();
+	bool initDesktop();
+
+	bool HandleInput();
+
 	void update();
 	void drawScene();
 	void render();
+
+	void shutdownVR();
+	void shutdownDesktop();
 
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 	
@@ -76,15 +78,10 @@ private: // SDL bookkeeping
 	SDL_Window* createFullscreenWindow(int displayIndex);
 	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
 
-	SDL_Window *m_pVRCompanionWindow;
-	int m_nVRCompanionWindowWidth;
-	int m_nVRCompanionWindowHeight;
+	SDL_Window *m_pWindow;
+	SDL_Cursor *m_pWindowCursor;
+	glm::ivec2 m_ivec2WindowSize;
 	SDL_GLContext m_pGLContext;
-
-	SDL_Window *m_pDesktopWindow;
-	SDL_Cursor *m_pDesktopWindowCursor;
-	glm::ivec2 m_ivec2DesktopWindowSize;
-	//SDL_GLContext m_pDesktopWindowContext;
 
 	bool m_bLeftMouseDown;
 	bool m_bRightMouseDown;
@@ -101,7 +98,7 @@ private: // OpenGL bookkeeping
 	Renderer::FramebufferDesc *m_pLeftEyeFramebuffer;
 	Renderer::FramebufferDesc *m_pRightEyeFramebuffer;
 
-	Renderer::SceneViewInfo m_sviDesktop2DOverlayViewInfo;
-	Renderer::SceneViewInfo m_sviDesktop3DViewInfo;
-	Renderer::FramebufferDesc *m_pDesktopFramebuffer;
+	Renderer::SceneViewInfo m_sviWindowUIInfo;
+	Renderer::SceneViewInfo m_sviWindow3DInfo;
+	Renderer::FramebufferDesc *m_pWindowFramebuffer;
 };

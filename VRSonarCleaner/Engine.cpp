@@ -34,7 +34,7 @@
 glm::vec3						g_vec3RoomSize(1.f, 3.f, 1.f);
 
 float							g_fNearClip = 0.001f;
-float							g_fFarClip = 1000000.f;
+float							g_fFarClip = 10000.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
 
@@ -99,10 +99,12 @@ Engine::Engine()
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
 	, m_bMiddleMouseDown(false)
-	, m_pVRCompanionWindow(NULL)
+	, m_pWindow(NULL)
+	, m_pWindowCursor(NULL)
 	, m_pGLContext(NULL)
-	, m_pDesktopWindow(NULL)
-	, m_pDesktopWindowCursor(NULL)
+	, m_pWindowFramebuffer(NULL)
+	, m_pLeftEyeFramebuffer(NULL)
+	, m_pRightEyeFramebuffer(NULL)
 	, m_pHMD(NULL)
 	, m_bInitialColorRefresh(false)
 {	
@@ -179,22 +181,34 @@ bool Engine::init()
 		return false;
 	}
 
+	m_pWindow = createFullscreenWindow(1);
+
+	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
+
+	m_pGLContext = SDL_GL_CreateContext(m_pWindow);
+
+	if (m_pGLContext == NULL)
+	{
+		ccomutils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	if (!initGL())
+	{
+		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		return false;
+	}
+
+	if (!initDesktop())
+	{
+		ccomutils::dprintf("%s - Unable to initialize desktop window!\n", __FUNCTION__);
+		return false;
+	}
+
 	if (m_bUseVR && !initVR())
 	{
 		ccomutils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
 		return false;
-	}
-
-	if (m_bUseDesktop && !initDesktop())
-	{
-		ccomutils::dprintf("%s - Unable to initialize Desktop Mode!\n", __FUNCTION__);
-		return false;
-	}
-
-	if (m_bUseVR)
-	{
-		vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
-		ccomutils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
 	}
 
 	Renderer::getInstance().setSkybox(
@@ -208,6 +222,9 @@ bool Engine::init()
 
 	if (m_bSonarCleaning)
 	{
+		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
+		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+
 		glm::vec3 wallSize((g_vec3RoomSize.x * 2.5f), (g_vec3RoomSize.y * 0.9f), 0.5f);
 		glm::quat wallOrientation;// (glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
@@ -231,7 +248,7 @@ bool Engine::init()
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
-			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
+			//BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
 		}
 
 		m_pColorScalerTPU = new ColorScaler();
@@ -281,15 +298,18 @@ bool Engine::init()
 
 		if (m_bUseDesktop)
 		{
-			glm::ivec4 vp(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y);
+			glm::ivec4 vp(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y);
 
-			DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume, &m_sviDesktop3DViewInfo, vp);
+			DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume, &m_sviWindow3DInfo, vp);
 			BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
 			tmp->init();
 		}
 	}
 	else if (m_bFlowVis)
 	{
+		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
+		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+
 		FlowGrid *tempFG;
 
 		if (m_bGreatBayModel)
@@ -313,7 +333,7 @@ bool Engine::init()
 		m_Camera.lookat = m_pFlowVolume->getPosition();
 	}
 
-	m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 	BehaviorManager::getInstance().init();
 
@@ -328,6 +348,10 @@ bool Engine::initGL()
 {
 	if (m_bGLInitialized)
 		return true;
+
+	// Set V-Sync
+	if (SDL_GL_SetSwapInterval(0) < 0)
+		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 
 	glewExperimental = GL_TRUE;
 	GLenum nGlewError = glewInit();
@@ -355,29 +379,6 @@ bool Engine::initGL()
 
 bool Engine::initVR()
 {
-	m_pVRCompanionWindow = createFullscreenWindow(1);
-
-	SDL_GetWindowSize(m_pVRCompanionWindow, &m_nVRCompanionWindowWidth, &m_nVRCompanionWindowHeight);
-
-	if (!m_pGLContext)
-		m_pGLContext = SDL_GL_CreateContext(m_pVRCompanionWindow);
-
-	if (m_pGLContext == NULL)
-	{
-		ccomutils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-		return false;
-	}
-	
-	if (SDL_GL_SetSwapInterval(0) < 0)
-		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-	
-
-	if (!initGL())
-	{
-		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
-		return false;
-	}
-
 	// Loading the SteamVR Runtime
 	vr::EVRInitError eError = vr::VRInitError_None;
 	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Scene);
@@ -397,6 +398,9 @@ bool Engine::initVR()
 		return false;
 	}
 
+	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
+	ccomutils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
+
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
 	if (!m_pTDM->init())
@@ -409,42 +413,14 @@ bool Engine::initVR()
 
 	createVRViews();
 
-	if (m_bSonarCleaning)
-	{
-		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
-	}
-	else if (m_bFlowVis)
-	{
-		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-		SDL_SetWindowTitle(m_pVRCompanionWindow, strWindowTitle.c_str());
-	}
-
 	return true;
 }
 
 
 bool Engine::initDesktop()
 {
-	//m_pDesktopWindow = createWindow(g_ivec2DesktopInitialWindowSize.x, g_ivec2DesktopInitialWindowSize.y);
-	m_pDesktopWindow = createFullscreenWindow(0);
-	if (!m_pGLContext)
-		m_pGLContext = SDL_GL_CreateContext(m_pDesktopWindow);
-	
-	if (SDL_GL_SetSwapInterval(0) < 0)
-		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
-	
-
-	SDL_GetWindowSize(m_pDesktopWindow, &m_ivec2DesktopWindowSize.x, &m_ivec2DesktopWindowSize.y);
-
-	if (!initGL())
-	{
-		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
-		return false;
-	}
-
-	m_pDesktopWindowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-	SDL_SetCursor(m_pDesktopWindowCursor);
+	m_pWindowCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+	SDL_SetCursor(m_pWindowCursor);
 	
 	createDesktopView();
 
@@ -454,11 +430,8 @@ bool Engine::initDesktop()
 	return true;
 }
 
-bool Engine::shutdownVR()
+void Engine::shutdownVR()
 {
-	SDL_DestroyWindow(m_pVRCompanionWindow);
-	m_pVRCompanionWindow = NULL;
-
 	if (m_pTDM)
 	{
 		delete m_pTDM;
@@ -469,18 +442,14 @@ bool Engine::shutdownVR()
 	m_pHMD = NULL;
 
 	m_bUseVR = false;
-
-	return true;
 }
 
-bool Engine::shutdownDesktop()
+void Engine::shutdownDesktop()
 {
-	SDL_DestroyWindow(m_pDesktopWindow);
-	m_pDesktopWindow = NULL;
+	SDL_DestroyWindow(m_pWindow);
+	m_pWindow = NULL;
 
 	m_bUseDesktop = false;
-
-	return true;
 }
 
 
@@ -491,35 +460,24 @@ void Engine::Shutdown()
 {
 	BehaviorManager::getInstance().shutdown();
 
-	if (m_bUseVR)
-	{
-		delete m_pLeftEyeFramebuffer;
-		delete m_pRightEyeFramebuffer;
-
-		if (m_pHMD)
-		{
-			vr::VR_Shutdown();
-			m_pHMD = NULL;
-		}
-
-		if (m_pTDM)
-			delete m_pTDM;
-
-		if (m_pGLContext)
-		{
-			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
-			glDebugMessageCallback(nullptr, nullptr);
-		}
-
-		if (m_pVRCompanionWindow)
-		{
-			SDL_DestroyWindow(m_pVRCompanionWindow);
-			m_pVRCompanionWindow = NULL;
-		}
-	}
+	for (auto fb : { m_pWindowFramebuffer , m_pLeftEyeFramebuffer, m_pRightEyeFramebuffer })
+		if (fb)
+			Renderer::getInstance().destroyFrameBuffer(*fb);
 
 	DebugDrawer::getInstance().shutdown();
+
 	Renderer::getInstance().shutdown();
+
+	if (m_pGLContext)
+	{
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+		glDebugMessageCallback(nullptr, nullptr);
+	}
+
+	if (m_bUseVR)
+		shutdownVR();
+
+	shutdownDesktop();
 
 	SDL_Quit();
 }
@@ -566,7 +524,7 @@ bool Engine::HandleInput()
 							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 							m_Camera.lookat = m_pTableVolume->getPosition();
 
-							m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+							m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 							arcball->reset();
 						}
@@ -613,7 +571,7 @@ bool Engine::HandleInput()
 						m_pWallVolume->setVisible(false);
 						m_pTableVolume->setVisible(false);
 						BehaviorManager::getInstance().clearBehaviors();
-						RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0, 0, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera);
+						RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviWindow3DInfo, glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera);
 						BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
 						rsb->init();
 					}
@@ -630,7 +588,7 @@ bool Engine::HandleInput()
 						m_bLeftMouseDown = true;
 
 						if (arcball)
-							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 
 						if (lasso)
 						{
@@ -645,7 +603,7 @@ bool Engine::HandleInput()
 					{
 						m_bRightMouseDown = true;
 						if (lasso && !m_bLeftMouseDown)
-							lasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+							lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
 					}
 					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
 					{
@@ -656,7 +614,7 @@ bool Engine::HandleInput()
 						m_bMiddleMouseDown = true;
 
 						if (arcball)
-							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 					}
 
 				}//end mouse down 
@@ -690,12 +648,12 @@ bool Engine::HandleInput()
 					if (m_bLeftMouseDown)
 					{
 						if (arcball)
-							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 					}
 					if (m_bRightMouseDown && !m_bLeftMouseDown)
 					{
 						if (lasso)
-							lasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+							lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
 					}
 				}
 				if (sdlEvent.type == SDL_MOUSEWHEEL)
@@ -713,7 +671,7 @@ bool Engine::HandleInput()
 					if (newLen > 10.f)
 						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
 
-					m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+					m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 					if (DataLogger::getInstance().logging())
 					{
@@ -744,6 +702,11 @@ bool Engine::HandleInput()
 					|| sdlEvent.key.keysym.sym == SDLK_q)
 				{
 					bRet = true;
+				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_j)
+				{
+					Renderer::getInstance().showMessage("This is a test!");
 				}
 
 				if (sdlEvent.key.keysym.sym == SDLK_f)
@@ -884,7 +847,7 @@ bool Engine::HandleInput()
 					m_pWallVolume->setVisible(false);
 					m_pTableVolume->setVisible(false);
 					BehaviorManager::getInstance().clearBehaviors();
-					StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviDesktop3DViewInfo, glm::ivec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
+					StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviWindow3DInfo, glm::ivec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
 					BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
 					stdb->init();
 				}
@@ -958,7 +921,7 @@ bool Engine::HandleInput()
 							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 							m_Camera.lookat = m_pTableVolume->getPosition();
 
-							m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+							m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 							arcball->reset();
 						}
@@ -1045,7 +1008,7 @@ bool Engine::HandleInput()
 						m_bLeftMouseDown = true;
 
 						if (arcball)
-							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 
 						if (lasso)
 						{
@@ -1060,7 +1023,7 @@ bool Engine::HandleInput()
 					{
 						m_bRightMouseDown = true;
 						if (lasso && !m_bLeftMouseDown)
-							lasso->start(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+							lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
 					}
 					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
 					{
@@ -1071,7 +1034,7 @@ bool Engine::HandleInput()
 						m_bMiddleMouseDown = true;
 
 						if (arcball)
-							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 					}
 
 				}//end mouse down 
@@ -1105,12 +1068,12 @@ bool Engine::HandleInput()
 					if (m_bLeftMouseDown)
 					{
 						if (arcball)
-							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y));
+							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
 					}
 					if (m_bRightMouseDown && !m_bLeftMouseDown)
 					{
 						if (lasso)
-							lasso->move(sdlEvent.button.x, m_ivec2DesktopWindowSize.y - sdlEvent.button.y);
+							lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
 					}
 				}
 				if (sdlEvent.type == SDL_MOUSEWHEEL)
@@ -1128,7 +1091,7 @@ bool Engine::HandleInput()
 					if (newLen > 10.f)
 						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
 
-					m_sviDesktop3DViewInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+					m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
 
 					if (DataLogger::getInstance().logging())
 					{
@@ -1202,6 +1165,8 @@ void Engine::RunMainLoop()
 
 void Engine::update()
 {
+	Renderer::getInstance().update();
+
 	BehaviorManager::getInstance().update();
 
 	if (m_bUseDesktop)
@@ -1237,13 +1202,13 @@ void Engine::drawScene()
 			if (m_bShowDesktopFrustum)
 			{
 				// get frustum with near plane 1m out from view pos
-				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, 1.f, g_fFarClip);
+				glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, 1.f, g_fFarClip);
 
 				// get world-space points for the viewing plane
-				glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
-				glm::vec3 x1y0 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, 0.f, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
-				glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
-				glm::vec3 x1y1 = glm::unProject(glm::vec3(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, 0.f), m_sviDesktop3DViewInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y));
+				glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), m_sviWindow3DInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y));
+				glm::vec3 x1y0 = glm::unProject(glm::vec3(m_ivec2WindowSize.x, 0.f, 0.f), m_sviWindow3DInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y));
+				glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, m_ivec2WindowSize.y, 0.f), m_sviWindow3DInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y));
+				glm::vec3 x1y1 = glm::unProject(glm::vec3(m_ivec2WindowSize.x, m_ivec2WindowSize.y, 0.f), m_sviWindow3DInfo.view, proj, glm::vec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y));
 				
 				// draw the viewing plane
 				DebugDrawer::getInstance().setTransformDefault();
@@ -1302,7 +1267,7 @@ void Engine::drawScene()
 			glm::mat4 trans;
 			
 			if (m_bUseDesktop)
-				trans = glm::inverse(m_sviDesktop3DViewInfo.view);
+				trans = glm::inverse(m_sviWindow3DInfo.view);
 
 			if (m_bUseVR)
 				trans = m_pTDM->getHMDToWorldTransform();
@@ -1373,7 +1338,7 @@ void Engine::render()
 {
 	if (m_bUseVR)
 	{
-		SDL_GL_MakeCurrent(m_pVRCompanionWindow, m_pGLContext);
+		SDL_GL_MakeCurrent(m_pWindow, m_pGLContext);
 
 		// Update eye positions using current HMD position
 		m_sviLeftEyeInfo.view = m_sviLeftEyeInfo.viewTransform * m_pTDM->getWorldToHMDTransform();
@@ -1381,10 +1346,30 @@ void Engine::render()
 
 		Renderer::getInstance().sortTransparentObjects(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
 
-		Renderer::getInstance().RenderFrame(&m_sviLeftEyeInfo, NULL, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().RenderFrame(&m_sviRightEyeInfo, NULL, m_pRightEyeFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
 
-		Renderer::getInstance().RenderFullscreenTexture(m_nVRCompanionWindowWidth, m_nVRCompanionWindowHeight, m_pLeftEyeFramebuffer->m_nResolveTextureId, true);
+		GLint srcX0 = m_sviLeftEyeInfo.m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
+		GLint srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
+		GLint srcY0 = m_sviLeftEyeInfo.m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
+		GLint srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
+
+		glBlitNamedFramebuffer(
+			m_pLeftEyeFramebuffer->m_nRenderFramebufferId,
+			m_pWindowFramebuffer->m_nRenderFramebufferId,
+			srcX0, srcY0, srcX1, srcY1,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+			GL_NEAREST);
+
+		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pWindowFramebuffer);
+
+		Renderer::getInstance().renderFullscreenTexture(
+			m_ivec2WindowSize.x,
+			m_ivec2WindowSize.y,
+			m_pWindowFramebuffer->m_nResolveTextureId,
+			true
+		);
 
 		vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)(m_pLeftEyeFramebuffer->m_nResolveTextureId), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)m_pRightEyeFramebuffer->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
@@ -1396,7 +1381,7 @@ void Engine::render()
 		
 		//glFinish();
 		
-		SDL_GL_SwapWindow(m_pVRCompanionWindow);
+		SDL_GL_SwapWindow(m_pWindow);
 
 		//glClearColor(0, 0, 0, 1);
 		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1407,15 +1392,15 @@ void Engine::render()
 
 	if (m_bUseDesktop)
 	{
-		SDL_GL_MakeCurrent(m_pDesktopWindow, m_pGLContext);
+		SDL_GL_MakeCurrent(m_pWindow, m_pGLContext);
 
-		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviDesktop3DViewInfo.view)[3]));
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviWindow3DInfo.view)[3]));
 
-		Renderer::getInstance().RenderFrame(&m_sviDesktop3DViewInfo, &m_sviDesktop2DOverlayViewInfo, m_pDesktopFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
 
-		Renderer::getInstance().RenderFullscreenTexture(m_ivec2DesktopWindowSize.x, m_ivec2DesktopWindowSize.y, m_pDesktopFramebuffer->m_nResolveTextureId);
+		Renderer::getInstance().renderFullscreenTexture(m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
 
-		SDL_GL_SwapWindow(m_pDesktopWindow);
+		SDL_GL_SwapWindow(m_pWindow);
 	}
 
 	Renderer::getInstance().clearDynamicRenderQueue();
@@ -1515,27 +1500,26 @@ void Engine::createVRViews()
 	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
 	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
 
-	if (!Renderer::getInstance().CreateFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
+	if (!Renderer::getInstance().createFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
 		ccomutils::dprintf("Could not create left eye framebuffer!\n");
-	if (!Renderer::getInstance().CreateFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
+	if (!Renderer::getInstance().createFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
 		ccomutils::dprintf("Could not create right eye framebuffer!\n");
 }
 
 void Engine::createDesktopView()
 {
-	m_sviDesktop2DOverlayViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
-	m_sviDesktop2DOverlayViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
+	m_sviWindowUIInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindowUIInfo.m_nRenderHeight = m_ivec2WindowSize.y;
 
-	m_sviDesktop2DOverlayViewInfo.view = glm::mat4();
-	m_sviDesktop2DOverlayViewInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviDesktop2DOverlayViewInfo.m_nRenderHeight), -1.f, 1.f);
+	m_sviWindowUIInfo.view = glm::mat4();
+	m_sviWindowUIInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderHeight), -1.f, 1.f);
 
+	m_sviWindow3DInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
+	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fNearClip, g_fFarClip);
 
-	m_sviDesktop3DViewInfo.m_nRenderWidth = m_ivec2DesktopWindowSize.x;
-	m_sviDesktop3DViewInfo.m_nRenderHeight = m_ivec2DesktopWindowSize.y;
-	m_sviDesktop3DViewInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2DesktopWindowSize.x / (float)m_ivec2DesktopWindowSize.y, g_fNearClip, g_fFarClip);
+	m_pWindowFramebuffer = new Renderer::FramebufferDesc();
 
-	m_pDesktopFramebuffer = new Renderer::FramebufferDesc();
-
-	if (!Renderer::getInstance().CreateFrameBuffer(m_sviDesktop2DOverlayViewInfo.m_nRenderWidth, m_sviDesktop2DOverlayViewInfo.m_nRenderHeight, *m_pDesktopFramebuffer))
+	if (!Renderer::getInstance().createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
 		ccomutils::dprintf("Could not create desktop view framebuffer!\n");	
 }
