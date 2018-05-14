@@ -44,6 +44,7 @@ private:
 	bool m_bGreatBayModel;
 	bool m_bShowDesktopFrustum;
 	bool m_bDemoMode;
+	bool m_bShowDiagnostics;
 
 	vr::IVRSystem *m_pHMD;
 

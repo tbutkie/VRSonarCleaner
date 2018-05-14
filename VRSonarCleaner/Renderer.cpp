@@ -1245,7 +1245,7 @@ void Renderer::setupText()
 	for (GLubyte c = 0; c < 128; c++)
 	{
 		// Load character glyph 
-		if (FT_Load_Char(face, c + 32, FT_LOAD_RENDER))
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
 		{
 			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 			continue;
@@ -1279,7 +1279,7 @@ void Renderer::setupText()
 		};
 		m_arrCharacters[c] = character;
 		char tmp[2];
-		tmp[0] = c + 32;
+		tmp[0] = c;
 		tmp[1] = '\0';
 		//std::cout << "Adding character \'" << tmp << "\' to text renderer..." << std::endl;
 		addTexture(new GLTexture(std::string(tmp), face->glyph->bitmap.width, face->glyph->bitmap.rows, texture, true));

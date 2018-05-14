@@ -95,6 +95,7 @@ Engine::Engine()
 	, m_bShowDesktopFrustum(false)
 	, m_bStudyMode(false)
 	, m_bDemoMode(false)
+	, m_bShowDiagnostics(false)
 	, m_bGLInitialized(false)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
@@ -248,7 +249,7 @@ bool Engine::init()
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
-			//BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
+			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
 		}
 
 		m_pColorScalerTPU = new ColorScaler();
@@ -987,13 +988,7 @@ bool Engine::HandleInput()
 
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
 				{
-					std::cout << "Frame Time: " << m_msFrameTime.count() << "ms" << std::endl;
-					std::cout << "\t" << m_msInputHandleTime.count() << "ms\tInput Handling" << std::endl;
-					std::cout << "\t" << m_msUpdateTime.count() << "ms\tState Update" << std::endl;
-					std::cout << "\t" << m_msDrawTime.count() << "ms\tScene Drawing" << std::endl;
-					std::cout << "\t" << m_msRenderTime.count() << "ms\tRendering" << std::endl;
-					if (m_bUseVR)
-						std::cout << "\t" << m_msVRUpdateTime.count() << "ms\tVR System Update" << std::endl;
+					m_bShowDiagnostics = !m_bShowDiagnostics;
 				}
 			}
 
@@ -1192,6 +1187,31 @@ void Engine::update()
 void Engine::drawScene()
 {
 	BehaviorManager::getInstance().draw();
+
+	if (m_bShowDiagnostics)
+	{
+		std::stringstream ss;
+		ss.precision(2);
+
+		ss << std::fixed << "Total Frame Time: " << m_msFrameTime.count() << "ms" << std::endl;
+		ss << std::fixed << "Input Handling: " << m_msInputHandleTime.count() << "ms" << std::endl;
+		ss << std::fixed << "State Update: " << m_msUpdateTime.count() << "ms" << std::endl;
+		ss << std::fixed << "Scene Drawing: " << m_msDrawTime.count() << "ms" << std::endl;
+		ss << std::fixed << "Rendering: " << m_msRenderTime.count() << "ms" << std::endl;
+		if (m_bUseVR)
+			ss << std::fixed << "OpenVR Update: " << m_msVRUpdateTime.count() << "ms" << std::endl;
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(1.f),
+			glm::vec3(0.f),
+			glm::quat(),
+			m_sviWindowUIInfo.m_nRenderHeight / 4,
+			Renderer::HEIGHT,
+			Renderer::LEFT,
+			Renderer::BOTTOM_LEFT
+		);
+	}
 
 	if (m_bSonarCleaning)
 	{
