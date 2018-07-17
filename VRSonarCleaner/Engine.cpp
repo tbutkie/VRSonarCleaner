@@ -182,7 +182,7 @@ bool Engine::init()
 		return false;
 	}
 
-	m_pWindow = createFullscreenWindow(1);
+	m_pWindow = createFullscreenWindow(0);
 
 	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
 
@@ -226,13 +226,13 @@ bool Engine::init()
 		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
 		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
 
-		glm::vec3 wallSize((g_vec3RoomSize.x * 2.5f), (g_vec3RoomSize.y * 0.9f), 0.5f);
+		glm::vec3 wallSize(10.f, (g_vec3RoomSize.y * 0.9f), 0.5f);
 		glm::quat wallOrientation;// (glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
 		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 
-		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, 0.f);
+		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, g_vec3RoomSize.z);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
 
@@ -259,7 +259,7 @@ bool Engine::init()
 		//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
 		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-		m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 		//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
@@ -1299,11 +1299,11 @@ void Engine::drawScene()
 			//draw table
 			Renderer::RendererSubmission rs;
 			rs.glPrimitiveType = GL_TRIANGLES;
-			rs.shaderName = "instanced_lit";
+			rs.shaderName = "instanced";
 			rs.indexType = GL_UNSIGNED_SHORT;
-			rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("icosphere");
-			rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("icosphere");
-			rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("icosphere");
+			rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+			rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
+			rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 			rs.instanced = true;
 			rs.specularExponent = 32.f;
 			//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
@@ -1317,9 +1317,9 @@ void Engine::drawScene()
 					continue;
 				}
 
-				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
+				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
 				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
-				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}
 		}
