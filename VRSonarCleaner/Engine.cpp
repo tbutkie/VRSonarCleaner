@@ -182,7 +182,7 @@ bool Engine::init()
 		return false;
 	}
 
-	m_pWindow = createFullscreenWindow(0);
+	m_pWindow = createFullscreenWindow(1);
 
 	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
 
@@ -227,12 +227,12 @@ bool Engine::init()
 		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
 
 		glm::vec3 wallSize(10.f, (g_vec3RoomSize.y * 0.9f), 0.5f);
-		glm::quat wallOrientation;// (glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
-		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, -g_vec3RoomSize.z);
+		glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
+		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, g_vec3RoomSize.z);
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
 
-		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, g_vec3RoomSize.z);
+		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, -g_vec3RoomSize.z);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
 
