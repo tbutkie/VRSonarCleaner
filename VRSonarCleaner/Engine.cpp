@@ -496,202 +496,202 @@ bool Engine::HandleInput()
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
-		ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
-		LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
+		//ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
+		//LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
 
 
-		if (m_bStudyMode)
-		{
-			if (sdlEvent.type == SDL_KEYDOWN)
-			{
-				if ((sdlEvent.key.keysym.mod & KMOD_LSHIFT) && sdlEvent.key.keysym.sym == SDLK_ESCAPE
-					|| sdlEvent.key.keysym.sym == SDLK_q)
-				{
-					bRet = true;
-				}
-
-				if (m_bSonarCleaning)
-				{
-					if (sdlEvent.key.keysym.sym == SDLK_r)
-					{
-						if (arcball)
-						{
-							std::stringstream ss;
-
-							ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-
-							DataLogger::getInstance().logMessage(ss.str());
-
-							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-							m_Camera.lookat = m_pTableVolume->getPosition();
-
-							m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
-
-							arcball->reset();
-						}
-					}
-					
-					if (sdlEvent.key.keysym.sym == SDLK_RETURN)
-					{
-						RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
-
-						if (study)
-							study->next();
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_SPACE)
-					{
-						DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
-
-						if (desktopEdit)
-							desktopEdit->activate();
-					}
-
-
-					if (sdlEvent.key.keysym.sym == SDLK_KP_1)
-					{
-						m_pWallVolume->setVisible(false);
-						m_pTableVolume->setVisible(false);
-						BehaviorManager::getInstance().clearBehaviors();
-						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
-						BehaviorManager::getInstance().addBehavior("Standing Study", rsb);
-						rsb->init();
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_KP_2)
-					{
-						m_pWallVolume->setVisible(false);
-						m_pTableVolume->setVisible(false);
-						BehaviorManager::getInstance().clearBehaviors();
-						RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, true);
-						BehaviorManager::getInstance().addBehavior("Sitting Study", rsb);
-						rsb->init();
-					}
-					if (sdlEvent.key.keysym.sym == SDLK_KP_3)
-					{
-						m_pWallVolume->setVisible(false);
-						m_pTableVolume->setVisible(false);
-						BehaviorManager::getInstance().clearBehaviors();
-						RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviWindow3DInfo, glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera);
-						BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
-						rsb->init();
-					}
-				}
-			}
-
-			// MOUSE
-			if (m_bUseDesktop)
-			{
-				if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
-				{
-					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-					{
-						m_bLeftMouseDown = true;
-
-						if (arcball)
-							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-
-						if (lasso)
-						{
-							if (m_bRightMouseDown)
-								lasso->end();
-
-							lasso->reset();
-						}
-
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-					{
-						m_bRightMouseDown = true;
-						if (lasso && !m_bLeftMouseDown)
-							lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
-					{
-						if (lasso && m_bRightMouseDown)
-						{
-							lasso->end();
-						}
-						m_bMiddleMouseDown = true;
-
-						if (arcball)
-							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-					}
-
-				}//end mouse down 
-				else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
-				{
-					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-					{
-						m_bLeftMouseDown = false;
-
-						if (arcball)
-							arcball->endDrag();
-
-						if (lasso)
-							lasso->reset();
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-					{
-						m_bRightMouseDown = false;
-
-						if (lasso)
-							lasso->end();
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
-					{
-						m_bMiddleMouseDown = false;
-					}
-
-				}//end mouse up
-				if (sdlEvent.type == SDL_MOUSEMOTION)
-				{
-					if (m_bLeftMouseDown)
-					{
-						if (arcball)
-							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-					}
-					if (m_bRightMouseDown && !m_bLeftMouseDown)
-					{
-						if (lasso)
-							lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
-					}
-				}
-				if (sdlEvent.type == SDL_MOUSEWHEEL)
-				{
-					if (lasso)
-						lasso->reset();
-
-					glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
-					m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
-
-					float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
-
-					if (newLen < 0.1f)
-						m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
-					if (newLen > 10.f)
-						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
-
-					m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
-
-					if (DataLogger::getInstance().logging())
-					{
-						std::stringstream ss;
-
-						ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-						ss << "\t";
-						ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
-						ss << ";";
-						ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
-						ss << ";";
-						ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
-
-						DataLogger::getInstance().logMessage(ss.str());
-					}
-				}
-			}
-		}
-		else
+		//if (m_bStudyMode)
+		//{
+		//	if (sdlEvent.type == SDL_KEYDOWN)
+		//	{
+		//		if ((sdlEvent.key.keysym.mod & KMOD_LSHIFT) && sdlEvent.key.keysym.sym == SDLK_ESCAPE
+		//			|| sdlEvent.key.keysym.sym == SDLK_q)
+		//		{
+		//			bRet = true;
+		//		}
+		//
+		//		if (m_bSonarCleaning)
+		//		{
+		//			if (sdlEvent.key.keysym.sym == SDLK_r)
+		//			{
+		//				if (arcball)
+		//				{
+		//					std::stringstream ss;
+		//
+		//					ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		//
+		//					DataLogger::getInstance().logMessage(ss.str());
+		//
+		//					m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+		//					m_Camera.lookat = m_pTableVolume->getPosition();
+		//
+		//					m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+		//
+		//					arcball->reset();
+		//				}
+		//			}
+		//			
+		//			if (sdlEvent.key.keysym.sym == SDLK_RETURN)
+		//			{
+		//				RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
+		//
+		//				if (study)
+		//					study->next();
+		//			}
+		//
+		//			if (sdlEvent.key.keysym.sym == SDLK_SPACE)
+		//			{
+		//				DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
+		//
+		//				if (desktopEdit)
+		//					desktopEdit->activate();
+		//			}
+		//
+		//
+		//			if (sdlEvent.key.keysym.sym == SDLK_KP_1)
+		//			{
+		//				m_pWallVolume->setVisible(false);
+		//				m_pTableVolume->setVisible(false);
+		//				BehaviorManager::getInstance().clearBehaviors();
+		//				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, false);
+		//				BehaviorManager::getInstance().addBehavior("Standing Study", rsb);
+		//				rsb->init();
+		//			}
+		//
+		//			if (sdlEvent.key.keysym.sym == SDLK_KP_2)
+		//			{
+		//				m_pWallVolume->setVisible(false);
+		//				m_pTableVolume->setVisible(false);
+		//				BehaviorManager::getInstance().clearBehaviors();
+		//				RunStudyBehavior *rsb = new RunStudyBehavior(m_pTDM, true);
+		//				BehaviorManager::getInstance().addBehavior("Sitting Study", rsb);
+		//				rsb->init();
+		//			}
+		//			if (sdlEvent.key.keysym.sym == SDLK_KP_3)
+		//			{
+		//				m_pWallVolume->setVisible(false);
+		//				m_pTableVolume->setVisible(false);
+		//				BehaviorManager::getInstance().clearBehaviors();
+		//				RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviWindow3DInfo, glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera);
+		//				BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
+		//				rsb->init();
+		//			}
+		//		}
+		//	}
+		//
+		//	// MOUSE
+		//	if (m_bUseDesktop)
+		//	{
+		//		if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+		//		{
+		//			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+		//			{
+		//				m_bLeftMouseDown = true;
+		//
+		//				if (arcball)
+		//					arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+		//
+		//				if (lasso)
+		//				{
+		//					if (m_bRightMouseDown)
+		//						lasso->end();
+		//
+		//					lasso->reset();
+		//				}
+		//
+		//			}
+		//			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+		//			{
+		//				m_bRightMouseDown = true;
+		//				if (lasso && !m_bLeftMouseDown)
+		//					lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
+		//			}
+		//			if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+		//			{
+		//				if (lasso && m_bRightMouseDown)
+		//				{
+		//					lasso->end();
+		//				}
+		//				m_bMiddleMouseDown = true;
+		//
+		//				if (arcball)
+		//					arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+		//			}
+		//
+		//		}//end mouse down 
+		//		else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+		//		{
+		//			if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+		//			{
+		//				m_bLeftMouseDown = false;
+		//
+		//				if (arcball)
+		//					arcball->endDrag();
+		//
+		//				if (lasso)
+		//					lasso->reset();
+		//			}
+		//			if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+		//			{
+		//				m_bRightMouseDown = false;
+		//
+		//				if (lasso)
+		//					lasso->end();
+		//			}
+		//			if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+		//			{
+		//				m_bMiddleMouseDown = false;
+		//			}
+		//
+		//		}//end mouse up
+		//		if (sdlEvent.type == SDL_MOUSEMOTION)
+		//		{
+		//			if (m_bLeftMouseDown)
+		//			{
+		//				if (arcball)
+		//					arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+		//			}
+		//			if (m_bRightMouseDown && !m_bLeftMouseDown)
+		//			{
+		//				if (lasso)
+		//					lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
+		//			}
+		//		}
+		//		if (sdlEvent.type == SDL_MOUSEWHEEL)
+		//		{
+		//			if (lasso)
+		//				lasso->reset();
+		//
+		//			glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
+		//			m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
+		//
+		//			float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+		//
+		//			if (newLen < 0.1f)
+		//				m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+		//			if (newLen > 10.f)
+		//				m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+		//
+		//			m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+		//
+		//			if (DataLogger::getInstance().logging())
+		//			{
+		//				std::stringstream ss;
+		//
+		//				ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+		//				ss << "\t";
+		//				ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+		//				ss << ";";
+		//				ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+		//				ss << ";";
+		//				ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+		//
+		//				DataLogger::getInstance().logMessage(ss.str());
+		//			}
+		//		}
+		//	}
+		//}
+		//else
 		{
 			if (sdlEvent.type == SDL_QUIT)
 			{
@@ -705,202 +705,205 @@ bool Engine::HandleInput()
 					bRet = true;
 				}
 
-				if (sdlEvent.key.keysym.sym == SDLK_j)
-				{
-					Renderer::getInstance().showMessage("This is a test!");
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_f)
-				{
-					//using namespace std::experimental::filesystem::v1;
-					//auto herePath = current_path();
-					//std::cout << "Current directory: " << herePath << std::endl;
-					//for (directory_iterator it(herePath); it != directory_iterator(); ++it)
-					//	if (is_regular_file(*it))
-					//		std::cout << (*it) << std::endl;
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_l)
-				{
-					if (m_bUseVR)
-					{
-						if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
-							BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
-						if (!BehaviorManager::getInstance().getBehavior("grab"))
-							BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
-						if (!BehaviorManager::getInstance().getBehavior("scale"))
-							BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
-					}
-					else 
-						m_pWallVolume->setVisible(false);
-
-					using namespace std::experimental::filesystem::v1;
-
-					//path dataset("south_santa_rosa");
-					//path dataset("santa_cruz_south");
-					path dataset("santa_cruz_basin");
-
-					auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-					std::cout << "Base data directory: " << basePath << std::endl;
-
-					auto acceptsPath = path(basePath).append(path("accept"));
-					auto rejectsPath = path(basePath).append(path("reject"));
-
-					for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
-					{
-						if (is_regular_file(*it))
-						{
-							if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-							{
-								SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-								m_vpClouds.push_back(tmp);
-								m_pTableVolume->add(tmp);
-								m_pWallVolume->add(tmp);
-								break;
-							}
-						}
-					}
-
-					//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
-					//{
-					//	if (is_regular_file(*it))
-					//	{
-					//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-					//		{
-					//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-					//			m_vpClouds.push_back(tmp);
-					//			m_pTableVolume->add(tmp);
-					//			m_pWallVolume->add(tmp);
-					//			break;
-					//		}
-					//	}
-					//}
-
-					refreshColorScale(m_pColorScalerTPU, m_vpClouds);
-				}
-
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
-				{
-					if (!m_bUseVR)
-					{
-						m_bUseVR = true;
-						initVR();
-					}
-				}
-				if (sdlEvent.key.keysym.sym == SDLK_KP_ENTER)
-				{
-					m_pTableVolume->setVisible(false);
-					m_pWallVolume->setVisible(false);
-					BehaviorManager::getInstance().clearBehaviors();
-					SnellenTest *st = new SnellenTest(m_pTDM, 10.f);
-					BehaviorManager::getInstance().addBehavior("snellen", st);
-					st->init();
-				}
-				if (sdlEvent.key.keysym.sym == SDLK_UP)
-				{
-					SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
-
-					if (snellen)
-					{
-						snellen->setVisualAngle(snellen->getVisualAngle() + 1.f);
-						snellen->newTest();
-					}
-				}
-				if (sdlEvent.key.keysym.sym == SDLK_DOWN)
-				{
-					SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
-
-					if (snellen)
-					{
-						float angle = snellen->getVisualAngle() - 1.f;
-						if (angle < 1.f) angle = 1.f;
-						snellen->setVisualAngle(angle);
-						snellen->newTest();
-					}
-				}
-
-
-				if (sdlEvent.key.keysym.sym == SDLK_y)
-				{
-					m_bDemoMode = true;
-					m_pTableVolume->setVisible(false);
-					m_pWallVolume->setVisible(false);
-					BehaviorManager::getInstance().clearBehaviors();
-					CloudEditControllerTutorial *cet = new CloudEditControllerTutorial(m_pTDM);
-					BehaviorManager::getInstance().addBehavior("Demo", cet);
-					cet->init();
-				}
-				if (sdlEvent.key.keysym.sym == SDLK_u)
-				{
-					BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_KP_0)
-				{
-					m_pWallVolume->setVisible(false);
-					m_pTableVolume->setVisible(false);
-					BehaviorManager::getInstance().clearBehaviors();
-					BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_KP_PERIOD)
-				{
-					m_pWallVolume->setVisible(false);
-					m_pTableVolume->setVisible(false);
-					BehaviorManager::getInstance().clearBehaviors();
-					StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviWindow3DInfo, glm::ivec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
-					BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
-					stdb->init();
-				}
+				//if (sdlEvent.key.keysym.sym == SDLK_j)
+				//{
+				//	Renderer::getInstance().showMessage("This is a test!");
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_f)
+				//{
+				//	//using namespace std::experimental::filesystem::v1;
+				//	//auto herePath = current_path();
+				//	//std::cout << "Current directory: " << herePath << std::endl;
+				//	//for (directory_iterator it(herePath); it != directory_iterator(); ++it)
+				//	//	if (is_regular_file(*it))
+				//	//		std::cout << (*it) << std::endl;
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_l)
+				//{
+				//	if (m_bUseVR)
+				//	{
+				//		if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+				//			BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+				//		if (!BehaviorManager::getInstance().getBehavior("grab"))
+				//			BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				//		if (!BehaviorManager::getInstance().getBehavior("scale"))
+				//			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				//	}
+				//	else 
+				//		m_pWallVolume->setVisible(false);
+				//
+				//	using namespace std::experimental::filesystem::v1;
+				//
+				//	//path dataset("south_santa_rosa");
+				//	//path dataset("santa_cruz_south");
+				//	path dataset("santa_cruz_basin");
+				//
+				//	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+				//	std::cout << "Base data directory: " << basePath << std::endl;
+				//
+				//	auto acceptsPath = path(basePath).append(path("accept"));
+				//	auto rejectsPath = path(basePath).append(path("reject"));
+				//
+				//	for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+				//	{
+				//		if (is_regular_file(*it))
+				//		{
+				//			if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+				//			{
+				//				SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+				//				m_vpClouds.push_back(tmp);
+				//				m_pTableVolume->add(tmp);
+				//				m_pWallVolume->add(tmp);
+				//				break;
+				//			}
+				//		}
+				//	}
+				//
+				//	//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
+				//	//{
+				//	//	if (is_regular_file(*it))
+				//	//	{
+				//	//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+				//	//		{
+				//	//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+				//	//			m_vpClouds.push_back(tmp);
+				//	//			m_pTableVolume->add(tmp);
+				//	//			m_pWallVolume->add(tmp);
+				//	//			break;
+				//	//		}
+				//	//	}
+				//	//}
+				//
+				//	refreshColorScale(m_pColorScalerTPU, m_vpClouds);
+				//}
+				//
+				//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_v)
+				//{
+				//	if (!m_bUseVR)
+				//	{
+				//		m_bUseVR = true;
+				//		initVR();
+				//	}
+				//}
+				//if (sdlEvent.key.keysym.sym == SDLK_KP_ENTER)
+				//{
+				//	m_pTableVolume->setVisible(false);
+				//	m_pWallVolume->setVisible(false);
+				//	BehaviorManager::getInstance().clearBehaviors();
+				//	SnellenTest *st = new SnellenTest(m_pTDM, 10.f);
+				//	BehaviorManager::getInstance().addBehavior("snellen", st);
+				//	st->init();
+				//}
+				//if (sdlEvent.key.keysym.sym == SDLK_UP)
+				//{
+				//	SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+				//
+				//	if (snellen)
+				//	{
+				//		snellen->setVisualAngle(snellen->getVisualAngle() + 1.f);
+				//		snellen->newTest();
+				//	}
+				//}
+				//if (sdlEvent.key.keysym.sym == SDLK_DOWN)
+				//{
+				//	SnellenTest *snellen = static_cast<SnellenTest*>(BehaviorManager::getInstance().getBehavior("snellen"));
+				//
+				//	if (snellen)
+				//	{
+				//		float angle = snellen->getVisualAngle() - 1.f;
+				//		if (angle < 1.f) angle = 1.f;
+				//		snellen->setVisualAngle(angle);
+				//		snellen->newTest();
+				//	}
+				//}
+				//
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_y)
+				//{
+				//	m_bDemoMode = true;
+				//	m_pTableVolume->setVisible(false);
+				//	m_pWallVolume->setVisible(false);
+				//	BehaviorManager::getInstance().clearBehaviors();
+				//	CloudEditControllerTutorial *cet = new CloudEditControllerTutorial(m_pTDM);
+				//	BehaviorManager::getInstance().addBehavior("Demo", cet);
+				//	cet->init();
+				//}
+				//if (sdlEvent.key.keysym.sym == SDLK_u)
+				//{
+				//	BehaviorManager::getInstance().addBehavior("GetStudyData", new CurateStudyDataBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_KP_0)
+				//{
+				//	m_pWallVolume->setVisible(false);
+				//	m_pTableVolume->setVisible(false);
+				//	BehaviorManager::getInstance().clearBehaviors();
+				//	BehaviorManager::getInstance().addBehavior("Tutorial", new StudyTutorialBehavior(m_pTDM, m_pTableVolume, m_pWallVolume));
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_KP_PERIOD)
+				//{
+				//	m_pWallVolume->setVisible(false);
+				//	m_pTableVolume->setVisible(false);
+				//	BehaviorManager::getInstance().clearBehaviors();
+				//	StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviWindow3DInfo, glm::ivec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
+				//	BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
+				//	stdb->init();
+				//}
 
 				if (sdlEvent.key.keysym.sym == SDLK_d)
 				{
-					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
-					{
-						if (!m_bUseDesktop)
-						{
-							m_bUseDesktop = true;
-							initDesktop();
-						}
-					}
+					
+					static_cast<ProbeBehavior*>(BehaviorManager::getInstance().getBehavior("pointclean"))->activateDemoMode();
+
+					//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+					//{
+					//	if (!m_bUseDesktop)
+					//	{
+					//		m_bUseDesktop = true;
+					//		initDesktop();
+					//	}
+					//}
 				}
 
-				if (sdlEvent.key.keysym.sym == SDLK_x)
-				{
-					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
-					{
-						if (m_bUseVR)
-						{
-							shutdownVR();
-						}
-					}
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_z)
-				{
-					if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
-					{
-						if (m_bUseDesktop)
-						{
-							shutdownDesktop();
-						}
-					}
-				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_c)
-				{
-					std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
-				}
-
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
-				{
-					Renderer::getInstance().toggleWireframe();
-				}
-
-				if (!(sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
-				{
-					m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
-				}
+				//if (sdlEvent.key.keysym.sym == SDLK_x)
+				//{
+				//	if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+				//	{
+				//		if (m_bUseVR)
+				//		{
+				//			shutdownVR();
+				//		}
+				//	}
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_z)
+				//{
+				//	if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
+				//	{
+				//		if (m_bUseDesktop)
+				//		{
+				//			shutdownDesktop();
+				//		}
+				//	}
+				//}
+				//
+				//if (sdlEvent.key.keysym.sym == SDLK_c)
+				//{
+				//	std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
+				//}
+				//
+				//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
+				//{
+				//	Renderer::getInstance().toggleWireframe();
+				//}
+				//
+				//if (!(sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
+				//{
+				//	m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
+				//}
 
 				if (m_bSonarCleaning)
 				{
@@ -917,74 +920,74 @@ bool Engine::HandleInput()
 						for (auto &dv : m_vpDataVolumes)
 							dv->resetPositionAndOrientation();
 
-						if (arcball)
-						{
-							m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-							m_Camera.lookat = m_pTableVolume->getPosition();
-
-							m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
-
-							arcball->reset();
-						}
+						//if (arcball)
+						//{
+						//	m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+						//	m_Camera.lookat = m_pTableVolume->getPosition();
+						//
+						//	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+						//
+						//	arcball->reset();
+						//}
 					}
 
-					if (sdlEvent.key.keysym.sym == SDLK_g)
-					{
-						printf("Pressed g, generating fake test cloud\n");
-						//m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
-						//m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_RETURN)
-					{
-						RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
-
-						if (study)
-							study->next();
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_SPACE)
-					{
-						DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
-
-						if (desktopEdit)
-							desktopEdit->activate();
-					}
+					//if (sdlEvent.key.keysym.sym == SDLK_g)
+					//{
+					//	printf("Pressed g, generating fake test cloud\n");
+					//	//m_pClouds->generateFakeTestCloud(150, 150, 25, 40000);
+					//	//m_pColorScalerTPU->resetBiValueScaleMinMax(m_pClouds->getMinDepthTPU(), m_pClouds->getMaxDepthTPU(), m_pClouds->getMinPositionalTPU(), m_pClouds->getMaxPositionalTPU());
+					//}
+					//
+					//if (sdlEvent.key.keysym.sym == SDLK_RETURN)
+					//{
+					//	RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("Desktop Study"));
+					//
+					//	if (study)
+					//		study->next();
+					//}
+					//
+					//if (sdlEvent.key.keysym.sym == SDLK_SPACE)
+					//{
+					//	DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
+					//
+					//	if (desktopEdit)
+					//		desktopEdit->activate();
+					//}
 				}
-				else if (m_bFlowVis) //flow
-				{
-					if (sdlEvent.key.keysym.sym == SDLK_r)
-					{
-						printf("Pressed r, resetting something...\n");
-						m_pFlowVolume->resetPositionAndOrientation();
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_1)
-					{
-						if (m_bUseVR)
-						{
-							glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
-							m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
-							m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
-
-							glm::mat3 matOrientation;
-							matOrientation[0] = matHMD[0];
-							matOrientation[1] = matHMD[2];
-							matOrientation[2] = -matHMD[1];
-							m_pFlowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
-						}
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_2)
-					{
-						if (m_bUseVR)
-						{
-							m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
-							m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
-							m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-						}
-					}
-				}
+				//else if (m_bFlowVis) //flow
+				//{
+				//	if (sdlEvent.key.keysym.sym == SDLK_r)
+				//	{
+				//		printf("Pressed r, resetting something...\n");
+				//		m_pFlowVolume->resetPositionAndOrientation();
+				//	}
+				//
+				//	if (sdlEvent.key.keysym.sym == SDLK_1)
+				//	{
+				//		if (m_bUseVR)
+				//		{
+				//			glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
+				//			m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
+				//			m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
+				//
+				//			glm::mat3 matOrientation;
+				//			matOrientation[0] = matHMD[0];
+				//			matOrientation[1] = matHMD[2];
+				//			matOrientation[2] = -matHMD[1];
+				//			m_pFlowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
+				//		}
+				//	}
+				//
+				//	if (sdlEvent.key.keysym.sym == SDLK_2)
+				//	{
+				//		if (m_bUseVR)
+				//		{
+				//			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
+				//			m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
+				//			m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+				//		}
+				//	}
+				//}
 
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
 				{
@@ -994,116 +997,116 @@ bool Engine::HandleInput()
 
 
 			// MOUSE
-			if (m_bUseDesktop)
-			{
-				if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
-				{
-					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-					{
-						m_bLeftMouseDown = true;
-
-						if (arcball)
-							arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-
-						if (lasso)
-						{
-							if (m_bRightMouseDown)
-								lasso->end();
-
-							lasso->reset();
-						}
-
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-					{
-						m_bRightMouseDown = true;
-						if (lasso && !m_bLeftMouseDown)
-							lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
-					{
-						if (lasso && m_bRightMouseDown)
-						{
-							lasso->end();
-						}
-						m_bMiddleMouseDown = true;
-
-						if (arcball)
-							arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-					}
-
-				}//end mouse down 
-				else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
-				{
-					if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-					{
-						m_bLeftMouseDown = false;
-
-						if (arcball)
-							arcball->endDrag();
-
-						if (lasso)
-							lasso->reset();
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
-					{
-						m_bRightMouseDown = false;
-
-						if (lasso)
-							lasso->end();
-					}
-					if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
-					{
-						m_bMiddleMouseDown = false;
-					}
-
-				}//end mouse up
-				if (sdlEvent.type == SDL_MOUSEMOTION)
-				{
-					if (m_bLeftMouseDown)
-					{
-						if (arcball)
-							arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
-					}
-					if (m_bRightMouseDown && !m_bLeftMouseDown)
-					{
-						if (lasso)
-							lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
-					}
-				}
-				if (sdlEvent.type == SDL_MOUSEWHEEL)
-				{
-					if (lasso)
-						lasso->reset();
-
-					glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
-					m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
-
-					float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
-
-					if (newLen < 0.1f)
-						m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
-					if (newLen > 10.f)
-						m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
-
-					m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
-
-					if (DataLogger::getInstance().logging())
-					{
-						std::stringstream ss;
-
-						ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-						ss << "\t";
-						ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
-						ss << ";";
-						ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
-						ss << ";";
-						ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
-
-						DataLogger::getInstance().logMessage(ss.str());
-					}
-				}
-			}
+			//if (m_bUseDesktop)
+			//{
+			//	if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+			//	{
+			//		if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+			//		{
+			//			m_bLeftMouseDown = true;
+			//
+			//			if (arcball)
+			//				arcball->beginDrag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+			//
+			//			if (lasso)
+			//			{
+			//				if (m_bRightMouseDown)
+			//					lasso->end();
+			//
+			//				lasso->reset();
+			//			}
+			//
+			//		}
+			//		if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			//		{
+			//			m_bRightMouseDown = true;
+			//			if (lasso && !m_bLeftMouseDown)
+			//				lasso->start(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
+			//		}
+			//		if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+			//		{
+			//			if (lasso && m_bRightMouseDown)
+			//			{
+			//				lasso->end();
+			//			}
+			//			m_bMiddleMouseDown = true;
+			//
+			//			if (arcball)
+			//				arcball->translate(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+			//		}
+			//
+			//	}//end mouse down 
+			//	else if (sdlEvent.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+			//	{
+			//		if (sdlEvent.button.button == SDL_BUTTON_LEFT)
+			//		{
+			//			m_bLeftMouseDown = false;
+			//
+			//			if (arcball)
+			//				arcball->endDrag();
+			//
+			//			if (lasso)
+			//				lasso->reset();
+			//		}
+			//		if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+			//		{
+			//			m_bRightMouseDown = false;
+			//
+			//			if (lasso)
+			//				lasso->end();
+			//		}
+			//		if (sdlEvent.button.button == SDL_BUTTON_MIDDLE)
+			//		{
+			//			m_bMiddleMouseDown = false;
+			//		}
+			//
+			//	}//end mouse up
+			//	if (sdlEvent.type == SDL_MOUSEMOTION)
+			//	{
+			//		if (m_bLeftMouseDown)
+			//		{
+			//			if (arcball)
+			//				arcball->drag(glm::vec2(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y));
+			//		}
+			//		if (m_bRightMouseDown && !m_bLeftMouseDown)
+			//		{
+			//			if (lasso)
+			//				lasso->move(sdlEvent.button.x, m_ivec2WindowSize.y - sdlEvent.button.y);
+			//		}
+			//	}
+			//	if (sdlEvent.type == SDL_MOUSEWHEEL)
+			//	{
+			//		if (lasso)
+			//			lasso->reset();
+			//
+			//		glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
+			//		m_Camera.pos += eyeForward * ((float)sdlEvent.wheel.y*0.1f);
+			//
+			//		float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+			//
+			//		if (newLen < 0.1f)
+			//			m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+			//		if (newLen > 10.f)
+			//			m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+			//
+			//		m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+			//
+			//		if (DataLogger::getInstance().logging())
+			//		{
+			//			std::stringstream ss;
+			//
+			//			ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+			//			ss << "\t";
+			//			ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+			//			ss << ";";
+			//			ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+			//			ss << ";";
+			//			ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+			//
+			//			DataLogger::getInstance().logMessage(ss.str());
+			//		}
+			//	}
+			//}
 		}
 	}
 	
