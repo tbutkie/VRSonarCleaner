@@ -14,6 +14,8 @@ DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimension
 	, m_vec3OriginalPosition(pos)
 	, m_qOriginalOrientation(orientation)
 	, m_vec3OriginalDimensions(dimensions)
+	, m_vec4BackingColor(glm::vec4(1.f))
+	, m_vec4FrameColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_bVisible(true)
 	, m_bFirstRun(true)
 	, m_bDirty(true)
@@ -49,6 +51,16 @@ void DataVolume::remove(Dataset * data)
 std::vector<Dataset*> DataVolume::getDatasets()
 {
 	return m_vpDatasets;
+}
+
+void DataVolume::setFrameColor(glm::vec4 color)
+{
+	m_vec4FrameColor = color;
+}
+
+glm::vec4 DataVolume::getFrameColor()
+{
+	return m_vec4FrameColor;
 }
 
 glm::vec3 DataVolume::getOriginalPosition()
@@ -129,11 +141,21 @@ bool DataVolume::isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ)
 	return false;
 }
 
-void DataVolume::drawBBox(glm::vec4 color, float padPct)
+void DataVolume::drawBBox(float padPct)
 {
 	glm::mat4 transform = glm::translate(glm::mat4(), getPosition()) * glm::mat4(getOrientation()) * glm::scale(getDimensions() * (1.f + 0.01f * padPct));
 
-	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, color);
+	Renderer::getInstance().drawFlatPrimitive("bbox_lines", transform, m_vec4FrameColor);
+}
+
+void DataVolume::setBackingColor(glm::vec4 color)
+{
+	m_vec4BackingColor = color;
+}
+
+glm::vec4 DataVolume::getBackingColor()
+{
+	return m_vec4BackingColor;
 }
 
 void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
@@ -143,7 +165,7 @@ void DataVolume::drawEllipsoidBacking(glm::vec4 color, float padPct)
 	Renderer::getInstance().drawPrimitive("inverse_icosphere", volTransform, color, color, 0.f);
 }
 
-void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct)
+void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, float padPct)
 {
 	glm::vec3 bbMin(-0.5f);
 	glm::vec3 bbMax(0.5f);
@@ -233,7 +255,7 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 colo
 				//color = glm::vec4(glm::vec3(1.f, 0.f, 1.f), color.a);
 			}
 	
-			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, color);
+			Renderer::getInstance().drawFlatPrimitive("plane", planeTransform, m_vec4BackingColor);
 		}
 	}
 }

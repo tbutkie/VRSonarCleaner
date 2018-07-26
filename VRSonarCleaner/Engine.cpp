@@ -33,8 +33,8 @@
 
 glm::vec3						g_vec3RoomSize(1.f, 3.f, 1.f);
 
-float							g_fNearClip = 0.001f;
-float							g_fFarClip = 10000.f;
+float							g_fNearClip = 0.01f;
+float							g_fFarClip = 100.f;
 const glm::ivec2				g_ivec2DesktopInitialWindowSize(500, 500);
 float							g_fDesktopWindowFOV(45.f);
 
@@ -231,12 +231,15 @@ bool Engine::init()
 		glm::vec3 wallPosition(0.f, g_vec3RoomSize.y * 0.5f, g_vec3RoomSize.z);
 		
 		m_pWallVolume = new DataVolume(wallPosition, wallOrientation, wallSize);
+		m_pWallVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
 
 		glm::vec3 tablePosition = glm::vec3(0.f, 1.f, -g_vec3RoomSize.z);
 		glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
 
 		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
+		m_pTableVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.75f));
+		m_pTableVolume->setFrameColor(glm::vec4(1.f));
 
 		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = tablePosition;
@@ -1209,7 +1212,7 @@ void Engine::drawScene()
 			glm::vec4(1.f),
 			glm::vec3(0.f),
 			glm::quat(),
-			m_sviWindowUIInfo.m_nRenderHeight / 4,
+			static_cast<GLfloat>(m_sviWindowUIInfo.m_nRenderHeight / 4),
 			Renderer::HEIGHT,
 			Renderer::LEFT,
 			Renderer::BOTTOM_LEFT
@@ -1295,8 +1298,8 @@ void Engine::drawScene()
 			if (m_bUseVR)
 				trans = m_pTDM->getHMDToWorldTransform();
 
-			dv->drawVolumeBacking(trans, glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
-			dv->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+			dv->drawVolumeBacking(trans, 1.f);
+			dv->drawBBox(0.f);
 			//dv->drawAxes();
 
 			//draw table
@@ -1336,8 +1339,8 @@ void Engine::drawScene()
 
 	if (m_bFlowVis)
 	{
-		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 1.f);
-		m_pFlowVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+		m_pFlowVolume->drawBBox(0.f);
 
 		m_pFlowVolume->draw();
 	}

@@ -422,7 +422,7 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight)));
 
 	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
-												//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
+	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 
 	// Render to framebuffer

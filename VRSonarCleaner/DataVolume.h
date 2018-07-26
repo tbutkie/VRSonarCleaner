@@ -24,8 +24,12 @@ public:
 
 	std::vector<Dataset*> getDatasets();
 
-	void drawBBox(glm::vec4 color, float padPct);
-	void drawVolumeBacking(glm::mat4 worldToHMDTransform, glm::vec4 color, float padPct);
+	void setFrameColor(glm::vec4 color);
+	glm::vec4 getFrameColor();
+	void drawBBox(float padPct);
+	void setBackingColor(glm::vec4 color);
+	glm::vec4 getBackingColor();
+	void drawVolumeBacking(glm::mat4 worldToHMDTransform, float padPct);
 	void drawEllipsoidBacking(glm::vec4 color, float padPct);
 
 	glm::vec3 getOriginalPosition();
@@ -120,6 +124,9 @@ protected:
 	glm::dvec3 m_dvec3CustomDomainDims;
 	std::map<Dataset*, glm::mat4> m_mapCustomDataTransforms;
 	std::map<Dataset*, glm::mat4> m_mapCustomDataTransformsPrevious;
+
+	glm::vec4 m_vec4BackingColor;
+	glm::vec4 m_vec4FrameColor;
 	
 	bool m_bVisible;
 	bool m_bFirstRun;                        // Flag for First Runthrough

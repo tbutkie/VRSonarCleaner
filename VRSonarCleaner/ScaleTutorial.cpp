@@ -107,12 +107,14 @@ void ScaleTutorial::draw()
 
 	goalVolBackingColor.a = 0.5f;
 
-	m_pGoalVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), goalVolBackingColor, 2.f);
-	m_pGoalVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+	m_pGoalVolume->setBackingColor(goalVolBackingColor);
+	m_pGoalVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
+	m_pGoalVolume->drawBBox(0.f);
 
 	glm::vec4 dvColor = volumeHasBeenScaled ? glm::vec4(0.15f, 0.21f, 0.31f, 1.f) : glm::mix(glm::vec4(0.15f, 0.21f, 0.31f, 1.f), glm::vec4(0.85f, 0.81f, 0.31f, 1.f), amt);
-	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), dvColor, 2.f);
-	m_pDemoVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+	m_pDemoVolume->setBackingColor(dvColor);
+	m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
+	m_pDemoVolume->drawBBox(0.f);
 
 	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
 	{

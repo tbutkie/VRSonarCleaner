@@ -148,8 +148,9 @@ void StudyTrialDesktopBehavior::update()
 
 void StudyTrialDesktopBehavior::draw()
 {
-	m_pDataVolume->drawVolumeBacking(glm::inverse(m_pDesktop3DViewInfo->view), glm::vec4(0.15f, 0.21f, 0.31f, 1.f), 2.f);
-	m_pDataVolume->drawBBox(glm::vec4(0.f, 0.f, 0.f, 1.f), 0.f);
+	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
+	m_pDataVolume->drawVolumeBacking(glm::inverse(m_pDesktop3DViewInfo->view), 2.f);
+	m_pDataVolume->drawBBox(0.f);
 
 	Renderer::RendererSubmission rs;
 	rs.glPrimitiveType = GL_POINTS;
