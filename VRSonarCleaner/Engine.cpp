@@ -238,7 +238,7 @@ bool Engine::init()
 		glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
 
 		m_pTableVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
-		m_pTableVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.75f));
+		m_pTableVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
 		m_pTableVolume->setFrameColor(glm::vec4(1.f));
 
 		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
