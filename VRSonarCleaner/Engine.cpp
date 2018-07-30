@@ -19,6 +19,7 @@
 #include "LassoTool.h"
 #include "SnellenTest.h"
 #include "CloudEditControllerTutorial.h"
+#include "FlowProbe.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -109,7 +110,7 @@ Engine::Engine()
 	, m_pHMD(NULL)
 	, m_bInitialColorRefresh(false)
 {	
-	int mode = 1;
+	int mode = 3;
 
 	switch (mode)
 	{
@@ -211,6 +212,8 @@ bool Engine::init()
 		ccomutils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
 		return false;
 	}
+
+	BehaviorManager::getInstance().init();
 
 	Renderer::getInstance().setSkybox(
 		"resources/images/skybox/sea/right.png",
@@ -333,13 +336,13 @@ bool Engine::init()
 		if (m_bGreatBayModel)
 			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
 
+		BehaviorManager::getInstance().addBehavior("flow", new FlowProbe(m_pTDM, m_pFlowVolume));
+
 		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = m_pFlowVolume->getPosition();
 	}
 
 	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
-
-	BehaviorManager::getInstance().init();
 
 	return true;
 }

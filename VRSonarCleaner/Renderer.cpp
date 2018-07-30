@@ -448,14 +448,14 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		if (m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
 		{
 			glDepthFunc(GL_LEQUAL); 
-
+		
 			glUseProgram(*m_mapShaders["skybox"]);
-
+		
 			glBindVertexArray(m_glPrimitivesVAO);
 				glBindTextureUnit(0, m_Skybox.texID);
 				glDrawElementsBaseVertex(GL_TRIANGLES, getPrimitiveIndexCount("skybox"), GL_UNSIGNED_SHORT, (GLvoid*)getPrimitiveIndexByteOffset("skybox"), getPrimitiveIndexBaseVertex("skybox"));
 			glBindVertexArray(0);
-
+		
 			glDepthFunc(GL_LESS);
 		}
 
