@@ -9,14 +9,13 @@
 #include <chrono>
 #include <GL/glew.h>
 #include <glm.hpp>
-#include "CoordinateScaler.h"
 #include "Dataset.h"
 
 class FlowGrid : public Dataset
 {
 	public:
 		//FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);
-		FlowGrid(char* filename, bool useZInsteadOfDepth);
+		FlowGrid(const char* filename, bool useZInsteadOfDepth);
 		virtual ~FlowGrid();
 
 		void init();
@@ -53,14 +52,6 @@ class FlowGrid : public Dataset
 		float getMinDepth();
 		float getMaxDepth();
 
-		void setCoordinateScaler(CoordinateScaler *Scaler);
-		float getScaledXMin();
-		float getScaledXMax();
-		float getScaledYMin();
-		float getScaledYMax();
-		float getScaledMinDepth();
-		float getScaledMaxDepth();
-
 		//bbox access:
 		float getXMin();
 		float getXMax();
@@ -75,11 +66,9 @@ class FlowGrid : public Dataset
 		int getNumTimeCells();
 
 		char* getName();
-		void setName(char* name);
+		void setName(const char* name);
 		
 public:
-		CoordinateScaler *scaler;
-
 		float m_fXMin, m_fXMax, m_fXRange, m_fXCells, m_fXCellSize;
 		int m_nXCells;
 		float m_fYMin, m_fYMax, m_fYRange, m_fYCells, m_fYCellSize;
@@ -132,7 +121,6 @@ public:
 
 		char m_strName[512];
 
-		float m_fCurrentTime;
 		float m_fMinTime;
 		float m_fMaxTime;
 };

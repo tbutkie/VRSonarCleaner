@@ -1,8 +1,9 @@
 #include "IllustrativeParticleEmitter.h"
+#include <gtc/random.hpp>
 
 using namespace std::chrono_literals;
 
-IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc, CoordinateScaler *Scaler)
+IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc)
 {
 	x = xLoc;
 	y = yLoc;
@@ -15,8 +16,6 @@ IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc,
 	m_msTrailTime = DEFAULT_DYE_LENGTH;
 	gravity = DEFAULT_GRAVITY;
 	m_tpLastEmission = std::chrono::time_point<std::chrono::high_resolution_clock>();
-
-	scaler = Scaler;
 }
 
 IllustrativeParticleEmitter::~IllustrativeParticleEmitter()
@@ -104,7 +103,7 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(std::chrono::time_point<s
 	//}
 
 	std::chrono::milliseconds timeSinceLast = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastEmission);
-	if (timeSinceLast > 100ms) //only spawn 10 times per second
+	if (timeSinceLast > 0ms) //only spawn 10 times per second
 	{
 		int toEmit = static_cast<int>(floor(std::chrono::duration<float>(timeSinceLast).count() * particlesPerSecond / 1000.f));
 		if (toEmit > 1000) //sanity check for times where there is too long between spawnings
@@ -134,15 +133,7 @@ std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int numbe
 
 		if (i > 0)
 		{
-			float randAngle = static_cast<float>(rand() % 100);
-			randAngle = randAngle * 0.01f * 6.28318f; //2pi
-
-			float randDist = static_cast<float>(rand() % 100);
-			randDist = randDist * 0.01f * radius;
-
-			verts.back().x += randDist * cos(randAngle);
-			verts.back().y += randDist * sin(randAngle);
-			verts.back().z += randDist;
+			verts.back() += glm::sphericalRand(radius);
 		}
 	}
 	return verts;

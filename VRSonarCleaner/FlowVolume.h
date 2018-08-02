@@ -14,7 +14,6 @@
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "IllustrativeParticleSystem.h"
-#include "CoordinateScaler.h"
 #include "FlowGrid.h"
 #include "LightingSystem.h"
 
@@ -22,7 +21,7 @@ class FlowVolume
 	: public DataVolume
 {
 public:
-	FlowVolume(FlowGrid* flowGrid);
+	FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth);
 	virtual ~FlowVolume();
 
 	void draw();
@@ -31,18 +30,19 @@ public:
 
 	void preRenderUpdates();
 
+	void setParticleVelocityScale(float velocityScale);
+	float getParticleVelocityScale();
+
 	IllustrativeParticleEmitter* placeDyeEmitterWorldCoords(glm::vec3 pos);
 	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
 
 private:
-	CoordinateScaler *m_pScaler;
-
 	float m_fFlowRoomTime;
 	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTimeUpdate;
 	std::chrono::duration<float, std::milli> m_msLoopTime;
 		
-	FlowGrid* m_pFlowGrid;
+	std::vector<FlowGrid*> m_vpFlowGrids;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
 	bool m_bParticleSystemUpdating;

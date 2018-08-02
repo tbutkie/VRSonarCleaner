@@ -8,17 +8,16 @@
 #include "IllustrativeParticle.h"
 #include "IllustrativeDyePole.h"
 #include "IllustrativeParticleEmitter.h"
-#include "CoordinateScaler.h"
 #include "Renderer.h"
 
-#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20ms
+#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 11ms
 
 #define MAX_PARTICLES 100000
 
 class IllustrativeParticleSystem
 {
 public:
-	IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection);
+	IllustrativeParticleSystem(std::vector<FlowGrid*> FlowGridCollection);
 	virtual ~IllustrativeParticleSystem();
 			
 	int addDyePole(double x, double y, float minZ, float maxZ);
@@ -29,7 +28,6 @@ public:
 	void deleteAllDyePoles();
 	void deleteDyePole(int index);
 
-	void addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime);
 	void addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime);
 
 	IllustrativeDyePole* getDyePoleClosestTo(double x, double y);
@@ -43,8 +41,6 @@ public:
 	
 	int m_nMaxParticles;
 	std::vector<IllustrativeParticle*> m_vpParticles;
-	
-	CoordinateScaler *m_pScaler;
 
 	std::vector<FlowGrid*> m_vpFlowGridCollection;
 		

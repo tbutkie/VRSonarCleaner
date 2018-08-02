@@ -5,13 +5,12 @@
 #include <vector>
 #include <chrono>
 #include "IllustrativeParticleEmitter.h"
-#include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
 
 class IllustrativeDyePole
 {
 public:
-	IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler);
+	IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop);
 	virtual ~IllustrativeDyePole();
 
 	void addEmitter(float DepthBottom, float DepthTop);
@@ -43,8 +42,6 @@ public:
 	float depthTop; //top: 0 if surface
 
 	std::vector <IllustrativeParticleEmitter*> emitters;
-
-	CoordinateScaler *scaler;
 };
 
 #endif

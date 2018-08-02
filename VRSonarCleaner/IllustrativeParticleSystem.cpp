@@ -7,11 +7,9 @@
 
 using namespace std::chrono_literals;
 
-IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler, std::vector<FlowGrid*> FlowGridCollection)
+IllustrativeParticleSystem::IllustrativeParticleSystem(std::vector<FlowGrid*> FlowGridCollection)
 	: m_bReadyToTransferData(false)
 {
-	m_pScaler = Scaler;
-
 	m_vpFlowGridCollection = FlowGridCollection;
 
 	m_tpLastParticleUpdate = std::chrono::high_resolution_clock::now();
@@ -33,18 +31,6 @@ IllustrativeParticleSystem::IllustrativeParticleSystem(CoordinateScaler *Scaler,
 IllustrativeParticleSystem::~IllustrativeParticleSystem()
 {
 
-}
-
-void IllustrativeParticleSystem::addDyeParticleWorldCoords(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
-{
-	double thisX = m_pScaler->getUnscaledLonX(x);
-	double thisY = m_pScaler->getUnscaledLatY(y);
-	double thisZ = static_cast<double>(-m_pScaler->getUnscaledDepth(static_cast<float>(z)));
-
-	//printf("Dye In:  %0.4f, %0.4f, %0.4f\n", x, y, z);
-	//printf("Dye Out: %0.4f, %0.4f, %0.4f\n", thisX, thisY, thisZ);
-
-	addDyeParticle(thisX, thisY, thisZ, r, g, b, lifetime);
 }
 
 void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
@@ -218,9 +204,11 @@ void IllustrativeParticleSystem::update(float time)
 	for (auto const &pot : m_vpDyePots)
 	{
 		int numToSpawn = pot->getNumParticlesToEmit(tick);
+
 		if (numToSpawn > 0)
 		{
-			for (auto const &particlePos : pot->getParticlesToEmit(numToSpawn))
+			std::vector<glm::vec3> emittedPositions = pot->getParticlesToEmit(numToSpawn);
+			for (int i = 0; i < (numToSpawn > MAX_PARTICLES ? MAX_PARTICLES : numToSpawn); ++i )
 			{
 				IllustrativeParticle* particleToUse = NULL;
 				if (deadParticles.size() > 0)
@@ -245,8 +233,7 @@ void IllustrativeParticleSystem::update(float time)
 				
 				particleToUse->reset();
 
-				particleToUse->init(particlePos, pot->getColor(), pot->getGravity(), lifetime, pot->m_msTrailTime, tick, true);
-
+				particleToUse->init(emittedPositions[i], pot->getColor(), pot->getGravity(), lifetime, pot->m_msTrailTime, tick, true);
 			}//end for numToSpawn
 		}
 	}
@@ -309,8 +296,8 @@ void IllustrativeParticleSystem::update(float time)
 			{
 				//spawn some here
 				skipGrid = false;
-				minScaledZ = abs(m_pScaler->getScaledDepth(grid->getMinDepth()));
-				maxScaledZ = abs(m_pScaler->getScaledDepth(grid->getMaxDepth()));
+				minScaledZ = abs(grid->getMinDepth());
+				maxScaledZ = abs(grid->getMaxDepth());
 				scaledZRange = maxScaledZ - minScaledZ;
 
 				while (numNeeded > 0 && !skipGrid && deadParticles.size() > 0u)
@@ -325,7 +312,7 @@ void IllustrativeParticleSystem::update(float time)
 						if ( (rand()%100) < 20) //20% surface particles
 							randPos.z = 0;
 						else
-							randPos.z = m_pScaler->getUnscaledDepth(-1.f * (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
+							randPos.z = (1.f * (((((float)(rand()%10000))/10000)*scaledZRange)+minScaledZ)  );
 							
 						if (grid->getIsWaterAt(randPos.x, randPos.y, randPos.z, time))
 							inWater = true;
@@ -379,13 +366,13 @@ void IllustrativeParticleSystem::update(float time)
 
 				glm::vec3 pos1, pos2;
 
-				pos1.x = static_cast<float>(m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex1].x));
-				pos1.y = static_cast<float>(m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex1].y));
-				pos1.z = static_cast<float>(-m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex1].z));
+				pos1.x = m_vpParticles[i]->m_vvec3Positions[posIndex1].x;
+				pos1.y = m_vpParticles[i]->m_vvec3Positions[posIndex1].y;
+				pos1.z = m_vpParticles[i]->m_vvec3Positions[posIndex1].z;
 
-				pos2.x = static_cast<float>(m_pScaler->getScaledLonX(m_vpParticles[i]->m_vvec3Positions[posIndex2].x));
-				pos2.y = static_cast<float>(m_pScaler->getScaledLatY(m_vpParticles[i]->m_vvec3Positions[posIndex2].y));
-				pos2.z = static_cast<float>(-m_pScaler->getScaledDepth(m_vpParticles[i]->m_vvec3Positions[posIndex2].z));
+				pos2.x = m_vpParticles[i]->m_vvec3Positions[posIndex2].x;
+				pos2.y = m_vpParticles[i]->m_vvec3Positions[posIndex2].y;
+				pos2.z = m_vpParticles[i]->m_vvec3Positions[posIndex2].z;
 
 				float opacity1 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex1]) / std::chrono::duration<float>(timeElapsed);
 				float opacity2 = 1.f - (m_vpParticles[i]->m_tpLastUpdateTimestamp - m_vpParticles[i]->m_vtpTimes[posIndex2]) / std::chrono::duration<float>(timeElapsed);
@@ -430,6 +417,7 @@ bool IllustrativeParticleSystem::prepareForRender()
 	glBufferSubData(GL_ARRAY_BUFFER, numPositions * sizeof(glm::vec3), numColors * sizeof(glm::vec4), m_arrvec4ColorBuffer);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), 0, GL_STREAM_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nIndexCount * sizeof(GLuint), m_arruiIndices, GL_STREAM_DRAW);
 	
 	// Set color attribute pointer now that point array size is known
@@ -454,7 +442,7 @@ void IllustrativeParticleSystem::initGL()
 
 	// Now do the same with the element array buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
-	glNamedBufferStorage(m_glEBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+	//glNamedBufferStorage(m_glEBO, MAX_PARTICLES * MAX_NUM_TRAIL_POSITIONS * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 
 	// Enable attribute arrays (with layouts to be defined later)
 	glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
@@ -506,7 +494,7 @@ GLsizei IllustrativeParticleSystem::getIndexCount()
 
 int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float maxZ)
 {
-	IllustrativeDyePole* tempDP = new IllustrativeDyePole(static_cast<float>(x), static_cast<float>(y), minZ, maxZ, m_pScaler);
+	IllustrativeDyePole* tempDP = new IllustrativeDyePole(static_cast<float>(x), static_cast<float>(y), minZ, maxZ);
 	//tempDP->adddEmittersAlongEntireLength(100);
 	tempDP->addDefaultEmitter();
 	for (int i=0;i<tempDP->getNumEmitters();i++)

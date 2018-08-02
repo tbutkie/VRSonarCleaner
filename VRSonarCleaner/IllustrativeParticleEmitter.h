@@ -7,7 +7,6 @@
 #include <vector>
 #include <chrono>
 #include <GL/glew.h>
-#include "CoordinateScaler.h"
 #include "ColorsAndSizes.h"
 
 #include <glm.hpp>
@@ -15,7 +14,7 @@
 class IllustrativeParticleEmitter
 {
 public:
-	IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc, CoordinateScaler *Scaler);
+	IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc);
 	virtual ~IllustrativeParticleEmitter();
 
 	void changeColor(int Color);
@@ -40,9 +39,6 @@ public:
 
 	float getGravity();
 	void setGravity(float Gravity);
-
-
-	CoordinateScaler *scaler;
 	float x, y, z;	
 
 	int color;

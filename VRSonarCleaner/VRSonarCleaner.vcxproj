@@ -180,7 +180,6 @@
     <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
-    <ClCompile Include="CoordinateScaler.cpp" />
     <ClCompile Include="DataVolume.cpp" />
     <ClCompile Include="FlowGrid.cpp" />
     <ClCompile Include="FlowProbe.cpp" />
@@ -237,7 +236,6 @@
     <ClInclude Include="Engine.h" />
     <ClInclude Include="ColorsAndSizes.h" />
     <ClInclude Include="ColorScaler.h" />
-    <ClInclude Include="CoordinateScaler.h" />
     <ClInclude Include="DataVolume.h" />
     <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="FlowGrid.h" />

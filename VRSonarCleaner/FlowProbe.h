@@ -21,7 +21,7 @@ private:
 	IllustrativeParticleEmitter* m_pEmitter;
 
 private:
-	void activateProbe();
-	void deactivateProbe();
+	virtual void activateProbe();
+	virtual void deactivateProbe();
 };
 

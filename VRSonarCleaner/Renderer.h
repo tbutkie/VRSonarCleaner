@@ -157,8 +157,8 @@ public:
 
 	void setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back);
 
-	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent);
-	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor, float specularExponent);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName = "white", float specularExponent = 32.f);
+	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor = glm::vec4(1.f), float specularExponent = 32.f);
 	bool drawFlatPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 color);
 	bool drawPrimitiveCustom(std::string primName, glm::mat4 modelTransform, std::string shaderName, std::string diffuseTexName = "white", glm::vec4 diffuseColor = glm::vec4(1.f));
 	void drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color);

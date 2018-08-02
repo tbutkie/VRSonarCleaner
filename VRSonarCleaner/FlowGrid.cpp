@@ -2,7 +2,7 @@
 
 using namespace std::chrono_literals;
 
-FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
+FlowGrid::FlowGrid(const char* filename, bool useZInsteadOfDepth)
 	: Dataset(filename)
 	, m_fMinTime(-1.f)
 	, m_fMaxTime(-1.f)
@@ -16,6 +16,8 @@ FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 		printf("Unable to open flowgrid input file!");
 		return;
 	}
+
+	setName(filename);
 
 	float zMin, zMax; //temp for now
 
@@ -37,6 +39,9 @@ FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
+
+	checkNewRawPosition(glm::dvec3(m_fXMin, m_fYMin, zMin));
+	checkNewRawPosition(glm::dvec3(m_fXMax, m_fYMax, zMax));
 
 	init();
 
@@ -90,6 +95,8 @@ FlowGrid::FlowGrid(char* filename, bool useZInsteadOfDepth)
 
 	fclose(inputFile);
 
+	m_bLoaded = true;
+
 	printf("Imported FlowGrid from %s\n", filename);
 
 }//end file loading constructor
@@ -119,7 +126,7 @@ void FlowGrid::init()
 
 	m_fXCellSize = m_fXRange / m_fXCells;
 	m_fYCellSize = m_fYRange / m_fYCells;
-
+	
 	m_fMaxVelocity = 0;
 
 	//allocate storage arrays
@@ -136,13 +143,13 @@ void FlowGrid::init()
 	m_fLastTimeRequested = -1.f;
 
 	m_bIllustrativeParticlesEnabled = true;
-	m_nIllustrativeParticles = 50000;
+	m_nIllustrativeParticles = 1000;
 	m_fIllustrativeParticleTrailTime = 500ms;
 	m_fIllustrativeParticleLifetime = 2500ms;
-	m_fIllustrativeParticleSize = 1;
+	m_fIllustrativeParticleSize = 1.f;
 
 	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
-	m_fIllustrativeParticleVelocityScale = 0.33f;//0.000001;
+	m_fIllustrativeParticleVelocityScale = 0.01f;//0.000001;
 }
 
 void FlowGrid::deleteSelf()
@@ -621,43 +628,6 @@ bool FlowGrid::getVelocityAt(float lonX, float latY, float depth, float time, fl
 
 }//end getVelocityAt()
 
-void FlowGrid::setCoordinateScaler(CoordinateScaler *Scaler)
-{
-	scaler = Scaler;
-	scaler->submitOriginCandidate(m_fXMin, m_fYMin);
-}
-float FlowGrid::getScaledXMin()
-{
-	return static_cast<float>(scaler->getScaledLonX(m_fXMin));
-}
-
-float FlowGrid::getScaledXMax()
-{
-	return static_cast<float>(scaler->getScaledLonX(m_fXMax));
-}
-
-float FlowGrid::getScaledYMin()
-{
-	return static_cast<float>(scaler->getScaledLatY(m_fYMin));
-}
-
-float FlowGrid::getScaledYMax()
-{
-	return static_cast<float>(scaler->getScaledLatY(m_fYMax));
-}
-
-float FlowGrid::getScaledMinDepth()
-{
-	return scaler->getScaledDepth(getMinDepth());
-}
-
-float FlowGrid::getScaledMaxDepth()
-{
-	return scaler->getScaledDepth(getMaxDepth());
-}
-
-
-
 bool FlowGrid::contains(float x, float y)
 {
 	if (x < m_fXMin)
@@ -885,7 +855,7 @@ char* FlowGrid::getName()
 	return m_strName;
 }
 
-void FlowGrid::setName(char* name)
+void FlowGrid::setName(const char* name)
 {
 	strcpy(m_strName, name);
 }

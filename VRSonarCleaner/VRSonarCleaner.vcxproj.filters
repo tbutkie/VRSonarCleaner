@@ -93,9 +93,6 @@
     <ClCompile Include="IllustrativeParticleSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CoordinateScaler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="LightingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -252,9 +249,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IllustrativeParticleSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CoordinateScaler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorsAndSizes.h">

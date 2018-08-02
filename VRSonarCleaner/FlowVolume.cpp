@@ -4,31 +4,36 @@
 
 using namespace std::chrono_literals;
 
-FlowVolume::FlowVolume(FlowGrid* flowGrid)
+FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth)
 	: DataVolume(
 		glm::vec3(0.f, 1.f, 0.f), 
 		glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		glm::vec3(1.f))
-	, m_pFlowGrid(flowGrid)
 	, m_msLoopTime(35s)
 	, m_bParticleSystemUpdating(false)
+	, m_fFlowRoomMinTime(std::numeric_limits<float>::max())
+	, m_fFlowRoomMaxTime(std::numeric_limits<float>::min())
 {
 	//X-Right-Left
 	//Y-UP-vertical
 	//Z-toward monitor
 
-	add(flowGrid);
+	for (auto fg : flowGrids)
+	{
+		FlowGrid* tempFG = new FlowGrid(fg.c_str(), useZInsteadOfDepth);
+		m_vpFlowGrids.push_back(tempFG);
+		add(tempFG);
 
-	m_pScaler = m_pFlowGrid->scaler;
-	
-	m_fFlowRoomMinTime = m_pFlowGrid->m_fMinTime;
-	m_fFlowRoomMaxTime = m_pFlowGrid->m_fMaxTime;
+		if (tempFG->m_fMinTime < m_fFlowRoomMinTime)
+			m_fFlowRoomMinTime = tempFG->m_fMinTime;
+		if (tempFG->m_fMaxTime > m_fFlowRoomMaxTime)
+			m_fFlowRoomMaxTime = tempFG->m_fMaxTime;
+	}
+		
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_tpLastTimeUpdate = std::chrono::high_resolution_clock::now();
 	
-	std::vector<FlowGrid*> flowGrids;
-	flowGrids.push_back(m_pFlowGrid);
-	m_pParticleSystem = new IllustrativeParticleSystem(m_pScaler, flowGrids);
+	m_pParticleSystem = new IllustrativeParticleSystem(m_vpFlowGrids);
 }
 
 FlowVolume::~FlowVolume()
@@ -38,28 +43,44 @@ FlowVolume::~FlowVolume()
 
 void FlowVolume::recalcVolumeBounds()
 {
-	glm::vec3 minCoords(
-		m_pFlowGrid->getScaledXMin(),
-		m_pFlowGrid->getScaledYMin(),
-		-m_pFlowGrid->getScaledMaxDepth()
-	);
-	glm::vec3 maxCoords(
-		m_pFlowGrid->getScaledXMax(),
-		m_pFlowGrid->getScaledYMax(),
-		-m_pFlowGrid->getScaledMinDepth()
-	);
+	glm::vec3 minCoords(std::numeric_limits<float>::max());
+	glm::vec3 maxCoords(std::numeric_limits<float>::min());
 
-	//setInnerCoords(minCoords, maxCoords);
+	for (auto fg : m_vpFlowGrids)
+	{
+		if (fg)
+		{
+			if (fg->getXMin() < minCoords.x)
+				minCoords.x = fg->getXMin();
+			if (fg->getXMax() > maxCoords.x)
+				maxCoords.x = fg->getXMax();
+
+			if (fg->getYMin() < minCoords.y)
+				minCoords.y = fg->getYMin();
+			if (fg->getYMax() < maxCoords.y)
+				maxCoords.y = fg->getYMax();
+
+			float zMin = fg->m_bUsesZInsteadOfDepth ? fg->getMinDepth() : -fg->getMinDepth();
+			float zMax = fg->m_bUsesZInsteadOfDepth ? fg->getMaxDepth() : -fg->getMaxDepth();
+
+			if (zMin < minCoords.z)
+				minCoords.z = zMin;
+			if (zMax < maxCoords.z)
+				maxCoords.z = zMax;
+		}
+	}
+
+	//setCustomBounds(minCoords, maxCoords);
 }
 
 IllustrativeParticleEmitter* FlowVolume::placeDyeEmitterWorldCoords(glm::vec3 pos)
 {
-	glm::vec3 innerPos = convertToDataCoords(m_vpDatasets[0], pos);
+	glm::vec3 innerPos = convertToRawDomainCoords(pos);
 
 	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
-	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.y, innerPos.z, m_pScaler);
-	tmp->setRate(10.f);
+	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos.x, innerPos.y, innerPos.z);
+	tmp->setRate(0.f);
 	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
 	m_pParticleSystem->m_vpDyePots.push_back(tmp);
 
@@ -68,7 +89,7 @@ IllustrativeParticleEmitter* FlowVolume::placeDyeEmitterWorldCoords(glm::vec3 po
 
 bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 {
-	glm::vec3 innerPos = convertToDataCoords(m_vpDatasets[0], pos);
+	glm::vec3 innerPos = convertToRawDomainCoords(pos);
 
 	printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
 
@@ -106,9 +127,9 @@ void FlowVolume::draw()
 	rs.indexType = GL_UNSIGNED_INT;
 	rs.hasTransparency = true;
 	rs.transparencySortPosition = getCurrentVolumeTransform()[3];
-	rs.modelToWorldTransform = getCurrentDataTransform(m_vpDatasets[0]);
+	rs.modelToWorldTransform = getRawDomainToVolumeTransform();
 
-	Renderer::getInstance().addToDynamicRenderQueue(rs);		
+	Renderer::getInstance().addToDynamicRenderQueue(rs);
 }
 
 void FlowVolume::preRenderUpdates()
@@ -124,7 +145,7 @@ void FlowVolume::preRenderUpdates()
 		float maxTime = m_fFlowRoomMaxTime;
 		float timeRange = maxTime - minTime;
 
-		if (timeRange > 0)
+		if (timeRange > 0.000001f)
 		{
 			if (true) ///playing v paused
 			{
@@ -147,4 +168,20 @@ void FlowVolume::preRenderUpdates()
 		m_Future = std::async(std::launch::async, [&] { m_pParticleSystem->update(m_fFlowRoomTime); });
 		m_bParticleSystemUpdating = true;
 	}
+}
+
+void FlowVolume::setParticleVelocityScale(float velocityScale)
+{
+	for (auto fg : m_vpFlowGrids)
+		if (fg)
+			fg->m_fIllustrativeParticleVelocityScale = velocityScale;
+}
+
+float FlowVolume::getParticleVelocityScale()
+{
+	for (auto fg : m_vpFlowGrids)
+		if (fg)
+			return fg->m_fIllustrativeParticleVelocityScale;
+	
+	return -1.f;
 }

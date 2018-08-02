@@ -109,7 +109,7 @@ Engine::Engine()
 	, m_pRightEyeFramebuffer(NULL)
 	, m_pHMD(NULL)
 	, m_bInitialColorRefresh(false)
-{	
+{
 	int mode = 3;
 
 	switch (mode)
@@ -317,29 +317,39 @@ bool Engine::init()
 		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
 		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
 
-		FlowGrid *tempFG;
-
+		std::vector<std::string> flowGrids;
+		
 		if (m_bGreatBayModel)
 		{
-			tempFG = new FlowGrid("resources/data/flowgrid/gb.fg", false);
-			tempFG->m_fIllustrativeParticleVelocityScale = 0.5f;
+			flowGrids.push_back("resources/data/flowgrid/gb.fg");
+			m_pFlowVolume = new FlowVolume(flowGrids, false);
+			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
+			m_pFlowVolume->setParticleVelocityScale(0.5f);
 		}
 		else
 		{
-			tempFG = new FlowGrid("resources/data/flowgrid/test.fg", true);
-			tempFG->m_fIllustrativeParticleVelocityScale = 0.01f;
+			flowGrids.push_back("resources/data/flowgrid/test.fg");
+			m_pFlowVolume = new FlowVolume(flowGrids, true);
+			m_pFlowVolume->setParticleVelocityScale(0.01f);
+
 		}
 
-		tempFG->setCoordinateScaler(new CoordinateScaler());
-		m_pFlowVolume = new FlowVolume(tempFG);
+		m_pFlowVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
+		m_pFlowVolume->setFrameColor(glm::vec4(1.f));
 
-		if (m_bGreatBayModel)
-			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
-
-		BehaviorManager::getInstance().addBehavior("flow", new FlowProbe(m_pTDM, m_pFlowVolume));
 
 		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = m_pFlowVolume->getPosition();
+
+		{
+			BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM, m_pFlowVolume));
+
+			if (!BehaviorManager::getInstance().getBehavior("grab"))
+				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+			if (!BehaviorManager::getInstance().getBehavior("scale"))
+				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+
+		}
 	}
 
 	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);

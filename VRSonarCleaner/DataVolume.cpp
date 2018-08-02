@@ -122,7 +122,7 @@ bool DataVolume::isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ)
 	if (m_vpDatasets.size() == 0u)
 		return false;
 	
-	glm::dvec3 ptXform(glm::inverse(m_dmat4RawDomainToVolumeTransform) * glm::dvec4(worldPt, 1.));
+	glm::dvec3 ptXform = convertToRawDomainCoords(worldPt);
 
 	if (ptXform.x >= getMinXDataBound() && ptXform.x <= getMaxXDataBound() &&
 		ptXform.y >= getMinYDataBound() && ptXform.y <= getMaxYDataBound())

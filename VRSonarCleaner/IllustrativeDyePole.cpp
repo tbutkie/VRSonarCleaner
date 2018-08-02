@@ -1,14 +1,12 @@
 #include "IllustrativeDyePole.h"
 
-IllustrativeDyePole::IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop, CoordinateScaler *Scaler)
+IllustrativeDyePole::IllustrativeDyePole(float xLoc, float yLoc, float DepthBottom, float DepthTop)
 {
 	x = xLoc;
 	y = yLoc;
 	depthBottom = DepthBottom;
 	depthTop = DepthTop;
 	deleteMe = false;
-
-	scaler = Scaler;
 }
 
 IllustrativeDyePole::~IllustrativeDyePole()
@@ -18,7 +16,7 @@ IllustrativeDyePole::~IllustrativeDyePole()
 
 void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (DepthTop - DepthBottom) * 0.5f, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (DepthTop - DepthBottom) * 0.5f);
 	if (emitters.size() > 0)
 		tempPE->changeColor(emitters.at(emitters.size()-1)->color+1);
 	else
@@ -28,7 +26,7 @@ void IllustrativeDyePole::addEmitter(float DepthBottom, float DepthTop)
 
 void IllustrativeDyePole::addDefaultEmitter()
 {
-	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (depthTop - depthBottom) * 0.5f, scaler);
+	IllustrativeParticleEmitter* tempPE = new IllustrativeParticleEmitter(x, y, (depthTop - depthBottom) * 0.5f);
 	emitters.push_back(tempPE);	
 }
 
