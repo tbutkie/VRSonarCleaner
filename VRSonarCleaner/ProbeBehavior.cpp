@@ -20,6 +20,10 @@ ProbeBehavior::ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	, m_fProbeRadius(0.05f)
 	, m_fProbeRadiusMin(0.005f)
 	, m_fProbeRadiusMax(0.25f)
+	, m_vec4ProbeColorDiff(glm::vec4(0.125f, 0.125f, 0.125f, 1.f))
+	, m_vec4ProbeColorSpec(glm::vec4(1.f))
+	, m_vec4ProbeActivateColorDiff(glm::vec4(0.502f, 0.125f, 0.125f, 1.f))
+	, m_vec4ProbeActivateColorSpec(glm::vec4(0.f, 0.f, 1.f, 1.f))
 {
 }
 
@@ -292,13 +296,13 @@ void ProbeBehavior::drawProbe(float length)
 		glm::vec4 diffColor, specColor;
 		if (m_pTDM->getPrimaryController()->isTriggerClicked())
 		{
-			diffColor = glm::vec4(0.502f, 0.125f, 0.125f, 1.f);
-			specColor = glm::vec4(0.f, 0.f, 1.f, 1.f);
+			diffColor = m_vec4ProbeActivateColorDiff;
+			specColor = m_vec4ProbeActivateColorSpec;
 		}
 		else
 		{
-			diffColor = glm::vec4(0.125f, 0.125f, 0.125f, 1.f);
-			specColor = glm::vec4(1.f);
+			diffColor = m_vec4ProbeColorDiff;
+			specColor = m_vec4ProbeColorSpec;
 		}
 		float specExp(30.f);
 

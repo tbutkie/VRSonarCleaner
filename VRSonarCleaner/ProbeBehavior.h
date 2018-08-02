@@ -66,6 +66,9 @@ protected:
 	float m_fProbeRadiusMax;
 	float m_fProbeRadiusInitial;
 
+	glm::vec4 m_vec4ProbeColorDiff, m_vec4ProbeColorSpec;
+	glm::vec4 m_vec4ProbeActivateColorDiff, m_vec4ProbeActivateColorSpec;
+
 protected:
 
 	virtual void activateProbe() = 0;

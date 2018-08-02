@@ -10,7 +10,7 @@
 #include "IllustrativeParticleEmitter.h"
 #include "Renderer.h"
 
-#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 11ms
+#define PARTICLE_SYSTEM_MIN_UPDATE_INTERVAL 20ms
 
 #define MAX_PARTICLES 100000
 

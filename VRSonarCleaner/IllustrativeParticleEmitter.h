@@ -42,7 +42,7 @@ public:
 	float x, y, z;	
 
 	int color;
-	float particlesPerSecond;
+	float m_fParticlesPerMS;
 	std::chrono::milliseconds m_msLifetime;
 	std::chrono::milliseconds m_msTrailTime;
 

@@ -1,5 +1,7 @@
 #include "IllustrativeParticleEmitter.h"
 #include <gtc/random.hpp>
+#include <gtc/constants.hpp>
+#include <iostream>
 
 using namespace std::chrono_literals;
 
@@ -10,7 +12,7 @@ IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc,
 	z = zLoc;
 	
 	color = 0;
-	particlesPerSecond = DEFAULT_DYE_RATE;
+	m_fParticlesPerMS = DEFAULT_DYE_RATE;
 	radius = DEFAULT_DYE_RADIUS;
 	m_msLifetime = DEFAULT_DYE_LIFETIME;
 	m_msTrailTime = DEFAULT_DYE_LENGTH;
@@ -57,7 +59,7 @@ std::chrono::milliseconds IllustrativeParticleEmitter::getLifetime()
 
 void IllustrativeParticleEmitter::setRate(float ParticlesPerSecond)
 {
-	particlesPerSecond = ParticlesPerSecond;
+	m_fParticlesPerMS = ParticlesPerSecond / 1000.f;
 }
 
 void IllustrativeParticleEmitter::setTrailTime(std::chrono::milliseconds time)
@@ -80,10 +82,10 @@ void IllustrativeParticleEmitter::setGravity(float Gravity)
 	gravity = Gravity;
 }
 
-
+// Particles per second
 float IllustrativeParticleEmitter::getRate()
 {
-	return particlesPerSecond;
+	return m_fParticlesPerMS * 1000.f;
 }
 
 float IllustrativeParticleEmitter::getRadius()
@@ -105,7 +107,10 @@ int IllustrativeParticleEmitter::getNumParticlesToEmit(std::chrono::time_point<s
 	std::chrono::milliseconds timeSinceLast = std::chrono::duration_cast<std::chrono::milliseconds>(tick - m_tpLastEmission);
 	if (timeSinceLast > 0ms) //only spawn 10 times per second
 	{
-		int toEmit = static_cast<int>(floor(std::chrono::duration<float>(timeSinceLast).count() * particlesPerSecond / 1000.f));
+		float elapsedMS = std::chrono::duration<float>(timeSinceLast).count() * 1000.f;
+
+		int toEmit = static_cast<int>(floor(elapsedMS * m_fParticlesPerMS));
+
 		if (toEmit > 1000) //sanity check for times where there is too long between spawnings
 		{
 			m_tpLastEmission = tick;
@@ -128,14 +133,8 @@ std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int numbe
 {
 	std::vector<glm::vec3> verts;
 	for (int i = 0; i < number; ++i)
-	{
-		verts.push_back(glm::vec3(x, y, z));
+		verts.push_back(glm::vec3(x, y, z) + glm::sphericalRand(radius));
 
-		if (i > 0)
-		{
-			verts.back() += glm::sphericalRand(radius);
-		}
-	}
 	return verts;
 }
 
