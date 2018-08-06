@@ -37,9 +37,7 @@ void FlowProbe::update()
 		//m_pEmitter->setTrailTime(std::chrono::duration_cast<std::chrono::milliseconds>(2500ms - (2000ms) * (m_pTDM->getPrimaryController()->getTriggerPullAmount() / 0.85f)));
 
 		glm::vec3 innerPos = m_pDataVolume->convertToRawDomainCoords(getPosition());
-		m_pEmitter->x = innerPos.x;
-		m_pEmitter->y = innerPos.y;
-		m_pEmitter->z = innerPos.z;
+		m_pEmitter->m_vec3Pos = innerPos;
 	}
 	else
 	{

@@ -14,7 +14,7 @@
 class IllustrativeParticleEmitter
 {
 public:
-	IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc);
+	IllustrativeParticleEmitter(glm::vec3 pos);
 	virtual ~IllustrativeParticleEmitter();
 
 	void changeColor(int Color);
@@ -39,7 +39,7 @@ public:
 
 	float getGravity();
 	void setGravity(float Gravity);
-	float x, y, z;	
+	glm::vec3 m_vec3Pos;	
 
 	int color;
 	float m_fParticlesPerMS;

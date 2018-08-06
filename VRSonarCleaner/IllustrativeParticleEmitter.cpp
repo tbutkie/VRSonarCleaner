@@ -5,12 +5,10 @@
 
 using namespace std::chrono_literals;
 
-IllustrativeParticleEmitter::IllustrativeParticleEmitter(float xLoc, float yLoc, float zLoc)
+IllustrativeParticleEmitter::IllustrativeParticleEmitter(glm::vec3 pos)
 {
-	x = xLoc;
-	y = yLoc;
-	z = zLoc;
-	
+	m_vec3Pos = pos;
+
 	color = 0;
 	m_fParticlesPerMS = DEFAULT_DYE_RATE;
 	radius = DEFAULT_DYE_RADIUS;
@@ -133,7 +131,7 @@ std::vector<glm::vec3> IllustrativeParticleEmitter::getParticlesToEmit(int numbe
 {
 	std::vector<glm::vec3> verts;
 	for (int i = 0; i < number; ++i)
-		verts.push_back(glm::vec3(x, y, z) + glm::sphericalRand(radius));
+		verts.push_back(m_vec3Pos + glm::sphericalRand(radius));
 
 	return verts;
 }
