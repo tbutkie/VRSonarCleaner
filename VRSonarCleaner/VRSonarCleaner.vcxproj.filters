@@ -198,6 +198,9 @@
     <ClCompile Include="utilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FlowFieldCurator.cpp">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -290,9 +293,6 @@
     <ClInclude Include="ProbeBehavior.h">
       <Filter>Interactions &amp; Behaviors\base</Filter>
     </ClInclude>
-    <ClInclude Include="BehaviorList.h">
-      <Filter>Interactions &amp; Behaviors\base</Filter>
-    </ClInclude>
     <ClInclude Include="BehaviorBase.h">
       <Filter>Interactions &amp; Behaviors\base</Filter>
     </ClInclude>
@@ -364,6 +364,9 @@
     </ClInclude>
     <ClInclude Include="utilities.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FlowFieldCurator.h">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

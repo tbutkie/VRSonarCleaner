@@ -1,4 +1,4 @@
-*.exe
+VRSonarCleaner/*.exe
 
 # Windows image file caches
 Thumbs.db
