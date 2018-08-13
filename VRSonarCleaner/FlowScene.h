@@ -1,14 +1,16 @@
 #pragma once
-#include "BehaviorBase.h"
+#include "SceneBase.h"
 #include "TrackedDeviceManager.h"
 #include "FlowVolume.h"
 
 class FlowScene :
-	public BehaviorBase
+	public Scene
 {
 public:
 	FlowScene(TrackedDeviceManager* pTDM);
 	~FlowScene();
+
+	void init();
 
 	void update();
 

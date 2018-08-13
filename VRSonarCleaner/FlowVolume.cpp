@@ -13,22 +13,14 @@ FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDep
 	, m_bParticleSystemUpdating(false)
 	, m_fFlowRoomMinTime(std::numeric_limits<float>::max())
 	, m_fFlowRoomMaxTime(std::numeric_limits<float>::min())
+	, m_pParticleSystem(NULL)
 {
 	//X-Right-Left
 	//Y-UP-vertical
 	//Z-toward monitor
 
 	for (auto fg : flowGrids)
-	{
-		FlowGrid* tempFG = new FlowGrid(fg.c_str(), useZInsteadOfDepth);
-		m_vpFlowGrids.push_back(tempFG);
-		add(tempFG);
-
-		if (tempFG->m_fMinTime < m_fFlowRoomMinTime)
-			m_fFlowRoomMinTime = tempFG->m_fMinTime;
-		if (tempFG->m_fMaxTime > m_fFlowRoomMaxTime)
-			m_fFlowRoomMaxTime = tempFG->m_fMaxTime;
-	}
+		addFlowGrid(fg, useZInsteadOfDepth);
 		
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_tpLastTimeUpdate = std::chrono::high_resolution_clock::now();
@@ -39,6 +31,45 @@ FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDep
 FlowVolume::~FlowVolume()
 {
 
+}
+
+void FlowVolume::addFlowGrid(std::string fileName, bool useZInsteadOfDepth)
+{
+	// Check if flowgrid already exists with that name
+	removeFlowGrid(fileName);
+
+	FlowGrid* tempFG = new FlowGrid(fileName.c_str(), useZInsteadOfDepth);
+	m_vpFlowGrids.push_back(tempFG);
+	add(tempFG);
+
+	if (tempFG->m_fMinTime < m_fFlowRoomMinTime)
+		m_fFlowRoomMinTime = tempFG->m_fMinTime;
+	if (tempFG->m_fMaxTime > m_fFlowRoomMaxTime)
+		m_fFlowRoomMaxTime = tempFG->m_fMaxTime;
+
+	if (m_pParticleSystem)
+	{
+		m_pParticleSystem->m_vpFlowGridCollection = m_vpFlowGrids;
+	}
+}
+
+void FlowVolume::removeFlowGrid(std::string fileName)
+{
+	auto fgPresent = std::find_if(m_vpFlowGrids.begin(), m_vpFlowGrids.end(), [&fileName](FlowGrid* fg) { return strcmp(fg->getName(), fileName.c_str()) == 0; });
+
+	if (fgPresent != m_vpFlowGrids.end())
+	{
+		remove(*fgPresent);
+		m_vpFlowGrids.erase(fgPresent);
+
+		if (m_pParticleSystem)
+		{
+			m_pParticleSystem->m_vpFlowGridCollection = m_vpFlowGrids;
+			for (auto &p : m_pParticleSystem->m_vpParticles)
+				if (p->m_pFlowGrid == (*fgPresent))
+					p->m_pFlowGrid = NULL;
+		}
+	}
 }
 
 void FlowVolume::recalcVolumeBounds()

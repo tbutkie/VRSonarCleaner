@@ -14,9 +14,13 @@ FlowScene::~FlowScene()
 		delete m_pFlowVolume;
 }
 
+void FlowScene::init()
+{
+}
+
 void FlowScene::update()
 {
-	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedTouchpad)
+	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedTouchpad())
 		loadRandomFlowGrid();
 }
 

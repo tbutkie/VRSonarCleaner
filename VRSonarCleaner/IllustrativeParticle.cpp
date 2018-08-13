@@ -62,6 +62,8 @@ void IllustrativeParticle::reset()
 	m_vtpTimes.resize(MAX_NUM_TRAIL_POSITIONS);
 	m_vvec3Positions.clear();
 	m_vvec3Positions.resize(MAX_NUM_TRAIL_POSITIONS);
+
+	m_pFlowGrid = NULL;
 }
 
 //returns true if needs to be deleted

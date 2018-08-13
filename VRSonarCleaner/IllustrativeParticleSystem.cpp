@@ -33,6 +33,12 @@ IllustrativeParticleSystem::~IllustrativeParticleSystem()
 
 }
 
+void IllustrativeParticleSystem::resetParticles()
+{
+	for (auto p : m_vpParticles)
+		p->reset();
+}
+
 void IllustrativeParticleSystem::addDyeParticle(double x, double y, double z, float r, float g, float b, std::chrono::milliseconds lifetime)
 {
 	//find particle to replace:

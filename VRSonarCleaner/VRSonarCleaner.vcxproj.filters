@@ -205,7 +205,7 @@
       <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClCompile>
     <ClCompile Include="FlowScene.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -374,10 +374,10 @@
     <ClInclude Include="FlowFieldCurator.h">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
-    <ClInclude Include="FlowScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SceneBase.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="FlowScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>

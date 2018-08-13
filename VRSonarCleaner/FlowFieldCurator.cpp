@@ -2,22 +2,24 @@
 
 using namespace std::chrono_literals;
 
-FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM)
-	: m_pFlowVolume(NULL)
+FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol)
+	: m_pTDM(pTDM)
+	, m_pFlowVolume(flowVol)
 {
 }
 
 
 FlowFieldCurator::~FlowFieldCurator()
 {
-	if (m_pFlowVolume)
-		delete m_pFlowVolume;
 }
 
 void FlowFieldCurator::update()
 {
-	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedTouchpad)
+	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedTouchpad())
+	{
+		m_pFlowVolume->removeFlowGrid("resources/data/flowgrid/test.fg");
 		loadRandomFlowGrid();
+	}
 }
 
 void FlowFieldCurator::draw()
@@ -27,14 +29,10 @@ void FlowFieldCurator::draw()
 
 bool FlowFieldCurator::loadRandomFlowGrid()
 {
-	if (m_pFlowVolume)
-		delete m_pFlowVolume;
-
-	system("resources/data/flowgrid/VecFieldGen.exe -outfile flowgrid_test.fg");
-
-	std::vector<std::string> grids = { "flowgrid_test.fg" };
-
-	m_pFlowVolume = new FlowVolume(grids, true);
+	if (system("resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg") == EXIT_SUCCESS)
+	{
+		m_pFlowVolume->addFlowGrid("flowgrid_test.fg", true);
+	}
 
 	return false;
 }

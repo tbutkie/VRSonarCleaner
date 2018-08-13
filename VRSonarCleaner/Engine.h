@@ -14,6 +14,7 @@
 #include "Renderer.h"
 #include "SonarPointCloud.h"
 #include "ColorScaler.h"
+#include "SceneBase.h"
 
 #include <glm.hpp>
 
@@ -64,6 +65,8 @@ private:
 	void shutdownDesktop();
 
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
+
+	Scene* m_pCurrentScene;
 	
 	DataVolume* m_pWallVolume;
 	DataVolume* m_pTableVolume;

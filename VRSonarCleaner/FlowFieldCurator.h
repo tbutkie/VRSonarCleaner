@@ -7,7 +7,7 @@ class FlowFieldCurator :
 	public BehaviorBase
 {
 public:
-	FlowFieldCurator(TrackedDeviceManager* pTDM);
+	FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol);
 	~FlowFieldCurator();
 
 	void update();

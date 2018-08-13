@@ -19,6 +19,8 @@ class IllustrativeParticleSystem
 public:
 	IllustrativeParticleSystem(std::vector<FlowGrid*> FlowGridCollection);
 	virtual ~IllustrativeParticleSystem();
+
+	void resetParticles();
 			
 	int addDyePole(double x, double y, float minZ, float maxZ);
 	std::vector<IllustrativeDyePole*> m_vpDyePoles;

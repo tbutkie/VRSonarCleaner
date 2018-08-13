@@ -24,6 +24,9 @@ public:
 	FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth);
 	virtual ~FlowVolume();
 
+	void addFlowGrid(std::string fileName, bool useZInsteadOfDepth);
+	void removeFlowGrid(std::string fileName);
+
 	void draw();
 
 	void recalcVolumeBounds();

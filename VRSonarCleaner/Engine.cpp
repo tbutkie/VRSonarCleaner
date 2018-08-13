@@ -20,6 +20,7 @@
 #include "SnellenTest.h"
 #include "CloudEditControllerTutorial.h"
 #include "FlowProbe.h"
+#include "FlowFieldCurator.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -101,6 +102,7 @@ Engine::Engine()
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
 	, m_bMiddleMouseDown(false)
+	, m_pCurrentScene(NULL)
 	, m_pWindow(NULL)
 	, m_pWindowCursor(NULL)
 	, m_pGLContext(NULL)
@@ -224,6 +226,9 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
+	if (m_pCurrentScene)
+		m_pCurrentScene->init();
+
 	if (m_bSonarCleaning)
 	{
 		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
@@ -342,6 +347,7 @@ bool Engine::init()
 		m_Camera.lookat = m_pFlowVolume->getPosition();
 
 		{
+			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
 			BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM, m_pFlowVolume));
 
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
@@ -975,12 +981,13 @@ bool Engine::HandleInput()
 					if (sdlEvent.key.keysym.sym == SDLK_r)
 					{
 						printf("Pressed r, resetting something...\n");
-						m_pFlowVolume->resetPositionAndOrientation();
+						if (m_pFlowVolume)
+							m_pFlowVolume->resetPositionAndOrientation();
 					}
 				
 					if (sdlEvent.key.keysym.sym == SDLK_1)
 					{
-						if (m_bUseVR)
+						if (m_bUseVR && m_pFlowVolume)
 						{
 							glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
 							m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
@@ -996,7 +1003,7 @@ bool Engine::HandleInput()
 				
 					if (sdlEvent.key.keysym.sym == SDLK_2)
 					{
-						if (m_bUseVR)
+						if (m_bUseVR && m_pFlowVolume)
 						{
 							m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
 							m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
@@ -1197,7 +1204,7 @@ void Engine::update()
 			dv->update();
 	}
 
-	if (m_bFlowVis)
+	if (m_bFlowVis && m_pFlowVolume)
 	{
 		m_pFlowVolume->preRenderUpdates();
 	}
@@ -1350,7 +1357,7 @@ void Engine::drawScene()
 		}
 	}
 
-	if (m_bFlowVis)
+	if (m_bFlowVis && m_pFlowVolume)
 	{
 		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
 		m_pFlowVolume->drawBBox(0.f);
