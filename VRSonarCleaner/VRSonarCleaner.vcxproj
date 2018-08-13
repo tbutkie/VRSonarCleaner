@@ -175,6 +175,7 @@
     <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="DesktopCleanBehavior.cpp" />
     <ClCompile Include="FlowFieldCurator.cpp" />
+    <ClCompile Include="FlowScene.cpp" />
     <ClCompile Include="GrabDataVolumeBehavior.cpp" />
     <ClCompile Include="GrabTutorial.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
@@ -230,8 +231,10 @@
     <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="DesktopCleanBehavior.h" />
     <ClInclude Include="FlowFieldCurator.h" />
+    <ClInclude Include="FlowScene.h" />
     <ClInclude Include="GrabDataVolumeBehavior.h" />
     <ClInclude Include="GrabTutorial.h" />
+    <ClInclude Include="SceneBase.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />
     <ClInclude Include="Engine.h" />

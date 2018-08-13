@@ -1,31 +1,31 @@
-#include "FlowFieldCurator.h"
+#include "FlowScene.h"
 
 using namespace std::chrono_literals;
 
-FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM)
+FlowScene::FlowScene(TrackedDeviceManager* pTDM)
 	: m_pFlowVolume(NULL)
 {
 }
 
 
-FlowFieldCurator::~FlowFieldCurator()
+FlowScene::~FlowScene()
 {
 	if (m_pFlowVolume)
 		delete m_pFlowVolume;
 }
 
-void FlowFieldCurator::update()
+void FlowScene::update()
 {
 	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedTouchpad)
 		loadRandomFlowGrid();
 }
 
-void FlowFieldCurator::draw()
+void FlowScene::draw()
 {
 
 }
 
-bool FlowFieldCurator::loadRandomFlowGrid()
+bool FlowScene::loadRandomFlowGrid()
 {
 	if (m_pFlowVolume)
 		delete m_pFlowVolume;

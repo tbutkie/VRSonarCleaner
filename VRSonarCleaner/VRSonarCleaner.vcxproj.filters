@@ -43,6 +43,9 @@
     <Filter Include="Interactions &amp; Behaviors\study">
       <UniqueIdentifier>{47902574-bc59-450d-ad59-56a96a985500}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scenes">
+      <UniqueIdentifier>{58eecb11-6eaa-4b60-b285-002b919d4327}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -200,6 +203,9 @@
     </ClCompile>
     <ClCompile Include="FlowFieldCurator.cpp">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
+    <ClCompile Include="FlowScene.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -367,6 +373,12 @@
     </ClInclude>
     <ClInclude Include="FlowFieldCurator.h">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="FlowScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneBase.h">
+      <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

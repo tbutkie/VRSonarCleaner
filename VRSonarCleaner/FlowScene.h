@@ -3,12 +3,12 @@
 #include "TrackedDeviceManager.h"
 #include "FlowVolume.h"
 
-class FlowFieldCurator :
+class FlowScene :
 	public BehaviorBase
 {
 public:
-	FlowFieldCurator(TrackedDeviceManager* pTDM);
-	~FlowFieldCurator();
+	FlowScene(TrackedDeviceManager* pTDM);
+	~FlowScene();
 
 	void update();
 
