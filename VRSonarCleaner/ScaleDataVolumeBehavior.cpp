@@ -187,7 +187,7 @@ void ScaleDataVolumeBehavior::draw()
 			std::stringstream scaleMagStr;
 			
 			scaleMagStr.precision(2);
-			scaleMagStr << std::fixed << std::to_string(exp((controllerDistance() - m_fInitialDistance) * 10.f)) + "x";
+			scaleMagStr << std::fixed << exp((controllerDistance() - m_fInitialDistance) * 10.f) << "x";
 
 			float textHeight = 0.025f;
 
