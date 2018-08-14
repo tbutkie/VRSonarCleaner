@@ -27,6 +27,8 @@ private:
 
 	std::unordered_map<std::string, ControlPoint> m_vCPs;
 
+	glm::vec3* m_pvec3MovingPt;
+
 private:
 	bool loadRandomFlowGrid();
 	void loadMetaFile(std::string metaFileName);
