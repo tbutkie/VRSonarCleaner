@@ -23,5 +23,6 @@ private:
 private:
 	virtual void activateProbe();
 	virtual void deactivateProbe();
+	void placeDyePot();
 };
 

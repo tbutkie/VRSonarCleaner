@@ -8,6 +8,7 @@ FlowProbe::FlowProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
 	, m_pFlowVolume(flowVolume)
 	, m_pEmitter(NULL)
 {
+	m_vec4ProbeColorDiff = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
 }
 
 
@@ -38,6 +39,19 @@ void FlowProbe::update()
 
 		glm::vec3 innerPos = m_pDataVolume->convertToRawDomainCoords(getPosition());
 		m_pEmitter->m_vec3Pos = innerPos;
+
+		if (m_pTDM->getPrimaryController()->justPressedTouchpad())
+		{
+			glm::vec2 touchPt = m_pTDM->getPrimaryController()->getCurrentTouchpadTouchPoint();
+			if (touchPt.y > 0.25f)
+				placeDyePot();
+
+			if (touchPt.y < -0.25f)
+			{
+				m_pEmitter->incrementColor();
+				m_vec4ProbeActivateColorDiff = m_vec4ProbeColorSpec = glm::vec4(m_pEmitter->getColor(), 1.f);
+			}
+		}
 	}
 	else
 	{
@@ -64,15 +78,6 @@ void FlowProbe::draw()
 
 void FlowProbe::activateProbe()
 {
-	m_bProbeActive = true;
-	m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(getPosition());
-
-	do {
-		m_pEmitter->incrementColor();
-	} while (m_pEmitter->getColor() == glm::vec3(0.25f, 0.95f, 1.f));
-
-	m_vec4ProbeActivateColorDiff = m_vec4ProbeColorSpec = glm::vec4(m_pEmitter->getColor(), 1.f);
-
 	//if (m_pTDM->getPrimaryController())
 	//{
 	//	auto pos = getPosition();
@@ -89,4 +94,16 @@ void FlowProbe::activateProbe()
 void FlowProbe::deactivateProbe()
 {
 	m_bProbeActive = false;
+}
+
+void FlowProbe::placeDyePot()
+{
+	m_bProbeActive = true;
+	m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(getPosition());
+
+	do {
+		m_pEmitter->incrementColor();
+	} while (m_pEmitter->getColor() == glm::vec3(0.25f, 0.95f, 1.f));
+
+	m_vec4ProbeActivateColorDiff = m_vec4ProbeColorSpec = glm::vec4(m_pEmitter->getColor(), 1.f);
 }

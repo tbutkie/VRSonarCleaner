@@ -14,8 +14,10 @@ public:
 	Dataset(std::string name, bool coord_sys_right_handed = true);
 	virtual ~Dataset();
 
+	// Get the dataset filename
 	std::string getName();
 
+	// Returns true after 
 	bool isLoaded();
 
 	glm::dvec3 getRawMinBounds();
@@ -23,34 +25,34 @@ public:
 	double getRawYMin();
 	double getRawZMin();
 
-	glm::vec3 getAdjustedMinBounds();
-	float getAdjustedXMin();
-	float getAdjustedYMin();
-	float getAdjustedZMin();
+	glm::vec3 getCenteredMinBounds();
+	float getCenteredXMin();
+	float getCenteredYMin();
+	float getCenteredZMin();
 
 	glm::dvec3 getRawMaxBounds();
 	double getRawXMax();
 	double getRawYMax();
 	double getRawZMax();
 
-	glm::vec3 getAdjustedMaxBounds();
-	float getAdjustedXMax();
-	float getAdjustedYMax();
-	float getAdjustedZMax();
+	glm::vec3 getCenteredMaxBounds();
+	float getCenteredXMax();
+	float getCenteredYMax();
+	float getCenteredZMax();
 
 	glm::dvec3 getRawDimensions();
 	double getRawXDimension();
 	double getRawYDimension();
 	double getRawZDimension();
 
-	glm::vec3 getAdjustedDimensions();
-	float getAdjustedXDimension();
-	float getAdjustedYDimension();
-	float getAdjustedZDimension();
+	glm::vec3 getCenteredDimensions();
+	float getCenteredXDimension();
+	float getCenteredYDimension();
+	float getCenteredZDimension();
 
 	void checkNewRawPosition(glm::dvec3 rawPos);
 
-	glm::dvec3 getDataCenteringAdjustments();
+	glm::dvec3 getRawToCenteredOffsets();
 
 	bool isDataRightHanded();
 	bool isOutputRightHanded();
@@ -78,11 +80,11 @@ private:
 	glm::dvec3 m_dvec3RawMaxBounds;
 	glm::dvec3 m_dvec3RawDimensions;
 
-	glm::dvec3 m_dvec3Adjustments;
+	glm::dvec3 m_dvec3CenteringOffsets;
 
-	glm::vec3 m_vec3AdjustedMinBounds;
-	glm::vec3 m_vec3AdjustedMaxBounds;
-	glm::vec3 m_vec3AdjustedDimensions;
+	glm::vec3 m_vec3CenteredMinBounds;
+	glm::vec3 m_vec3CenteredMaxBounds;
+	glm::vec3 m_vec3CenteredDimensions;
 		
 	bool m_bRHCoordSys_input; // flag indicating whether input coordinate system is left- or right-handed
 	bool m_bRHCoordSys_output; // flag indicating whether output coordinate system should be left- or right-handed

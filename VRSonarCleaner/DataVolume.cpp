@@ -548,7 +548,7 @@ void DataVolume::updateTransforms()
 			glm::vec3 dataPositionOffsetInVolume = dataCenterRaw - combinedDataCenter;
 			glm::vec3 dataPositionOffsetInCustomVolume = dataCenterRaw - combinedCustomDataCenter;
 
-			glm::vec3 dataCenteringOffset = -(dataset->getAdjustedMinBounds() + dataset->getAdjustedDimensions() * 0.5f);
+			glm::vec3 dataCenteringOffset = dataset->getRawToCenteredOffsets();
 
 			glm::mat4 handednessConversion;
 			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())

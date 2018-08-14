@@ -338,8 +338,8 @@ unsigned int PointCleanProbe::checkPoints()
 
 		SonarPointCloud* cloud = static_cast<SonarPointCloud*>(pc);
 
-		glm::vec3 cloudMinBound = m_pDataVolume->convertToWorldCoords(cloud->getAdjustedMinBounds());
-		glm::vec3 cloudMaxBound = m_pDataVolume->convertToWorldCoords(cloud->getAdjustedMaxBounds());
+		glm::vec3 cloudMinBound = m_pDataVolume->convertToWorldCoords(cloud->getCenteredMinBounds());
+		glm::vec3 cloudMaxBound = m_pDataVolume->convertToWorldCoords(cloud->getCenteredMaxBounds());
 
 		//if (!checkAABBtoAABBIntersection(vec3MinProbeAABB, vec3MaxProbeAABB, cloudMinBound, cloudMaxBound))
 		//	continue;

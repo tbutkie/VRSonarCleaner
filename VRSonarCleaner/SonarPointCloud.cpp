@@ -524,7 +524,7 @@ glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 
 void SonarPointCloud::adjustPoints()
 {
-	glm::dvec3 adjustment = getDataCenteringAdjustments();
+	glm::dvec3 adjustment = getRawToCenteredOffsets();
 
 	for (unsigned int i = 0; i < m_nPoints; ++i)
 		m_vvec3AdjustedPointsPositions[i] = m_vdvec3RawPointsPositions[i] + adjustment;
