@@ -178,6 +178,7 @@
     <ClCompile Include="FlowScene.cpp" />
     <ClCompile Include="GrabDataVolumeBehavior.cpp" />
     <ClCompile Include="GrabTutorial.cpp" />
+    <ClCompile Include="HairyFlowProbe.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="Engine.cpp" />
@@ -234,6 +235,7 @@
     <ClInclude Include="FlowScene.h" />
     <ClInclude Include="GrabDataVolumeBehavior.h" />
     <ClInclude Include="GrabTutorial.h" />
+    <ClInclude Include="HairyFlowProbe.h" />
     <ClInclude Include="SceneBase.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />

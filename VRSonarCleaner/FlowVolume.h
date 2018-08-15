@@ -27,6 +27,8 @@ public:
 	void addFlowGrid(std::string fileName, bool useZInsteadOfDepth);
 	void removeFlowGrid(std::string fileName);
 
+	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
+
 	void draw();
 
 	void recalcVolumeBounds();

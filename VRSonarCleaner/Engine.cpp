@@ -20,6 +20,7 @@
 #include "SnellenTest.h"
 #include "CloudEditControllerTutorial.h"
 #include "FlowProbe.h"
+#include "HairyFlowProbe.h"
 #include "FlowFieldCurator.h"
 
 #include "HolodeckBackground.h"
@@ -348,7 +349,7 @@ bool Engine::init()
 
 		{
 			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
-			BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM, m_pFlowVolume));
+			BehaviorManager::getInstance().addBehavior("flowprobe", new HairyFlowProbe(m_pTDM, m_pFlowVolume));
 
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
 				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pFlowVolume));

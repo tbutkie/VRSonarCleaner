@@ -72,6 +72,23 @@ void FlowVolume::removeFlowGrid(std::string fileName)
 	}
 }
 
+glm::vec3 FlowVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
+{
+	glm::vec3 domainPt = convertToRawDomainCoords(pt_WorldCoords);
+
+	for (auto &fg : m_vpFlowGrids)
+	{
+		if (fg->contains(domainPt.x, domainPt.y, domainPt.z))
+		{
+			float u, v, w;
+			fg->getUVWat(domainPt.x, domainPt.y, domainPt.z, 0, &u, &v, &w);
+			return convertToWorldCoords(glm::dvec3(domainPt) + glm::dvec3(u, v, w)) - pt_WorldCoords;
+		}
+	}
+
+	return glm::vec3(0.f);
+}
+
 void FlowVolume::recalcVolumeBounds()
 {
 	glm::vec3 minCoords(std::numeric_limits<float>::max());
