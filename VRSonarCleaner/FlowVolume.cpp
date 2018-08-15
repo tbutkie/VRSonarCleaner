@@ -78,12 +78,9 @@ glm::vec3 FlowVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 
 	for (auto &fg : m_vpFlowGrids)
 	{
-		if (fg->contains(domainPt.x, domainPt.y, domainPt.z))
-		{
-			float u, v, w;
-			fg->getUVWat(domainPt.x, domainPt.y, domainPt.z, 0, &u, &v, &w);
-			return convertToWorldCoords(glm::dvec3(domainPt) + glm::dvec3(u, v, w)) - pt_WorldCoords;
-		}
+		float u, v, w;
+		if (fg->getUVWat(domainPt.x, domainPt.y, domainPt.z, 0, &u, &v, &w))
+			return convertToWorldCoords(glm::dvec3(domainPt) + glm::dvec3(u, v, w)) - pt_WorldCoords;		
 	}
 
 	return glm::vec3(0.f);
@@ -174,8 +171,8 @@ void FlowVolume::draw()
 	rs.vertCount = m_pParticleSystem->getIndexCount();
 	rs.indexType = GL_UNSIGNED_INT;
 	rs.hasTransparency = true;
-	rs.transparencySortPosition = getCurrentVolumeTransform()[3];
-	rs.modelToWorldTransform = getRawDomainToVolumeTransform();
+	rs.transparencySortPosition = getTransformVolume()[3];
+	rs.modelToWorldTransform = getTransformRawDomainToVolume();
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
 }

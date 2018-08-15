@@ -172,6 +172,7 @@
     <ClCompile Include="CurateStudyDataBehavior.cpp" />
     <ClCompile Include="DataLogger.cpp" />
     <ClCompile Include="Dataset.cpp" />
+    <ClCompile Include="DebugProbe.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="DesktopCleanBehavior.cpp" />
     <ClCompile Include="FlowFieldCurator.cpp" />
@@ -229,6 +230,7 @@
     <ClInclude Include="CurateStudyDataBehavior.h" />
     <ClInclude Include="DataLogger.h" />
     <ClInclude Include="Dataset.h" />
+    <ClInclude Include="DebugProbe.h" />
     <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="DesktopCleanBehavior.h" />
     <ClInclude Include="FlowFieldCurator.h" />

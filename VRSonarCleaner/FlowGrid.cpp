@@ -19,8 +19,6 @@ FlowGrid::FlowGrid(const char* filename, bool useZInsteadOfDepth)
 
 	setName(filename);
 
-	float zMin, zMax; //temp for now
-
 	fread(&m_fXMin, sizeof(float), 1, inputFile);
 	fread(&m_fXMax, sizeof(float), 1, inputFile);
 	fread(&m_nXCells, sizeof(int), 1, inputFile);
@@ -29,19 +27,19 @@ FlowGrid::FlowGrid(const char* filename, bool useZInsteadOfDepth)
 	fread(&m_nYCells, sizeof(int), 1, inputFile);
 	if (m_bUsesZInsteadOfDepth)
 	{
-		fread(&zMin, sizeof(float), 1, inputFile);
-		fread(&zMax, sizeof(float), 1, inputFile);
+		fread(&m_fZMin, sizeof(float), 1, inputFile);
+		fread(&m_fZMax, sizeof(float), 1, inputFile);
 	}
 	else
 	{
-		zMin = -1.f;
-		zMax = 0.f;
+		m_fZMin = -1.f;
+		m_fZMax = 0.f;
 	}
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
 
-	checkNewRawPosition(glm::dvec3(m_fXMin, m_fYMin, zMin));
-	checkNewRawPosition(glm::dvec3(m_fXMax, m_fYMax, zMax));
+	checkNewRawPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
+	checkNewRawPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
 
 	init();
 
@@ -119,13 +117,15 @@ void FlowGrid::init()
 	m_fXCells = (float)m_nXCells;
 	m_fYCells = (float)m_nYCells;
 	m_fZCells = (float)m_nZCells;
-	m_fXRange = m_fXMax - m_fXMin;
-	m_fYRange = m_fYMax - m_fYMin;
+	m_fXRange = glm::abs(m_fXMax - m_fXMin);
+	m_fYRange = glm::abs(m_fYMax - m_fYMin);
+	m_fZRange = glm::abs(m_fZMax - m_fZMin);
 	m_vDepthValues.resize(m_nZCells);
 	m_bDepthsSet = false;
 
 	m_fXCellSize = m_fXRange / m_fXCells;
 	m_fYCellSize = m_fYRange / m_fYCells;
+	m_fZCellSize = m_fZRange / m_fZCells;
 	
 	m_fMaxVelocity = 0;
 
@@ -374,6 +374,11 @@ bool FlowGrid::getUVat(float lonX, float latY, float depth, float time, float *u
 
 bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *u, float *v, float *w)
 {
+	if (lonX < m_fXMin || lonX > m_fXMax ||
+		latY < m_fYMin || latY > m_fYMax ||
+		depth < m_fZMin || depth > m_fZMax)
+		return false;
+
 	//first we check time requested to see if its the same as last time
 	if (time != m_fLastTimeRequested)
 	{
@@ -443,33 +448,37 @@ bool FlowGrid::getUVWat(float lonX, float latY, float depth, float time, float *
 		}//end if !lastTimeOnTimestep
 
 	}//if time not same as last time
-
-	
 	//now we have time(s) and factor(s)
 
+	
 	//find closest depth level? HACK: just use deepest one not below requested depth for now, maybe fix later if more accuracy needed
 	int deepestLevelAbove = 0;
-	if (depth < 0 || depth > m_vDepthValues.back()+500)  //HACK: MAGIC NUMBER (500) FIX LATER?
-	{
-		return false;
-	}
 	for (int i=0;i<m_nZCells;i++)
 	{
-		if (depth >= m_vDepthValues[i])
-			deepestLevelAbove = i;
+		if (m_bUsesZInsteadOfDepth)
+		{
+			if (depth <= m_vDepthValues[i])
+				deepestLevelAbove = i;
+		}
+		else
+		{
+			if (depth >= m_vDepthValues[i])
+				deepestLevelAbove = i;
+		}
 	}
 	//get index of requested location
-	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
-	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
+	int x = (int)floor(((lonX - m_fXMin) / m_fXCellSize));
+	int y = (int)floor(((latY - m_fYMin) / m_fYCellSize));
 	//int x = (int)floor( (((lonX - m_fXMin)/m_fXRange)*m_fXCells) + 0.5);
 	//int y = (int)floor( (((latY - yMin)/yRange)*yCellsFloat) + 0.5);
-	int z = deepestLevelAbove;
+	int z = (int)floor(((depth - m_fZMin) / m_fZCellSize));
 		
 	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
 
 	//check if in bounds of the dataset
 	if (x < 0 || y < 0 || z < 0 || x > m_nXCells-1 || y > m_nYCells-1 || z > m_nZCells-1)
 		return false;
+
 	//xyz index
 	int index3d = ((z*m_nXYCells)+(y*m_nXCells)+(x));
 			

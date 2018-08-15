@@ -153,7 +153,7 @@ void CloudEditControllerTutorial::draw()
 	rs.VAO = m_pDemoCloud->getVAO();
 	rs.vertCount = m_pDemoCloud->getPointCount();
 	rs.indexType = GL_UNSIGNED_INT;
-	rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
+	rs.modelToWorldTransform = m_pDemoVolume->getTransformDataset(m_pDemoCloud);
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
 	
@@ -180,7 +180,7 @@ void CloudEditControllerTutorial::makeBadDataLabels(float width)
 {
 	float offset = width * 0.5f;
 
-	glm::dmat4 dataXform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
+	glm::dmat4 dataXform = m_pDemoVolume->getTransformDataset(m_pDemoCloud);
 		
 	glm::vec3 pos1 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint1), 1.f));
 	glm::vec3 pos2 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint2), 1.f));
@@ -256,7 +256,7 @@ void CloudEditControllerTutorial::updateBadDataLabels(float width)
 {
 	float offset = width * 0.5f;
 
-	glm::dmat4 dataXform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
+	glm::dmat4 dataXform = m_pDemoVolume->getTransformDataset(m_pDemoCloud);
 
 	//glm::vec3 pos1 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint1), 1.f));
 	//glm::vec3 pos2 = glm::vec3(dataXform * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(m_uiBadPoint2), 1.f));

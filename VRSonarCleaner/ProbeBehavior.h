@@ -38,8 +38,8 @@ public:
 
 	glm::vec3 getPosition();
 	glm::vec3 getLastPosition();
-	glm::mat4 getProbeToWorldTransform();
-	glm::mat4 getLastProbeToWorldTransform();
+	glm::mat4 getTransformProbeToWorld();
+	glm::mat4 getTransformProbeToWorld_Last();
 
 protected:
 	TrackedDeviceManager* m_pTDM;

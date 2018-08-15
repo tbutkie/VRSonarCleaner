@@ -102,11 +102,11 @@ bool ViveController::BInit()
 
 			m_vpComponents.push_back(component);
 
-			//{
-			//	std::cout << "\t" << (component->m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component->m_strComponentName.c_str();
-			//	for (auto &b : component->m_vButtonsAssociated) std::cout << " |->(" << m_pHMD->GetButtonIdNameFromEnum(b) << ")";
-			//	std::cout << std::endl;
-			//}
+			{
+				std::cout << "\t" << (component->m_bHasRenderModel ? "Model -> " : "         ") << i << ": " << component->m_strComponentName.c_str();
+				for (auto &b : component->m_vButtonsAssociated) std::cout << " |->(" << m_pHMD->GetButtonIdNameFromEnum(b) << ")";
+				std::cout << std::endl;
+			}
 		}
 	}
 

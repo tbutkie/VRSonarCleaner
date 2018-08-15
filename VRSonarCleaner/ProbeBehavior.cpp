@@ -90,12 +90,12 @@ glm::vec3 ProbeBehavior::getLastPosition()
 	return glm::vec3((m_pTDM->getPrimaryController()->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset))[3]);
 }
 
-glm::mat4 ProbeBehavior::getProbeToWorldTransform()
+glm::mat4 ProbeBehavior::getTransformProbeToWorld()
 {
 	return m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
 
-glm::mat4 ProbeBehavior::getLastProbeToWorldTransform()
+glm::mat4 ProbeBehavior::getTransformProbeToWorld_Last()
 {
 	return m_pTDM->getPrimaryController()->getLastDeviceToWorldTransform() * glm::translate(glm::mat4(), m_vec3ProbeOffsetDirection * m_fProbeOffset);
 }
@@ -145,7 +145,7 @@ void ProbeBehavior::update()
 					glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
 					glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
 
-					glm::mat4 probeTrans(getProbeToWorldTransform());
+					glm::mat4 probeTrans(getTransformProbeToWorld());
 
 					ss << ";";
 					ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
@@ -244,7 +244,7 @@ void ProbeBehavior::update()
 				glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
 				glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
 
-				glm::mat4 probeTrans(getProbeToWorldTransform());
+				glm::mat4 probeTrans(getTransformProbeToWorld());
 
 				ss << ";";
 				ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";

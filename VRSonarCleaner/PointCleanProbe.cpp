@@ -72,7 +72,7 @@ void PointCleanProbe::draw()
 		if (n == 2)
 			rot = glm::rotate(glm::mat4(), glm::radians(m_fCursorHoopAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
 		
-		glm::mat4 torusToWorldTransform = getProbeToWorldTransform() * rot * scl;
+		glm::mat4 torusToWorldTransform = getTransformProbeToWorld() * rot * scl;
 
 		Renderer::getInstance().drawPrimitive("torus", torusToWorldTransform, diffCol, specColor, specExp);
 	}
@@ -162,7 +162,7 @@ void PointCleanProbe::activateProbe()
 			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
 			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
 
-			glm::mat4 probeTrans(getProbeToWorldTransform());
+			glm::mat4 probeTrans(getTransformProbeToWorld());
 
 			ss << ";";
 			ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
@@ -217,7 +217,7 @@ void PointCleanProbe::deactivateProbe()
 			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
 			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
 
-			glm::mat4 probeTrans(getProbeToWorldTransform());
+			glm::mat4 probeTrans(getTransformProbeToWorld());
 
 			ss << ";";
 			ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";
@@ -304,8 +304,8 @@ unsigned int PointCleanProbe::checkPoints()
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->poseValid()) 
 		return 0u;
 
-	glm::mat4 currentCursorPose = getProbeToWorldTransform();
-	glm::mat4 lastCursorPose = getLastProbeToWorldTransform();
+	glm::mat4 currentCursorPose = getTransformProbeToWorld();
+	glm::mat4 lastCursorPose = getTransformProbeToWorld_Last();
 
 	float cursorRadius = m_fProbeRadius;
 
@@ -344,8 +344,8 @@ unsigned int PointCleanProbe::checkPoints()
 		//if (!checkAABBtoAABBIntersection(vec3MinProbeAABB, vec3MaxProbeAABB, cloudMinBound, cloudMaxBound))
 		//	continue;
 
-		glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getCurrentDataTransform(cloud);
-		glm::mat4 mat4LastVolumeXform = m_pDataVolume->getLastDataTransform(cloud);
+		glm::mat4 mat4CurrentVolumeXform = m_pDataVolume->getTransformDataset(cloud);
+		glm::mat4 mat4LastVolumeXform = m_pDataVolume->getTransformDataset_Last(cloud);
 
 		if (mat4LastVolumeXform == glm::mat4())
 			mat4LastVolumeXform = mat4CurrentVolumeXform;
@@ -426,7 +426,7 @@ unsigned int PointCleanProbe::checkPoints()
 							glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
 							glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
 
-							glm::mat4 probeTrans(getProbeToWorldTransform());
+							glm::mat4 probeTrans(getTransformProbeToWorld());
 
 							ss << ";";
 							ss << "probe-pos:\"" << probeTrans[3].x << "," << probeTrans[3].y << "," << probeTrans[3].z << "\"";

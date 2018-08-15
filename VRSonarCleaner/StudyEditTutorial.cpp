@@ -142,7 +142,7 @@ void StudyEditTutorial::update()
 
 					allDone = false;
 					if (m_vvec3BadPoints.size() <= 5u)
-						m_vvec3BadPoints.push_back(m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud) * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(i), 1.f));
+						m_vvec3BadPoints.push_back(m_pDemoVolume->getTransformDataset(m_pDemoCloud) * glm::vec4(m_pDemoCloud->getAdjustedPointPosition(i), 1.f));
 				}
 			}
 			else if (m_pDemoCloud->getPointMark(i) == 1)
@@ -181,7 +181,7 @@ void StudyEditTutorial::draw()
 		rs.VAO = m_pDemoCloud->getVAO();
 		rs.vertCount = m_pDemoCloud->getPointCount();
 		rs.indexType = GL_UNSIGNED_INT;
-		rs.modelToWorldTransform = m_pDemoVolume->getCurrentDataTransform(m_pDemoCloud);
+		rs.modelToWorldTransform = m_pDemoVolume->getTransformDataset(m_pDemoCloud);
 
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
@@ -223,7 +223,7 @@ void StudyEditTutorial::draw()
 		}
 
 		bool rightHanded = m_pTDM->isPrimaryControllerInRighthandPosition();
-		glm::mat4 probeEdgeTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * m_pProbe->getProbeRadius()) * m_pProbe->getProbeToWorldTransform();
+		glm::mat4 probeEdgeTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * m_pProbe->getProbeRadius()) * m_pProbe->getTransformProbeToWorld();
 		glm::mat4 probeLabelTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * 0.025f + glm::vec3(m_pTDM->getHMDToWorldTransform()[2]) * 0.05f) * probeEdgeTrans;
 
 		glm::mat4 ctrlrLabelTrans = ccomutils::getBillBoardTransform(
@@ -292,7 +292,7 @@ void StudyEditTutorial::draw()
 
 			Renderer::getInstance().drawConnector(
 				ctrlrLabelTrans[3],
-				m_pProbe->getProbeToWorldTransform()[3] + m_pProbe->getProbeToWorldTransform()[2] * m_pProbe->getProbeRadius(),
+				m_pProbe->getTransformProbeToWorld()[3] + m_pProbe->getTransformProbeToWorld()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
 				hiliteColor
 			);
@@ -323,7 +323,7 @@ void StudyEditTutorial::draw()
 
 			Renderer::getInstance().drawConnector(
 				ctrlrLabelTrans[3],
-				m_pProbe->getProbeToWorldTransform()[3] + m_pProbe->getProbeToWorldTransform()[2] * m_pProbe->getProbeRadius(),
+				m_pProbe->getTransformProbeToWorld()[3] + m_pProbe->getTransformProbeToWorld()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
 				hiliteColor
 			);

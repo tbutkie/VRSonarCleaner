@@ -106,7 +106,7 @@ glm::vec3 DataVolume::convertToDataCoords(Dataset* dataset, glm::vec3 worldPos)
 	if (m_vpDatasets.size() == 0u)
 		return glm::vec3();
 	else
-		return glm::vec3(glm::inverse(getCurrentDataTransform(dataset)) * glm::vec4(worldPos, 1.f));
+		return glm::vec3(glm::inverse(getTransformDataset(dataset)) * glm::vec4(worldPos, 1.f));
 }
 
 glm::vec3 DataVolume::convertToWorldCoords(glm::dvec3 rawDataPos)
@@ -260,32 +260,32 @@ void DataVolume::drawVolumeBacking(glm::mat4 worldToHMDTransform, float padPct)
 	}
 }
 
-glm::mat4 DataVolume::getCurrentDataTransform(Dataset* dataset)
+glm::mat4 DataVolume::getTransformDataset(Dataset* dataset)
 {
 	return m_bUseCustomBounds ? m_mapCustomDataTransforms[dataset] : m_mapDataTransforms[dataset];
 }
 
-glm::mat4 DataVolume::getLastDataTransform(Dataset* dataset)
+glm::mat4 DataVolume::getTransformDataset_Last(Dataset* dataset)
 {
 	return m_bUseCustomBounds ? m_mapCustomDataTransformsPrevious[dataset] : m_mapDataTransformsPrevious[dataset];
 }
 
-glm::dmat4 DataVolume::getRawDomainToVolumeTransform()
+glm::dmat4 DataVolume::getTransformRawDomainToVolume()
 {
 	return m_dmat4RawDomainToVolumeTransform;
 }
 
-glm::dmat4 DataVolume::getLastRawDomainToVolumeTransform()
+glm::dmat4 DataVolume::getTransformRawDomainToVolume_Last()
 {
 	return m_dmat4RawDomainToVolumeTransformPrevious;
 }
 
-glm::mat4 DataVolume::getCurrentVolumeTransform()
+glm::mat4 DataVolume::getTransformVolume()
 {
 	return m_mat4VolumeTransform;
 }
 
-glm::mat4 DataVolume::getLastVolumeTransform()
+glm::mat4 DataVolume::getTransformVolume_Last()
 {
 	return m_mat4VolumeTransformPrevious;
 }

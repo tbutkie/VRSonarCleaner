@@ -229,8 +229,8 @@ bool GrabTutorial::checkVolBounds()
 	ptsToCheck.push_back(glm::vec4(bbMin.x, bbMax.y, bbMax.z, 1.f));
 	ptsToCheck.push_back(glm::vec4(bbMax.x, bbMax.y, bbMax.z, 1.f));
 
-	glm::mat4 demoVolToWorld = m_pDemoVolume->getCurrentVolumeTransform();
-	glm::mat4 worldToGoalVol = glm::inverse(m_pGoalVolume->getCurrentVolumeTransform());
+	glm::mat4 demoVolToWorld = m_pDemoVolume->getTransformVolume();
+	glm::mat4 worldToGoalVol = glm::inverse(m_pGoalVolume->getTransformVolume());
 	glm::mat4 demoVolToGoalVol = worldToGoalVol * demoVolToWorld;
 
 	for (auto const &pt : ptsToCheck)

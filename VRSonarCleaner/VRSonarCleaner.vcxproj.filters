@@ -46,6 +46,9 @@
     <Filter Include="Scenes">
       <UniqueIdentifier>{58eecb11-6eaa-4b60-b285-002b919d4327}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interactions &amp; Behaviors\debug">
+      <UniqueIdentifier>{96b18b3b-f79e-4ca4-ba66-85109f5e6413}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -209,6 +212,9 @@
     </ClCompile>
     <ClCompile Include="HairyFlowProbe.cpp">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugProbe.cpp">
+      <Filter>Interactions &amp; Behaviors\debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -385,6 +391,9 @@
     </ClInclude>
     <ClInclude Include="HairyFlowProbe.h">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugProbe.h">
+      <Filter>Interactions &amp; Behaviors\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

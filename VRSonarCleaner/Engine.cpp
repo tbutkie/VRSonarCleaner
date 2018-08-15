@@ -22,6 +22,7 @@
 #include "FlowProbe.h"
 #include "HairyFlowProbe.h"
 #include "FlowFieldCurator.h"
+#include "DebugProbe.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -350,6 +351,7 @@ bool Engine::init()
 		{
 			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
 			BehaviorManager::getInstance().addBehavior("flowprobe", new HairyFlowProbe(m_pTDM, m_pFlowVolume));
+			BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM, m_pFlowVolume));
 
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
 				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pFlowVolume));
@@ -1345,7 +1347,7 @@ void Engine::drawScene()
 				}
 
 				rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
-				rs.modelToWorldTransform = dv->getCurrentDataTransform(cloud);
+				rs.modelToWorldTransform = dv->getTransformDataset(cloud);
 				rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
 				Renderer::getInstance().addToDynamicRenderQueue(rs);
 			}

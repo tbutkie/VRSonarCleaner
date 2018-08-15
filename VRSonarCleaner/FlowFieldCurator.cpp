@@ -7,14 +7,16 @@
 
 using namespace std::chrono_literals;
 
-FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol)
+FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol, int gridRes)
 	: m_pTDM(pTDM)
 	, m_pFlowVolume(flowVol)
 	, m_pvec3MovingPt(NULL)
-	, m_mat4CPOffsetTransform(glm::translate(glm::mat4(), glm::vec3(16.f)) * glm::scale(glm::mat4(), glm::vec3(31.f / 2.f)))
+	, m_iGridRes(gridRes)
+	, m_mat4CPOffsetTransform(glm::translate(glm::mat4(), glm::vec3(1.f)) * glm::scale(glm::mat4(), glm::vec3(((float)m_iGridRes) / 2.f)) * glm::translate(glm::mat4(), glm::vec3(1.f)))
 	, m_mat4CPOffsetTransformInv(glm::inverse(m_mat4CPOffsetTransform))
 {
-	
+	m_pFlowVolume->removeFlowGrid("resources/data/flowgrid/test.fg");
+	loadRandomFlowGrid();
 }
 
 
@@ -30,10 +32,10 @@ void FlowFieldCurator::update()
 		cp.second.end_world = m_pFlowVolume->convertToWorldCoords(cp.second.end);
 	}
 
-	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedMenu())
+	if (m_pTDM->getPrimaryController())
 	{
-		m_pFlowVolume->removeFlowGrid("resources/data/flowgrid/test.fg");
-		loadRandomFlowGrid();
+		if (m_pTDM->getPrimaryController()->justPressedMenu())
+			loadRandomFlowGrid();
 	}
 
 	if (m_pTDM->getSecondaryController())
@@ -62,8 +64,6 @@ void FlowFieldCurator::update()
 					m_vec3ControllerToMovingPt = (cp.second.end_world) - ctrlrPos;
 				}
 			}
-
-			
 		}
 
 		if (m_pTDM->getSecondaryController()->isTouchpadClicked())
@@ -78,6 +78,8 @@ void FlowFieldCurator::update()
 			loadFlowGridFromCurrentCPs();
 			m_pvec3MovingPt = NULL;
 		}
+
+		
 	}
 }
 
@@ -87,13 +89,61 @@ void FlowFieldCurator::draw()
 	{
 		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.pos_world) * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f));
 		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.end_world) * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
-		Renderer::getInstance().drawConnector(cp.second.pos_world, cp.second.end_world, 0.005f, glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
+		Renderer::getInstance().drawConnectorLit(cp.second.pos_world, cp.second.end_world, 0.005f, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f));
+	}
+
+	if (m_pTDM->getPrimaryController())
+	{
+		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getPrimaryController()->getIndex(), m_pTDM->getDeviceComponentID(m_pTDM->getPrimaryController()->getIndex(), "button"));
+		glm::mat4 menuButtonTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.025f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		Renderer::getInstance().drawText(
+			"Load Random\nFlowGrid",
+			glm::vec4(1.f),
+			menuButtonTextAnchorTrans[3],
+			glm::quat(menuButtonTextAnchorTrans),
+			0.015f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_LEFT
+		);
+		Renderer::getInstance().drawConnector(
+			menuButtonTextAnchorTrans[3],
+			menuButtonPose[3],
+			0.001f,
+			glm::vec4(1.f, 1.f, 1.f, 0.75f)
+		);
+	}
+
+	if (m_pTDM->getSecondaryController())
+	{
+		glm::mat4 touchButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getSecondaryController()->getIndex(), m_pTDM->getDeviceComponentID(m_pTDM->getSecondaryController()->getIndex(), "trackpad"));
+		glm::mat4 touchpadTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, 0.02f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		Renderer::getInstance().drawText(
+			"Grab Closest\nControl Point",
+			m_pTDM->getSecondaryController()->isTouchpadClicked() ? glm::vec4(1.f, 1.f, 0.f, 1.f) : glm::vec4(1.f),
+			touchpadTextAnchorTrans[3],
+			glm::quat(touchpadTextAnchorTrans),
+			0.015f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_RIGHT
+		);
+		Renderer::getInstance().drawConnector(
+			touchpadTextAnchorTrans[3],
+			touchButtonPose[3],
+			0.001f,
+			glm::vec4(1.f, 1.f, 1.f, 0.75f)
+		);
 	}
 }
 
 bool FlowFieldCurator::loadRandomFlowGrid()
 {
-	if (system("resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg") == EXIT_SUCCESS)
+	std::stringstream ss;
+	ss << "resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg -grid " << m_iGridRes;
+	if (system(ss.str().c_str()) == EXIT_SUCCESS)
 	{
 		m_pFlowVolume->addFlowGrid("flowgrid_test.fg", true);
 		loadMetaFile("flowgrid_test.fg.cp");
@@ -122,8 +172,11 @@ bool FlowFieldCurator::loadFlowGridFromCurrentCPs()
 
 		cpFile.close();
 	}
+	
+	std::stringstream ss;
+	ss << "resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg -cpfile tmp.flowfieldcurator.cp -grid " << m_iGridRes;
 
-	if (system("resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg -cpfile tmp.flowfieldcurator.cp") == EXIT_SUCCESS)
+	if (ss.str().c_str() == EXIT_SUCCESS)
 	{
 		m_pFlowVolume->addFlowGrid("flowgrid_test.fg", true);
 		loadMetaFile("flowgrid_test.fg.cp");

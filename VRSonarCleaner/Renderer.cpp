@@ -289,6 +289,27 @@ void Renderer::drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm:
 	Renderer::getInstance().drawFlatPrimitive("cylinder", trans, color);
 }
 
+void Renderer::drawConnectorLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
+{
+	float connectorRadius = thickness * 0.5f;
+	glm::vec3 w = to - from;
+
+	glm::vec3 u, v;
+	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
+	if (glm::length2(u) == 0.f)
+		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
+
+	u = glm::normalize(u);
+	v = glm::normalize(glm::cross(w, u));
+
+	glm::mat4 trans;
+	trans[0] = glm::vec4(u * connectorRadius, 0.f);
+	trans[1] = glm::vec4(v * connectorRadius, 0.f);
+	trans[2] = glm::vec4(w, 0.f);
+	trans[3] = glm::vec4(from, 1.f);
+	Renderer::getInstance().drawPrimitive("cylinder", trans, diffColor, specColor, specExp);
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;

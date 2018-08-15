@@ -212,7 +212,7 @@ void StudyTrialSittingBehavior::draw()
 	rs.VAO = m_pPointCloud->getVAO();
 	rs.vertCount = m_pPointCloud->getPointCount();
 	rs.indexType = GL_UNSIGNED_INT;
-	rs.modelToWorldTransform = m_pDataVolume->getCurrentDataTransform(m_pPointCloud);
+	rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(m_pPointCloud);
 
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
 

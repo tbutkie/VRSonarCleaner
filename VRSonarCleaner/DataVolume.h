@@ -42,12 +42,12 @@ public:
 	glm::vec3 convertToWorldCoords(glm::dvec3 rawDataPos);
 	bool isWorldCoordPointInDomainBounds(glm::vec3 worldPt, bool checkZ = true);
 	
-	glm::mat4 getCurrentDataTransform(Dataset* dataset);
-	glm::mat4 getLastDataTransform(Dataset* dataset);
-	glm::dmat4 getRawDomainToVolumeTransform();
-	glm::dmat4 getLastRawDomainToVolumeTransform();
-	glm::mat4 getCurrentVolumeTransform();
-	glm::mat4 getLastVolumeTransform();
+	glm::mat4 getTransformDataset(Dataset* dataset);
+	glm::mat4 getTransformDataset_Last(Dataset* dataset);
+	glm::dmat4 getTransformRawDomainToVolume();
+	glm::dmat4 getTransformRawDomainToVolume_Last();
+	glm::mat4 getTransformVolume();
+	glm::mat4 getTransformVolume_Last();
 
 	void resetPositionAndOrientation();
 

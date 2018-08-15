@@ -29,7 +29,7 @@ void AdvectionProbe::update()
 	rs.specularTexName = "white";
 	rs.specularExponent = 32.f;
 	rs.shaderName = "lightingWireframe";
-	rs.modelToWorldTransform = m_pDataVolume->getCurrentVolumeTransform() * glm::scale(glm::mat4(), glm::vec3(sphereRad));
+	rs.modelToWorldTransform = m_pDataVolume->getTransformVolume() * glm::scale(glm::mat4(), glm::vec3(sphereRad));
 
 	//Renderer::getInstance().addToDynamicRenderQueue(rs);
 

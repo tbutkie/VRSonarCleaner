@@ -8,7 +8,7 @@ class FlowFieldCurator :
 	public BehaviorBase
 {
 public:
-	FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol);
+	FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowVol, int gridRes = 32);
 	~FlowFieldCurator();
 
 	void update();
@@ -37,6 +37,8 @@ private:
 	glm::mat4 m_mat4CPOffsetTransformInv;
 
 	glm::vec3 m_vec3ControllerToMovingPt;
+
+	int m_iGridRes;
 
 private:
 	bool loadRandomFlowGrid();

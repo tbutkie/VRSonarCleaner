@@ -74,7 +74,7 @@ public:
 		float m_fYMin, m_fYMax, m_fYRange, m_fYCells, m_fYCellSize;
 		int m_nYCells;
 		
-		float m_fZCells;
+		float m_fZMin, m_fZMax, m_fZRange, m_fZCells, m_fZCellSize;
 		int m_nZCells;
 		std::vector<float> m_vDepthValues;
 
