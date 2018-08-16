@@ -7,6 +7,7 @@ FlowProbe::FlowProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
 	, m_bProbeActive(false)
 	, m_pFlowVolume(flowVolume)
 	, m_pEmitter(NULL)
+	, m_fTipEmitterRadius(0.f)
 {
 	m_vec4ProbeColorDiff = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
 }
@@ -24,7 +25,7 @@ void FlowProbe::update()
 	{
 		m_pEmitter = m_pFlowVolume->placeDyeEmitterWorldCoords(m_pTDM->getPrimaryController() ? getPosition() : m_pFlowVolume->getPosition());
 		m_pEmitter->incrementColor();
-		m_pEmitter->setRadius(0.25f);
+		m_pEmitter->setRadius(m_fTipEmitterRadius);
 
 		m_vec4ProbeActivateColorDiff = m_vec4ProbeColorSpec = glm::vec4(m_pEmitter->getColor(), 1.f);
 	}
@@ -34,7 +35,8 @@ void FlowProbe::update()
 	if (m_pTDM->getPrimaryController())
 	{
 		m_pEmitter->setRate(10.f + (m_pTDM->getPrimaryController()->getTriggerPullAmount() / 0.85f) * 90.f);
-		m_pEmitter->setRadius(0.f + (m_pTDM->getPrimaryController()->getTriggerPullAmount() / 0.85f) * 0.5f);
+		m_fTipEmitterRadius = 0.f + (m_pTDM->getPrimaryController()->getTriggerPullAmount() / 0.85f) * 0.5f;
+		m_pEmitter->setRadius(m_fTipEmitterRadius);
 		//m_pEmitter->setTrailTime(std::chrono::duration_cast<std::chrono::milliseconds>(2500ms - (2000ms) * (m_pTDM->getPrimaryController()->getTriggerPullAmount() / 0.85f)));
 
 		glm::vec3 innerPos = m_pDataVolume->convertToRawDomainCoords(getPosition());
@@ -67,9 +69,8 @@ void FlowProbe::draw()
 
 		if (m_pEmitter->getRadius() > 0.f)
 		{
-			glm::dvec3 sphereRadVec(m_pFlowVolume->convertToWorldCoords(glm::dvec3(m_pEmitter->getRadius())) - m_pFlowVolume->convertToWorldCoords(glm::dvec3(0.)));
-
-			glm::mat4 xForm = getTransformProbeToWorld() * glm::scale(glm::mat4(), glm::abs(glm::vec3(m_pEmitter->getRadius() * m_pDataVolume->getDimensions() / 35.f)));
+			glm::vec3 sizer = glm::vec3(glm::dvec3(m_pDataVolume->getDimensions()) / m_pDataVolume->getDataDimensions());
+			glm::mat4 xForm = getTransformProbeToWorld() * glm::scale(glm::mat4(), glm::abs(glm::vec3(m_fTipEmitterRadius * sizer)));
 
 			Renderer::getInstance().drawPrimitive("icosphere", xForm, glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(m_pEmitter->getColor(), 1.f));
 		}

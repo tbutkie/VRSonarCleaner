@@ -20,6 +20,8 @@ private:
 	FlowVolume* m_pFlowVolume;
 	IllustrativeParticleEmitter* m_pEmitter;
 
+	float m_fTipEmitterRadius;
+
 private:
 	virtual void activateProbe();
 	virtual void deactivateProbe();
