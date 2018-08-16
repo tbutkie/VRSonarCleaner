@@ -350,7 +350,7 @@ bool Engine::init()
 
 		{
 			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
-			BehaviorManager::getInstance().addBehavior("flowprobe", new HairyFlowProbe(m_pTDM, m_pFlowVolume));
+			BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM, m_pFlowVolume));
 			BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM, m_pFlowVolume));
 
 			if (!BehaviorManager::getInstance().getBehavior("grab"))

@@ -69,7 +69,7 @@ void FlowProbe::draw()
 		{
 			glm::dvec3 sphereRadVec(m_pFlowVolume->convertToWorldCoords(glm::dvec3(m_pEmitter->getRadius())) - m_pFlowVolume->convertToWorldCoords(glm::dvec3(0.)));
 
-			glm::mat4 xForm = getTransformProbeToWorld() * glm::scale(glm::mat4(), glm::abs(glm::vec3(sphereRadVec)));
+			glm::mat4 xForm = getTransformProbeToWorld() * glm::scale(glm::mat4(), glm::abs(glm::vec3(m_pEmitter->getRadius() * m_pDataVolume->getDimensions() / 35.f)));
 
 			Renderer::getInstance().drawPrimitive("icosphere", xForm, glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(m_pEmitter->getColor(), 1.f));
 		}

@@ -12,7 +12,7 @@ FlowFieldCurator::FlowFieldCurator(TrackedDeviceManager* pTDM, FlowVolume* flowV
 	, m_pFlowVolume(flowVol)
 	, m_pvec3MovingPt(NULL)
 	, m_iGridRes(gridRes)
-	, m_mat4CPOffsetTransform(glm::translate(glm::mat4(), glm::vec3(1.f)) * glm::scale(glm::mat4(), glm::vec3(((float)m_iGridRes) / 2.f)) * glm::translate(glm::mat4(), glm::vec3(1.f)))
+	, m_mat4CPOffsetTransform(glm::translate(glm::mat4(), glm::vec3(1.f)) * glm::scale(glm::mat4(), glm::vec3(static_cast<float>(gridRes - 1) / 2.f)) * glm::translate(glm::mat4(), glm::vec3(1.f)))
 	, m_mat4CPOffsetTransformInv(glm::inverse(m_mat4CPOffsetTransform))
 {
 	m_pFlowVolume->removeFlowGrid("resources/data/flowgrid/test.fg");
@@ -85,11 +85,12 @@ void FlowFieldCurator::update()
 
 void FlowFieldCurator::draw()
 {
+	glm::vec3 dimratio = m_pFlowVolume->getDimensions() / m_pFlowVolume->getOriginalDimensions();
 	for (auto &cp : m_vCPs)
 	{
-		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.pos_world) * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f));
-		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.end_world) * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
-		Renderer::getInstance().drawConnectorLit(cp.second.pos_world, cp.second.end_world, 0.005f, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f));
+		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.pos_world) * glm::scale(glm::mat4(), glm::vec3(0.01f * dimratio)), glm::vec4(1.f));
+		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.end_world) * glm::scale(glm::mat4(), glm::vec3(0.01f * dimratio)), glm::vec4(1.f, 0.f, 0.f, 1.f));
+		Renderer::getInstance().drawConnectorLit(cp.second.pos_world, cp.second.end_world, 0.005f * glm::length(dimratio), glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f));
 	}
 
 	if (m_pTDM->getPrimaryController())
@@ -176,7 +177,7 @@ bool FlowFieldCurator::loadFlowGridFromCurrentCPs()
 	std::stringstream ss;
 	ss << "resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg -cpfile tmp.flowfieldcurator.cp -grid " << m_iGridRes;
 
-	if (ss.str().c_str() == EXIT_SUCCESS)
+	if (system(ss.str().c_str()) == EXIT_SUCCESS)
 	{
 		m_pFlowVolume->addFlowGrid("flowgrid_test.fg", true);
 		loadMetaFile("flowgrid_test.fg.cp");
