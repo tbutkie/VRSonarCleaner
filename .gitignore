@@ -320,3 +320,4 @@ VRSonarCleaner/vcruntime140.dll
 VRSonarCleaner/saved_points*.csv
 *.fg
 VRSonarCleaner/flowgrid_test.fg.cp
+VRSonarCleaner/tmp.flowfieldcurator.cp
