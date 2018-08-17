@@ -206,6 +206,7 @@ private:
 	void generateDisc(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateCylinder(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateCone(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);

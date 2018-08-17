@@ -945,8 +945,8 @@ void Renderer::generateDisc(int numSegments, std::vector<PrimVert> &verts, std::
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
 		}
 	}
-	inds.push_back(0);
-	inds.push_back(1);
+	inds.push_back(baseInd);
+	inds.push_back(baseInd + 1);
 	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 
 	//Back
@@ -972,7 +972,7 @@ void Renderer::generateCylinder(int numSegments, std::vector<PrimVert> &verts, s
 {
 	size_t baseInd = verts.size();
 
-	// Front endcap
+	// Base endcap
 	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
 	for (int i = 0; i < numSegments; ++i)
 	{
@@ -981,14 +981,82 @@ void Renderer::generateCylinder(int numSegments, std::vector<PrimVert> &verts, s
 
 		if (i > 0)
 		{
-			inds.push_back(0);
+			inds.push_back(baseInd);
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 		}
 	}
-	inds.push_back(0);
+	inds.push_back(baseInd);
 	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	inds.push_back(1);
+	inds.push_back(baseInd + 1);
+
+	// Distal endcap
+	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
+
+		if (i > 0)
+		{
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (i + 2)); // ctr pt of endcap
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+		}
+	}
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments + 1));
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments));
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+
+	// Shaft
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
+
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
+
+		if (i > 0)
+		{
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 4);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+		}
+	}
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2 + 1);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+}
+
+void Renderer::generateCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds)
+{
+	size_t baseInd = verts.size();
+
+	// Base endcap
+	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
+
+		if (i > 0)
+		{
+			inds.push_back(baseInd);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
+			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+		}
+	}
+	inds.push_back(baseInd);
+	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+	inds.push_back(baseInd + 1);
 
 	// Back endcap
 	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
@@ -1014,7 +1082,7 @@ void Renderer::generateCylinder(int numSegments, std::vector<PrimVert> &verts, s
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
 		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
 
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
+		verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
 
 		if (i > 0)
 		{
