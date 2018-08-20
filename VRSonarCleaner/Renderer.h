@@ -163,6 +163,7 @@ public:
 	bool drawPrimitiveCustom(std::string primName, glm::mat4 modelTransform, std::string shaderName, std::string diffuseTexName = "white", glm::vec4 diffuseColor = glm::vec4(1.f));
 	void drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color);
 	void drawConnectorLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor = glm::vec4(1.f), float specExp = 32.f);
+	void drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp = 32.f);
 	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE, bool snellenFont = false);
 	void drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE);
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
@@ -206,7 +207,8 @@ private:
 	void generateDisc(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateCylinder(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateCone(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateFacetedCone(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
+	void generateSmoothCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds);
 	void generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 	void generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);

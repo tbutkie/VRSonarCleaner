@@ -310,6 +310,28 @@ void Renderer::drawConnectorLit(glm::vec3 from, glm::vec3 to, float thickness, g
 	Renderer::getInstance().drawPrimitive("cylinder", trans, diffColor, specColor, specExp);
 }
 
+
+void Renderer::drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
+{
+	float connectorRadius = thickness * 0.5f;
+	glm::vec3 w = to - from;
+
+	glm::vec3 u, v;
+	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
+	if (glm::length2(u) == 0.f)
+		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
+
+	u = glm::normalize(u);
+	v = glm::normalize(glm::cross(w, u));
+
+	glm::mat4 trans;
+	trans[0] = glm::vec4(u * connectorRadius, 0.f);
+	trans[1] = glm::vec4(v * connectorRadius, 0.f);
+	trans[2] = glm::vec4(w, 0.f);
+	trans[3] = glm::vec4(from, 1.f);
+	Renderer::getInstance().drawPrimitive("cone", trans, diffColor, specColor, specExp);
+}
+
 void Renderer::toggleWireframe()
 {
 	m_bShowWireframe = !m_bShowWireframe;
@@ -752,9 +774,20 @@ void Renderer::setupPrimitives()
 
 	baseInd = inds.size();
 	baseVert = verts.size();
-	generateCone(32, verts, inds);
+	generateFacetedCone(16, verts, inds);
 
-	for (auto primname : { "cone" })
+	for (auto primname : { "cone_faceted", "faceted_cone", "flat_cone", "cone_flat" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
+	generateSmoothCone(32, verts, inds);
+
+	for (auto primname : { "cone", "smooth_cone", "cone_smooth" })
 	{
 		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
 		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
@@ -1049,7 +1082,7 @@ void Renderer::generateCylinder(int numSegments, std::vector<PrimVert> &verts, s
 	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 }
 
-void Renderer::generateCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds)
+void Renderer::generateFacetedCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds)
 {
 	assert(numSegments >= 3);
 
@@ -1069,18 +1102,87 @@ void Renderer::generateCone(int numSegments, std::vector<PrimVert>& verts, std::
 
 	// Body
 	baseInd = verts.size() - baseInd;
-	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float ratio = (float)i / (float)(numSegments);
+		float nextRatio = (float)(i + 1) / (float)(numSegments);
+		float angle = ratio * glm::two_pi<float>();
+		float nextAngle = nextRatio * glm::two_pi<float>();
+
+		glm::vec3 basePt(sin(angle), cos(angle), 0.f);
+		glm::vec3 nextBasePt(sin(nextAngle), cos(nextAngle), 0.f);
+		glm::vec3 tipPt(0.f, 0.f, 1.f);
+		glm::vec3 n = glm::normalize(glm::cross(nextBasePt - tipPt, basePt - tipPt));
+
+		verts.push_back(PrimVert({ tipPt, n, glm::vec4(1.f), glm::vec2((nextRatio - ratio) / 2.f, 1.f) }));
+		verts.push_back(PrimVert({ basePt, n, glm::vec4(1.f), glm::vec2(ratio, 0.f) }));
+		verts.push_back(PrimVert({ nextBasePt, n, glm::vec4(1.f), glm::vec2(nextRatio, 0.f) }));
+
+		inds.push_back(static_cast<GLushort>(baseInd + (i * 3) + 0));
+		inds.push_back(static_cast<GLushort>(baseInd + (i * 3) + 2));
+		inds.push_back(static_cast<GLushort>(baseInd + (i * 3) + 1));
+	}
+}
+
+void Renderer::generateSmoothCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds)
+{
+	assert(numSegments >= 3);
+
+	size_t baseInd = verts.size();
+
+	// Base endcap
+	verts.push_back(PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
 	for (int i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments)) * glm::two_pi<float>();
-		glm::vec3 basePt(sin(angle), cos(angle), 0.f);
-		glm::vec3 tipPt(0.f, 0.f, 1.f);
-		glm::vec3 n = glm::normalize(glm::cross(glm::cross(tipPt - basePt, tipPt), tipPt - basePt));
-		verts.push_back(PrimVert({ basePt, n, glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
+		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
 
-		inds.push_back(static_cast<GLushort>(baseInd));
-		inds.push_back(static_cast<GLushort>(utils::getIndexWrapped(baseInd + i + 2, numSegments, 1)));
-		inds.push_back(static_cast<GLushort>(utils::getIndexWrapped(baseInd + i + 1, numSegments, 1)));
+		inds.push_back(static_cast<GLushort>(0));
+		inds.push_back(static_cast<GLushort>(utils::getIndexWrapped(i + 1, numSegments, 1)));
+		inds.push_back(static_cast<GLushort>(utils::getIndexWrapped(i + 2, numSegments, 1)));
+	}
+
+	// Body
+	baseInd = verts.size() - baseInd;
+	// make the ring base first
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float ratio = (float)i / (float)(numSegments);
+		float nextRatio = (float)(i + 1) / (float)(numSegments);
+		float prevRatio = (float)utils::getIndexWrapped(i - 1, numSegments - 1) / (float)(numSegments);
+		float angle = ratio * glm::two_pi<float>();
+		float nextAngle = nextRatio * glm::two_pi<float>();
+		float prevAngle = prevRatio * glm::two_pi<float>();
+
+		glm::vec3 basePt(sin(angle), cos(angle), 0.f);
+		glm::vec3 nextBasePt(sin(nextAngle), cos(nextAngle), 0.f);
+		glm::vec3 prevBasePt(sin(prevAngle), cos(prevAngle), 0.f);
+		glm::vec3 tipPt(0.f, 0.f, 1.f);
+		glm::vec3 n1 = glm::normalize(glm::cross(nextBasePt - tipPt, basePt - tipPt));
+		glm::vec3 n2 = glm::normalize(glm::cross(basePt - tipPt, prevBasePt - tipPt));
+		glm::vec3 n = (n1 + n2) / 2.f;
+
+		verts.push_back(PrimVert({ basePt, n, glm::vec4(1.f), glm::vec2(ratio, 0.f) }));
+	}
+
+	// now make tip points and mesh
+	for (int i = 0; i < numSegments; ++i)
+	{
+		float ratio = (float)i / (float)(numSegments);
+		float nextRatio = (float)(i + 1) / (float)(numSegments);
+		float angle = ratio * glm::two_pi<float>();
+		float nextAngle = nextRatio * glm::two_pi<float>();
+
+		glm::vec3 basePt(sin(angle), cos(angle), 0.f);
+		glm::vec3 nextBasePt(sin(nextAngle), cos(nextAngle), 0.f);
+		glm::vec3 tipPt(0.f, 0.f, 1.f);
+		glm::vec3 tipNorm = glm::normalize(glm::cross(nextBasePt - tipPt, basePt - tipPt));
+
+		verts.push_back(PrimVert({ tipPt, tipNorm, glm::vec4(1.f), glm::vec2((nextRatio - ratio) / 2.f, 1.f) }));
+
+		inds.push_back(static_cast<GLushort>(baseInd + numSegments + i)); // tip
+		inds.push_back(static_cast<GLushort>(baseInd + utils::getIndexWrapped(i + 1, numSegments - 1)));
+		inds.push_back(static_cast<GLushort>(baseInd + utils::getIndexWrapped(i + 0, numSegments - 1)));
 	}
 }
 
