@@ -3,7 +3,7 @@
 #include <vector>
 #include <glm.hpp>
 
-namespace ccomutils
+namespace utils
 {
 	void dprintf(const char *fmt, ...);
 

@@ -160,7 +160,7 @@ Engine::Engine()
 		m_bGreatBayModel = true;
 		break;
 	default:
-		ccomutils::dprintf("Invalid Selection, shutting down...");
+		utils::dprintf("Invalid Selection, shutting down...");
 		Shutdown();
 		break;
 	}
@@ -173,7 +173,7 @@ Engine::Engine()
 Engine::~Engine()
 {
 	// work is done in Shutdown
-	ccomutils::dprintf("Shutdown");
+	utils::dprintf("Shutdown");
 }
 
 //-----------------------------------------------------------------------------
@@ -183,7 +183,7 @@ bool Engine::init()
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
-		ccomutils::dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		utils::dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
@@ -195,25 +195,25 @@ bool Engine::init()
 
 	if (m_pGLContext == NULL)
 	{
-		ccomutils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		utils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 		return false;
 	}
 
 	if (!initGL())
 	{
-		ccomutils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
+		utils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
 	}
 
 	if (!initDesktop())
 	{
-		ccomutils::dprintf("%s - Unable to initialize desktop window!\n", __FUNCTION__);
+		utils::dprintf("%s - Unable to initialize desktop window!\n", __FUNCTION__);
 		return false;
 	}
 
 	if (m_bUseVR && !initVR())
 	{
-		ccomutils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
+		utils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
 		return false;
 	}
 
@@ -420,18 +420,18 @@ bool Engine::initVR()
 
 	if (!vr::VRCompositor())
 	{
-		ccomutils::dprintf("Compositor initialization failed. See log file for details\n");
+		utils::dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
 
 	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
-	ccomutils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
+	utils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
 
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
 	if (!m_pTDM->init())
 	{
-		ccomutils::dprintf("Error initializing TrackedDeviceManager\n");
+		utils::dprintf("Error initializing TrackedDeviceManager\n");
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "VR_Init Failed", "Could not initialize the Tracked Device Manager", NULL);
 	}
 
@@ -1550,9 +1550,9 @@ void Engine::createVRViews()
 	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().createFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
-		ccomutils::dprintf("Could not create left eye framebuffer!\n");
+		utils::dprintf("Could not create left eye framebuffer!\n");
 	if (!Renderer::getInstance().createFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
-		ccomutils::dprintf("Could not create right eye framebuffer!\n");
+		utils::dprintf("Could not create right eye framebuffer!\n");
 }
 
 void Engine::createDesktopView()
@@ -1570,5 +1570,5 @@ void Engine::createDesktopView()
 	m_pWindowFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
-		ccomutils::dprintf("Could not create desktop view framebuffer!\n");	
+		utils::dprintf("Could not create desktop view framebuffer!\n");	
 }

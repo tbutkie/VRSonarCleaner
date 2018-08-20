@@ -194,7 +194,7 @@ void StudyEditTutorial::draw()
 	float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
 	float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
 	float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
-	glm::mat4 dvPromptTrans = ccomutils::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+	glm::mat4 dvPromptTrans = utils::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 	if (BehaviorManager::getInstance().getBehavior("Done") == nullptr)
 	{
@@ -226,7 +226,7 @@ void StudyEditTutorial::draw()
 		glm::mat4 probeEdgeTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * m_pProbe->getProbeRadius()) * m_pProbe->getTransformProbeToWorld();
 		glm::mat4 probeLabelTrans = glm::translate(glm::mat4(), (rightHanded ? -glm::vec3(m_pTDM->getHMDToWorldTransform()[0]) : glm::vec3(m_pTDM->getHMDToWorldTransform()[0])) * 0.025f + glm::vec3(m_pTDM->getHMDToWorldTransform()[2]) * 0.05f) * probeEdgeTrans;
 
-		glm::mat4 ctrlrLabelTrans = ccomutils::getBillBoardTransform(
+		glm::mat4 ctrlrLabelTrans = utils::getBillBoardTransform(
 			m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3] + 
 			(rightHanded ? -m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[0] : m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[0]) * 0.05f +
 			m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[1] * 0.025f,
@@ -245,7 +245,7 @@ void StudyEditTutorial::draw()
 				grabInitialText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.5f,
 				Renderer::TextSizeDim::WIDTH,
 				Renderer::TextAlignment::CENTER,
@@ -276,7 +276,7 @@ void StudyEditTutorial::draw()
 				maxText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				ctrlrLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -307,7 +307,7 @@ void StudyEditTutorial::draw()
 				minText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				ctrlrLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -338,7 +338,7 @@ void StudyEditTutorial::draw()
 				extText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -369,7 +369,7 @@ void StudyEditTutorial::draw()
 				retText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				probeLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(probeLabelTrans[3] + (rightHanded ? -probeLabelTrans[0] : probeLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.1f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,
@@ -397,7 +397,7 @@ void StudyEditTutorial::draw()
 			glm::mat4 statusTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.15f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 			glm::mat4 accuracyTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.175f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 
-			glm::mat4 instTrans = ccomutils::getBillBoardTransform(glm::vec3(1.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			glm::mat4 instTrans = utils::getBillBoardTransform(glm::vec3(1.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 			Renderer::getInstance().drawText(
 				"Bad data is colored red\nand should be cleaned away!",
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
@@ -416,7 +416,7 @@ void StudyEditTutorial::draw()
 				retText,
 				glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
 				ctrlrLabelTrans[3],
-				glm::quat(ccomutils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
+				glm::quat(utils::getBillBoardTransform(ctrlrLabelTrans[3] + (rightHanded ? -ctrlrLabelTrans[0] : ctrlrLabelTrans[0]) * dims.x * 0.5f, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false)),
 				0.05f,
 				Renderer::TextSizeDim::HEIGHT,
 				Renderer::TextAlignment::CENTER,

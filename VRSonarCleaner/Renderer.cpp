@@ -752,6 +752,17 @@ void Renderer::setupPrimitives()
 
 	baseInd = inds.size();
 	baseVert = verts.size();
+	generateCone(32, verts, inds);
+
+	for (auto primname : { "cone" })
+	{
+		m_mapPrimitiveIndexBaseVertices[primname] = static_cast<GLint>(baseVert);
+		m_mapPrimitiveIndexCounts[primname] = static_cast<GLsizei>(inds.size() - baseInd);
+		m_mapPrimitiveIndexByteOffsets[primname] = baseInd * sizeof(GLushort);
+	}
+
+	baseInd = inds.size();
+	baseVert = verts.size();
 	generateTorus(1.f, 0.025f, 32, 8, verts, inds);
 
 	for (auto primname : { "torus", "donut", "doughnut" })
@@ -1059,31 +1070,28 @@ void Renderer::generateCone(int numSegments, std::vector<PrimVert>& verts, std::
 	inds.push_back(baseInd + 1);
 
 	// Body
+	baseInd = verts.size();
+	verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(1.f, 1.f) }));
 	for (int i = 0; i < numSegments; ++i)
 	{
 		float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-		verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
 
-		verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
+		glm::vec3 basePt(sin(angle), cos(angle), 0.f);
+		glm::vec3 tipPt(0.f, 0.f, 1.f);
+		glm::vec3 n = glm::normalize(glm::cross(glm::cross(tipPt - basePt, tipPt), tipPt - basePt));
+
+		verts.push_back(PrimVert({ basePt, n, glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
 
 		if (i > 0)
 		{
-			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 4);
-			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
+			inds.push_back(baseInd);
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-
-			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 		}
 	}
-	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
+	inds.push_back(baseInd);
 	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-
-	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
-	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2 + 1);
-	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+	inds.push_back(baseInd + 1);
 }
 
 
@@ -1809,7 +1817,7 @@ GLuint Renderer::createInstancedPrimitiveVAO(std::string primitiveName, GLuint i
 {
 	if (!instanceDataVBO)
 	{
-		ccomutils::dprintf("%s ERROR: Supplied data buffer for creating instanced %s primitives is invalid!\n", __FUNCTION__, primitiveName.c_str());
+		utils::dprintf("%s ERROR: Supplied data buffer for creating instanced %s primitives is invalid!\n", __FUNCTION__, primitiveName.c_str());
 		return 0;
 	}
 

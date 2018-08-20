@@ -7,7 +7,7 @@
 #include <cstdarg>
 #include <Windows.h>
 
-namespace ccomutils
+namespace utils
 {
 	//-----------------------------------------------------------------------------
 	// Purpose:

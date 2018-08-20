@@ -121,7 +121,7 @@ void ScaleTutorial::draw()
 		float dvMaxSide = std::max(std::max(m_pDemoVolume->getDimensions().x, m_pDemoVolume->getDimensions().y), m_pDemoVolume->getDimensions().z);
 		float tmp = std::sqrt(dvMaxSide * dvMaxSide * 2.f);
 		float dvOffset = std::sqrt(tmp * tmp + dvMaxSide * dvMaxSide) * 0.5f;
-		glm::mat4 dvPromptTrans = ccomutils::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+		glm::mat4 dvPromptTrans = utils::getBillBoardTransform(m_pDemoVolume->getPosition() + dvOffset * glm::vec3(0.f, 1.f, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 		Renderer::getInstance().drawText(
 			"Data Volume",
@@ -138,7 +138,7 @@ void ScaleTutorial::draw()
 		{
 			glm::vec3 midPt = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3] + (m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3] - m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]) * 0.5f;
 
-			glm::mat4 scaleVolTrans = ccomutils::getBillBoardTransform(midPt, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false);
+			glm::mat4 scaleVolTrans = utils::getBillBoardTransform(midPt, m_pTDM->getHMDToWorldTransform()[3], m_pTDM->getHMDToWorldTransform()[1], false);
 			std::string scaleInitialText("Squeeze the grips!");
 			glm::vec2 dims = Renderer::getInstance().getTextDimensions(scaleInitialText, 0.2f, Renderer::WIDTH);
 			Renderer::getInstance().drawText(
@@ -214,7 +214,7 @@ void ScaleTutorial::draw()
 			float goalMaxSide = std::max(std::max(m_pGoalVolume->getDimensions().x, m_pGoalVolume->getDimensions().y), m_pGoalVolume->getDimensions().z);
 			float tmp1 = std::sqrt(goalMaxSide * goalMaxSide * 2.f);
 			float goalOffset = std::sqrt(tmp1 * tmp1 + goalMaxSide * goalMaxSide) * 0.5f;
-			glm::mat4 goalTrans = ccomutils::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			glm::mat4 goalTrans = utils::getBillBoardTransform(m_pGoalVolume->getPosition() - glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 			Renderer::getInstance().drawText(
 				"GOAL",
@@ -227,7 +227,7 @@ void ScaleTutorial::draw()
 				Renderer::TextAnchor::CENTER_TOP
 			);
 
-			glm::mat4 goalPromptTrans = ccomutils::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
+			glm::mat4 goalPromptTrans = utils::getBillBoardTransform(m_pGoalVolume->getPosition() + glm::vec3(0.f, goalOffset, 0.f), m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true);
 
 			Renderer::getInstance().drawText(
 				"Scale the data volume\n and place it inside of the goal!",
