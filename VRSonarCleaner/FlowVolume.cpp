@@ -59,9 +59,6 @@ void FlowVolume::removeFlowGrid(std::string fileName)
 
 	if (fgPresent != m_vpFlowGrids.end())
 	{
-		remove(*fgPresent);
-		m_vpFlowGrids.erase(fgPresent);
-
 		if (m_pParticleSystem)
 		{
 			m_pParticleSystem->m_vpFlowGridCollection = m_vpFlowGrids;
@@ -69,6 +66,9 @@ void FlowVolume::removeFlowGrid(std::string fileName)
 				if (p->m_pFlowGrid == (*fgPresent))
 					p->m_pFlowGrid = NULL;
 		}
+
+		remove(*fgPresent);
+		m_vpFlowGrids.erase(fgPresent);
 	}
 }
 

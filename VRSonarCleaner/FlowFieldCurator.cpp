@@ -85,7 +85,7 @@ void FlowFieldCurator::update()
 
 void FlowFieldCurator::draw()
 {
-	Renderer::getInstance().drawPrimitive("cone", glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)), glm::vec4(1.f));
+	Renderer::getInstance().drawPrimitive("cone", glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.1f)), glm::vec4(1.f));
 
 	glm::vec3 dimratio = m_pFlowVolume->getDimensions() / m_pFlowVolume->getOriginalDimensions();
 	for (auto &cp : m_vCPs)

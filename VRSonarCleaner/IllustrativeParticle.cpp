@@ -87,7 +87,7 @@ void IllustrativeParticle::updatePosition(std::chrono::time_point<std::chrono::h
 	{
 		m_vvec3Positions[m_iBufferHead] = m_vec3NewPos;
 		m_vtpTimes[m_iBufferHead] = currentTime;
-		m_iBufferHead = utils::getIndexWrapped(m_iBufferHead + 1, MAX_NUM_TRAIL_POSITIONS);
+		m_iBufferHead = utils::getIndexWrapped(m_iBufferHead + 1, MAX_NUM_TRAIL_POSITIONS - 1);
 	}//end if not dying
 	
 	m_msLiveTimeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_vtpTimes[m_iBufferTail]);
@@ -97,11 +97,11 @@ void IllustrativeParticle::updatePosition(std::chrono::time_point<std::chrono::h
 
 void IllustrativeParticle::updateBufferIndices(std::chrono::time_point<std::chrono::high_resolution_clock> currentTime)
 {
-	for (int i = m_iBufferTail; i != m_iBufferHead; i = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS))
+	for (int i = m_iBufferTail; i != m_iBufferHead; i = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS - 1))
 	{
 		m_msTimeSince = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_vtpTimes[i]);
 		if (m_msTimeSince > m_msTrailTime)
-			m_iBufferTail = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS);
+			m_iBufferTail = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS - 1);
 		else 
 			break;
 	}	
@@ -118,7 +118,7 @@ int IllustrativeParticle::getNumLivePositions()
 
 	int numLivePos = 0;
 	
-	for(int i = m_iBufferTail; i != m_iBufferHead; i = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS))
+	for(int i = m_iBufferTail; i != m_iBufferHead; i = utils::getIndexWrapped(i + 1, MAX_NUM_TRAIL_POSITIONS - 1))
 		numLivePos++;
 
 	return numLivePos;
@@ -126,27 +126,27 @@ int IllustrativeParticle::getNumLivePositions()
 
 int IllustrativeParticle::getLivePosition(int index)
 {
-	return utils::getIndexWrapped(m_iBufferTail + index, MAX_NUM_TRAIL_POSITIONS);
+	return utils::getIndexWrapped(m_iBufferTail + index, MAX_NUM_TRAIL_POSITIONS - 1);
 }
 
 float IllustrativeParticle::getCurrentX()
 {
-	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS)].x;
+	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS - 1)].x;
 }
 
 float IllustrativeParticle::getCurrentY()
 {
-	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS)].y;
+	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS - 1)].y;
 }
 
 float IllustrativeParticle::getCurrentZ()
 {
-	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS)].z;
+	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS - 1)].z;
 }
 
 glm::vec3 IllustrativeParticle::getCurrentXYZ()
 {
-	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS)];
+	return m_vvec3Positions[utils::getIndexWrapped(m_iBufferHead - 1, MAX_NUM_TRAIL_POSITIONS - 1)];
 }
 
 float IllustrativeParticle::getFadeInFadeOutOpacity()
