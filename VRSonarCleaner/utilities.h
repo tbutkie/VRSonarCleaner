@@ -49,4 +49,6 @@ namespace utils
 		glm::mat4 &model,
 		glm::ivec4 &vp
 	);
+
+	int getIndexWrapped(int index, int maxIndex, int baseIndex = 0, bool rebaseToZero = false);
 }

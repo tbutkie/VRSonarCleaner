@@ -64,8 +64,6 @@ public:
 	FlowGrid* m_pFlowGrid;
 
 private:
-	int getWrappedIndex(int index);
-
 	//update() vars, put them here so no alloc needed each frame
 	std::chrono::milliseconds m_msTimeSince;
 	bool foundValid;

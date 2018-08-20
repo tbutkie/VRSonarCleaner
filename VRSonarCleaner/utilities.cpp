@@ -153,4 +153,15 @@ namespace utils
 
 		return perspDivMat * beforePerspDivide;
 	}
+
+	int getIndexWrapped(int index, int maxIndex, int baseIndex, bool rebaseToZero)
+	{
+		int upperBound = maxIndex + 1;
+		int range = upperBound - baseIndex;
+
+		if (rebaseToZero)
+			return (((index - baseIndex) % range) + range) % range;
+		else
+			return baseIndex + (((index - baseIndex) % range) + range) % range;
+	}
 }
