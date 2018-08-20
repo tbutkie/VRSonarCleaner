@@ -315,8 +315,8 @@ void Renderer::drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm
 {
 	glm::vec3 connectorVec(to - from);
 	Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), from) * glm::scale(glm::mat4(), glm::vec3(thickness)), glm::vec4(1.f));
-	Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", from, to, thickness, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f), specExp);
-	Renderer::getInstance().drawDirectedPrimitiveLit("cone", to, to + connectorVec * 0.1f + glm::normalize(connectorVec) * thickness, thickness * 2.f, glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f), specExp);
+	Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", from, to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, thickness, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f), specExp);
+	Renderer::getInstance().drawDirectedPrimitiveLit("cone", to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, to, thickness * 2.f, glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f), specExp);
 }
 
 
