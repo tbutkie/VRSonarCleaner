@@ -268,7 +268,7 @@ bool Renderer::drawPrimitiveCustom(std::string primName, glm::mat4 modelTransfor
 	return true;
 }
 
-void Renderer::drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color)
+void Renderer::drawDirectedPrimitive(std::string primname, glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 color)
 {
 	float connectorRadius = thickness * 0.5f;
 	glm::vec3 w = to - from;
@@ -277,60 +277,48 @@ void Renderer::drawConnector(glm::vec3 from, glm::vec3 to, float thickness, glm:
 	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
 	if (glm::length2(u) == 0.f)
 		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
+
+	u = glm::normalize(u);
+	v = glm::normalize(glm::cross(w, u));
+
+	glm::mat4 trans;
+	trans[0] = glm::vec4(u * connectorRadius, 0.f);
+	trans[1] = glm::vec4(v * connectorRadius, 0.f);
+	trans[2] = glm::vec4(w, 0.f);
+	trans[3] = glm::vec4(from, 1.f);
+	Renderer::getInstance().drawFlatPrimitive(primname, trans, color);
+}
+
+void Renderer::drawDirectedPrimitiveLit(std::string primname, glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
+{
+	float connectorRadius = thickness * 0.5f;
+	glm::vec3 w = to - from;
+
+	glm::vec3 u, v;
+	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
+	if (glm::length2(u) == 0.f)
+		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
+
+	u = glm::normalize(u);
+	v = glm::normalize(glm::cross(w, u));
+
+	glm::mat4 trans;
+	trans[0] = glm::vec4(u * connectorRadius, 0.f);
+	trans[1] = glm::vec4(v * connectorRadius, 0.f);
+	trans[2] = glm::vec4(w, 0.f);
+	trans[3] = glm::vec4(from, 1.f);
+	Renderer::getInstance().drawPrimitive(primname, trans, diffColor, specColor, specExp);
+}
 	
-	u = glm::normalize(u);
-	v = glm::normalize(glm::cross(w, u));
-
-	glm::mat4 trans;
-	trans[0] = glm::vec4(u * connectorRadius, 0.f);
-	trans[1] = glm::vec4(v * connectorRadius, 0.f);
-	trans[2] = glm::vec4(w, 0.f);
-	trans[3] = glm::vec4(from, 1.f);
-	Renderer::getInstance().drawFlatPrimitive("cylinder", trans, color);
-}
-
-void Renderer::drawConnectorLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
-{
-	float connectorRadius = thickness * 0.5f;
-	glm::vec3 w = to - from;
-
-	glm::vec3 u, v;
-	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
-	if (glm::length2(u) == 0.f)
-		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
-
-	u = glm::normalize(u);
-	v = glm::normalize(glm::cross(w, u));
-
-	glm::mat4 trans;
-	trans[0] = glm::vec4(u * connectorRadius, 0.f);
-	trans[1] = glm::vec4(v * connectorRadius, 0.f);
-	trans[2] = glm::vec4(w, 0.f);
-	trans[3] = glm::vec4(from, 1.f);
-	Renderer::getInstance().drawPrimitive("cylinder", trans, diffColor, specColor, specExp);
-}
-
 
 void Renderer::drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
 {
-	float connectorRadius = thickness * 0.5f;
-	glm::vec3 w = to - from;
-
-	glm::vec3 u, v;
-	u = glm::cross(glm::vec3(0.f, 1.f, 0.f), w);
-	if (glm::length2(u) == 0.f)
-		u = glm::cross(glm::vec3(1.f, 0.f, 0.f), w);;
-
-	u = glm::normalize(u);
-	v = glm::normalize(glm::cross(w, u));
-
-	glm::mat4 trans;
-	trans[0] = glm::vec4(u * connectorRadius, 0.f);
-	trans[1] = glm::vec4(v * connectorRadius, 0.f);
-	trans[2] = glm::vec4(w, 0.f);
-	trans[3] = glm::vec4(from, 1.f);
-	Renderer::getInstance().drawPrimitive("cone", trans, diffColor, specColor, specExp);
+	glm::vec3 connectorVec(to - from);
+	Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), from) * glm::scale(glm::mat4(), glm::vec3(thickness)), glm::vec4(1.f));
+	Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", from, to, thickness, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f), specExp);
+	Renderer::getInstance().drawDirectedPrimitiveLit("cone", to, to + connectorVec * 0.1f + glm::normalize(connectorVec) * thickness, thickness * 2.f, glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f), specExp);
 }
+
 
 void Renderer::toggleWireframe()
 {

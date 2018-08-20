@@ -54,14 +54,14 @@ void ArcBall::update()
 		float ratio = timeElapsed / m_fTranslationTime;
 		glm::vec3 transDir = m_vec3EndTransPos - m_vec3StartTransPos;
 		m_pDataVolume->setPosition(m_vec3StartTransPos + transDir * ratio);
-		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_vec3PivotPoint - transDir * (1.f - ratio), 0.005f, glm::vec4(0.7f, 0.7f, 0.2f, 0.7f));
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",m_vec3PivotPoint, m_vec3PivotPoint - transDir * (1.f - ratio), 0.005f, glm::vec4(0.7f, 0.7f, 0.2f, 0.7f));
 	}
 }
 
 void ArcBall::draw()
 {
 	if (m_bDragging)
-		Renderer::getInstance().drawConnector(m_vec3PivotPoint, m_pDataVolume->getPosition(), 0.005f, glm::vec4(0.7f));
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",m_vec3PivotPoint, m_pDataVolume->getPosition(), 0.005f, glm::vec4(0.7f));
 }
 
 void ArcBall::setProjection(glm::mat4 * proj)

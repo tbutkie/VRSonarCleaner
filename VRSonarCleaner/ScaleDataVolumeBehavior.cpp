@@ -86,13 +86,13 @@ void ScaleDataVolumeBehavior::draw()
 				Renderer::TextAnchor::CENTER_RIGHT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				rightGripTextAnchorTrans[3],
 				c->getRightGripPoint(),
 				0.001f,
 				glm::vec4(1.f, 1.f, 1.f, 0.75f)
 			);
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				leftGripTextAnchorTrans[3],
 				c->getLeftGripPoint(),
 				0.001f,
@@ -116,12 +116,12 @@ void ScaleDataVolumeBehavior::draw()
 			glm::vec3 primConAttachPt = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(rightHanded ? -0.015f : 0.015f, -0.015f, 0.085f)))[3];
 			glm::vec3 secConAttachPt = (m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(rightHanded ? 0.015f : -0.015f, -0.015f, 0.085f)))[3];
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				primConAttachPt,
 				m_pDataVolume->getPosition(),
 				thickness,
 				glm::vec4(1.f, 1.f, 1.f, 0.25f)
-			); Renderer::getInstance().drawConnector(
+			); Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				secConAttachPt,
 				m_pDataVolume->getPosition(),
 				thickness,
@@ -134,19 +134,19 @@ void ScaleDataVolumeBehavior::draw()
 
 			if (enlarging)
 			{
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					midPt - attachVec_n * m_fInitialDistance * 0.5f,
 					midPt + attachVec_n * m_fInitialDistance * 0.5f,
 					thickness * 2.f,
 					glm::vec4(1.f, 1.f, 1.f, 0.25f)
 				);
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					primConAttachPt,
 					midPt - attachVec_n * m_fInitialDistance * 0.5f,
 					thickness,
 					color
 				);
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					secConAttachPt,
 					midPt + attachVec_n * m_fInitialDistance * 0.5f,
 					thickness,
@@ -155,19 +155,19 @@ void ScaleDataVolumeBehavior::draw()
 			}
 			else
 			{
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					midPt - attachVec_n * m_fInitialDistance * 0.5f,
 					primConAttachPt,
 					thickness * 2.f,
 					glm::vec4(1.f, 1.f, 1.f, 0.25f)
 				);
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					midPt + attachVec_n * m_fInitialDistance * 0.5f,
 					secConAttachPt,
 					thickness * 2.f,
 					glm::vec4(1.f, 1.f, 1.f, 0.25f)
 				);
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					primConAttachPt,
 					secConAttachPt,
 					thickness,

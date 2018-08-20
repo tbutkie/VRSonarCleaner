@@ -61,7 +61,7 @@ void StudyIntroBehavior::draw()
 		rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 	);
 
-	Renderer::getInstance().drawConnector(
+	Renderer::getInstance().drawDirectedPrimitive("cylinder",
 		primTriggerTextAnchorTrans[3],
 		(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3],
 		0.001f,
@@ -79,7 +79,7 @@ void StudyIntroBehavior::draw()
 		rightHanded ? Renderer::TextAnchor::CENTER_LEFT : Renderer::TextAnchor::CENTER_RIGHT
 	);
 
-	Renderer::getInstance().drawConnector(
+	Renderer::getInstance().drawDirectedPrimitive("cylinder",
 		secTriggerTextAnchorTrans[3],
 		(m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3],
 		0.001f,

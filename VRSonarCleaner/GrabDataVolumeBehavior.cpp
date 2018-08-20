@@ -51,7 +51,7 @@ void GrabDataVolumeBehavior::draw()
 			Renderer::TextAnchor::CENTER_LEFT
 		);
 
-		Renderer::getInstance().drawConnector(
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",
 			triggerTextAnchorTrans[3],
 			(m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.03f, 0.05f)))[3],
 			0.001f,
@@ -66,13 +66,13 @@ void GrabDataVolumeBehavior::draw()
 			glm::vec3 start = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
 			glm::vec3 end = start + controllerToVolumeVec * m_pTDM->getSecondaryController()->getTriggerPullAmount();
 
-			Renderer::getInstance().drawConnector(start, end, cylThickness, glm::mix(glm::vec4(1.f, 1.f, 1.f, 0.5f), glm::vec4(1.f, 1.f, 1.f, 0.25f), m_pTDM->getSecondaryController()->getTriggerPullAmount()));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", start, end, cylThickness, glm::mix(glm::vec4(1.f, 1.f, 1.f, 0.5f), glm::vec4(1.f, 1.f, 1.f, 0.25f), m_pTDM->getSecondaryController()->getTriggerPullAmount()));
 		}
 
 		if (m_bGripping)
 		{
-			Renderer::getInstance().drawConnector(m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3], m_pDataVolume->getPosition(), 0.001f, glm::vec4(1.f, 1.f, 0.f, 0.25f));
-			Renderer::getInstance().drawConnector(m_mat4ControllerPoseAtRotationStart[3], m_mat4DataVolumePoseAtRotationStart[3], 0.001f, glm::vec4(1.f, 1.f, 1.f, 0.25f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3], m_pDataVolume->getPosition(), 0.001f, glm::vec4(1.f, 1.f, 0.f, 0.25f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_mat4ControllerPoseAtRotationStart[3], m_mat4DataVolumePoseAtRotationStart[3], 0.001f, glm::vec4(1.f, 1.f, 1.f, 0.25f));
 		}
 	}
 }

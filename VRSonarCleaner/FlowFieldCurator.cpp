@@ -88,11 +88,7 @@ void FlowFieldCurator::draw()
 	glm::vec3 dimratio = m_pFlowVolume->getDimensions() / m_pFlowVolume->getOriginalDimensions();
 	for (auto &cp : m_vCPs)
 	{
-		glm::vec3 connectorVec(cp.second.end_world - cp.second.pos_world);
-		float connectorRadius = 0.005f * glm::length(dimratio);
-		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), cp.second.pos_world) * glm::scale(glm::mat4(), glm::vec3(0.01f * dimratio)), glm::vec4(1.f));
-		Renderer::getInstance().drawPointerLit(cp.second.end_world, cp.second.end_world + connectorVec * 0.1f + glm::normalize(connectorVec) * connectorRadius, connectorRadius * 2.f, glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f));
-		Renderer::getInstance().drawConnectorLit(cp.second.pos_world, cp.second.end_world, connectorRadius, glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f));
+		Renderer::getInstance().drawPointerLit(cp.second.pos_world, cp.second.end_world, 0.01f * glm::length(dimratio), glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f));
 	}
 
 	if (m_pTDM->getPrimaryController())
@@ -110,7 +106,7 @@ void FlowFieldCurator::draw()
 			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_LEFT
 		);
-		Renderer::getInstance().drawConnector(
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",
 			menuButtonTextAnchorTrans[3],
 			menuButtonPose[3],
 			0.001f,
@@ -133,7 +129,7 @@ void FlowFieldCurator::draw()
 			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_RIGHT
 		);
-		Renderer::getInstance().drawConnector(
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",
 			touchpadTextAnchorTrans[3],
 			touchButtonPose[3],
 			0.001f,

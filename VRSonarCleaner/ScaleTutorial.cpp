@@ -152,7 +152,7 @@ void ScaleTutorial::draw()
 				Renderer::TextAnchor::CENTER_MIDDLE
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				scaleVolTrans[3] + dims.y * 0.5f * scaleVolTrans[1],
 				m_pDemoVolume->getPosition(),
 				0.001f,
@@ -171,38 +171,38 @@ void ScaleTutorial::draw()
 			glm::vec3 sCtrlrRightGripAnchorPos = m_pTDM->getSecondaryController()->getRightGripPoint();
 			glm::vec3 sCtrlrLeftGripAnchorPos = m_pTDM->getSecondaryController()->getLeftGripPoint();
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				scaleVolTrans[3] - dims.x * 0.5f * scaleVolTrans[0],
 				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
 				0.001f,
 				dvColor
 			);
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
 				rightHanded ? sCtrlrRightGripAnchorPos : pCtrlrRightGripAnchorPos,
 				0.001f,
 				dvColor
 			);
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				rightHanded ? sCtrlrGripOffsetAnchorPos : pCtrlrGripOffsetAnchorPos,
 				rightHanded ? sCtrlrLeftGripAnchorPos : pCtrlrLeftGripAnchorPos,
 				0.001f,
 				dvColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				scaleVolTrans[3] + dims.x * 0.5f * scaleVolTrans[0],
 				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
 				0.001f,
 				dvColor
 			);
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
 				rightHanded ? pCtrlrRightGripAnchorPos : sCtrlrRightGripAnchorPos,
 				0.001f,
 				dvColor
 			);
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				rightHanded ? pCtrlrGripOffsetAnchorPos : sCtrlrGripOffsetAnchorPos,
 				rightHanded ? pCtrlrLeftGripAnchorPos : sCtrlrLeftGripAnchorPos,
 				0.001f,

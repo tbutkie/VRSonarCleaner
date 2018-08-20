@@ -213,7 +213,7 @@ void StudyEditTutorial::draw()
 
 			for (auto &pt : m_vvec3BadPoints)
 			{
-				Renderer::getInstance().drawConnector(
+				Renderer::getInstance().drawDirectedPrimitive("cylinder",
 					dvPromptTrans[3],
 					glm::vec3(dvPromptTrans[3]) + (pt - glm::vec3(dvPromptTrans[3])) * 0.999f,
 					0.001f,
@@ -252,14 +252,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				triggerPos,
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				probeEdgeTrans[3],
 				0.001f,
@@ -283,14 +283,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(-0.02023f, 0.00495f, 0.04934f), glm::vec3(0.02023f, 0.00495f, 0.04934f), osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				m_pProbe->getTransformProbeToWorld()[3] + m_pProbe->getTransformProbeToWorld()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
@@ -314,14 +314,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(0.02023f, 0.00495f, 0.04934f), glm::vec3(-0.02023f, 0.00495f, 0.04934f) , osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				m_pProbe->getTransformProbeToWorld()[3] + m_pProbe->getTransformProbeToWorld()[2] * m_pProbe->getProbeRadius(),
 				0.001f,
@@ -345,14 +345,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(0.f, 0.00265f, 0.06943f), glm::vec3(0.f, 0.00725f, 0.02924f), osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				probeEdgeTrans[3],
 				0.001f,
@@ -376,14 +376,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::mix(glm::vec3(0.f, 0.00725f, 0.02924f), glm::vec3(0.f, 0.00265f, 0.06943f), osc)))[3],
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				probeLabelTrans[3],
 				probeEdgeTrans[3],
 				0.001f,
@@ -423,14 +423,14 @@ void StudyEditTutorial::draw()
 				rightHanded ? Renderer::TextAnchor::CENTER_RIGHT : Renderer::TextAnchor::CENTER_LEFT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				statusTextAnchorTrans[3],
 				0.001f,
 				hiliteColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				ctrlrLabelTrans[3],
 				dvPromptTrans[3],
 				0.001f,

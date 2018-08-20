@@ -148,14 +148,14 @@ void GrabTutorial::draw()
 				Renderer::TextAnchor::CENTER_RIGHT
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				grabTriggerTrans[3] - dims.x * grabTriggerTrans[0],
 				m_pDemoVolume->getPosition(),
 				0.001f,
 				dvColor
 			);
 
-			Renderer::getInstance().drawConnector(
+			Renderer::getInstance().drawDirectedPrimitive("cylinder",
 				grabTriggerTrans[3],
 				m_pTDM->getSecondaryController()->getTriggerPoint(),
 				0.001f,

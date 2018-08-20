@@ -91,7 +91,7 @@ void PointCleanProbe::draw()
 		Renderer::TextAnchor::CENTER_RIGHT
 	);
 
-	Renderer::getInstance().drawConnector(
+	Renderer::getInstance().drawDirectedPrimitive("cylinder",
 		triggerTextAnchorTrans[3],
 		(m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.03f, 0.05f)))[3],
 		0.001f,
