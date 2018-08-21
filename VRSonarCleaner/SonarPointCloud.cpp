@@ -84,7 +84,7 @@ void SonarPointCloud::setPoint(int index, double lonX, double latY, double depth
 	m_vfPointsPositionTPU[index] = 0.f;
 	m_vuiPointsMarks[index] = 0u;
 	
-	checkNewRawPosition(pt);
+	checkNewPosition(pt);
 }
 
 
@@ -102,7 +102,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 	m_vuiPointsMarks[index] = 0u;
 
-	checkNewRawPosition(pt);
+	checkNewPosition(pt);
 
 	if (depthTPU < m_fMinDepthTPU)
 		m_fMinDepthTPU = depthTPU;
@@ -198,9 +198,9 @@ bool SonarPointCloud::loadCARISTxt()
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
-		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
-		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+		printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+		printf("Depth Min: %f Max: %f\n", getZMin(), getZMax());
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
@@ -284,9 +284,9 @@ bool SonarPointCloud::loadQimeraTxt()
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
-		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
-		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+		printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+		printf("Depth Min: %f Max: %f\n", getZMin(), getZMax());
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
@@ -371,9 +371,9 @@ bool SonarPointCloud::loadStudyCSV()
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
-		printf("X Min: %f Max: %f\n", getRawXMin(), getRawXMax());
-		printf("Y Min: %f Max: %f\n", getRawYMin(), getRawYMax());
-		printf("Depth Min: %f Max: %f\n", getRawZMin(), getRawZMax());
+		printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+		printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+		printf("Depth Min: %f Max: %f\n", getZMin(), getZMax());
 		printf("Depth Avg: %f\n", averageDepth);
 
 		fclose(file);
@@ -524,7 +524,7 @@ glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 
 void SonarPointCloud::adjustPoints()
 {
-	glm::dvec3 adjustment = getRawToCenteredOffsets();
+	glm::dvec3 adjustment = getCenteringOffsets();
 
 	for (unsigned int i = 0; i < m_nPoints; ++i)
 		m_vvec3AdjustedPointsPositions[i] = m_vdvec3RawPointsPositions[i] + adjustment;

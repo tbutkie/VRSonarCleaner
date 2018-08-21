@@ -20,39 +20,34 @@ public:
 	// Returns true after 
 	bool isLoaded();
 
-	glm::dvec3 getRawMinBounds();
-	double getRawXMin();
-	double getRawYMin();
-	double getRawZMin();
+	glm::dvec3 getMinBounds();
+	double getXMin();
+	double getYMin();
+	double getZMin();
 
 	glm::vec3 getCenteredMinBounds();
 	float getCenteredXMin();
 	float getCenteredYMin();
 	float getCenteredZMin();
 
-	glm::dvec3 getRawMaxBounds();
-	double getRawXMax();
-	double getRawYMax();
-	double getRawZMax();
+	glm::dvec3 getMaxBounds();
+	double getXMax();
+	double getYMax();
+	double getZMax();
 
 	glm::vec3 getCenteredMaxBounds();
 	float getCenteredXMax();
 	float getCenteredYMax();
 	float getCenteredZMax();
 
-	glm::dvec3 getRawDimensions();
-	double getRawXDimension();
-	double getRawYDimension();
-	double getRawZDimension();
+	glm::dvec3 getRange();
+	double getXRange();
+	double getYRange();
+	double getZRange();
 
-	glm::vec3 getCenteredDimensions();
-	float getCenteredXDimension();
-	float getCenteredYDimension();
-	float getCenteredZDimension();
+	void checkNewPosition(glm::dvec3 pos);
 
-	void checkNewRawPosition(glm::dvec3 rawPos);
-
-	glm::dvec3 getRawToCenteredOffsets();
+	glm::dvec3 getCenteringOffsets();
 
 	bool isDataRightHanded();
 	bool isOutputRightHanded();
@@ -61,30 +56,29 @@ protected:
 	bool m_bLoaded;
 
 private:
-	void setRawMinBounds(glm::dvec3 minBounds);
-	void setRawXMin(double xMin);
-	void setRawYMin(double yMin);
-	void setRawZMin(double zMin);
+	void setMinBounds(glm::dvec3 minBounds);
+	void setXMin(double xMin);
+	void setYMin(double yMin);
+	void setZMin(double zMin);
 
-	void setRawMaxBounds(glm::dvec3 maxBounds);
-	void setRawXMax(double xMax);
-	void setRawYMax(double yMax);
-	void setRawZMax(double zMax);
+	void setMaxBounds(glm::dvec3 maxBounds);
+	void setXMax(double xMax);
+	void setYMax(double yMax);
+	void setZMax(double zMax);
 
 	void update();
 
 private:
 	std::string m_strName;
 
-	glm::dvec3 m_dvec3RawMinBounds;
-	glm::dvec3 m_dvec3RawMaxBounds;
-	glm::dvec3 m_dvec3RawDimensions;
+	glm::dvec3 m_dvec3MinBounds;
+	glm::dvec3 m_dvec3MaxBounds;
+	glm::dvec3 m_dvec3Range;
 
 	glm::dvec3 m_dvec3CenteringOffsets;
 
 	glm::vec3 m_vec3CenteredMinBounds;
 	glm::vec3 m_vec3CenteredMaxBounds;
-	glm::vec3 m_vec3CenteredDimensions;
 		
 	bool m_bRHCoordSys_input; // flag indicating whether input coordinate system is left- or right-handed
 	bool m_bRHCoordSys_output; // flag indicating whether output coordinate system should be left- or right-handed

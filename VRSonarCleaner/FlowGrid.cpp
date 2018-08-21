@@ -38,8 +38,8 @@ FlowGrid::FlowGrid(const char* filename, bool useZInsteadOfDepth)
 	fread(&m_nZCells, sizeof(int), 1, inputFile);
 	fread(&m_nTimesteps, sizeof(int), 1, inputFile);
 
-	checkNewRawPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
-	checkNewRawPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
+	checkNewPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
+	checkNewPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
 
 	init();
 

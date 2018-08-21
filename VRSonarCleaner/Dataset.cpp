@@ -8,8 +8,8 @@ Dataset::Dataset(std::string name, bool coord_sys_right_handed)
 	, m_bRHCoordSys_input(coord_sys_right_handed)
 	, m_bRHCoordSys_output(true)
 	, m_bNeedsUpdate(true)
-	, m_dvec3RawMinBounds(glm::dvec3(std::numeric_limits<double>::max()))
-	, m_dvec3RawMaxBounds(glm::dvec3(-std::numeric_limits<double>::max()))
+	, m_dvec3MinBounds(glm::dvec3(std::numeric_limits<double>::max()))
+	, m_dvec3MaxBounds(glm::dvec3(-std::numeric_limits<double>::max()))
 	, m_vec3CenteredMinBounds(glm::vec3(std::numeric_limits<float>::max()))
 	, m_vec3CenteredMaxBounds(glm::vec3(-std::numeric_limits<float>::max()))
 {
@@ -29,55 +29,55 @@ bool Dataset::isLoaded()
 	return m_bLoaded;
 }
 
-void Dataset::setRawMinBounds(glm::dvec3 minBounds)
+void Dataset::setMinBounds(glm::dvec3 minBounds)
 {
-	m_dvec3RawMinBounds = minBounds;
+	m_dvec3MinBounds = minBounds;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawXMin(double xMin)
+void Dataset::setXMin(double xMin)
 {
-	m_dvec3RawMinBounds.x = xMin;
+	m_dvec3MinBounds.x = xMin;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawYMin(double yMin)
+void Dataset::setYMin(double yMin)
 {
-	m_dvec3RawMinBounds.y = yMin;
+	m_dvec3MinBounds.y = yMin;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawZMin(double zMin)
+void Dataset::setZMin(double zMin)
 {
-	m_dvec3RawMinBounds.z = zMin;
+	m_dvec3MinBounds.z = zMin;
 	m_bNeedsUpdate = true;
 }
 
-glm::dvec3 Dataset::getRawMinBounds()
+glm::dvec3 Dataset::getMinBounds()
 {
 	update();
-	return m_dvec3RawMinBounds;
+	return m_dvec3MinBounds;
 }
 
-double Dataset::getRawXMin()
+double Dataset::getXMin()
 {
 	update();
-	return m_dvec3RawMinBounds.x;
+	return m_dvec3MinBounds.x;
 }
 
-double Dataset::getRawYMin()
+double Dataset::getYMin()
 {
 	update();
-	return m_dvec3RawMinBounds.y;
+	return m_dvec3MinBounds.y;
 }
 
-double Dataset::getRawZMin()
+double Dataset::getZMin()
 {
 	update();
 	//if (m_bRHCoordSys_input != m_bRHCoordSys_output)
-	//	return -m_dvec3RawMaxBounds.z;
+	//	return -m_dvec3MaxBounds.z;
 	//else
-		return m_dvec3RawMinBounds.z;
+		return m_dvec3MinBounds.z;
 }
 
 glm::vec3 Dataset::getCenteredMinBounds()
@@ -104,55 +104,55 @@ float Dataset::getCenteredZMin()
 	return m_vec3CenteredMinBounds.z;
 }
 
-void Dataset::setRawMaxBounds(glm::dvec3 maxBounds)
+void Dataset::setMaxBounds(glm::dvec3 maxBounds)
 {
-	m_dvec3RawMaxBounds = maxBounds;
+	m_dvec3MaxBounds = maxBounds;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawXMax(double xMax)
+void Dataset::setXMax(double xMax)
 {
-	m_dvec3RawMaxBounds.x = xMax;
+	m_dvec3MaxBounds.x = xMax;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawYMax(double yMax)
+void Dataset::setYMax(double yMax)
 {
-	m_dvec3RawMaxBounds.y = yMax;
+	m_dvec3MaxBounds.y = yMax;
 	m_bNeedsUpdate = true;
 }
 
-void Dataset::setRawZMax(double zMax)
+void Dataset::setZMax(double zMax)
 {
-	m_dvec3RawMaxBounds.z = zMax;
+	m_dvec3MaxBounds.z = zMax;
 	m_bNeedsUpdate = true;
 }
 
-glm::dvec3 Dataset::getRawMaxBounds()
+glm::dvec3 Dataset::getMaxBounds()
 {
 	update();
-	return m_dvec3RawMaxBounds;
+	return m_dvec3MaxBounds;
 }
 
-double Dataset::getRawXMax()
+double Dataset::getXMax()
 {
 	update();
-	return m_dvec3RawMaxBounds.x;
+	return m_dvec3MaxBounds.x;
 }
 
-double Dataset::getRawYMax()
+double Dataset::getYMax()
 {
 	update();
-	return m_dvec3RawMaxBounds.y;
+	return m_dvec3MaxBounds.y;
 }
 
-double Dataset::getRawZMax()
+double Dataset::getZMax()
 {
 	update();
 	//if (m_bRHCoordSys_input != m_bRHCoordSys_output)
-	//	return -m_dvec3RawMinBounds.z;
+	//	return -m_dvec3MinBounds.z;
 	//else
-		return m_dvec3RawMaxBounds.z;
+		return m_dvec3MaxBounds.z;
 }
 
 glm::vec3 Dataset::getCenteredMaxBounds()
@@ -179,73 +179,49 @@ float Dataset::getCenteredZMax()
 	return m_vec3CenteredMaxBounds.z;
 }
 
-glm::dvec3 Dataset::getRawDimensions()
+glm::dvec3 Dataset::getRange()
 {
 	update();
-	return m_dvec3RawDimensions;
+	return m_dvec3Range;
 }
 
-double Dataset::getRawXDimension()
+double Dataset::getXRange()
 {
 	update();
-	return m_dvec3RawDimensions.x;
+	return m_dvec3Range.x;
 }
 
-double Dataset::getRawYDimension()
+double Dataset::getYRange()
 {
 	update();
-	return m_dvec3RawDimensions.y;
+	return m_dvec3Range.y;
 }
 
-double Dataset::getRawZDimension()
+double Dataset::getZRange()
 {
 	update();
-	return m_dvec3RawDimensions.z;
+	return m_dvec3Range.z;
 }
 
-glm::vec3 Dataset::getCenteredDimensions()
+void Dataset::checkNewPosition(glm::dvec3 Pos)
 {
-	update();
-	return m_vec3CenteredDimensions;
+	if (Pos.x < m_dvec3MinBounds.x)
+		setXMin(Pos.x);
+	if (Pos.x > m_dvec3MaxBounds.x)
+		setXMax(Pos.x);
+
+	if (Pos.y < m_dvec3MinBounds.y)
+		setYMin(Pos.y);
+	if (Pos.y > m_dvec3MaxBounds.y)
+		setYMax(Pos.y);
+
+	if (Pos.z < m_dvec3MinBounds.z)
+		setZMin(Pos.z);
+	if (Pos.z > m_dvec3MaxBounds.z)
+		setZMax(Pos.z);
 }
 
-float Dataset::getCenteredXDimension()
-{
-	update();
-	return m_vec3CenteredDimensions.x;
-}
-
-float Dataset::getCenteredYDimension()
-{
-	update();
-	return m_vec3CenteredDimensions.y;
-}
-
-float Dataset::getCenteredZDimension()
-{
-	update();
-	return m_vec3CenteredDimensions.z;
-}
-
-void Dataset::checkNewRawPosition(glm::dvec3 rawPos)
-{
-	if (rawPos.x < m_dvec3RawMinBounds.x)
-		setRawXMin(rawPos.x);
-	if (rawPos.x > m_dvec3RawMaxBounds.x)
-		setRawXMax(rawPos.x);
-
-	if (rawPos.y < m_dvec3RawMinBounds.y)
-		setRawYMin(rawPos.y);
-	if (rawPos.y > m_dvec3RawMaxBounds.y)
-		setRawYMax(rawPos.y);
-
-	if (rawPos.z < m_dvec3RawMinBounds.z)
-		setRawZMin(rawPos.z);
-	if (rawPos.z > m_dvec3RawMaxBounds.z)
-		setRawZMax(rawPos.z);
-}
-
-glm::dvec3 Dataset::getRawToCenteredOffsets()
+glm::dvec3 Dataset::getCenteringOffsets()
 {
 	update();
 	return m_dvec3CenteringOffsets;
@@ -267,14 +243,13 @@ void Dataset::update()
 {
 	if (m_bNeedsUpdate)
 	{
-		m_dvec3RawDimensions = m_dvec3RawMaxBounds - m_dvec3RawMinBounds;
+		m_dvec3Range = m_dvec3MaxBounds - m_dvec3MinBounds;
 
-		m_dvec3CenteringOffsets = -(m_dvec3RawMinBounds + m_dvec3RawDimensions * 0.5); // origin at center
-		//m_dvec3Adjustments = -m_dvec3RawMinBounds; // origin at min bound
+		m_dvec3CenteringOffsets = -(m_dvec3MinBounds + m_dvec3Range * 0.5); // origin at center
+		//m_dvec3Adjustments = -m_dvec3MinBounds; // origin at min bound
 
-		m_vec3CenteredMaxBounds = m_dvec3RawMaxBounds + m_dvec3CenteringOffsets;
-		m_vec3CenteredMinBounds = m_dvec3RawMinBounds + m_dvec3CenteringOffsets;
-		m_vec3CenteredDimensions = m_vec3CenteredMaxBounds - m_vec3CenteredMinBounds;
+		m_vec3CenteredMaxBounds = m_dvec3MaxBounds + m_dvec3CenteringOffsets;
+		m_vec3CenteredMinBounds = m_dvec3MinBounds + m_dvec3CenteringOffsets;
 
 		m_bNeedsUpdate = false;
 	}

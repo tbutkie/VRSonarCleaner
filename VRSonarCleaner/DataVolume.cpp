@@ -334,32 +334,32 @@ glm::dvec3 DataVolume::getMinDataBound()
 
 double DataVolume::getMinXDataBound()
 {
-	auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMin() < rhs->getRawXMin(); };
+	auto minXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getXMin() < rhs->getXMin(); };
 	auto minXDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minXFn);
 	if (minXDS == m_vpDatasets.end())
 		return std::numeric_limits<double>::max();
 	else
-		return (*minXDS)->getRawXMin();
+		return (*minXDS)->getXMin();
 }
 
 double DataVolume::getMinYDataBound()
 {
-	auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMin() < rhs->getRawYMin(); };
+	auto minYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getYMin() < rhs->getYMin(); };
 	auto minYDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minYFn);
 	if (minYDS == m_vpDatasets.end())
 		return std::numeric_limits<double>::max();
 	else
-		return (*minYDS)->getRawYMin();
+		return (*minYDS)->getYMin();
 }
 
 double DataVolume::getMinZDataBound()
 {
-	auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMin() < rhs->getRawZMin(); };
+	auto minZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getZMin() < rhs->getZMin(); };
 	auto minZDS = std::min_element(m_vpDatasets.begin(), m_vpDatasets.end(), minZFn);
 	if (minZDS == m_vpDatasets.end())
 		return std::numeric_limits<double>::max();
 	else
-		return (*minZDS)->getRawZMin();
+		return (*minZDS)->getZMin();
 }
 
 glm::dvec3 DataVolume::getMaxDataBound()
@@ -372,32 +372,32 @@ glm::dvec3 DataVolume::getMaxDataBound()
 
 double DataVolume::getMaxXDataBound()
 {
-	auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawXMax() < rhs->getRawXMax(); };
+	auto maxXFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getXMax() < rhs->getXMax(); };
 	auto maxXDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxXFn);
 	if (maxXDS == m_vpDatasets.end())
 		return -std::numeric_limits<double>::max();
 	else
-		return (*maxXDS)->getRawXMax();
+		return (*maxXDS)->getXMax();
 }
 
 double DataVolume::getMaxYDataBound()
 {
-	auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawYMax() < rhs->getRawYMax(); };
+	auto maxYFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getYMax() < rhs->getYMax(); };
 	auto maxYDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxYFn);
 	if (maxYDS == m_vpDatasets.end())
 		return -std::numeric_limits<double>::max();
 	else
-		return (*maxYDS)->getRawYMax();
+		return (*maxYDS)->getYMax();
 }
 
 double DataVolume::getMaxZDataBound()
 {
-	auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getRawZMax() < rhs->getRawZMax(); };
+	auto maxZFn = [](Dataset* &lhs, Dataset* &rhs) { return lhs->getZMax() < rhs->getZMax(); };
 	auto maxZDS = std::max_element(m_vpDatasets.begin(), m_vpDatasets.end(), maxZFn);
 	if (maxZDS == m_vpDatasets.end())
 		return -std::numeric_limits<double>::max();
 	else
-		return (*maxZDS)->getRawZMax();
+		return (*maxZDS)->getZMax();
 }
 
 void DataVolume::calculateBoundingRadius()
@@ -543,12 +543,12 @@ void DataVolume::updateTransforms()
 				continue;
 			}
 
-			glm::dvec3 dataCenterRaw = dataset->getRawMinBounds() + dataset->getRawDimensions() * 0.5;
+			glm::dvec3 dataCenterRaw = dataset->getMinBounds() + dataset->getRange() * 0.5;
 
 			glm::vec3 dataPositionOffsetInVolume = dataCenterRaw - combinedDataCenter;
 			glm::vec3 dataPositionOffsetInCustomVolume = dataCenterRaw - combinedCustomDataCenter;
 
-			glm::vec3 dataCenteringOffset = dataset->getRawToCenteredOffsets();
+			glm::vec3 dataCenteringOffset = dataset->getCenteringOffsets();
 
 			glm::mat4 handednessConversion;
 			if (dataset->isDataRightHanded() != dataset->isOutputRightHanded())
