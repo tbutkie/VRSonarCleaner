@@ -7,13 +7,14 @@
 #include <vector>
 #include <map>
 #include "Dataset.h"
+#include "Object3D.h"
 #include <gtc/quaternion.hpp>
 #include <gtx/quaternion.hpp>
 #include <gtc/type_ptr.hpp>
 //#include <string>
 //#include <cstdlib>
 
-class DataVolume
+class DataVolume : public Object3D
 {
 public:
 	DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions);
@@ -32,10 +33,6 @@ public:
 	void drawVolumeBacking(glm::mat4 worldToHMDTransform, float padPct);
 	void drawEllipsoidBacking(glm::vec4 color, float padPct);
 
-	glm::vec3 getOriginalPosition();
-	glm::quat getOriginalOrientation();
-	glm::vec3 getOriginalDimensions();
-
 	glm::dvec3 convertToRawDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToAdjustedDomainCoords(glm::vec3 worldPos);
 	glm::vec3 convertToDataCoords(Dataset* dataset, glm::vec3 worldPos);
@@ -49,15 +46,6 @@ public:
 	glm::mat4 getTransformVolume();
 	glm::mat4 getTransformVolume_Last();
 
-	void resetPositionAndOrientation();
-
-	void setPosition(glm::vec3 newPos);
-	glm::vec3 getPosition();
-	void setOrientation(glm::quat newOrientation);
-	glm::quat getOrientation();
-	void setDimensions(glm::vec3 newScale);
-	glm::vec3 getDimensions();
-
 	glm::dvec3 getMinDataBound();
 	glm::dvec3 getMaxDataBound();
 	glm::dvec3 getDataDimensions();
@@ -66,8 +54,6 @@ public:
 	glm::dvec3 getCustomMinBound();
 	glm::dvec3 getCustomMaxBound();
 	glm::dvec3 getCustomDomainDimensions();
-
-	float getBoundingRadius();
 
 	static glm::vec3 calcAspectAdjustedDimensions(glm::vec3 fromDims, glm::vec3 toDims);
 
@@ -91,17 +77,7 @@ protected:
 	double getMaxYDataBound();
 	double getMaxZDataBound();
 
-	void calculateBoundingRadius();
-
 	std::vector<Dataset*> m_vpDatasets;
-
-	glm::vec3 m_vec3OriginalPosition;        // Original Data Volume Position	
-	glm::vec3 m_vec3Position;
-	glm::quat m_qOriginalOrientation;        // Original Data Volume Orientation
-	glm::quat m_qOrientation;
-	glm::vec3 m_vec3OriginalDimensions;      // Original Data Volume Orientation
-	glm::vec3 m_vec3Dimensions;
-	float m_fBoundingRadius;
 
 	std::map<Dataset*, glm::mat4> m_mapDataTransforms;
 	std::map<Dataset*, glm::mat4> m_mapDataTransformsPrevious;
@@ -130,7 +106,6 @@ protected:
 	
 	bool m_bVisible;
 	bool m_bFirstRun;                        // Flag for First Runthrough
-	bool m_bDirty;                           // a user flag to tell whether or not the transform has changed
 	bool m_bUseCustomBounds;
 	bool m_bUsePivot;
 };

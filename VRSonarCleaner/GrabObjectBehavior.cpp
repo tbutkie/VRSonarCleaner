@@ -1,9 +1,9 @@
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 #include "InfoBoxManager.h"
 #include "Renderer.h"
 #include "DataLogger.h"
 
-GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
+GrabObjectBehavior::GrabObjectBehavior(TrackedDeviceManager* pTDM, Object3D* dataVolume)
 	: m_pTDM(pTDM)
 	, m_pDataVolume(dataVolume)
 	, m_bPreGripping(false)
@@ -13,13 +13,13 @@ GrabDataVolumeBehavior::GrabDataVolumeBehavior(TrackedDeviceManager* pTDM, DataV
 }
 
 
-GrabDataVolumeBehavior::~GrabDataVolumeBehavior()
+GrabObjectBehavior::~GrabObjectBehavior()
 {
 }
 
 
 
-void GrabDataVolumeBehavior::update()
+void GrabObjectBehavior::update()
 {
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
@@ -30,11 +30,9 @@ void GrabDataVolumeBehavior::update()
 	{
 		continueRotation();
 	}
-
-	m_pDataVolume->update();
 }
 
-void GrabDataVolumeBehavior::draw()
+void GrabObjectBehavior::draw()
 {
 	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->readyToRender())
 	{
@@ -77,7 +75,7 @@ void GrabDataVolumeBehavior::draw()
 	}
 }
 
-void GrabDataVolumeBehavior::updateState()
+void GrabObjectBehavior::updateState()
 {
 	if (!m_pTDM->getPrimaryController() || !m_pTDM->getSecondaryController())
 		return;
@@ -101,7 +99,7 @@ void GrabDataVolumeBehavior::updateState()
 	}
 }
 
-void GrabDataVolumeBehavior::startRotation()
+void GrabObjectBehavior::startRotation()
 {
 	if (!m_pTDM->getSecondaryController())
 		return;
@@ -160,7 +158,7 @@ void GrabDataVolumeBehavior::startRotation()
 	}
 }
 
-void GrabDataVolumeBehavior::continueRotation()
+void GrabObjectBehavior::continueRotation()
 {
 	if (!m_pTDM->getSecondaryController() || !m_bRotationInProgress)
 		return;
@@ -174,7 +172,7 @@ void GrabDataVolumeBehavior::continueRotation()
 	m_pDataVolume->setOrientation(glm::quat_cast(newVolTrans));
 }
 
-void GrabDataVolumeBehavior::endRotation()
+void GrabObjectBehavior::endRotation()
 {
 	m_bRotationInProgress = false;
 	//could revert to old starting position and orientation here to have it always snap back in place
@@ -224,7 +222,7 @@ void GrabDataVolumeBehavior::endRotation()
 	}
 }
 
-bool GrabDataVolumeBehavior::isBeingRotated()
+bool GrabObjectBehavior::isBeingRotated()
 {
 	return m_bRotationInProgress;
 }

@@ -1,6 +1,6 @@
 #include "StudyTrialSittingBehavior.h"
 #include "BehaviorManager.h"
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
 #include "Renderer.h"
@@ -63,7 +63,7 @@ void StudyTrialSittingBehavior::init()
 	std::cout << "Starting trial for " << path(m_strFileName).filename() << std::endl;
 
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM, m_pDataVolume, vr::VRSystem()));
-	BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pDataVolume));
+	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 
 	glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];

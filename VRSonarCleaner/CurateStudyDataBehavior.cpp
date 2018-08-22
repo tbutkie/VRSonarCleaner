@@ -4,7 +4,7 @@
 #include "Renderer.h"
 
 #include "SelectAreaBehavior.h"
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
 
 #include <fstream>
@@ -21,7 +21,7 @@ CurateStudyDataBehavior::CurateStudyDataBehavior(TrackedDeviceManager* pTDM, Dat
 	if (!BehaviorManager::getInstance().getBehavior("select"))
 		BehaviorManager::getInstance().addBehavior("select", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
 	if (!BehaviorManager::getInstance().getBehavior("grab"))
-		BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+		BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
 	if (!BehaviorManager::getInstance().getBehavior("scale"))
 		BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 

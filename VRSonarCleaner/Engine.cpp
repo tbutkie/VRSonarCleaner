@@ -6,7 +6,7 @@
 #include "StudyTutorialBehavior.h"
 #include "DemoBehavior.h"
 #include "SelectAreaBehavior.h"
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
 #include "CurateStudyDataBehavior.h"
 #include "RunStudyBehavior.h"
@@ -258,7 +258,7 @@ bool Engine::init()
 			//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
 			//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
-				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+				BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 
@@ -354,7 +354,7 @@ bool Engine::init()
 			//BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM, m_pFlowVolume));
 
 			if (!BehaviorManager::getInstance().getBehavior("grab"))
-				BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+				BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
 			if (!BehaviorManager::getInstance().getBehavior("scale"))
 				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
 
@@ -752,7 +752,7 @@ bool Engine::HandleInput()
 						if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
 							BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
 						if (!BehaviorManager::getInstance().getBehavior("grab"))
-							BehaviorManager::getInstance().addBehavior("grab", new GrabDataVolumeBehavior(m_pTDM, m_pTableVolume));
+							BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
 						if (!BehaviorManager::getInstance().getBehavior("scale"))
 							BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
 					}
@@ -1210,6 +1210,7 @@ void Engine::update()
 	if (m_bFlowVis && m_pFlowVolume)
 	{
 		m_pFlowVolume->preRenderUpdates();
+		m_pFlowVolume->update();
 	}
 }
 

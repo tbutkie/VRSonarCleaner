@@ -144,9 +144,6 @@
     <ClCompile Include="PointCleanProbe.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClCompile>
-    <ClCompile Include="GrabDataVolumeBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="ScaleDataVolumeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
@@ -215,6 +212,12 @@
     </ClCompile>
     <ClCompile Include="DebugProbe.cpp">
       <Filter>Interactions &amp; Behaviors\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Object3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GrabObjectBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -320,9 +323,6 @@
     <ClInclude Include="PointCleanProbe.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
-    <ClInclude Include="GrabDataVolumeBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="ScaleDataVolumeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
@@ -394,6 +394,12 @@
     </ClInclude>
     <ClInclude Include="DebugProbe.h">
       <Filter>Interactions &amp; Behaviors\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Object3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GrabObjectBehavior.h">
+      <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

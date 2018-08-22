@@ -3,7 +3,7 @@
 #include "BehaviorManager.h"
 #include "InfoBoxManager.h"
 #include "ScaleDataVolumeBehavior.h"
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 #include "PointCleanProbe.h"
 #include <gtc/matrix_transform.hpp>
 #include "Renderer.h"
@@ -76,7 +76,7 @@ void CloudEditControllerTutorial::init()
 	makeBadDataLabels(0.25f);
 
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
-	BehaviorManager::getInstance().addBehavior("Grab", new GrabDataVolumeBehavior(m_pTDM, m_pDemoVolume));
+	BehaviorManager::getInstance().addBehavior("Grab", new GrabObjectBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem()));
 	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
 

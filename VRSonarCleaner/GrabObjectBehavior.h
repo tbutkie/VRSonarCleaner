@@ -2,14 +2,14 @@
 
 #include "BehaviorBase.h"
 #include "TrackedDeviceManager.h"
-#include "DataVolume.h"
+#include "Object3D.h"
 
-class GrabDataVolumeBehavior :
+class GrabObjectBehavior :
 	public BehaviorBase
 {
 public:
-	GrabDataVolumeBehavior(TrackedDeviceManager* m_pTDM, DataVolume* dataVolume);
-	virtual ~GrabDataVolumeBehavior();
+	GrabObjectBehavior(TrackedDeviceManager* m_pTDM, Object3D* dataVolume);
+	virtual ~GrabObjectBehavior();
 
 	void update();
 
@@ -17,7 +17,7 @@ public:
 
 private:
 	TrackedDeviceManager* m_pTDM;
-	DataVolume* m_pDataVolume;
+	Object3D* m_pDataVolume;
 
 	bool m_bPreGripping;
 	bool m_bGripping;

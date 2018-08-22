@@ -8,21 +8,14 @@
 #include <functional>
 
 DataVolume::DataVolume(glm::vec3 pos, glm::quat orientation, glm::vec3 dimensions)
-	: m_vec3Position(pos)
-	, m_qOrientation(orientation)
-	, m_vec3Dimensions(dimensions)
-	, m_vec3OriginalPosition(pos)
-	, m_qOriginalOrientation(orientation)
-	, m_vec3OriginalDimensions(dimensions)
+	: Object3D(pos, orientation, dimensions)
 	, m_vec4BackingColor(glm::vec4(1.f))
 	, m_vec4FrameColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_bVisible(true)
 	, m_bFirstRun(true)
-	, m_bDirty(true)
 	, m_bUseCustomBounds(false)
 	, m_bUsePivot(false)
 {
-	calculateBoundingRadius();
 	updateTransforms();
 }
 
@@ -61,28 +54,6 @@ void DataVolume::setFrameColor(glm::vec4 color)
 glm::vec4 DataVolume::getFrameColor()
 {
 	return m_vec4FrameColor;
-}
-
-glm::vec3 DataVolume::getOriginalPosition()
-{
-	return m_vec3OriginalPosition;
-}
-
-glm::quat DataVolume::getOriginalOrientation()
-{
-	return m_qOriginalOrientation;
-}
-
-glm::vec3 DataVolume::getOriginalDimensions()
-{
-	return m_vec3OriginalDimensions;
-}
-
-void DataVolume::resetPositionAndOrientation()
-{
-	setPosition(m_vec3OriginalPosition);
-	setOrientation(m_qOriginalOrientation);
-	setDimensions(m_vec3OriginalDimensions);
 }
 
 glm::dvec3 DataVolume::convertToRawDomainCoords(glm::vec3 worldPos)
@@ -290,40 +261,6 @@ glm::mat4 DataVolume::getTransformVolume_Last()
 	return m_mat4VolumeTransformPrevious;
 }
 
-void DataVolume::setPosition(glm::vec3 newPos)
-{
-	m_vec3Position = newPos;
-	m_bDirty = true;
-}
-
-glm::vec3 DataVolume::getPosition()
-{
-	return m_vec3Position;
-}
-
-void DataVolume::setOrientation(glm::quat newOrientation)
-{
-	m_qOrientation = newOrientation;
-	m_bDirty = true;
-}
-
-glm::quat DataVolume::getOrientation()
-{
-	return m_qOrientation;
-}
-
-void DataVolume::setDimensions(glm::vec3 newScale)
-{
-	m_vec3Dimensions = newScale;
-	calculateBoundingRadius();
-	m_bDirty = true;
-}
-
-glm::vec3 DataVolume::getDimensions()
-{
-	return m_vec3Dimensions;
-}
-
 glm::dvec3 DataVolume::getMinDataBound()
 {
 	if (m_vpDatasets.size() == 0u)
@@ -400,12 +337,6 @@ double DataVolume::getMaxZDataBound()
 		return (*maxZDS)->getZMax();
 }
 
-void DataVolume::calculateBoundingRadius()
-{
-	std::vector<float> vTableDims = { m_vec3Dimensions.x, m_vec3Dimensions.y, m_vec3Dimensions.z };
-	m_fBoundingRadius = std::sqrt(vTableDims[0] * vTableDims[0] + vTableDims[1] * vTableDims[1] + vTableDims[2] * vTableDims[2]) * 0.5f;
-}
-
 glm::dvec3 DataVolume::getDataDimensions()
 {
 	if (m_vpDatasets.size() == 0u)
@@ -435,11 +366,6 @@ glm::dvec3 DataVolume::getCustomMaxBound()
 glm::dvec3 DataVolume::getCustomDomainDimensions()
 {
 	return m_dvec3CustomDomainDims;
-}
-
-float DataVolume::getBoundingRadius()
-{
-	return m_fBoundingRadius;
 }
 
 void DataVolume::useCustomBounds(bool yesno)
