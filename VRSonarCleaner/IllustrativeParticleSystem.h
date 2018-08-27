@@ -73,6 +73,8 @@ private:
 	void initGL();
 
 	bool m_bReadyToTransferData;
+
+	glm::vec3 eulerForward(IllustrativeParticle* particle, float time, float delta);
 };
 
 #endif

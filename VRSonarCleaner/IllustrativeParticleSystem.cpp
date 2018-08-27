@@ -160,20 +160,7 @@ void IllustrativeParticleSystem::update(float time)
 
 		if (particle->m_pFlowGrid) // did we find a flow grid?
 		{
-			//get UVW at current position
-			bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
-
-			//calc new position
-			prodTimeVelocity = timeSinceLastUpdate.count() * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
-
-			newPos = currentPos + vel * prodTimeVelocity;
-
-			//check in bounds or not
-			if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
-			{
-				particle->m_bDying = true;
-			}
-
+			newPos = eulerForward(particle, time, timeSinceLastUpdate.count());
 			activeWithinGridMap[particle->m_pFlowGrid]++;
 		}
 		else
@@ -458,7 +445,30 @@ void IllustrativeParticleSystem::initGL()
 
 	glBindVertexArray(0);
 }
-//end drawStreakVBOs()
+
+
+glm::vec3 IllustrativeParticleSystem::eulerForward(IllustrativeParticle* particle, float time, float delta)
+{
+	glm::vec3 currentPos = particle->getCurrentXYZ();
+	glm::vec3 newPos, vel;
+
+	//get UVW at current position
+	bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+
+	//calc new position
+	float prodTimeVelocity = delta * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
+
+	newPos = currentPos + vel * prodTimeVelocity;
+
+	//check in bounds or not
+	if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
+	{
+		particle->m_bDying = true;
+	}
+
+	return newPos;
+}
+
 
 int IllustrativeParticleSystem::getNumLiveParticles()
 {
