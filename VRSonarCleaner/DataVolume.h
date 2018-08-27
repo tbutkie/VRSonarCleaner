@@ -62,7 +62,7 @@ public:
 
 	void drawAxes(float size = 1.f);
 
-	void update();
+	virtual void update();
 
 	bool isVisible();
 	void setVisible(bool yesno);

@@ -5,7 +5,7 @@
 #include "PointCleanProbe.h"
 #include <gtc/matrix_transform.hpp>
 #include "Renderer.h"
-#include "GrabDataVolumeBehavior.h"
+#include "GrabObjectBehavior.h"
 
 TaskCompleteBehavior::TaskCompleteBehavior(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)

@@ -33,7 +33,7 @@ public:
 
 	void recalcVolumeBounds();
 
-	void preRenderUpdates();
+	void update();
 
 	void setParticleVelocityScale(float velocityScale);
 	float getParticleVelocityScale();

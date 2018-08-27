@@ -147,38 +147,11 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 	return false;
 }
 
-void FlowVolume::draw()
+void FlowVolume::update()
 {
-	if (m_Future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-	{
-		std::chrono::high_resolution_clock::time_point before = std::chrono::high_resolution_clock::now();
-		m_pParticleSystem->prepareForRender();
-		std::chrono::duration<float, std::milli> dur = std::chrono::high_resolution_clock::now() - before;
+	// update the data volume first
+	DataVolume::update();
 
-		//std::cout << "\t\t" << dur.count() << "ms\tParticle System Data Transfer" << std::endl;
-
-		m_bParticleSystemUpdating = false;
-	}
-
-	if (m_pParticleSystem->getIndexCount() < 2)
-		return;
-
-	Renderer::RendererSubmission rs;
-
-	rs.glPrimitiveType = GL_LINES;
-	rs.shaderName = "flat";	
-	rs.VAO = m_pParticleSystem->getVAO();
-	rs.vertCount = m_pParticleSystem->getIndexCount();
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.hasTransparency = true;
-	rs.transparencySortPosition = getTransformVolume()[3];
-	rs.modelToWorldTransform = getTransformRawDomainToVolume();
-
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
-}
-
-void FlowVolume::preRenderUpdates()
-{
 	//update time
 	auto tick = std::chrono::high_resolution_clock::now();
 	auto timeSinceLast = tick - m_tpLastTimeUpdate;
@@ -207,12 +180,38 @@ void FlowVolume::preRenderUpdates()
 		}
 	}//end if need update
 
-	//m_pParticleSystem->update(m_fFlowRoomTime);
+	if (m_Future.valid() && m_Future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+	{
+		m_pParticleSystem->prepareForRender();
+
+		m_bParticleSystemUpdating = false;
+	}
+
+	 //m_pParticleSystem->update(m_fFlowRoomTime);
 	if (!m_bParticleSystemUpdating)
 	{
 		m_Future = std::async(std::launch::async, [&] { m_pParticleSystem->update(m_fFlowRoomTime); });
 		m_bParticleSystemUpdating = true;
 	}
+}
+
+void FlowVolume::draw()
+{
+	if (m_pParticleSystem->getIndexCount() < 2)
+		return;
+
+	Renderer::RendererSubmission rs;
+
+	rs.glPrimitiveType = GL_LINES;
+	rs.shaderName = "flat";	
+	rs.VAO = m_pParticleSystem->getVAO();
+	rs.vertCount = m_pParticleSystem->getIndexCount();
+	rs.indexType = GL_UNSIGNED_INT;
+	rs.hasTransparency = true;
+	rs.transparencySortPosition = getTransformVolume()[3];
+	rs.modelToWorldTransform = getTransformRawDomainToVolume();
+
+	Renderer::getInstance().addToDynamicRenderQueue(rs);
 }
 
 void FlowVolume::setParticleVelocityScale(float velocityScale)

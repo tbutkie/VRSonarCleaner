@@ -1209,7 +1209,6 @@ void Engine::update()
 
 	if (m_bFlowVis && m_pFlowVolume)
 	{
-		m_pFlowVolume->preRenderUpdates();
 		m_pFlowVolume->update();
 	}
 }
