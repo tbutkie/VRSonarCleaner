@@ -734,20 +734,6 @@ bool Engine::HandleInput()
 				{
 					Renderer::getInstance().showMessage("This is a test!");
 				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_i && m_pFlowVolume)
-				{
-					if (sdlEvent.key.keysym.mod & KMOD_SHIFT)
-					{
-						m_pFlowVolume->particleSystemIntegrateEuler();
-						Renderer::getInstance().showMessage("Switched to Euler Forward Integration");
-					}
-					else
-					{
-						m_pFlowVolume->particleSystemIntegrateRK4();
-						Renderer::getInstance().showMessage("Switched to RK4 Integration");
-					}
-				}
 				
 				if (sdlEvent.key.keysym.sym == SDLK_f)
 				{
@@ -1002,7 +988,7 @@ bool Engine::HandleInput()
 							m_pFlowVolume->resetPositionAndOrientation();
 					}
 				
-					if (sdlEvent.key.keysym.sym == SDLK_1)
+					if (sdlEvent.key.keysym.sym == SDLK_1 && sdlEvent.key.keysym.mod & KMOD_SHIFT)
 					{
 						if (m_bUseVR && m_pFlowVolume)
 						{
@@ -1018,13 +1004,35 @@ bool Engine::HandleInput()
 						}
 					}
 				
-					if (sdlEvent.key.keysym.sym == SDLK_2)
+					if (sdlEvent.key.keysym.sym == SDLK_2 && sdlEvent.key.keysym.mod & KMOD_SHIFT)
 					{
 						if (m_bUseVR && m_pFlowVolume)
 						{
 							m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
 							m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
 							m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+						}
+					}
+					
+					if (sdlEvent.key.keysym.mod & KMOD_CTRL && m_pFlowVolume)
+					{
+						if (sdlEvent.key.keysym.sym == SDLK_0)
+							setWindowToDisplay(m_pWindow, 0);
+						if (sdlEvent.key.keysym.sym == SDLK_1)
+							setWindowToDisplay(m_pWindow, 1);
+					}
+
+					if (sdlEvent.key.keysym.sym == SDLK_i && m_pFlowVolume)
+					{
+						if (sdlEvent.key.keysym.mod & KMOD_SHIFT)
+						{
+							m_pFlowVolume->particleSystemIntegrateEuler();
+							Renderer::getInstance().showMessage("Switched to Euler Forward Integration");
+						}
+						else
+						{
+							m_pFlowVolume->particleSystemIntegrateRK4();
+							Renderer::getInstance().showMessage("Switched to RK4 Integration");
 						}
 					}
 				}
@@ -1543,6 +1551,18 @@ SDL_Window * Engine::createWindow(int width, int height, int displayIndex)
 	}
 
 	return win;
+}
+
+void Engine::setWindowToDisplay(SDL_Window * win, int displayIndex)
+{
+	SDL_Rect displayBounds;
+
+	SDL_GetDisplayBounds(displayIndex, &displayBounds);
+
+	SDL_SetWindowPosition(win, displayBounds.x, displayBounds.y);
+	SDL_SetWindowSize(win, displayBounds.w, displayBounds.h);
+
+	m_ivec2WindowSize = glm::ivec2(displayBounds.w, displayBounds.h);
 }
 
 void Engine::createVRViews()

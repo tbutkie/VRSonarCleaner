@@ -81,6 +81,7 @@ private:
 private: // SDL bookkeeping
 	SDL_Window* createFullscreenWindow(int displayIndex);
 	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
+	void setWindowToDisplay(SDL_Window* win, int displayIndex);
 
 	SDL_Window *m_pWindow;
 	SDL_Cursor *m_pWindowCursor;
