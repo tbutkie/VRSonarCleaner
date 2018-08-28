@@ -160,7 +160,7 @@ void IllustrativeParticleSystem::update(float time)
 
 		if (particle->m_pFlowGrid) // did we find a flow grid?
 		{
-			newPos = eulerForward(particle, time, timeSinceLastUpdate.count());
+			newPos = rk4(particle, time, timeSinceLastUpdate.count());
 			activeWithinGridMap[particle->m_pFlowGrid]++;
 		}
 		else
@@ -450,21 +450,55 @@ void IllustrativeParticleSystem::initGL()
 glm::vec3 IllustrativeParticleSystem::eulerForward(IllustrativeParticle* particle, float time, float delta)
 {
 	glm::vec3 currentPos = particle->getCurrentXYZ();
-	glm::vec3 newPos, vel;
+	glm::vec3 vel;
 
-	//get UVW at current position
-	bool result = particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z);
+	//get UVW at current position (checks in bounds or not)
+	if (!particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z))
+		particle->m_bDying = true;
+	
 
 	//calc new position
 	float prodTimeVelocity = delta * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
 
-	newPos = currentPos + vel * prodTimeVelocity;
+	glm::vec3 ret(currentPos + vel * prodTimeVelocity);
+
+	if (!particle->m_pFlowGrid->contains(ret.x, ret.y, ret.z))
+		particle->m_bDying;
+
+	return ret;
+}
+
+glm::vec3 IllustrativeParticleSystem::rk4(IllustrativeParticle * particle, float time, float delta)
+{
+	glm::vec3 startPos = particle->getCurrentXYZ();
+	glm::vec3 k1, k2, k3, k4, y1, y2, y3, newPos;
+
+	float prodTimeVelocity = delta * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
+
+	//get UVW at current position
+	if (!particle->m_pFlowGrid->getUVWat(startPos.x, startPos.y, startPos.z, time, &k1.x, &k1.y, &k1.z))
+		return eulerForward(particle, time, delta);
+
+	y1 = startPos + k1 * prodTimeVelocity * 0.5f;
+
+	if (!particle->m_pFlowGrid->getUVWat(y1.x, y1.y, y1.z, time, &k2.x, &k2.y, &k2.z))
+		return eulerForward(particle, time, delta);
+
+	y2 = startPos + k2 * prodTimeVelocity * 0.5f;
+
+	if (!particle->m_pFlowGrid->getUVWat(y2.x, y2.y, y2.z, time, &k3.x, &k3.y, &k3.z))
+		return eulerForward(particle, time, delta);
+
+	y3 = startPos + k3 * prodTimeVelocity;
+
+	if (!particle->m_pFlowGrid->getUVWat(y3.x, y3.y, y3.z, time, &k4.x, &k4.y, &k4.z))
+		return eulerForward(particle, time, delta);
+
+	newPos = startPos + prodTimeVelocity * (k1 + 2.f * k2 + 2.f * k3 + k4) / 6.f;
 
 	//check in bounds or not
-	if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z) || !result)
-	{
+	if (!particle->m_pFlowGrid->contains(newPos.x, newPos.y, newPos.z))
 		particle->m_bDying = true;
-	}
 
 	return newPos;
 }

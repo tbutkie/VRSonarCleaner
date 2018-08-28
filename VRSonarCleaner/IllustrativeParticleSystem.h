@@ -75,6 +75,7 @@ private:
 	bool m_bReadyToTransferData;
 
 	glm::vec3 eulerForward(IllustrativeParticle* particle, float time, float delta);
+	glm::vec3 rk4(IllustrativeParticle* particle, float time, float delta);
 };
 
 #endif
