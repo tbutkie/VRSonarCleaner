@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <vector>
 #include <chrono>
+#include <functional>
 #include "FlowGrid.h"
 #include "IllustrativeParticle.h"
 #include "IllustrativeDyePole.h"
@@ -45,7 +46,8 @@ public:
 	std::vector<IllustrativeParticle*> m_vpParticles;
 
 	std::vector<FlowGrid*> m_vpFlowGridCollection;
-		
+
+	bool m_bUseEuler;
 	
 	//int getNumParticles();
 	int getNumLiveParticles();
@@ -60,6 +62,9 @@ public:
 	bool prepareForRender();
 	GLuint getVAO();
 	GLsizei getIndexCount();
+
+	void setEulerIntegration();
+	void setRK4Integration();
 
 	int m_nStreakSegments;
 

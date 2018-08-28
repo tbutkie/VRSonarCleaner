@@ -41,6 +41,9 @@ public:
 	IllustrativeParticleEmitter* placeDyeEmitterWorldCoords(glm::vec3 pos);
 	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
 
+	void particleSystemIntegrateEuler();
+	void particleSystemIntegrateRK4();
+
 private:
 	float m_fFlowRoomTime;
 	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;

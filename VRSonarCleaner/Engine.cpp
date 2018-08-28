@@ -734,6 +734,20 @@ bool Engine::HandleInput()
 				{
 					Renderer::getInstance().showMessage("This is a test!");
 				}
+
+				if (sdlEvent.key.keysym.sym == SDLK_i && m_pFlowVolume)
+				{
+					if (sdlEvent.key.keysym.mod & KMOD_SHIFT)
+					{
+						m_pFlowVolume->particleSystemIntegrateEuler();
+						Renderer::getInstance().showMessage("Switched to Euler Forward Integration");
+					}
+					else
+					{
+						m_pFlowVolume->particleSystemIntegrateRK4();
+						Renderer::getInstance().showMessage("Switched to RK4 Integration");
+					}
+				}
 				
 				if (sdlEvent.key.keysym.sym == SDLK_f)
 				{

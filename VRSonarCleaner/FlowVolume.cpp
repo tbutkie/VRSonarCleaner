@@ -147,6 +147,16 @@ bool FlowVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
 	return false;
 }
 
+void FlowVolume::particleSystemIntegrateEuler()
+{
+	m_pParticleSystem->setEulerIntegration();
+}
+
+void FlowVolume::particleSystemIntegrateRK4()
+{
+	m_pParticleSystem->setRK4Integration();
+}
+
 void FlowVolume::update()
 {
 	// update the data volume first

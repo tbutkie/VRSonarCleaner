@@ -9,6 +9,7 @@ using namespace std::chrono_literals;
 
 IllustrativeParticleSystem::IllustrativeParticleSystem(std::vector<FlowGrid*> FlowGridCollection)
 	: m_bReadyToTransferData(false)
+	, m_bUseEuler(false)
 {
 	m_vpFlowGridCollection = FlowGridCollection;
 
@@ -160,7 +161,7 @@ void IllustrativeParticleSystem::update(float time)
 
 		if (particle->m_pFlowGrid) // did we find a flow grid?
 		{
-			newPos = rk4(particle, time, timeSinceLastUpdate.count());
+			newPos = m_bUseEuler ? eulerForward(particle, time, timeSinceLastUpdate.count()) : rk4(particle, time, timeSinceLastUpdate.count());
 			activeWithinGridMap[particle->m_pFlowGrid]++;
 		}
 		else
@@ -454,16 +455,19 @@ glm::vec3 IllustrativeParticleSystem::eulerForward(IllustrativeParticle* particl
 
 	//get UVW at current position (checks in bounds or not)
 	if (!particle->m_pFlowGrid->getUVWat(currentPos.x, currentPos.y, currentPos.z, time, &vel.x, &vel.y, &vel.z))
+	{
 		particle->m_bDying = true;
+		return currentPos;
+	}
 	
 
 	//calc new position
 	float prodTimeVelocity = delta * particle->m_pFlowGrid->m_fIllustrativeParticleVelocityScale;
 
-	glm::vec3 ret(currentPos + vel * prodTimeVelocity);
+	glm::vec3 ret(currentPos + vel * prodTimeVelocity * 10.f);
 
 	if (!particle->m_pFlowGrid->contains(ret.x, ret.y, ret.z))
-		particle->m_bDying;
+		particle->m_bDying = true;
 
 	return ret;
 }
@@ -540,6 +544,16 @@ GLuint IllustrativeParticleSystem::getVAO()
 GLsizei IllustrativeParticleSystem::getIndexCount()
 {
 	return m_nIndexCount;
+}
+
+void IllustrativeParticleSystem::setEulerIntegration()
+{
+	m_bUseEuler = true;
+}
+
+void IllustrativeParticleSystem::setRK4Integration()
+{
+	m_bUseEuler = false;
 }
 
 int IllustrativeParticleSystem::addDyePole(double x, double y, float minZ, float maxZ)
