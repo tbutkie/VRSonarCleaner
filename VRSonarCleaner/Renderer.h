@@ -187,7 +187,7 @@ public:
 
 	void renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *frameBuffer);
 	void renderUI(SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
-	void renderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait = false);
+	void renderFullscreenTexture(int x, int y, int width, int height, GLuint textureID, bool textureAspectPortrait = false);
 	void renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID);
 
 

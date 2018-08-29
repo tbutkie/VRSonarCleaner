@@ -1420,24 +1420,56 @@ void Engine::render()
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
 		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
 
-		GLint srcX0 = m_sviLeftEyeInfo.m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
-		GLint srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
-		GLint srcY0 = m_sviLeftEyeInfo.m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
-		GLint srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
+		glBindFramebuffer(GL_FRAMEBUFFER, m_pWindowFramebuffer->m_nRenderFramebufferId);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLint srcX0, srcX1, srcY0, srcY1;
+		GLint dstX0, dstX1, dstY0, dstY1;
+
+		if (m_sviWindowUIInfo.m_nRenderWidth < m_sviLeftEyeInfo.m_nRenderWidth)
+		{
+			srcX0 = m_sviLeftEyeInfo.m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
+			srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
+			dstX0 = 0;
+			dstX1 = m_sviWindowUIInfo.m_nRenderWidth;
+		}
+		else
+		{
+			srcX0 = 0;
+			srcX1 = m_sviLeftEyeInfo.m_nRenderWidth;
+
+			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviLeftEyeInfo.m_nRenderWidth / 2;;
+			dstX1 = dstX0 + m_sviLeftEyeInfo.m_nRenderWidth;
+		}
+
+		if (m_sviWindowUIInfo.m_nRenderHeight < m_sviLeftEyeInfo.m_nRenderHeight)
+		{
+			srcY0 = m_sviLeftEyeInfo.m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
+			srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
+			dstY0 = 0;
+			dstY1 = m_sviWindowUIInfo.m_nRenderHeight;
+		}
+		else
+		{
+			srcY0 = 0;
+			srcY1 = m_sviLeftEyeInfo.m_nRenderHeight;
+
+			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviLeftEyeInfo.m_nRenderHeight / 2;;
+			dstY1 = dstY0 + m_sviLeftEyeInfo.m_nRenderHeight;
+		}
 
 		glBlitNamedFramebuffer(
 			m_pLeftEyeFramebuffer->m_nRenderFramebufferId,
 			m_pWindowFramebuffer->m_nRenderFramebufferId,
 			srcX0, srcY0, srcX1, srcY1,
-			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			dstX0, dstY0, dstX1, dstY1,
 			GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
 			GL_NEAREST);
 
 		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pWindowFramebuffer);
 
 		Renderer::getInstance().renderFullscreenTexture(
-			m_ivec2WindowSize.x,
-			m_ivec2WindowSize.y,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
 			m_pWindowFramebuffer->m_nResolveTextureId,
 			true
 		);
@@ -1469,7 +1501,7 @@ void Engine::render()
 
 		Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
 
-		Renderer::getInstance().renderFullscreenTexture(m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
+		Renderer::getInstance().renderFullscreenTexture(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
 
 		SDL_GL_SwapWindow(m_pWindow);
 	}
@@ -1563,6 +1595,9 @@ void Engine::setWindowToDisplay(SDL_Window * win, int displayIndex)
 	SDL_SetWindowSize(win, displayBounds.w, displayBounds.h);
 
 	m_ivec2WindowSize = glm::ivec2(displayBounds.w, displayBounds.h);
+
+	Renderer::getInstance().destroyFrameBuffer(*m_pWindowFramebuffer);
+	createDesktopView();
 }
 
 void Engine::createVRViews()
@@ -1601,8 +1636,9 @@ void Engine::createDesktopView()
 	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
 	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fNearClip, g_fFarClip);
 
-	m_pWindowFramebuffer = new Renderer::FramebufferDesc();
+	if (!m_pWindowFramebuffer)	
+		m_pWindowFramebuffer = new Renderer::FramebufferDesc();
 
 	if (!Renderer::getInstance().createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
-		utils::dprintf("Could not create desktop view framebuffer!\n");	
+		utils::dprintf("Could not create desktop view framebuffer!\n");
 }

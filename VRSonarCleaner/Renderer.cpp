@@ -559,7 +559,7 @@ void Renderer::renderUI(SceneViewInfo * sceneViewUIInfo, FramebufferDesc * frame
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void Renderer::renderFullscreenTexture(int width, int height, GLuint textureID, bool textureAspectPortrait)
+void Renderer::renderFullscreenTexture(int x, int y, int width, int height, GLuint textureID, bool textureAspectPortrait)
 {
 	GLuint* shader;
 
@@ -573,8 +573,8 @@ void Renderer::renderFullscreenTexture(int width, int height, GLuint textureID, 
 
 	glDisable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, width, height);
-	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, width, height)));
+	glViewport(x, y, width, height);
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(x, y, width, height)));
 
 	glUseProgram(*shader);
 	glBindVertexArray(m_glPrimitivesVAO);
