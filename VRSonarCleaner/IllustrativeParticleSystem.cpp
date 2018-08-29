@@ -114,7 +114,6 @@ void IllustrativeParticleSystem::update(float time)
 	
 	glm::vec3 currentPos, newPos;
 	glm::vec3 vel;
-	float prodTimeVelocity;
 	
 	// Take inventory of dead particles and particles which can be killed
 	std::vector<IllustrativeParticle*> deadParticles;
