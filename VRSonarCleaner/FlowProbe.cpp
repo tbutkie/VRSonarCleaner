@@ -1,4 +1,5 @@
 #include "FlowProbe.h"
+#include <gtc\random.hpp>
 
 using namespace std::chrono_literals;
 
@@ -74,6 +75,35 @@ void FlowProbe::draw()
 
 			Renderer::getInstance().drawPrimitive("icosphere", xForm, glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(m_pEmitter->getColor(), 1.f));
 		}
+
+		glm::vec3 touchDividerStart = glm::vec3(m_pController->getDeviceToWorldTransform() * m_pController->c_vec4TouchPadLeft);
+		glm::vec3 touchDividerEnd = glm::vec3(m_pController->getDeviceToWorldTransform() * m_pController->c_vec4TouchPadRight);
+
+		Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", touchDividerStart, touchDividerEnd, 0.0005f, glm::vec4(1.f, 1.f, 0.f, 1.f));
+
+		glm::vec3 placeDyeLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadTop - m_pController->c_vec4TouchPadCenter)/2.f));
+		glm::vec4 placeDyeLabelColor = (m_pController->isTouchpadTouched() && m_pController->getCurrentTouchpadTouchPoint().y > 0.25f) ? glm::linearRand(glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f)) : glm::vec4(1.f);
+
+		Renderer::getInstance().drawText(
+			"PLACE\nDYE",
+			placeDyeLabelColor,
+			placeDyeLabel,
+			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-80.f), glm::vec3(1.f, 0.f, 0.f))),
+			0.01f,
+			Renderer::TextSizeDim::HEIGHT
+		);
+
+		glm::vec3 changeColorLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadBottom - m_pController->c_vec4TouchPadCenter) / 2.f));
+		glm::vec4 changeColorLabelColor = (m_pController->isTouchpadTouched() && m_pController->getCurrentTouchpadTouchPoint().y < -0.25f) ? glm::linearRand(glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f)) : glm::vec4(1.f);
+
+		Renderer::getInstance().drawText(
+			"DYE\nCOLOR",
+			changeColorLabelColor,
+			changeColorLabel,
+			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-95.f), glm::vec3(1.f, 0.f, 0.f))),
+			0.01f,
+			Renderer::TextSizeDim::HEIGHT
+		);
 	}
 }
 

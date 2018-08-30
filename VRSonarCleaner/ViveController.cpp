@@ -5,7 +5,6 @@
 #include <gtc/type_ptr.hpp>
 #include <gtc/matrix_transform.hpp>
 
-
 const glm::vec4 ViveController::c_vec4TouchPadCenter(glm::vec4(0.f, 0.00378f, 0.04920f, 1.f));
 const glm::vec4 ViveController::c_vec4TouchPadLeft(glm::vec4(-0.02023f, 0.00495f, 0.04934f, 1.f));
 const glm::vec4 ViveController::c_vec4TouchPadRight(glm::vec4(0.02023f, 0.00495f, 0.04934f, 1.f));

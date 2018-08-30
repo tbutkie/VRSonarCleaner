@@ -321,3 +321,4 @@ VRSonarCleaner/saved_points*.csv
 *.fg
 VRSonarCleaner/flowgrid_test.fg.cp
 VRSonarCleaner/tmp.flowfieldcurator.cp
+VRSonarCleaner/flowgrid_test.fg.cp

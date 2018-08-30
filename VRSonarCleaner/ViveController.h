@@ -56,6 +56,12 @@ public:
 	glm::vec3 getLeftGripPoint();
 	glm::vec3 getRightGripPoint();
 
+	static const glm::vec4 c_vec4TouchPadCenter;
+	static const glm::vec4 c_vec4TouchPadLeft;
+	static const glm::vec4 c_vec4TouchPadRight;
+	static const glm::vec4 c_vec4TouchPadTop;
+	static const glm::vec4 c_vec4TouchPadBottom;
+
 protected:
 	struct CustomState {
 		glm::vec2 m_vec2TouchpadInitialTouchPoint;
@@ -92,10 +98,4 @@ protected:
 	int32_t m_nTouchpadAxis;
 
 	float m_fHairTriggerThreshold; // how much trigger is pulled before being considered engaged
-
-	static const glm::vec4 c_vec4TouchPadCenter;
-	static const glm::vec4 c_vec4TouchPadLeft;
-	static const glm::vec4 c_vec4TouchPadRight;
-	static const glm::vec4 c_vec4TouchPadTop;
-	static const glm::vec4 c_vec4TouchPadBottom;
 };
