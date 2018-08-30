@@ -38,8 +38,8 @@ void StudyIntroBehavior::update()
 
 void StudyIntroBehavior::draw()
 {
-	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->readyToRender() ||
-		!m_pTDM->getSecondaryController() || !m_pTDM->getSecondaryController()->readyToRender())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->valid() ||
+		!m_pTDM->getSecondaryController() || !m_pTDM->getSecondaryController()->valid())
 		return;
 
 	glm::vec3 primTrigPos = (m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, -0.031f, 0.05f)))[3];

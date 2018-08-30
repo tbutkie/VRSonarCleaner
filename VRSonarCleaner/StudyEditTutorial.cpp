@@ -50,7 +50,7 @@ void StudyEditTutorial::init()
 
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabObjectBehavior(m_pTDM, m_pDemoVolume));
-	m_pProbe = new PointCleanProbe(m_pTDM, m_pDemoVolume, vr::VRSystem());
+	m_pProbe = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDemoVolume, vr::VRSystem());
 	BehaviorManager::getInstance().addBehavior("Editing", m_pProbe);
 
 	m_pProbe->lockProbeLength();

@@ -45,8 +45,8 @@ void WelcomeBehavior::update()
 
 void WelcomeBehavior::draw()
 {
-	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->readyToRender() ||
-		!m_pTDM->getSecondaryController() || !m_pTDM->getSecondaryController()->readyToRender())
+	if (!m_pTDM->getPrimaryController() || !m_pTDM->getPrimaryController()->valid() ||
+		!m_pTDM->getSecondaryController() || !m_pTDM->getSecondaryController()->valid())
 		return;
 
 	glm::vec3 primTrigPos = m_pTDM->getPrimaryController()->getTriggerPoint();

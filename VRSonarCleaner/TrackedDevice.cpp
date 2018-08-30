@@ -92,6 +92,13 @@ bool TrackedDevice::update(vr::TrackedDevicePose_t pose)
 	return m_Pose.bPoseIsValid;
 }
 
+bool TrackedDevice::valid()
+{
+	return m_Pose.bDeviceIsConnected &&
+		m_Pose.bPoseIsValid &&
+		m_Pose.eTrackingResult == vr::ETrackingResult::TrackingResult_Running_OK;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Converts a SteamVR matrix to our local matrix class
 //-----------------------------------------------------------------------------

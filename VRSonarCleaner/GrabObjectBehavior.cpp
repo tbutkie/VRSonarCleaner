@@ -34,7 +34,7 @@ void GrabObjectBehavior::update()
 
 void GrabObjectBehavior::draw()
 {
-	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->readyToRender())
+	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->valid())
 	{
 		glm::mat4 triggerTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.025f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 

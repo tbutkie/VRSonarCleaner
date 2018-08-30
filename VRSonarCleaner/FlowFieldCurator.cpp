@@ -88,7 +88,7 @@ void FlowFieldCurator::draw()
 	glm::vec3 dimratio = m_pFlowVolume->getDimensions() / m_pFlowVolume->getOriginalDimensions();
 	for (auto &cp : m_vCPs)
 	{
-		Renderer::getInstance().drawPointerLit(cp.second.pos_world, cp.second.end_world, 0.01f * glm::length(dimratio), glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f));
+		Renderer::getInstance().drawPointerLit(cp.second.pos_world, cp.second.end_world, 0.01f * glm::length(dimratio), glm::vec4(0.9f, 0.9f, 0.9f, 1.f), glm::vec4(1.f));
 	}
 
 	if (m_pTDM->getPrimaryController())

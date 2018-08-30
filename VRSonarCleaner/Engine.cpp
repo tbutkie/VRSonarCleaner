@@ -254,17 +254,6 @@ bool Engine::init()
 		m_Camera.pos = tablePosition + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = tablePosition;
 
-		{
-			//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
-			//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
-			if (!BehaviorManager::getInstance().getBehavior("grab"))
-				BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
-			if (!BehaviorManager::getInstance().getBehavior("scale"))
-				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
-
-			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM, m_pTableVolume, m_pHMD));
-		}
-
 		m_pColorScalerTPU = new ColorScaler();
 		m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 		m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
@@ -347,18 +336,6 @@ bool Engine::init()
 
 		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 		m_Camera.lookat = m_pFlowVolume->getPosition();
-
-		{
-			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
-			BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM, m_pFlowVolume));
-			//BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM, m_pFlowVolume));
-
-			if (!BehaviorManager::getInstance().getBehavior("grab"))
-				BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
-			if (!BehaviorManager::getInstance().getBehavior("scale"))
-				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
-
-		}
 	}
 
 	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
@@ -1222,6 +1199,16 @@ void Engine::update()
 
 	if (m_bSonarCleaning)
 	{
+		if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("pointclean"))
+			BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD));
+
+		//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
+		//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
+		if (!BehaviorManager::getInstance().getBehavior("grab"))
+			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
+		if (!BehaviorManager::getInstance().getBehavior("scale"))
+			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+
 		for (auto &cloud : m_vpClouds)
 			cloud->update();
 
@@ -1231,6 +1218,44 @@ void Engine::update()
 
 	if (m_bFlowVis && m_pFlowVolume)
 	{
+
+		bool flowProbeActive = BehaviorManager::getInstance().getBehavior("flowprobe") != nullptr;
+
+		if (m_pTDM->getPrimaryController())
+		{
+			if (!flowProbeActive)
+				BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
+		}
+		else if (flowProbeActive)
+		{
+			BehaviorManager::getInstance().removeBehavior("flowprobe");
+		}
+
+
+		bool hairySliceActive = BehaviorManager::getInstance().getBehavior("hairyslice") != nullptr;
+
+		if (m_pTDM->getSecondaryController())
+		{
+			if (!hairySliceActive)
+				BehaviorManager::getInstance().addBehavior("hairyslice", new HairyFlowProbe(m_pTDM->getSecondaryController(), m_pFlowVolume));
+		}
+		else if (hairySliceActive)
+		{
+			BehaviorManager::getInstance().removeBehavior("hairyslice");
+		}
+
+
+		if (!BehaviorManager::getInstance().getBehavior("flowcurator"))
+			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
+
+		//if (!BehaviorManager::getInstance().getBehavior("debugprobe"))
+		//	BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
+
+		if (!BehaviorManager::getInstance().getBehavior("grab"))
+			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
+		if (!BehaviorManager::getInstance().getBehavior("scale"))
+			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+
 		m_pFlowVolume->update();
 	}
 }

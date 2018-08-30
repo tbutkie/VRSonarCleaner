@@ -7,7 +7,7 @@ class HairyFlowProbe :
 	public ProbeBehavior
 {
 public:
-	HairyFlowProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume);
+	HairyFlowProbe(ViveController* pController, FlowVolume* flowVolume);
 	~HairyFlowProbe();
 
 	void update();

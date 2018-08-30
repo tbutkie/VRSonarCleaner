@@ -347,22 +347,6 @@ ViveController * TrackedDeviceManager::getSecondaryController()
 	return m_pSecondaryController;
 }
 
-glm::mat4 TrackedDeviceManager::getPrimaryControllerPose()
-{
-	if(m_pPrimaryController)
-		return m_pPrimaryController->getDeviceToWorldTransform();
-
-	return glm::mat4();
-}
-
-glm::mat4 TrackedDeviceManager::getSecondaryControllerPose()
-{
-	if (m_pSecondaryController)
-		return m_pSecondaryController->getDeviceToWorldTransform();
-
-	return glm::mat4();
-}
-
 bool TrackedDeviceManager::isPrimaryControllerInRighthandPosition()
 {
 	if (!m_pPrimaryController || !m_pSecondaryController)

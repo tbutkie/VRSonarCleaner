@@ -58,12 +58,12 @@ void InfoBoxManager::draw()
 		glm::mat4 relXform;
 		if (relToWhat == WORLD) relXform = glm::mat4();
 		if (relToWhat == HMD) relXform = HMDXform;
-		if (relToWhat == PRIMARY_CONTROLLER) relXform = m_pTDM->getPrimaryControllerPose();
-		if (relToWhat == SECONDARY_CONTROLLER) relXform = m_pTDM->getSecondaryControllerPose();
+		if (relToWhat == PRIMARY_CONTROLLER) relXform = m_pTDM->getPrimaryController()->getDeviceToWorldTransform();
+		if (relToWhat == SECONDARY_CONTROLLER) relXform = m_pTDM->getSecondaryController()->getDeviceToWorldTransform();
 
 		// short-circuit if controller is not active
-		if ((relToWhat == PRIMARY_CONTROLLER && !(m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->readyToRender())) ||
-			(relToWhat == SECONDARY_CONTROLLER && !(m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->readyToRender())))
+		if ((relToWhat == PRIMARY_CONTROLLER && !(m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->valid())) ||
+			(relToWhat == SECONDARY_CONTROLLER && !(m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->valid())))
 			continue;
 
 		glm::mat4 infoBoxMat = std::get<IBIndex::TRANSFORM_MATRIX>(ib.second);

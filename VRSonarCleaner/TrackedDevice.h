@@ -31,6 +31,8 @@ public:
 
 	glm::mat4 getDeviceToWorldTransform();
 
+	bool valid();
+
 protected:
 	struct TrackedDeviceComponent {
 		uint32_t							m_unComponentIndex;
@@ -71,6 +73,7 @@ protected:
 
 protected:
 	virtual bool update(vr::TrackedDevicePose_t pose);
+
 
 	glm::mat4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t &matPose);
 	vr::HmdMatrix34_t ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &matPose);

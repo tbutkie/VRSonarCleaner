@@ -7,7 +7,7 @@ class DebugProbe :
 	public ProbeBehavior
 {
 public:
-	DebugProbe(TrackedDeviceManager* pTDM, DataVolume* dataVolume);
+	DebugProbe(ViveController* pController, DataVolume* dataVolume);
 	~DebugProbe();
 
 	void update();

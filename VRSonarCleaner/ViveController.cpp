@@ -323,13 +323,6 @@ glm::vec3 ViveController::getRightGripPoint()
 	return (m_mat4DeviceToWorldTransform * glm::translate(glm::mat4(), glm::vec3(0.0225f, -0.015f, 0.085f)))[3];
 }
 
-bool ViveController::readyToRender()
-{
-	return m_Pose.bDeviceIsConnected &&
-		m_Pose.bPoseIsValid &&
-		m_Pose.eTrackingResult == vr::ETrackingResult::TrackingResult_Running_OK;
-}
-
 bool ViveController::isTouchpadTouched()
 {
 	for (auto const &c : m_mapButtonToComponentMap[vr::EVRButtonId::k_EButton_SteamVR_Touchpad])

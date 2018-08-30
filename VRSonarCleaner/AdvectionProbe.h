@@ -6,7 +6,7 @@ class AdvectionProbe :
 	public ProbeBehavior
 {
 public:
-	AdvectionProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume);
+	AdvectionProbe(ViveController* pController, FlowVolume* flowVolume);
 	virtual ~AdvectionProbe();
 
 	void update();

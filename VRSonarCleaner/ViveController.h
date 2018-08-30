@@ -56,8 +56,6 @@ public:
 	glm::vec3 getLeftGripPoint();
 	glm::vec3 getRightGripPoint();
 
-	bool readyToRender();
-
 protected:
 	struct CustomState {
 		glm::vec2 m_vec2TouchpadInitialTouchPoint;

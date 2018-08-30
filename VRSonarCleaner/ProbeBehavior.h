@@ -1,6 +1,6 @@
 #pragma once
 #include "BehaviorBase.h"
-#include "TrackedDeviceManager.h"
+#include "ViveController.h"
 #include "DataVolume.h"
 
 #include <chrono>
@@ -9,7 +9,7 @@ class ProbeBehavior :
 	public BehaviorBase
 {
 public:
-	ProbeBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume);
+	ProbeBehavior(ViveController* pController, DataVolume* dataVolume);
 	virtual ~ProbeBehavior();
 
 	void lockProbeLength();
@@ -42,7 +42,7 @@ public:
 	glm::mat4 getTransformProbeToWorld_Last();
 
 protected:
-	TrackedDeviceManager* m_pTDM;
+	ViveController * m_pController;
 	DataVolume* m_pDataVolume;
 
 	bool m_bEnabled;

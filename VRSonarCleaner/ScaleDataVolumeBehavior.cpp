@@ -41,8 +41,8 @@ void ScaleDataVolumeBehavior::update()
 
 void ScaleDataVolumeBehavior::draw()
 {
-	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->readyToRender() &&
-		m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->readyToRender())
+	if (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->valid() &&
+		m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->valid())
 	{
 		bool flash = !m_bScaling && (m_pTDM->getPrimaryController()->isGripButtonPressed() || m_pTDM->getSecondaryController()->isGripButtonPressed());
 		std::vector<ViveController*> controllers({ m_pTDM->getPrimaryController() , m_pTDM->getSecondaryController() });

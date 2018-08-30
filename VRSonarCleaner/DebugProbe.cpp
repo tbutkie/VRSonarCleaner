@@ -5,8 +5,8 @@
 
 using namespace std::chrono_literals;
 
-DebugProbe::DebugProbe(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
-	: ProbeBehavior(pTDM, dataVolume)
+DebugProbe::DebugProbe(ViveController* pController, DataVolume* dataVolume)
+	: ProbeBehavior(pController, dataVolume)
 	, m_bProbeActive(false)
 	, m_pDataVolume(dataVolume)
 {
@@ -25,7 +25,7 @@ void DebugProbe::update()
 
 void DebugProbe::draw()
 {
-	if (m_pTDM->getPrimaryController())
+	if (m_pController)
 	{
 		drawProbe(m_fProbeOffset);
 

@@ -3,8 +3,8 @@
 #include "Renderer.h"
 #include <gtc/matrix_transform.hpp>
 
-AdvectionProbe::AdvectionProbe(TrackedDeviceManager* pTDM, FlowVolume* flowVolume)
-	: ProbeBehavior(pTDM, flowVolume)
+AdvectionProbe::AdvectionProbe(ViveController* pController, FlowVolume* flowVolume)
+	: ProbeBehavior(pController, flowVolume)
 	, m_pFlowVolume(flowVolume)
 {
 }
@@ -16,6 +16,15 @@ AdvectionProbe::~AdvectionProbe()
 
 void AdvectionProbe::update()
 {
+}
+
+void AdvectionProbe::draw()
+{
+	if (!m_pController->valid())
+		return;
+
+	drawProbe(m_fProbeOffset);
+
 	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
 
 	Renderer::RendererSubmission rs;
@@ -33,7 +42,7 @@ void AdvectionProbe::update()
 
 	//Renderer::getInstance().addToDynamicRenderQueue(rs);
 
-	if (!m_pTDM->getPrimaryController()->readyToRender())
+	if (!m_pController->valid())
 		return;
 
 	glm::vec3 cursorPos(getPosition());
@@ -54,26 +63,6 @@ void AdvectionProbe::update()
 		//DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 		//DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 	}
-}
-
-void AdvectionProbe::draw()
-{
-	if (!m_pTDM->getPrimaryController()->readyToRender())
-		return;
-
-	drawProbe(m_fProbeOffset);
-
-	//glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_BINDING);
-	//glBindTexture(GL_TEXTURE_2D, m_glIcoSphereDiffuse);
-	//
-	//glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
-	//glBindTexture(GL_TEXTURE_2D, m_glIcoSphereSpecular);
-	//
-	//glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, 32.f);
-	//
-	//glBindVertexArray(m_glIcoSphereVAO);
-	//glDrawElements(GL_TRIANGLES, m_glIcoSphereVertCount, GL_UNSIGNED_SHORT, 0);
-	//glBindVertexArray(0);
 }
 
 void AdvectionProbe::activateProbe()
