@@ -69,6 +69,26 @@ glm::mat4 TrackedDevice::getPose()
 	return ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 }
 
+uint32_t TrackedDevice::getComponentID(std::string componentName)
+{
+	for (auto c : m_vpComponents)
+		if (c->m_strComponentName.compare(componentName) == 0)
+			return c->m_unComponentIndex;
+
+	return vr::k_unTrackedDeviceIndexInvalid;
+}
+
+glm::mat4 TrackedDevice::getComponentPose(uint32_t componentID)
+{
+	vr::TrackedDevicePose_t p;
+	m_pHMD->ApplyTransform(
+		&p,
+		&(m_Pose),
+		&(m_vpComponents[componentID]->m_State.mTrackingToComponentLocal)
+	);
+	return ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+}
+
 char TrackedDevice::getClassChar()
 {
 	return m_ClassChar;

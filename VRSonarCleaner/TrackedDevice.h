@@ -25,6 +25,8 @@ public:
 
 	bool poseValid();
 	glm::mat4 getPose();
+	uint32_t getComponentID(std::string componentName);
+	glm::mat4 getComponentPose(uint32_t componentID);
 
 	char getClassChar();
 	void setClassChar(char classChar);

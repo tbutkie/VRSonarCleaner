@@ -319,22 +319,12 @@ glm::mat4 TrackedDeviceManager::getHMDToWorldTransform()
 // Returns vr::k_unTrackedDeviceIndexInvalid if not found
 uint32_t TrackedDeviceManager::getDeviceComponentID(uint32_t deviceID, std::string componentName)
 {
-	for (auto c : m_rpTrackedDevices[deviceID]->m_vpComponents)
-		if (c->m_strComponentName.compare(componentName) == 0)
-			return c->m_unComponentIndex;
-
-	return vr::k_unTrackedDeviceIndexInvalid;
+	return m_rpTrackedDevices[deviceID]->getComponentID(componentName);
 }
 
 glm::mat4 TrackedDeviceManager::getDeviceComponentPose(uint32_t deviceID, uint32_t componentID)
 {
-	vr::TrackedDevicePose_t p;
-	m_pHMD->ApplyTransform(
-		&p,
-		&(m_rpTrackedDevices[deviceID]->m_Pose),
-		&(m_rpTrackedDevices[deviceID]->m_vpComponents[componentID]->m_State.mTrackingToComponentLocal)
-	);
-	return m_rpTrackedDevices[deviceID]->ConvertSteamVRMatrixToMatrix4(p.mDeviceToAbsoluteTracking);
+	return m_rpTrackedDevices[deviceID]->getComponentPose(componentID);
 }
 
 ViveController * TrackedDeviceManager::getPrimaryController()
