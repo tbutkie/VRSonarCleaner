@@ -23,6 +23,7 @@
 #include "HairyFlowProbe.h"
 #include "FlowFieldCurator.h"
 #include "DebugProbe.h"
+#include "FlowScene.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -228,9 +229,6 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	if (m_pCurrentScene)
-		m_pCurrentScene->init();
-
 	if (m_bSonarCleaning)
 	{
 		std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
@@ -310,35 +308,12 @@ bool Engine::init()
 	}
 	else if (m_bFlowVis)
 	{
-		std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-		SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
-
-		std::vector<std::string> flowGrids;
-		
-		if (m_bGreatBayModel)
-		{
-			flowGrids.push_back("resources/data/flowgrid/gb.fg");
-			m_pFlowVolume = new FlowVolume(flowGrids, false);
-			m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.5f, g_vec3RoomSize.y * 0.05f));
-			m_pFlowVolume->setParticleVelocityScale(0.5f);
-		}
-		else
-		{
-			flowGrids.push_back("resources/data/flowgrid/test.fg");
-			m_pFlowVolume = new FlowVolume(flowGrids, true);
-			m_pFlowVolume->setParticleVelocityScale(0.01f);
-
-		}
-
-		m_pFlowVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
-		m_pFlowVolume->setFrameColor(glm::vec4(1.f));
-
-
-		m_Camera.pos = m_pFlowVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-		m_Camera.lookat = m_pFlowVolume->getPosition();
+		m_pCurrentScene = new FlowScene(m_pWindow, m_pTDM);
 	}
 
 	m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+
+	m_pCurrentScene->init();
 
 	return true;
 }
@@ -493,7 +468,7 @@ bool Engine::HandleInput()
 	SDL_Event sdlEvent;
 	bool bRet = false;
 
-	if (m_bUseVR)
+	if (m_pTDM)
 		m_pTDM->handleEvents();
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
@@ -501,6 +476,14 @@ bool Engine::HandleInput()
 		ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
 		LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
 
+
+		if (sdlEvent.type == SDL_KEYDOWN && sdlEvent.key.keysym.mod & KMOD_CTRL)
+		{
+			if (sdlEvent.key.keysym.sym == SDLK_0)
+				setWindowToDisplay(m_pWindow, 0);
+			if (sdlEvent.key.keysym.sym == SDLK_1)
+				setWindowToDisplay(m_pWindow, 1);
+		}
 
 		if (m_bStudyMode)
 		{
@@ -958,60 +941,7 @@ bool Engine::HandleInput()
 				}
 				else if (m_bFlowVis) //flow
 				{
-					if (sdlEvent.key.keysym.sym == SDLK_r)
-					{
-						printf("Pressed r, resetting something...\n");
-						if (m_pFlowVolume)
-							m_pFlowVolume->resetPositionAndOrientation();
-					}
-				
-					if (sdlEvent.key.keysym.sym == SDLK_1 && sdlEvent.key.keysym.mod & KMOD_SHIFT)
-					{
-						if (m_bUseVR && m_pFlowVolume)
-						{
-							glm::mat3 matHMD(m_pTDM->getHMDToWorldTransform());
-							m_pFlowVolume->setDimensions(glm::vec3(1.f, 1.f, 0.1f));
-							m_pFlowVolume->setPosition(glm::vec3(m_pTDM->getHMDToWorldTransform()[3] - m_pTDM->getHMDToWorldTransform()[2] * 0.5f));
-				
-							glm::mat3 matOrientation;
-							matOrientation[0] = matHMD[0];
-							matOrientation[1] = matHMD[2];
-							matOrientation[2] = -matHMD[1];
-							m_pFlowVolume->setOrientation(glm::quat_cast(matHMD) * glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)));
-						}
-					}
-				
-					if (sdlEvent.key.keysym.sym == SDLK_2 && sdlEvent.key.keysym.mod & KMOD_SHIFT)
-					{
-						if (m_bUseVR && m_pFlowVolume)
-						{
-							m_pFlowVolume->setDimensions(glm::vec3(fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, fmin(g_vec3RoomSize.x, g_vec3RoomSize.z) * 0.9f, g_vec3RoomSize.y * 0.1f));
-							m_pFlowVolume->setPosition(glm::vec3(0.f, g_vec3RoomSize.y * 0.1f * 0.5f, 0.f));
-							m_pFlowVolume->setOrientation(glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-						}
-					}
-					
-					if (sdlEvent.key.keysym.mod & KMOD_CTRL && m_pFlowVolume)
-					{
-						if (sdlEvent.key.keysym.sym == SDLK_0)
-							setWindowToDisplay(m_pWindow, 0);
-						if (sdlEvent.key.keysym.sym == SDLK_1)
-							setWindowToDisplay(m_pWindow, 1);
-					}
-
-					if (sdlEvent.key.keysym.sym == SDLK_i && m_pFlowVolume)
-					{
-						if (sdlEvent.key.keysym.mod & KMOD_SHIFT)
-						{
-							m_pFlowVolume->particleSystemIntegrateEuler();
-							Renderer::getInstance().showMessage("Switched to Euler Forward Integration");
-						}
-						else
-						{
-							m_pFlowVolume->particleSystemIntegrateRK4();
-							Renderer::getInstance().showMessage("Switched to RK4 Integration");
-						}
-					}
+	
 				}
 
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
@@ -1133,6 +1063,8 @@ bool Engine::HandleInput()
 				}
 			}
 		}
+
+		m_pCurrentScene->processSDLEvent(sdlEvent);
 	}
 	
 		
@@ -1192,11 +1124,6 @@ void Engine::update()
 
 	BehaviorManager::getInstance().update();
 
-	if (m_bUseDesktop)
-	{
-		
-	}
-
 	if (m_bSonarCleaning)
 	{
 		if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("pointclean"))
@@ -1216,48 +1143,7 @@ void Engine::update()
 			dv->update();
 	}
 
-	if (m_bFlowVis && m_pFlowVolume)
-	{
-
-		bool flowProbeActive = BehaviorManager::getInstance().getBehavior("flowprobe") != nullptr;
-
-		if (m_pTDM->getPrimaryController())
-		{
-			if (!flowProbeActive)
-				BehaviorManager::getInstance().addBehavior("flowprobe", new FlowProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
-		}
-		else if (flowProbeActive)
-		{
-			BehaviorManager::getInstance().removeBehavior("flowprobe");
-		}
-
-
-		bool hairySliceActive = BehaviorManager::getInstance().getBehavior("hairyslice") != nullptr;
-
-		if (m_pTDM->getSecondaryController())
-		{
-			if (!hairySliceActive)
-				BehaviorManager::getInstance().addBehavior("hairyslice", new HairyFlowProbe(m_pTDM->getSecondaryController(), m_pFlowVolume));
-		}
-		else if (hairySliceActive)
-		{
-			BehaviorManager::getInstance().removeBehavior("hairyslice");
-		}
-
-
-		if (!BehaviorManager::getInstance().getBehavior("flowcurator"))
-			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
-
-		//if (!BehaviorManager::getInstance().getBehavior("debugprobe"))
-		//	BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));
-
-		if (!BehaviorManager::getInstance().getBehavior("grab"))
-			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
-		if (!BehaviorManager::getInstance().getBehavior("scale"))
-			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
-
-		m_pFlowVolume->update();
-	}
+	m_pCurrentScene->update();
 }
 
 void Engine::drawScene()
@@ -1407,14 +1293,6 @@ void Engine::drawScene()
 		}
 	}
 
-	if (m_bFlowVis && m_pFlowVolume)
-	{
-		m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
-		m_pFlowVolume->drawBBox(0.f);
-
-		m_pFlowVolume->draw();
-	}
-
 	if (m_bUseVR)
 	{
 		m_pTDM->draw();
@@ -1422,9 +1300,7 @@ void Engine::drawScene()
 		InfoBoxManager::getInstance().draw();
 	}
 
-	if (m_bUseDesktop)
-	{
-	}
+	m_pCurrentScene->draw();
 
 	// MUST be run last to xfer previous debug draw calls to opengl buffers
 	DebugDrawer::getInstance().draw();

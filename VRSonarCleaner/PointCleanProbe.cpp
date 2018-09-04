@@ -47,7 +47,7 @@ void PointCleanProbe::draw()
 	if (!m_pController || !m_pController->valid())
 		return;
 
-	drawProbe(m_fProbeOffset - m_fProbeRadius);	
+	drawProbe();	
 
 	float rate_ms_per_rev = POINT_CLOUD_CLEAN_PROBE_ROTATION_RATE.count() / (1.f + 10.f * m_pController->getTriggerPullAmount());
 	

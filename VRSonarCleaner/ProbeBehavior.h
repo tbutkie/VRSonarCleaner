@@ -68,12 +68,13 @@ protected:
 
 	glm::vec4 m_vec4ProbeColorDiff, m_vec4ProbeColorSpec;
 	glm::vec4 m_vec4ProbeActivateColorDiff, m_vec4ProbeActivateColorSpec;
+	float m_fProbeColorSpecExp, m_fProbeActivateColorSpecExp;
 
 protected:
 
 	virtual void activateProbe() = 0;
 	virtual void deactivateProbe() = 0;
 
-	virtual void drawProbe(float length);
+	virtual void drawProbe();
 };
 

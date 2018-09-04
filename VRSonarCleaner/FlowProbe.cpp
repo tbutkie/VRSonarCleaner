@@ -66,7 +66,7 @@ void FlowProbe::draw()
 {
 	if (m_pController)
 	{
-		drawProbe(m_fProbeOffset);
+		drawProbe();
 
 		if (m_pEmitter && m_pEmitter->getRadius() > 0.f)
 		{
@@ -81,26 +81,26 @@ void FlowProbe::draw()
 
 		Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", touchDividerStart, touchDividerEnd, 0.0005f, glm::vec4(1.f, 1.f, 0.f, 1.f));
 
-		glm::vec3 placeDyeLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadTop - m_pController->c_vec4TouchPadCenter)/2.f));
+		glm::vec3 placeDyeLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.001f, 0.f)) * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadTop - m_pController->c_vec4TouchPadCenter)/2.f));
 		glm::vec4 placeDyeLabelColor = (m_pController->isTouchpadTouched() && m_pController->getCurrentTouchpadTouchPoint().y > 0.25f) ? glm::linearRand(glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f)) : glm::vec4(1.f);
 
 		Renderer::getInstance().drawText(
 			"PLACE\nDYE",
 			placeDyeLabelColor,
 			placeDyeLabel,
-			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-80.f), glm::vec3(1.f, 0.f, 0.f))),
+			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
 			0.01f,
 			Renderer::TextSizeDim::HEIGHT
 		);
 
-		glm::vec3 changeColorLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadBottom - m_pController->c_vec4TouchPadCenter) / 2.f));
+		glm::vec3 changeColorLabel = glm::vec3(m_pController->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.001f, 0.f)) * (m_pController->c_vec4TouchPadCenter + (m_pController->c_vec4TouchPadBottom - m_pController->c_vec4TouchPadCenter) / 2.f));
 		glm::vec4 changeColorLabelColor = (m_pController->isTouchpadTouched() && m_pController->getCurrentTouchpadTouchPoint().y < -0.25f) ? glm::linearRand(glm::vec4(0.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 1.f, 1.f)) : glm::vec4(1.f);
 
 		Renderer::getInstance().drawText(
 			"DYE\nCOLOR",
 			changeColorLabelColor,
 			changeColorLabel,
-			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-95.f), glm::vec3(1.f, 0.f, 0.f))),
+			glm::quat(m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
 			0.01f,
 			Renderer::TextSizeDim::HEIGHT
 		);

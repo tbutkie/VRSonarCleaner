@@ -17,13 +17,15 @@ ProbeBehavior::ProbeBehavior(ViveController* pController, DataVolume* dataVolume
 	, m_fProbeOffset(0.1f)
 	, m_fProbeOffsetMin(0.1f)
 	, m_fProbeOffsetMax(2.f)
-	, m_fProbeRadius(0.05f)
+	, m_fProbeRadius(0.005f)
 	, m_fProbeRadiusMin(0.005f)
 	, m_fProbeRadiusMax(0.25f)
 	, m_vec4ProbeColorDiff(glm::vec4(0.125f, 0.125f, 0.125f, 1.f))
 	, m_vec4ProbeColorSpec(glm::vec4(1.f))
-	, m_vec4ProbeActivateColorDiff(glm::vec4(0.502f, 0.125f, 0.125f, 1.f))
-	, m_vec4ProbeActivateColorSpec(glm::vec4(0.f, 0.f, 1.f, 1.f))
+	, m_fProbeColorSpecExp(32.f)
+	, m_vec4ProbeActivateColorDiff(m_vec4ProbeColorDiff)
+	, m_vec4ProbeActivateColorSpec(m_vec4ProbeColorSpec)
+	, m_fProbeActivateColorSpecExp(m_fProbeColorSpecExp)
 {
 }
 
@@ -285,7 +287,7 @@ void ProbeBehavior::update()
 	}
 }
 
-void ProbeBehavior::drawProbe(float length)
+void ProbeBehavior::drawProbe()
 {
 	if (!m_pController || !m_pController->valid())
 		return;
@@ -294,19 +296,21 @@ void ProbeBehavior::drawProbe(float length)
 	{	
 		// Set color
 		glm::vec4 diffColor, specColor;
+		float specExp;
 		if (m_pController->isTriggerClicked())
 		{
 			diffColor = m_vec4ProbeActivateColorDiff;
 			specColor = m_vec4ProbeActivateColorSpec;
+			specExp = m_fProbeActivateColorSpecExp;
 		}
 		else
 		{
 			diffColor = m_vec4ProbeColorDiff;
 			specColor = m_vec4ProbeColorSpec;
+			specExp = m_fProbeColorSpecExp;
 		}
-		float specExp(30.f);
 
-		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.0025f, 0.0025f, length));
+		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.001f, 0.001f, m_fProbeOffset));
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
 	}

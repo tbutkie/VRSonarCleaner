@@ -28,7 +28,7 @@ void HairyFlowProbe::draw()
 
 	if (m_pController)
 	{
-		drawProbe(m_fProbeOffset);
+		drawProbe();
 
 		glm::mat4 probeMat = getTransformProbeToWorld();
 		glm::vec3 probePos = getPosition();

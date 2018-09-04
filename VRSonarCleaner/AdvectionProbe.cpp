@@ -23,7 +23,7 @@ void AdvectionProbe::draw()
 	if (!m_pController->valid())
 		return;
 
-	drawProbe(m_fProbeOffset);
+	drawProbe();
 
 	float sphereRad = m_pDataVolume->getDimensions().y * 0.25f;
 

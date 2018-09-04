@@ -25,9 +25,9 @@ void DebugProbe::update()
 
 void DebugProbe::draw()
 {
-	if (m_pController)
+	if (m_pController && m_pController->valid())
 	{
-		drawProbe(m_fProbeOffset);
+		drawProbe();
 
 		glm::vec3 probePos = getPosition();
 
