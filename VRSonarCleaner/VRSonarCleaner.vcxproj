@@ -207,6 +207,7 @@
     <ClCompile Include="SonarPointCloud.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="InfoBoxManager.cpp" />
+    <ClCompile Include="SonarScene.cpp" />
     <ClCompile Include="StudyEditTutorial.cpp" />
     <ClCompile Include="StudyIntroBehavior.cpp" />
     <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
@@ -269,6 +270,7 @@
     <ClInclude Include="SnellenTest.h" />
     <ClInclude Include="SonarPointCloud.h" />
     <ClInclude Include="InfoBoxManager.h" />
+    <ClInclude Include="SonarScene.h" />
     <ClInclude Include="StudyEditTutorial.h" />
     <ClInclude Include="StudyIntroBehavior.h" />
     <ClInclude Include="StudyTrialDesktopBehavior.h" />

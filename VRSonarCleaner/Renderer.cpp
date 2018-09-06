@@ -31,6 +31,9 @@ Renderer::~Renderer()
 
 void Renderer::shutdown()
 {
+	for (auto fb : { m_pWindowFramebuffer , m_pLeftEyeFramebuffer, m_pRightEyeFramebuffer })
+		if (fb)
+			Renderer::getInstance().destroyFrameBuffer(*fb);
 }
 
 bool Renderer::init()
@@ -172,6 +175,31 @@ void Renderer::setSkybox(std::string right, std::string left, std::string top, s
 	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+Renderer::SceneViewInfo * Renderer::getLeftEyeInfo()
+{
+	return &m_sviLeftEyeInfo;
+}
+
+Renderer::SceneViewInfo * Renderer::getRightEyeInfo()
+{
+	return &m_sviRightEyeInfo;
+}
+
+Renderer::SceneViewInfo * Renderer::get3DViewInfo()
+{
+	return &m_sviWindow3DInfo;
+}
+
+Renderer::SceneViewInfo * Renderer::getUIInfo()
+{
+	return &m_sviWindowUIInfo;
+}
+
+Renderer::Camera* Renderer::getCamera()
+{
+	return &m_WindowCamera;
 }
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
@@ -1510,6 +1538,50 @@ void Renderer::setupText()
 	FT_Done_FreeType(ft);
 }
 
+
+void Renderer::createVRViews()
+{
+	uint32_t renderWidth, renderHeight;
+	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+
+	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
+
+	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
+	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
+	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
+
+	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
+	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().createFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
+		utils::dprintf("Could not create left eye framebuffer!\n");
+	if (!Renderer::getInstance().createFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
+		utils::dprintf("Could not create right eye framebuffer!\n");
+}
+
+void Renderer::createDesktopView()
+{
+	m_sviWindowUIInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindowUIInfo.m_nRenderHeight = m_ivec2WindowSize.y;
+
+	m_sviWindowUIInfo.view = glm::mat4();
+	m_sviWindowUIInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderHeight), -1.f, 1.f);
+
+	m_sviWindow3DInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
+	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fNearClip, g_fFarClip);
+
+	if (!m_pWindowFramebuffer)
+		m_pWindowFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!Renderer::getInstance().createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
+		utils::dprintf("Could not create desktop view framebuffer!\n");
+}
+
 void Renderer::updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick)
 {
 	unsigned maxLines = 20;
@@ -1874,6 +1946,29 @@ glm::vec2 Renderer::getTextDimensions(std::string text, float size, TextSizeDim 
 	GLfloat scale = size / (sizeDim == WIDTH ? textDims.x : textDims.y);
 
 	return textDims * scale;
+}
+
+void Renderer::drawFrustum(SceneViewInfo const * svi)
+{
+	// get world-space points for the viewing plane
+	glm::vec3 x0y0 = glm::unProject(glm::vec3(0.f), svi->view, svi->projection, glm::vec4(0.f, 0.f, svi->m_nRenderWidth, svi->m_nRenderHeight));
+	glm::vec3 x1y0 = glm::unProject(glm::vec3(svi->m_nRenderWidth, 0.f, 0.f), svi->view, svi->projection, glm::vec4(0.f, 0.f, svi->m_nRenderWidth, svi->m_nRenderHeight));
+	glm::vec3 x0y1 = glm::unProject(glm::vec3(0.f, svi->m_nRenderHeight, 0.f), svi->view, svi->projection, glm::vec4(0.f, 0.f, svi->m_nRenderWidth, svi->m_nRenderHeight));
+	glm::vec3 x1y1 = glm::unProject(glm::vec3(svi->m_nRenderWidth, svi->m_nRenderHeight, 0.f), svi->view, svi->projection, glm::vec4(0.f, 0.f, svi->m_nRenderWidth, svi->m_nRenderHeight));
+
+	// draw the viewing plane
+	drawDirectedPrimitiveLit("cylinder", x0y0, x1y0, 0.01f, glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", x1y0, x1y1, 0.01f, glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", x1y1, x0y1, 0.01f, glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", x0y1, x0y0, 0.01f, glm::vec4(1.f, 0.f, 1.f, 1.f));
+	
+	glm::vec3 viewPos = glm::vec3(glm::inverse(svi->view)[3]);
+
+	// connect the viewing plane corners to view pos
+	drawDirectedPrimitiveLit("cylinder", viewPos, x1y0, 0.01f, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", viewPos, x1y1, 0.01f, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", viewPos, x0y1, 0.01f, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
+	drawDirectedPrimitiveLit("cylinder", viewPos, x0y0, 0.01f, glm::vec4(1.f, 1.f, 1.f, 1.f), glm::vec4(1.f, 0.f, 1.f, 1.f));
 }
 
 GLuint Renderer::createInstancedDataBufferVBO(std::vector<glm::vec3>* instancePositions, std::vector<glm::vec4>* instanceColors)

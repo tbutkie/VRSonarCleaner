@@ -123,6 +123,8 @@ public:
 		glm::mat4 view;
 		glm::mat4 projection;
 		glm::mat4 viewTransform; // for e.g. transforming from head to eye space;
+		float nearClip;
+		float farClip;
 		uint32_t m_nRenderWidth;
 		uint32_t m_nRenderHeight;
 	};
@@ -156,6 +158,12 @@ public:
 	void showMessage(std::string message, float duration = 5.f);
 
 	void setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back);
+	
+	SceneViewInfo* getLeftEyeInfo();
+	SceneViewInfo* getRightEyeInfo();
+	SceneViewInfo* get3DViewInfo();
+	SceneViewInfo* getUIInfo();
+	Camera* getCamera();
 
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName = "white", float specularExponent = 32.f);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor = glm::vec4(1.f), float specularExponent = 32.f);
@@ -167,6 +175,8 @@ public:
 	void drawText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE, bool snellenFont = false);
 	void drawUIText(std::string text, glm::vec4 color, glm::vec3 pos, glm::quat rot, GLfloat size, TextSizeDim sizeDim, TextAlignment alignment = TextAlignment::CENTER, TextAnchor anchor = TextAnchor::CENTER_MIDDLE);
 	glm::vec2 getTextDimensions(std::string text, float size, TextSizeDim sizeDim);
+
+	void drawFrustum(SceneViewInfo const * svi);
 
 	GLuint createInstancedDataBufferVBO(std::vector<glm::vec3> *instancePositions, std::vector<glm::vec4> *instanceColors);
 	GLuint createInstancedPrimitiveVAO(std::string primitiveName, GLuint instanceDataVBO, GLsizei instanceCount, GLsizei instanceStride = 1);
@@ -216,12 +226,14 @@ private:
 
 	void setupText();
 
+	void createVRViews();
+	void createDesktopView();
+
 	void updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick);
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
 	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
-
 private:
 
 	struct Skybox {
@@ -245,6 +257,16 @@ private:
 	LightingSystem* m_pLighting;
 
 	ShaderSet m_Shaders;
+
+	Renderer::SceneViewInfo m_sviLeftEyeInfo;
+	Renderer::SceneViewInfo m_sviRightEyeInfo;
+	Renderer::FramebufferDesc *m_pLeftEyeFramebuffer;
+	Renderer::FramebufferDesc *m_pRightEyeFramebuffer;
+	
+	Renderer::Camera m_WindowCamera;
+	Renderer::SceneViewInfo m_sviWindowUIInfo;
+	Renderer::SceneViewInfo m_sviWindow3DInfo;
+	Renderer::FramebufferDesc *m_pWindowFramebuffer;
 
 	std::vector<RendererSubmission> m_vStaticRenderQueue_Opaque;
 	std::vector<RendererSubmission> m_vStaticRenderQueue_Transparency;
