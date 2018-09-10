@@ -15,7 +15,7 @@ class RunStudyBehavior :
 {
 public:
 	RunStudyBehavior(TrackedDeviceManager* pTDM, bool sitting);
-	RunStudyBehavior(Renderer::SceneViewInfo *pSceneInfo, glm::ivec4 &viewport, Renderer::Camera *pCamera);
+	RunStudyBehavior();
 	~RunStudyBehavior();
 
 	void init();
@@ -44,10 +44,5 @@ private:
 
 	// VR Vars
 	TrackedDeviceManager *m_pTDM;
-
-	// Desktop vars
-	Renderer::SceneViewInfo *m_pDesktop3DViewInfo;
-	glm::ivec4 m_ivec4Viewport;
-	Renderer::Camera *m_pCamera;
 };
 

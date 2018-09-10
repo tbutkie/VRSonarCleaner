@@ -17,6 +17,55 @@
 #include "GLSLpreamble.h"
 #include "utilities.h"
 
+float	g_fDefaultNearClip = 0.01f;
+float	g_fDefaultFarClip = 100.f;
+float	g_fDefaultFOV(45.f);
+
+//-----------------------------------------------------------------------------
+// Purpose: OpenGL Debug Callback Function
+//-----------------------------------------------------------------------------
+void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
+{
+	// ignore non-significant error/warning codes
+	if (id == 131169 || id == 131184 || id == 131185 || id == 131218 || id == 131204) return;
+
+	std::cout << "---------------" << std::endl;
+	std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+	switch (source)
+	{
+	case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+	case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+	case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+	} std::cout << std::endl;
+
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+	case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+	case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+	case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+	case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+	case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+	case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+	} std::cout << std::endl;
+
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+	case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+	case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+	} std::cout << std::endl;
+	std::cout << std::endl;
+}
+
+
 Renderer::Renderer()
 	: m_pLighting(NULL)
 	, m_glFrameUBO(0)
@@ -34,10 +83,76 @@ void Renderer::shutdown()
 	for (auto fb : { m_pWindowFramebuffer , m_pLeftEyeFramebuffer, m_pRightEyeFramebuffer })
 		if (fb)
 			Renderer::getInstance().destroyFrameBuffer(*fb);
+
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+	glDebugMessageCallback(nullptr, nullptr);
+
+	SDL_DestroyWindow(m_pWindow);
+}
+
+void Renderer::setStereoRenderSize(glm::ivec2 res)
+{
+	for (auto &fb : { m_pLeftEyeFramebuffer, m_pRightEyeFramebuffer })
+	{
+		if (fb)
+		{
+			destroyFrameBuffer(*fb);
+			delete fb;
+		}
+	}
+
+	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
+	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
+	
+	if (!createFrameBuffer(res.x, res.y, *m_pLeftEyeFramebuffer))
+		utils::dprintf("Could not create left eye framebuffer!\n");
+	if (!createFrameBuffer(res.x, res.y, *m_pRightEyeFramebuffer))
+		utils::dprintf("Could not create right eye framebuffer!\n");
 }
 
 bool Renderer::init()
 {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+	{
+		utils::dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	m_pWindow = createFullscreenWindow(1);
+
+	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
+	
+	m_pGLContext = SDL_GL_CreateContext(m_pWindow);
+
+
+	if (m_pGLContext == NULL)
+	{
+		utils::dprintf("%s - VR companion window OpenGL context could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR));
+
+	// Set V-Sync
+	if (SDL_GL_SetSwapInterval(0) < 0)
+		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+
+	glewExperimental = GL_TRUE;
+	GLenum nGlewError = glewInit();
+	if (nGlewError != GLEW_OK)
+	{
+		printf("%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
+		return false;
+	}
+
+	glGetError(); // to clear the error caused deep in GLEW
+
+#if _DEBUG
+	glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+
 	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
 	m_pLighting->addDirectLight(glm::vec4(1.f, -1.f, 1.f, 0.f))->ambientCoefficient = 0.5f;
@@ -57,6 +172,8 @@ bool Renderer::init()
 	setupText();
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
+
+	createDesktopView();
 
 	return true;
 }
@@ -177,9 +294,19 @@ void Renderer::setSkybox(std::string right, std::string left, std::string top, s
 	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
+void Renderer::setWindowTitle(std::string title)
+{
+	SDL_SetWindowTitle(m_pWindow, title.c_str());
+}
+
 Renderer::SceneViewInfo * Renderer::getLeftEyeInfo()
 {
 	return &m_sviLeftEyeInfo;
+}
+
+Renderer::FramebufferDesc * Renderer::getLeftEyeFrameBuffer()
+{
+	return m_pLeftEyeFramebuffer;
 }
 
 Renderer::SceneViewInfo * Renderer::getRightEyeInfo()
@@ -187,12 +314,17 @@ Renderer::SceneViewInfo * Renderer::getRightEyeInfo()
 	return &m_sviRightEyeInfo;
 }
 
-Renderer::SceneViewInfo * Renderer::get3DViewInfo()
+Renderer::FramebufferDesc * Renderer::getRightEyeFrameBuffer()
+{
+	return m_pRightEyeFramebuffer;
+}
+
+Renderer::SceneViewInfo * Renderer::getWindow3DViewInfo()
 {
 	return &m_sviWindow3DInfo;
 }
 
-Renderer::SceneViewInfo * Renderer::getUIInfo()
+Renderer::SceneViewInfo * Renderer::getWindowUIInfo()
 {
 	return &m_sviWindowUIInfo;
 }
@@ -200,6 +332,11 @@ Renderer::SceneViewInfo * Renderer::getUIInfo()
 Renderer::Camera* Renderer::getCamera()
 {
 	return &m_WindowCamera;
+}
+
+glm::ivec2 Renderer::getUIRenderSize()
+{
+	return m_ivec2WindowSize;
 }
 
 bool Renderer::drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName, float specularExponent)
@@ -687,12 +824,197 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 	}
 }
 
+
+void Renderer::render()
+{
+	// VR
+	{
+		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, m_pWindowFramebuffer->m_nRenderFramebufferId);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLint srcX0, srcX1, srcY0, srcY1;
+		GLint dstX0, dstX1, dstY0, dstY1;
+
+		if (m_sviWindowUIInfo.m_nRenderWidth < m_sviLeftEyeInfo.m_nRenderWidth)
+		{
+			srcX0 = m_sviLeftEyeInfo.m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
+			srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
+			dstX0 = 0;
+			dstX1 = m_sviWindowUIInfo.m_nRenderWidth;
+		}
+		else
+		{
+			srcX0 = 0;
+			srcX1 = m_sviLeftEyeInfo.m_nRenderWidth;
+
+			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviLeftEyeInfo.m_nRenderWidth / 2;;
+			dstX1 = dstX0 + m_sviLeftEyeInfo.m_nRenderWidth;
+		}
+
+		if (m_sviWindowUIInfo.m_nRenderHeight < m_sviLeftEyeInfo.m_nRenderHeight)
+		{
+			srcY0 = m_sviLeftEyeInfo.m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
+			srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
+			dstY0 = 0;
+			dstY1 = m_sviWindowUIInfo.m_nRenderHeight;
+		}
+		else
+		{
+			srcY0 = 0;
+			srcY1 = m_sviLeftEyeInfo.m_nRenderHeight;
+
+			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviLeftEyeInfo.m_nRenderHeight / 2;;
+			dstY1 = dstY0 + m_sviLeftEyeInfo.m_nRenderHeight;
+		}
+
+		glBlitNamedFramebuffer(
+			m_pLeftEyeFramebuffer->m_nRenderFramebufferId,
+			m_pWindowFramebuffer->m_nRenderFramebufferId,
+			srcX0, srcY0, srcX1, srcY1,
+			dstX0, dstY0, dstX1, dstY1,
+			GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+			GL_NEAREST);
+
+		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pWindowFramebuffer);
+
+		Renderer::getInstance().renderFullscreenTexture(
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			m_pWindowFramebuffer->m_nResolveTextureId,
+			true
+		);
+
+		//vr::VRCompositor()->PostPresentHandoff();
+		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+
+		//glFinish();
+
+		//SDL_GL_SwapWindow(m_pWindow);
+
+		//glClearColor(0, 0, 0, 1);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//glFlush();
+		//glFinish();
+	}
+
+	//DESKTOP
+	{
+		//SDL_GL_MakeCurrent(m_pWindow, m_pGLContext);
+
+		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviWindow3DInfo.view)[3]));
+
+		Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
+
+		Renderer::getInstance().renderFullscreenTexture(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
+
+	}
+}
+
+void Renderer::swapAndClear()
+{
+	SDL_GL_SwapWindow(m_pWindow);
+	clearDynamicRenderQueue();
+	clearUIRenderQueue();
+}
+
 bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubmission const & rsRHS, glm::vec3 const & HMDPos)
 {
 	glm::vec3 lhsPos = rsLHS.transparencySortPosition.w == -1.f ? glm::vec3(rsLHS.modelToWorldTransform[3]) : glm::vec3(rsLHS.transparencySortPosition);
 	glm::vec3 rhsPos = rsRHS.transparencySortPosition.w == -1.f ? glm::vec3(rsRHS.modelToWorldTransform[3]) : glm::vec3(rsRHS.transparencySortPosition);
 
 	return glm::length2(lhsPos - HMDPos) > glm::length2(rhsPos - HMDPos);
+}
+
+
+SDL_Window * Renderer::createFullscreenWindow(int displayIndex)
+{
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+	SDL_Rect displayBounds;
+
+	if (SDL_GetDisplayBounds(displayIndex, &displayBounds) < 0)
+		SDL_GetDisplayBounds(0, &displayBounds);
+
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
+
+	if (win == NULL)
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+
+	return win;
+}
+
+SDL_Window * Renderer::createWindow(int width, int height, int displayIndex)
+{
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY ); //UNCOMMENT AND COMMENT LINE BELOW TO ENABLE FULL OPENGL COMMANDS
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+#if _DEBUG
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
+	SDL_Window* win = SDL_CreateWindow("CCOM VR", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, unWindowFlags);
+
+	if (win == NULL)
+	{
+		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
+		return false;
+	}
+
+	return win;
+}
+
+void Renderer::createDesktopView()
+{
+	m_sviWindowUIInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindowUIInfo.m_nRenderHeight = m_ivec2WindowSize.y;
+
+	m_sviWindowUIInfo.view = glm::mat4();
+	m_sviWindowUIInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderHeight), -1.f, 1.f);
+
+	m_sviWindow3DInfo.m_nRenderWidth = m_ivec2WindowSize.x;
+	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
+	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDefaultFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fDefaultNearClip, g_fDefaultFarClip);
+
+	if (!m_pWindowFramebuffer)
+		m_pWindowFramebuffer = new FramebufferDesc();
+
+	if (!createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
+		utils::dprintf("Could not create desktop view framebuffer!\n");
+}
+
+
+void Renderer::setWindowToDisplay(int displayIndex)
+{
+	SDL_Rect displayBounds;
+
+	SDL_GetDisplayBounds(displayIndex, &displayBounds);
+
+	SDL_SetWindowPosition(m_pWindow, displayBounds.x, displayBounds.y);
+	SDL_SetWindowSize(m_pWindow, displayBounds.w, displayBounds.h);
+
+	m_ivec2WindowSize = glm::ivec2(displayBounds.w, displayBounds.h);
+
+	destroyFrameBuffer(*m_pWindowFramebuffer);
+	createDesktopView();
 }
 
 
@@ -1536,50 +1858,6 @@ void Renderer::setupText()
 	}
 
 	FT_Done_FreeType(ft);
-}
-
-
-void Renderer::createVRViews()
-{
-	uint32_t renderWidth, renderHeight;
-	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
-
-	m_sviLeftEyeInfo.m_nRenderWidth = renderWidth;
-	m_sviLeftEyeInfo.m_nRenderHeight = renderHeight;
-	m_sviLeftEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
-	m_sviLeftEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
-
-	m_sviRightEyeInfo.m_nRenderWidth = renderWidth;
-	m_sviRightEyeInfo.m_nRenderHeight = renderHeight;
-	m_sviRightEyeInfo.viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
-	m_sviRightEyeInfo.projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
-
-	m_pLeftEyeFramebuffer = new Renderer::FramebufferDesc();
-	m_pRightEyeFramebuffer = new Renderer::FramebufferDesc();
-
-	if (!Renderer::getInstance().createFrameBuffer(m_sviLeftEyeInfo.m_nRenderWidth, m_sviLeftEyeInfo.m_nRenderHeight, *m_pLeftEyeFramebuffer))
-		utils::dprintf("Could not create left eye framebuffer!\n");
-	if (!Renderer::getInstance().createFrameBuffer(m_sviRightEyeInfo.m_nRenderWidth, m_sviRightEyeInfo.m_nRenderHeight, *m_pRightEyeFramebuffer))
-		utils::dprintf("Could not create right eye framebuffer!\n");
-}
-
-void Renderer::createDesktopView()
-{
-	m_sviWindowUIInfo.m_nRenderWidth = m_ivec2WindowSize.x;
-	m_sviWindowUIInfo.m_nRenderHeight = m_ivec2WindowSize.y;
-
-	m_sviWindowUIInfo.view = glm::mat4();
-	m_sviWindowUIInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderHeight), -1.f, 1.f);
-
-	m_sviWindow3DInfo.m_nRenderWidth = m_ivec2WindowSize.x;
-	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
-	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fNearClip, g_fFarClip);
-
-	if (!m_pWindowFramebuffer)
-		m_pWindowFramebuffer = new Renderer::FramebufferDesc();
-
-	if (!Renderer::getInstance().createFrameBuffer(m_ivec2WindowSize.x, m_ivec2WindowSize.y, *m_pWindowFramebuffer))
-		utils::dprintf("Could not create desktop view framebuffer!\n");
 }
 
 void Renderer::updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick)

@@ -11,7 +11,7 @@ class StudyTrialDesktopBehavior :
 	public InitializableBehavior
 {
 public:
-	StudyTrialDesktopBehavior(Renderer::SceneViewInfo *sceneinfo, glm::ivec4 &viewport, Renderer::Camera *cam, std::string fileName, std::string category);
+	StudyTrialDesktopBehavior(std::string fileName, std::string category);
 	~StudyTrialDesktopBehavior();
 
 	void init();
@@ -23,9 +23,6 @@ public:
 	void finish();
 
 private:
-	Renderer::SceneViewInfo *m_pDesktop3DViewInfo;
-	glm::ivec4 m_ivec4Viewport;
-	Renderer::Camera *m_pCamera;
 	ColorScaler* m_pColorScaler;
 	SonarPointCloud* m_pPointCloud;
 	DataVolume* m_pDataVolume;

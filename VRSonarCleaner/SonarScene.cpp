@@ -20,9 +20,8 @@
 
 using namespace std::chrono_literals;
 
-SonarScene::SonarScene(SDL_Window* pWindow, TrackedDeviceManager* pTDM)
-	: m_pWindow(pWindow)
-	, m_pTDM(pTDM)
+SonarScene::SonarScene(TrackedDeviceManager* pTDM)
+	: m_pTDM(pTDM)
 	, m_pTableVolume(NULL)
 	, m_pWallVolume(NULL)
 	, m_vec3RoomSize(1.f, 3.f, 1.f)
@@ -47,8 +46,7 @@ SonarScene::~SonarScene()
 
 void SonarScene::init()
 {
-	std::string strWindowTitle = "VR Sonar Cleaner | CCOM VisLab";
-	SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+	Renderer::getInstance().setWindowTitle("VR Sonar Cleaner | CCOM VisLab");
 
 	glm::vec3 wallSize(10.f, (m_vec3RoomSize.y * 0.9f), 0.5f);
 	glm::quat wallOrientation(glm::angleAxis(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)));
@@ -115,15 +113,13 @@ void SonarScene::init()
 
 	if (m_bUseDesktop)
 	{
-		glm::ivec4 vp(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y);
-
-		DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume, &m_sviWindow3DInfo, vp);
+		DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pTableVolume);
 		BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
 		tmp->init();
 		
 		Renderer::getInstance().getCamera()->pos = glm::vec3(0.f, 0.f, 1.f);
 		Renderer::getInstance().getCamera()->up = glm::vec3(0.f, 1.f, 0.f);
-		m_sviWindow3DInfo.view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
+		Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
 	}
 }
 
@@ -131,6 +127,9 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 {
 	ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
 	LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
+
+	glm::ivec2 windowSize(Renderer::getInstance().getWindow3DViewInfo()->m_nRenderWidth, Renderer::getInstance().getWindow3DViewInfo()->m_nRenderHeight);
+	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 
 	if (ev.key.keysym.sym == SDLK_r)
 	{
@@ -145,7 +144,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			Renderer::getInstance().getCamera()->pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
 			Renderer::getInstance().getCamera()->lookat = m_pTableVolume->getPosition();
 
-			Renderer::getInstance().get3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
+			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
 
 			arcball->reset();
 		}
@@ -192,7 +191,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 		m_pWallVolume->setVisible(false);
 		m_pTableVolume->setVisible(false);
 		BehaviorManager::getInstance().clearBehaviors();
-		RunStudyBehavior *rsb = new RunStudyBehavior(&m_sviWindow3DInfo, glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera);
+		RunStudyBehavior *rsb = new RunStudyBehavior();
 		BehaviorManager::getInstance().addBehavior("Desktop Study", rsb);
 		rsb->init();
 	}
@@ -204,7 +203,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_ESCAPE
 				|| ev.key.keysym.sym == SDLK_q)
 			{
-				bRet = true;
+				//bRet = true;
 			}
 
 		}
@@ -219,7 +218,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 					m_bLeftMouseDown = true;
 
 					if (arcball)
-						arcball->beginDrag(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+						arcball->beginDrag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 
 					if (lasso)
 					{
@@ -234,7 +233,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 				{
 					m_bRightMouseDown = true;
 					if (lasso && !m_bLeftMouseDown)
-						lasso->start(ev.button.x, m_ivec2WindowSize.y - ev.button.y);
+						lasso->start(ev.button.x, windowSize.y - ev.button.y);
 				}
 				if (ev.button.button == SDL_BUTTON_MIDDLE)
 				{
@@ -245,7 +244,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 					m_bMiddleMouseDown = true;
 
 					if (arcball)
-						arcball->translate(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+						arcball->translate(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 				}
 
 			}//end mouse down 
@@ -279,12 +278,12 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 				if (m_bLeftMouseDown)
 				{
 					if (arcball)
-						arcball->drag(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+						arcball->drag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 				}
 				if (m_bRightMouseDown && !m_bLeftMouseDown)
 				{
 					if (lasso)
-						lasso->move(ev.button.x, m_ivec2WindowSize.y - ev.button.y);
+						lasso->move(ev.button.x, windowSize.y - ev.button.y);
 				}
 			}
 			if (ev.type == SDL_MOUSEWHEEL)
@@ -292,17 +291,17 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 				if (lasso)
 					lasso->reset();
 
-				glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
-				m_Camera.pos += eyeForward * ((float)ev.wheel.y*0.1f);
+				glm::vec3 eyeForward = glm::normalize(cam->lookat - cam->pos);
+				cam->pos += eyeForward * ((float)ev.wheel.y*0.1f);
 
-				float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+				float newLen = glm::length(cam->lookat - cam->pos);
 
 				if (newLen < 0.1f)
-					m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+					cam->pos = cam->lookat - eyeForward * 0.1f;
 				if (newLen > 10.f)
-					m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+					cam->pos = cam->lookat - eyeForward * 10.f;
 
-				m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+				Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 
 				if (DataLogger::getInstance().logging())
 				{
@@ -310,11 +309,11 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 					ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 					ss << "\t";
-					ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+					ss << "cam-pos:\"" << cam->pos.x << "," << cam->pos.y << "," << cam->pos.z << "\"";
 					ss << ";";
-					ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+					ss << "cam-look:\"" << cam->lookat.x << "," << cam->lookat.y << "," << cam->lookat.z << "\"";
 					ss << ";";
-					ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+					ss << "cam-up:\"" << cam->up.x << "," << cam->up.y << "," << cam->up.z << "\"";
 
 					DataLogger::getInstance().logMessage(ss.str());
 				}
@@ -416,7 +415,6 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 	if (ev.key.keysym.sym == SDLK_y)
 	{
-		m_bDemoMode = true;
 		m_pTableVolume->setVisible(false);
 		m_pWallVolume->setVisible(false);
 		BehaviorManager::getInstance().clearBehaviors();
@@ -442,7 +440,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 		m_pWallVolume->setVisible(false);
 		m_pTableVolume->setVisible(false);
 		BehaviorManager::getInstance().clearBehaviors();
-		StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior(&m_sviWindow3DInfo, glm::ivec4(0.f, 0.f, m_ivec2WindowSize.x, m_ivec2WindowSize.y), &m_Camera, "tutorial_points.csv", "demo");
+		StudyTrialDesktopBehavior  *stdb = new StudyTrialDesktopBehavior("tutorial_points.csv", "demo");
 		BehaviorManager::getInstance().addBehavior("Tutorial", stdb);
 		stdb->init();
 	}
@@ -477,10 +475,10 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 		if (arcball)
 		{
-			m_Camera.pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-			m_Camera.lookat = m_pTableVolume->getPosition();
+			cam->pos = m_pTableVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+			cam->lookat = m_pTableVolume->getPosition();
 
-			m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 
 			arcball->reset();
 		}
@@ -519,7 +517,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 				m_bLeftMouseDown = true;
 
 				if (arcball)
-					arcball->beginDrag(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+					arcball->beginDrag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 
 				if (lasso)
 				{
@@ -534,7 +532,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			{
 				m_bRightMouseDown = true;
 				if (lasso && !m_bLeftMouseDown)
-					lasso->start(ev.button.x, m_ivec2WindowSize.y - ev.button.y);
+					lasso->start(ev.button.x, windowSize.y - ev.button.y);
 			}
 			if (ev.button.button == SDL_BUTTON_MIDDLE)
 			{
@@ -545,7 +543,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 				m_bMiddleMouseDown = true;
 
 				if (arcball)
-					arcball->translate(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+					arcball->translate(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 			}
 
 		}//end mouse down 
@@ -579,12 +577,12 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			if (m_bLeftMouseDown)
 			{
 				if (arcball)
-					arcball->drag(glm::vec2(ev.button.x, m_ivec2WindowSize.y - ev.button.y));
+					arcball->drag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
 			}
 			if (m_bRightMouseDown && !m_bLeftMouseDown)
 			{
 				if (lasso)
-					lasso->move(ev.button.x, m_ivec2WindowSize.y - ev.button.y);
+					lasso->move(ev.button.x, windowSize.y - ev.button.y);
 			}
 		}
 		if (ev.type == SDL_MOUSEWHEEL)
@@ -592,17 +590,17 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			if (lasso)
 				lasso->reset();
 
-			glm::vec3 eyeForward = glm::normalize(m_Camera.lookat - m_Camera.pos);
-			m_Camera.pos += eyeForward * ((float)ev.wheel.y*0.1f);
+			glm::vec3 eyeForward = glm::normalize(cam->lookat - cam->pos);
+			cam->pos += eyeForward * ((float)ev.wheel.y*0.1f);
 
-			float newLen = glm::length(m_Camera.lookat - m_Camera.pos);
+			float newLen = glm::length(cam->lookat - cam->pos);
 
 			if (newLen < 0.1f)
-				m_Camera.pos = m_Camera.lookat - eyeForward * 0.1f;
+				cam->pos = cam->lookat - eyeForward * 0.1f;
 			if (newLen > 10.f)
-				m_Camera.pos = m_Camera.lookat - eyeForward * 10.f;
+				cam->pos = cam->lookat - eyeForward * 10.f;
 
-			m_sviWindow3DInfo.view = glm::lookAt(m_Camera.pos, m_Camera.lookat, m_Camera.up);
+			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 
 			if (DataLogger::getInstance().logging())
 			{
@@ -610,11 +608,11 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 				ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 				ss << "\t";
-				ss << "cam-pos:\"" << m_Camera.pos.x << "," << m_Camera.pos.y << "," << m_Camera.pos.z << "\"";
+				ss << "cam-pos:\"" << cam->pos.x << "," << cam->pos.y << "," << cam->pos.z << "\"";
 				ss << ";";
-				ss << "cam-look:\"" << m_Camera.lookat.x << "," << m_Camera.lookat.y << "," << m_Camera.lookat.z << "\"";
+				ss << "cam-look:\"" << cam->lookat.x << "," << cam->lookat.y << "," << cam->lookat.z << "\"";
 				ss << ";";
-				ss << "cam-up:\"" << m_Camera.up.x << "," << m_Camera.up.y << "," << m_Camera.up.z << "\"";
+				ss << "cam-up:\"" << cam->up.x << "," << cam->up.y << "," << cam->up.z << "\"";
 
 				DataLogger::getInstance().logMessage(ss.str());
 			}
@@ -659,34 +657,6 @@ void SonarScene::draw()
 	//	);
 	//}
 
-	if (m_bShowDesktopFrustum)
-	{
-		// get frustum with near plane 1m out from view pos
-		glm::mat4 proj = glm::perspective(glm::radians(g_fDesktopWindowFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, 1.f, g_fFarClip);
-
-
-	}
-	
-
-	if (m_bUseDesktop && !m_bStudyMode)
-	{
-		std::stringstream ss;
-		ss.precision(2);
-
-		ss << std::fixed << m_msFrameTime.count() << "ms/frame | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps";
-
-		Renderer::getInstance().drawUIText(
-			ss.str(),
-			glm::vec4(1.f),
-			glm::vec3(0.f),
-			glm::quat(),
-			20.f,
-			Renderer::HEIGHT,
-			Renderer::CENTER,
-			Renderer::BOTTOM_LEFT
-		);
-	}
-
 	bool unloadedData = false;
 
 	for (auto &dv : m_vpDataVolumes)
@@ -696,7 +666,7 @@ void SonarScene::draw()
 		glm::mat4 trans;
 
 		if (m_bUseDesktop)
-			trans = glm::inverse(m_sviWindow3DInfo.view);
+			trans = glm::inverse(Renderer::getInstance().getWindow3DViewInfo()->view);
 
 		if (m_bUseVR)
 			trans = m_pTDM->getHMDToWorldTransform();

@@ -220,7 +220,7 @@
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
     <ClCompile Include="SonarScene.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -405,7 +405,7 @@
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
     <ClInclude Include="SonarScene.h">
-      <Filter>Header Files</Filter>
+      <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

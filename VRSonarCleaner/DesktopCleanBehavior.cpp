@@ -6,10 +6,8 @@
 
 using namespace std::chrono_literals;
 
-DesktopCleanBehavior::DesktopCleanBehavior(DataVolume* pointCloudVolume, Renderer::SceneViewInfo *sceneinfo, glm::ivec4 &viewport)
+DesktopCleanBehavior::DesktopCleanBehavior(DataVolume* pointCloudVolume)
 	: m_pDataVolume(pointCloudVolume)
-	, m_pDesktop3DViewInfo(sceneinfo)
-	, m_ivec4Viewport(viewport)
 {
 }
 

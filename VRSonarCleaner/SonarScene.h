@@ -12,7 +12,7 @@ class SonarScene :
 	public Scene
 {
 public:
-	SonarScene(SDL_Window* pWindow, TrackedDeviceManager* pTDM);
+	SonarScene(TrackedDeviceManager* pTDM);
 	~SonarScene();
 
 	void init();
@@ -24,7 +24,6 @@ public:
 	void draw();
 
 private:
-	SDL_Window * m_pWindow;
 	TrackedDeviceManager* m_pTDM;
 	DataVolume *m_pTableVolume, *m_pWallVolume;
 

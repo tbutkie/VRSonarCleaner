@@ -8,7 +8,7 @@ class FlowScene :
 	public Scene
 {
 public:
-	FlowScene(SDL_Window* pWindow, TrackedDeviceManager* pTDM);
+	FlowScene(TrackedDeviceManager* pTDM);
 	~FlowScene();
 
 	void init();
@@ -20,7 +20,6 @@ public:
 	void draw();
 
 private:
-	SDL_Window * m_pWindow;
 	TrackedDeviceManager* m_pTDM;
 	FlowVolume* m_pFlowVolume;
 

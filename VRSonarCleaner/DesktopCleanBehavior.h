@@ -12,7 +12,7 @@ class DesktopCleanBehavior :
 	public InitializableBehavior
 {
 public:
-	DesktopCleanBehavior(DataVolume* pointCloudVolume, Renderer::SceneViewInfo *sceneinfo, glm::ivec4 &viewport);
+	DesktopCleanBehavior(DataVolume* pointCloudVolume);
 	virtual ~DesktopCleanBehavior();
 
 	void init();
@@ -23,8 +23,6 @@ public:
 
 private:
 	DataVolume* m_pDataVolume;
-	Renderer::SceneViewInfo *m_pDesktop3DViewInfo;
-	glm::ivec4 m_ivec4Viewport;
 
 	LassoTool *m_pLasso;
 	ArcBall *m_pArcball;

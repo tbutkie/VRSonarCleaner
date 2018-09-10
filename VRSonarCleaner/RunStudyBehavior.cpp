@@ -14,18 +14,13 @@ using namespace std::experimental::filesystem::v1;
 RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, bool sitting)
 	: m_eStudyType(sitting ? VR_SITTING : VR_STANDING)
 	, m_pTDM(pTDM)
-	, m_pDesktop3DViewInfo(NULL)
-	, m_pCamera(NULL)
 	, m_bTrialsLoaded(false)
 {
 }
 
-RunStudyBehavior::RunStudyBehavior(Renderer::SceneViewInfo * pSceneInfo, glm::ivec4 & viewport, Renderer::Camera * pCamera)
+RunStudyBehavior::RunStudyBehavior()
 	: m_eStudyType(DESKTOP)
 	, m_pTDM(NULL)
-	, m_pDesktop3DViewInfo(pSceneInfo)
-	, m_ivec4Viewport(viewport)
-	, m_pCamera(pCamera)
 	, m_bTrialsLoaded(false)
 {
 }
@@ -88,7 +83,7 @@ void RunStudyBehavior::init()
 			m_qTrials.push(new StudyTrialSittingBehavior(m_pTDM, ds.first.string(), ds.second));
 			break;
 		case RunStudyBehavior::DESKTOP:
-			m_qTrials.push(new StudyTrialDesktopBehavior(m_pDesktop3DViewInfo, m_ivec4Viewport, m_pCamera, ds.first.string(), ds.second));
+			m_qTrials.push(new StudyTrialDesktopBehavior(ds.first.string(), ds.second));
 			break;
 		default:
 			break;

@@ -11,11 +11,8 @@
 
 using namespace std::chrono;
 
-StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(Renderer::SceneViewInfo *sceneinfo, glm::ivec4 &viewport, Renderer::Camera *cam, std::string fileName, std::string category)
-	: m_pDesktop3DViewInfo(sceneinfo)
-	, m_ivec4Viewport(viewport)
-	, m_pCamera(cam)
-	, m_strFileName(fileName)
+StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::string category)
+	: m_strFileName(fileName)
 	, m_strCategory(category)
 	, m_nPointsLeft(0u)
 	, m_bPointsCleaned(false)
@@ -58,7 +55,7 @@ void StudyTrialDesktopBehavior::init()
 {
 	using namespace std::experimental::filesystem::v1;
 	std::cout << "Starting trial: " << path(m_strFileName).filename() << std::endl;
-	DesktopCleanBehavior *dcb = new DesktopCleanBehavior(m_pDataVolume, m_pDesktop3DViewInfo, m_ivec4Viewport);
+	DesktopCleanBehavior *dcb = new DesktopCleanBehavior(m_pDataVolume);
 	BehaviorManager::getInstance().addBehavior("desktop_edit", dcb);
 	dcb->init();
 

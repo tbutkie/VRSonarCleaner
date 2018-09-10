@@ -2,8 +2,6 @@
 
 #include <SDL.h>
 #include <GL/glew.h>
-#include <SDL_opengl.h>
-#include <gl/glu.h>
 #include <chrono>
 #include <vector>
 
@@ -43,9 +41,7 @@ private:
 
 	TrackedDeviceManager *m_pTDM;
 
-	bool initGL();
 	bool initVR();
-	bool initDesktop();
 
 	bool HandleInput();
 
@@ -54,19 +50,8 @@ private:
 	void render();
 
 	void shutdownVR();
-	void shutdownDesktop();
 
 	Scene* m_pCurrentScene;
-
-private: // SDL bookkeeping
-	SDL_Window* createFullscreenWindow(int displayIndex);
-	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
-	void setWindowToDisplay(SDL_Window* win, int displayIndex);
-
-	SDL_Window *m_pWindow;
-	SDL_Cursor *m_pWindowCursor;
-	glm::ivec2 m_ivec2WindowSize;
-	SDL_GLContext m_pGLContext;
 
 private:
 };

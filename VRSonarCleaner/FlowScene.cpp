@@ -8,9 +8,8 @@
 
 using namespace std::chrono_literals;
 
-FlowScene::FlowScene(SDL_Window* pWindow, TrackedDeviceManager* pTDM)
-	: m_pWindow(pWindow)
-	, m_pTDM(pTDM)
+FlowScene::FlowScene(TrackedDeviceManager* pTDM)
+	: m_pTDM(pTDM)
 	, m_pFlowVolume(NULL)
 	, m_vec3RoomSize(1.f, 3.f, 1.f)
 {
@@ -25,8 +24,7 @@ FlowScene::~FlowScene()
 
 void FlowScene::init()
 {
-	std::string strWindowTitle = "VR Flow 4D | CCOM VisLab";
-	SDL_SetWindowTitle(m_pWindow, strWindowTitle.c_str());
+	Renderer::getInstance().setWindowTitle("VR Flow 4D | CCOM VisLab");
 
 	std::vector<std::string> flowGrids;
 

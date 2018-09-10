@@ -2,6 +2,8 @@
 
 #include <GL/glew.h>
 #include <SDL.h>
+#include <SDL_opengl.h>
+#include <gl/glu.h>
 #include <GLTexture.h>
 #include <gtc/quaternion.hpp>
 #include <chrono>
@@ -142,12 +144,11 @@ public:
 		static Renderer s_instance;
 		return s_instance;
 	}
+
+	void setStereoRenderSize(glm::ivec2 res);
 	
 	bool init();
 	void update();
-
-	bool createFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
-	void destroyFrameBuffer(FramebufferDesc &framebufferDesc);
 
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
@@ -158,12 +159,19 @@ public:
 	void showMessage(std::string message, float duration = 5.f);
 
 	void setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back);
+
+	void setWindowTitle(std::string title);
+	void setWindowToDisplay(int displayIndex);
 	
 	SceneViewInfo* getLeftEyeInfo();
+	FramebufferDesc* getLeftEyeFrameBuffer();
 	SceneViewInfo* getRightEyeInfo();
-	SceneViewInfo* get3DViewInfo();
-	SceneViewInfo* getUIInfo();
+	FramebufferDesc* getRightEyeFrameBuffer();
+	SceneViewInfo* getWindow3DViewInfo();
+	SceneViewInfo* getWindowUIInfo();
 	Camera* getCamera();
+
+	glm::ivec2 getUIRenderSize();
 
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName = "white", float specularExponent = 32.f);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor = glm::vec4(1.f), float specularExponent = 32.f);
@@ -193,24 +201,28 @@ public:
 	GLTexture* getTexture(std::string texName);
 	bool addTexture(GLTexture* tex);
 
+	void render();
+	void swapAndClear();
+
 	void sortTransparentObjects(glm::vec3 HMDPos);
-
-	void renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *frameBuffer);
-	void renderUI(SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
-	void renderFullscreenTexture(int x, int y, int width, int height, GLuint textureID, bool textureAspectPortrait = false);
-	void renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID);
-
 
 	void shutdown();
 
 private:
 	Renderer();
 	~Renderer();
+
+	SDL_Window* createFullscreenWindow(int displayIndex);
+	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
+
+	bool createFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
+	void destroyFrameBuffer(FramebufferDesc &framebufferDesc);
+
+	void createDesktopView();
 	
 	void setupShaders();
 
 	void setupTextures();
-	
 
 	void setupPrimitives();
 	void generateIcosphere(int recursionLevel, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
@@ -225,15 +237,17 @@ private:
 	void generateFullscreenQuad(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 
 	void setupText();
-
-	void createVRViews();
-	void createDesktopView();
-
 	void updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick);
 
 	void processRenderQueue(std::vector<RendererSubmission> &renderQueue);
 
+	void renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *frameBuffer);
+	void renderUI(SceneViewInfo *sceneViewUIInfo, FramebufferDesc *frameBuffer);
+	void renderFullscreenTexture(int x, int y, int width, int height, GLuint textureID, bool textureAspectPortrait = false);
+	void renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID);
+
 	static bool sortByViewDistance(RendererSubmission const &rsLHS, RendererSubmission const &rsRHS, glm::vec3 const &HMDPos);
+
 private:
 
 	struct Skybox {
@@ -249,6 +263,12 @@ private:
 		glm::ivec2 Bearing;  // Offset from baseline to left/top of glyph
 		glm::ivec2 Advance;    // Horizontal offset to advance to next glyph
 	};
+
+	SDL_Window *m_pWindow;
+	SDL_Cursor *m_pWindowCursor;
+	SDL_GLContext m_pGLContext;
+
+	glm::ivec2 m_ivec2WindowSize;
 
 	Character m_arrCharacters[128];
 	std::map<char, Character> m_mapSloanCharacters;
