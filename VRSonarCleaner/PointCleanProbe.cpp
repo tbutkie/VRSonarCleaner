@@ -6,11 +6,11 @@
 
 using namespace std::chrono_literals;
 
-PointCleanProbe::PointCleanProbe(ViveController* pController, DataVolume* pointCloudVolume, vr::IVRSystem *pHMD)
+PointCleanProbe::PointCleanProbe(ViveController* pController, DataVolume* pointCloudVolume)
 	: ProbeBehavior(pController, pointCloudVolume)
 	, m_bProbeActive(false)
 	, m_bWaitForTriggerRelease(true)
-	, m_pHMD(pHMD)
+	, m_pHMD(vr::VRSystem())
 	, m_fPtHighlightAmt(1.f)
 	, m_tpLastTime(std::chrono::high_resolution_clock::now())
 	, m_fCursorHoopAngle(0.f)

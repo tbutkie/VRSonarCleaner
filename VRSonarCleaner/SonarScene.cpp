@@ -623,7 +623,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 void SonarScene::update()
 {
 	if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("pointclean"))
-		BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume, m_pHMD));
+		BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume));
 
 	//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
 	//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));

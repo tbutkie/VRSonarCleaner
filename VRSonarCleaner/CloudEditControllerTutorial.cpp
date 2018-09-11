@@ -77,7 +77,7 @@ void CloudEditControllerTutorial::init()
 
 	BehaviorManager::getInstance().addBehavior("Scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDemoVolume));
 	BehaviorManager::getInstance().addBehavior("Grab", new GrabObjectBehavior(m_pTDM, m_pDemoVolume));
-	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDemoVolume, vr::VRSystem()));
+	BehaviorManager::getInstance().addBehavior("Editing", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDemoVolume));
 	static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("Editing"))->activateDemoMode();
 
 	m_bInitialized = true;
