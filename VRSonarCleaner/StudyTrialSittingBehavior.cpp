@@ -62,7 +62,7 @@ void StudyTrialSittingBehavior::init()
 	using namespace std::experimental::filesystem::v1;
 	std::cout << "Starting trial for " << path(m_strFileName).filename() << std::endl;
 
-	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume, vr::VRSystem()));
+	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 

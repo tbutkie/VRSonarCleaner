@@ -125,6 +125,7 @@ public:
 		glm::mat4 view;
 		glm::mat4 projection;
 		glm::mat4 viewTransform; // for e.g. transforming from head to eye space;
+		glm::ivec4 viewport;
 		float nearClip;
 		float farClip;
 		uint32_t m_nRenderWidth;

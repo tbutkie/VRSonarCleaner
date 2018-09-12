@@ -75,9 +75,9 @@ void StudyTrialDesktopBehavior::init()
 	ss << ";";
 	ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
 	ss << ";";
-	ss << "cam-pos:\"" << m_pCamera->pos.x << "," << m_pCamera->pos.y << "," << m_pCamera->pos.z << "\"";
+	ss << "cam-pos:\"" << Renderer::getInstance().getCamera()->pos.x << "," << Renderer::getInstance().getCamera()->pos.y << "," << Renderer::getInstance().getCamera()->pos.z << "\"";
 	ss << ";";
-	ss << "cam-lookat:\"" << m_pCamera->lookat.x << "," << m_pCamera->lookat.y << "," << m_pCamera->lookat.z << "\"";
+	ss << "cam-lookat:\"" << Renderer::getInstance().getCamera()->lookat.x << "," << Renderer::getInstance().getCamera()->lookat.y << "," << Renderer::getInstance().getCamera()->lookat.z << "\"";
 
 	DataLogger::getInstance().logMessage(ss.str());
 }
@@ -130,9 +130,9 @@ void StudyTrialDesktopBehavior::update()
 			ss << ";";
 			ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
 			ss << ";";
-			ss << "cam-pos:\"" << m_pCamera->pos.x << "," << m_pCamera->pos.y << "," << m_pCamera->pos.z << "\"";
+			ss << "cam-pos:\"" << Renderer::getInstance().getCamera()->pos.x << "," << Renderer::getInstance().getCamera()->pos.y << "," << Renderer::getInstance().getCamera()->pos.z << "\"";
 			ss << ";";
-			ss << "cam-lookat:\"" << m_pCamera->lookat.x << "," << m_pCamera->lookat.y << "," << m_pCamera->lookat.z << "\"";
+			ss << "cam-lookat:\"" << Renderer::getInstance().getCamera()->lookat.x << "," << Renderer::getInstance().getCamera()->lookat.y << "," << Renderer::getInstance().getCamera()->lookat.z << "\"";
 			ss << ";";
 			ss << "total-cleaned:\"" << m_nPointsCleaned << "\"";
 			ss << ";";
@@ -146,7 +146,7 @@ void StudyTrialDesktopBehavior::update()
 void StudyTrialDesktopBehavior::draw()
 {
 	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
-	m_pDataVolume->drawVolumeBacking(glm::inverse(m_pDesktop3DViewInfo->view), 2.f);
+	m_pDataVolume->drawVolumeBacking(glm::inverse(Renderer::getInstance().getWindow3DViewInfo()->view), 2.f);
 	m_pDataVolume->drawBBox(0.f);
 
 	Renderer::RendererSubmission rs;
@@ -213,7 +213,7 @@ void StudyTrialDesktopBehavior::draw()
 		Renderer::getInstance().drawUIText(
 			"Trial Complete!",
 			glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
-			glm::vec3(m_ivec4Viewport[2] *0.5f, m_ivec4Viewport[3], 0.f),
+			glm::vec3(Renderer::getInstance().getWindow3DViewInfo()->viewport[2] *0.5f, Renderer::getInstance().getWindow3DViewInfo()->viewport[3], 0.f),
 			glm::quat(),
 			100,
 			Renderer::TextSizeDim::HEIGHT,
@@ -224,7 +224,7 @@ void StudyTrialDesktopBehavior::draw()
 		Renderer::getInstance().drawUIText(
 			"Press the <Enter> key to continue...",
 			glm::vec4(glm::vec3(0.7f), 1.f),
-			glm::vec3(m_ivec4Viewport[2] * 0.5f, m_ivec4Viewport[3] - 110, 0.f),
+			glm::vec3(Renderer::getInstance().getWindow3DViewInfo()->viewport[2] * 0.5f, Renderer::getInstance().getWindow3DViewInfo()->viewport[3] - 110, 0.f),
 			glm::quat(),
 			50,
 			Renderer::TextSizeDim::HEIGHT,
@@ -235,7 +235,7 @@ void StudyTrialDesktopBehavior::draw()
 		Renderer::getInstance().drawUIText(
 			accuracyStr.str(),
 			accColor,
-			glm::vec3(m_ivec4Viewport[2] * 0.5f, 30.f, 0.f),
+			glm::vec3(Renderer::getInstance().getWindow3DViewInfo()->viewport[2] * 0.5f, 30.f, 0.f),
 			glm::quat(),
 			75,
 			Renderer::TextSizeDim::HEIGHT,
@@ -246,7 +246,7 @@ void StudyTrialDesktopBehavior::draw()
 		Renderer::getInstance().drawUIText(
 			"Accuracy",
 			glm::vec4(glm::vec3(0.7f), 1.f),
-			glm::vec3(m_ivec4Viewport[2] * 0.5f, 0.f, 0.f),
+			glm::vec3(Renderer::getInstance().getWindow3DViewInfo()->viewport[2] * 0.5f, 0.f, 0.f),
 			glm::quat(),
 			25,
 			Renderer::TextSizeDim::HEIGHT,

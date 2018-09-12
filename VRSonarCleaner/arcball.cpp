@@ -11,6 +11,7 @@ ArcBall::ArcBall(DataVolume *dataVolume)
 	: m_pDataVolume(dataVolume)
 	, m_pmat4Projection(NULL)
 	, m_pmat4View(NULL)
+	, m_pivec4Viewport(NULL)
 	, m_vec3PivotPoint(dataVolume->getPosition())
 	, m_vec3DataVolumeInitialPos(dataVolume->getPosition())
 	, m_fTranslationTime(0.1f)
@@ -74,11 +75,11 @@ void ArcBall::setView(glm::mat4 * view)
 	m_pmat4View = view;
 }
 
-void ArcBall::setViewport(glm::ivec4 & vp)
+void ArcBall::setViewport(glm::ivec4 *vp)
 {
-	m_ivec4Viewport = vp;
+	m_pivec4Viewport = vp;
 
-	mCenter = glm::vec3(vp[2] - vp[0], vp[3] - vp[1], 0.f) * 0.5f;
+	mCenter = glm::vec3((*vp)[2] - (*vp)[0], (*vp)[3] - (*vp)[1], 0.f) * 0.5f;
 }
 
 void ArcBall::calculateRadius()
@@ -88,8 +89,8 @@ void ArcBall::calculateRadius()
 	glm::vec3 right = glm::normalize(glm::inverse(*m_pmat4View)[0]);
 	glm::vec3 tableRadPt = m_vec3PivotPoint + right * tableRad;
 
-	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
-	mRadius = pt.x - (m_ivec4Viewport[2] - m_ivec4Viewport[0]) * 0.5f;
+	glm::vec3 pt = glm::project(tableRadPt, *m_pmat4View, *m_pmat4Projection, *m_pivec4Viewport);
+	mRadius = pt.x - ((*m_pivec4Viewport)[2] - (*m_pivec4Viewport)[0]) * 0.5f;
 }
 
 //------------------------------------------------------------------------------
@@ -197,8 +198,8 @@ void ArcBall::translate(const glm::vec2 & mouseScreenCoords)
 	glm::vec3 nearPt(mouseScreenCoords, 0.f);
 	glm::vec3 farPt(mouseScreenCoords, 1.f);
 
-	glm::vec3 nearPtWorld = glm::unProject(nearPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
-	glm::vec3 farPtWorld = glm::unProject(farPt, *m_pmat4View, *m_pmat4Projection, m_ivec4Viewport);
+	glm::vec3 nearPtWorld = glm::unProject(nearPt, *m_pmat4View, *m_pmat4Projection, *m_pivec4Viewport);
+	glm::vec3 farPtWorld = glm::unProject(farPt, *m_pmat4View, *m_pmat4Projection, *m_pivec4Viewport);
 
 	glm::vec3 rayDir = glm::normalize(farPtWorld - nearPtWorld);
 	glm::vec3 planeNorm = glm::normalize(glm::vec3(glm::inverse(*m_pmat4View)[3]) - m_vec3PivotPoint);

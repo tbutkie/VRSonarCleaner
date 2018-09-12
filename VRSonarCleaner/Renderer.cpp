@@ -830,8 +830,11 @@ void Renderer::render()
 	// VR
 	{
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);		
+	}
 
+	//DESKTOP
+	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_pWindowFramebuffer->m_nRenderFramebufferId);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -886,29 +889,11 @@ void Renderer::render()
 			true
 		);
 
-		//vr::VRCompositor()->PostPresentHandoff();
-		//std::cout << "Rendering Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
-
-		//glFinish();
-
-		//SDL_GL_SwapWindow(m_pWindow);
-
-		//glClearColor(0, 0, 0, 1);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		//glFlush();
-		//glFinish();
-	}
-
-	//DESKTOP
-	{
-		//SDL_GL_MakeCurrent(m_pWindow, m_pGLContext);
-
-		Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviWindow3DInfo.view)[3]));
-
-		Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
-
-		Renderer::getInstance().renderFullscreenTexture(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
+		//Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviWindow3DInfo.view)[3]));
+		//
+		//Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
+		//
+		//Renderer::getInstance().renderFullscreenTexture(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
 
 	}
 }
@@ -989,10 +974,12 @@ void Renderer::createDesktopView()
 
 	m_sviWindowUIInfo.view = glm::mat4();
 	m_sviWindowUIInfo.projection = glm::ortho(0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderWidth), 0.f, static_cast<float>(m_sviWindowUIInfo.m_nRenderHeight), -1.f, 1.f);
+	m_sviWindowUIInfo.viewport = glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y);
 
 	m_sviWindow3DInfo.m_nRenderWidth = m_ivec2WindowSize.x;
 	m_sviWindow3DInfo.m_nRenderHeight = m_ivec2WindowSize.y;
 	m_sviWindow3DInfo.projection = glm::perspective(glm::radians(g_fDefaultFOV), (float)m_ivec2WindowSize.x / (float)m_ivec2WindowSize.y, g_fDefaultNearClip, g_fDefaultFarClip);
+	m_sviWindow3DInfo.viewport = glm::ivec4(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y);
 
 	if (!m_pWindowFramebuffer)
 		m_pWindowFramebuffer = new FramebufferDesc();

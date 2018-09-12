@@ -46,7 +46,7 @@ public:
 
   void setProjection(glm::mat4 *proj);
   void setView(glm::mat4 *view);
-  void setViewport(glm::ivec4 &vp);
+  void setViewport(glm::ivec4 *vp);
 
   void calculateRadius();
   
@@ -107,7 +107,7 @@ private:
 
   glm::mat4 *m_pmat4Projection;
   glm::mat4 *m_pmat4View;
-  glm::ivec4 m_ivec4Viewport;
+  glm::ivec4 *m_pivec4Viewport;
 
   glm::vec3 m_vec3StartRotatePos;
   glm::vec3 m_vec3StartRotateVec;
