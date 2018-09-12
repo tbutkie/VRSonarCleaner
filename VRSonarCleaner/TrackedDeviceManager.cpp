@@ -208,25 +208,6 @@ void TrackedDeviceManager::update()
 	{
 		m_mat4HMDToWorldTransform = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		m_mat4WorldToHMDTransform = glm::inverse(m_mat4HMDToWorldTransform);
-
-		//glm::mat4 HMDtoWorldMat = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
-		//glm::vec3 HMDpos = glm::vec3(HMDtoWorldMat[3]);
-		//float widthX, widthZ;
-		//vr::VRChaperone()->GetPlayAreaSize(&widthX, &widthZ);
-		//
-		//BroadcastSystem::Payload::HMD payload = {
-		//	m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd],
-		//	HMDtoWorldMat
-		//};
-		//
-		//if (abs(HMDpos.x) > widthX || abs(HMDpos.z) > widthZ)
-		//{
-		//	notify(BroadcastSystem::EVENT::EXIT_PLAY_AREA, &payload);
-		//}
-		//else
-		//{
-		//	notify(BroadcastSystem::EVENT::ENTER_PLAY_AREA, &payload);
-		//}
 	}
 }
 

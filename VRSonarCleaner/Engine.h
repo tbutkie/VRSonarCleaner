@@ -29,7 +29,7 @@ public:
 	void RunMainLoop();
 	
 private:
-	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msVRUpdateTime, m_msDrawTime, m_msRenderTime;
+	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msDrawTime, m_msRenderTime;
 
 	bool m_bGLInitialized;
 	bool m_bGreatBayModel;
@@ -43,7 +43,7 @@ private:
 
 	bool initVR();
 
-	bool HandleInput();
+	bool handleInput();
 
 	void update();
 	void drawScene();

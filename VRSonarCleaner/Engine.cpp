@@ -176,13 +176,16 @@ void Engine::Shutdown()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool Engine::HandleInput()
+bool Engine::handleInput()
 {
 	SDL_Event sdlEvent;
 	bool bRet = false;
 
 	if (m_pTDM)
+	{
+		m_pTDM->update();
 		m_pTDM->handleEvents();
+	}
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
@@ -280,7 +283,7 @@ void Engine::RunMainLoop()
 		lastTime = currentTime;
 
 		auto a = clock::now();
-		bQuit = HandleInput();
+		bQuit = handleInput();
 		m_msInputHandleTime = clock::now() - a;
 
 		a = clock::now();
@@ -294,10 +297,6 @@ void Engine::RunMainLoop()
 		a = clock::now();
 		render();
 		m_msRenderTime = clock::now() - a;
-
-		a = clock::now();
-		m_pTDM->update();
-		m_msVRUpdateTime = clock::now() - a;
 	}
 }
 
@@ -323,7 +322,6 @@ void Engine::drawScene()
 		ss << std::fixed << "State Update: " << m_msUpdateTime.count() << "ms" << std::endl;
 		ss << std::fixed << "Scene Drawing: " << m_msDrawTime.count() << "ms" << std::endl;
 		ss << std::fixed << "Rendering: " << m_msRenderTime.count() << "ms" << std::endl;
-		ss << std::fixed << "OpenVR Update: " << m_msVRUpdateTime.count() << "ms" << std::endl;
 
 		Renderer::getInstance().drawUIText(
 			ss.str(),
