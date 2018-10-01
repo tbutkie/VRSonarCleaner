@@ -93,7 +93,7 @@ void FlowFieldCurator::draw()
 
 	if (m_pTDM->getPrimaryController())
 	{
-		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getPrimaryController()->getIndex(), m_pTDM->getDeviceComponentID(m_pTDM->getPrimaryController()->getIndex(), "button"));
+		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getPrimaryController()->getIndex(), vr::k_EButton_ApplicationMenu);
 		glm::mat4 menuButtonTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.025f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 
 		Renderer::getInstance().drawText(
