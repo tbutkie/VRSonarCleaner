@@ -305,7 +305,13 @@ uint32_t TrackedDeviceManager::getDeviceComponentID(uint32_t deviceID, std::stri
 
 glm::mat4 TrackedDeviceManager::getDeviceComponentPose(uint32_t deviceID, uint32_t componentID)
 {
-	return m_rpTrackedDevices[deviceID]->getComponentPose(componentID);
+	if (componentID == vr::k_unTrackedDeviceIndexInvalid)
+	{
+		printf("ERROR: Cannot get device pose for invalid component ID %i!", componentID);
+		return glm::mat4();
+	}
+	else
+		return m_rpTrackedDevices[deviceID]->getComponentPose(componentID);
 }
 
 ViveController * TrackedDeviceManager::getPrimaryController()
