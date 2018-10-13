@@ -1,6 +1,7 @@
 #include "FlowVolume.h"
 
 #include "Renderer.h"
+#include <Eigen\Dense>
 
 using namespace std::chrono_literals;
 
@@ -84,6 +85,60 @@ glm::vec3 FlowVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 	}
 
 	return glm::vec3(0.f);
+}
+
+bool FlowVolume::checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords)
+{
+	glm::vec3 domainPt = convertToRawDomainCoords(pt_WorldCoords);
+
+	glm::vec3 xMinPos(glm::max(domainPt.x - 1.f, static_cast<float>(getMinXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 xMaxPos(glm::min(domainPt.x + 1.f, static_cast<float>(getMaxXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 yMinPos(domainPt.x, glm::max(domainPt.y - 1.f, static_cast<float>(getMinYDataBound())), domainPt.z);
+	glm::vec3 yMaxPos(domainPt.x, glm::min(domainPt.y + 1.f, static_cast<float>(getMaxYDataBound())), domainPt.z);
+	glm::vec3 zMinPos(domainPt.x, domainPt.y, glm::max(domainPt.z - 1.f, static_cast<float>(getMinZDataBound())));
+	glm::vec3 zMaxPos(domainPt.x, domainPt.y, glm::min(domainPt.z + 1.f, static_cast<float>(getMaxZDataBound())));
+
+	float uxmin, uxmax, uymin, uymax, uzmin, uzmax, vxmin, vxmax, vymin, vymax, vzmin, vzmax, wxmin, wxmax, wymin, wymax, wzmin, wzmax;
+
+	int numLambaNegs = 0;
+
+	for (auto &fg : m_vpFlowGrids)
+	{
+		fg->getUVWat(xMinPos.x, xMinPos.y, xMinPos.z, 0, &uxmin, &vxmin, &wxmin);
+		fg->getUVWat(xMaxPos.x, xMaxPos.y, xMaxPos.z, 0, &uxmax, &vxmax, &wxmax);
+		fg->getUVWat(yMinPos.x, yMinPos.y, yMinPos.z, 0, &uymin, &vymin, &wymin);
+		fg->getUVWat(yMaxPos.x, yMaxPos.y, yMaxPos.z, 0, &uymax, &vymax, &wymax);
+		fg->getUVWat(zMinPos.x, zMinPos.y, zMinPos.z, 0, &uzmin, &vzmin, &wzmin);
+		fg->getUVWat(zMaxPos.x, zMaxPos.y, zMaxPos.z, 0, &uzmax, &vzmax, &wzmax);
+
+		Eigen::MatrixXf jacobian = Eigen::MatrixXf(3, 3);
+
+		jacobian(0, 0) = (uxmax - uxmin) / glm::distance(xMinPos, xMaxPos);
+		jacobian(0, 1) = (vxmax - vxmin) / glm::distance(xMinPos, xMaxPos);
+		jacobian(0, 2) = (wxmax - wxmin) / glm::distance(xMinPos, xMaxPos);
+
+		jacobian(1, 0) = (uymax - uymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(1, 1) = (vymax - vymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(1, 2) = (wymax - wymin) / glm::distance(yMinPos, yMaxPos);
+
+		jacobian(2, 0) = (uzmax - uzmin) / glm::distance(zMinPos, zMaxPos);
+		jacobian(2, 1) = (vzmax - vzmin) / glm::distance(zMinPos, zMaxPos);
+		jacobian(2, 2) = (wzmax - wzmin) / glm::distance(zMinPos, zMaxPos);
+
+		Eigen::MatrixXf s = (jacobian + jacobian.transpose()) / 2.f;
+		Eigen::MatrixXf omega = (jacobian - jacobian.transpose()) / 2.f;
+
+		Eigen::MatrixXf vorticity = s*s + omega*omega;
+
+		Eigen::EigenSolver<Eigen::MatrixXf> es(vorticity);
+		//std::cout << es.eigenvalues() << std::endl;
+
+		if (es.eigenvalues()[0].real() < 0.f) numLambaNegs++;
+		if (es.eigenvalues()[1].real() < 0.f) numLambaNegs++;
+		if (es.eigenvalues()[2].real() < 0.f) numLambaNegs++;
+	}
+
+	return numLambaNegs >= 2;
 }
 
 void FlowVolume::recalcVolumeBounds()

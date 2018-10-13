@@ -104,6 +104,18 @@ void FlowProbe::draw()
 			0.01f,
 			Renderer::TextSizeDim::HEIGHT
 		);
+		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition()))
+		{
+			glm::vec3 swirlLabelPos((glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.01f)) * getTransformProbeToWorld())[3]);
+			Renderer::getInstance().drawText(
+				"SWIRL",
+				m_vec4ProbeActivateColorDiff = glm::vec4(0.f, 1.f, 0.f, 1.f),
+				swirlLabelPos,
+				glm::quat(getTransformProbeToWorld()),
+				0.025f,
+				Renderer::TextSizeDim::HEIGHT
+			);
+		}
 	}
 }
 
