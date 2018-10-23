@@ -111,8 +111,8 @@ void FlowProbe::draw()
 				"SWIRL",
 				m_vec4ProbeActivateColorDiff = glm::vec4(0.f, 1.f, 0.f, 1.f),
 				swirlLabelPos,
-				glm::quat(getTransformProbeToWorld()),
-				0.025f,
+				glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
+				0.01f,
 				Renderer::TextSizeDim::HEIGHT
 			);
 		}
