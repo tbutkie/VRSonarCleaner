@@ -83,11 +83,10 @@ glm::vec3 FlowVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 		if (fg->getUVWat(domainPt.x, domainPt.y, domainPt.z, 0, &u, &v, &w))
 			return convertToWorldCoords(glm::dvec3(domainPt) + glm::dvec3(u, v, w)) - pt_WorldCoords;		
 	}
-
-	return glm::vec3(0.f);
+		return glm::vec3(0.f);
 }
 
-bool FlowVolume::checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords, bool altMethod)
+float FlowVolume::getLambda2(glm::vec3 pt_WorldCoords)
 {
 	glm::vec3 domainPt = convertToRawDomainCoords(pt_WorldCoords);
 
@@ -100,7 +99,7 @@ bool FlowVolume::checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords, bool altMethod
 
 	float uxmin, uxmax, uymin, uymax, uzmin, uzmax, vxmin, vxmax, vymin, vymax, vzmin, vzmax, wxmin, wxmax, wymin, wymax, wzmin, wzmax;
 
-	int numLambdaNegs = 0;
+	std::vector<float> lambdas;
 
 	for (auto &fg : m_vpFlowGrids)
 	{
@@ -113,34 +112,18 @@ bool FlowVolume::checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords, bool altMethod
 
 		Eigen::MatrixXf jacobian = Eigen::MatrixXf(3, 3);
 
-		if (altMethod)
-		{
-			jacobian(0, 0) = (uxmax - uxmin) / glm::distance(xMinPos, xMaxPos);
-			jacobian(1, 0) = (vxmax - vxmin) / glm::distance(xMinPos, xMaxPos);
-			jacobian(2, 0) = (wxmax - wxmin) / glm::distance(xMinPos, xMaxPos);
+		jacobian(0, 0) = (uxmax - uxmin) / glm::distance(xMinPos, xMaxPos);
+		jacobian(0, 1) = (vxmax - vxmin) / glm::distance(xMinPos, xMaxPos);
+		jacobian(0, 2) = (wxmax - wxmin) / glm::distance(xMinPos, xMaxPos);
 
-			jacobian(0, 1) = (uymax - uymin) / glm::distance(yMinPos, yMaxPos);
-			jacobian(1, 1) = (vymax - vymin) / glm::distance(yMinPos, yMaxPos);
-			jacobian(2, 1) = (wymax - wymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(1, 0) = (uymax - uymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(1, 1) = (vymax - vymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(1, 2) = (wymax - wymin) / glm::distance(yMinPos, yMaxPos);
 
-			jacobian(0, 2) = (uzmax - uzmin) / glm::distance(zMinPos, zMaxPos);
-			jacobian(1, 2) = (vzmax - vzmin) / glm::distance(zMinPos, zMaxPos);
-			jacobian(2, 2) = (wzmax - wzmin) / glm::distance(zMinPos, zMaxPos);
-		}
-		else
-		{
-			jacobian(0, 0) = (uxmax - uxmin) / glm::distance(xMinPos, xMaxPos);
-			jacobian(0, 1) = (vxmax - vxmin) / glm::distance(xMinPos, xMaxPos);
-			jacobian(0, 2) = (wxmax - wxmin) / glm::distance(xMinPos, xMaxPos);
-
-			jacobian(1, 0) = (uymax - uymin) / glm::distance(yMinPos, yMaxPos);
-			jacobian(1, 1) = (vymax - vymin) / glm::distance(yMinPos, yMaxPos);
-			jacobian(1, 2) = (wymax - wymin) / glm::distance(yMinPos, yMaxPos);
-
-			jacobian(2, 0) = (uzmax - uzmin) / glm::distance(zMinPos, zMaxPos);
-			jacobian(2, 1) = (vzmax - vzmin) / glm::distance(zMinPos, zMaxPos);
-			jacobian(2, 2) = (wzmax - wzmin) / glm::distance(zMinPos, zMaxPos);
-		}
+		jacobian(2, 0) = (uzmax - uzmin) / glm::distance(zMinPos, zMaxPos);
+		jacobian(2, 1) = (vzmax - vzmin) / glm::distance(zMinPos, zMaxPos);
+		jacobian(2, 2) = (wzmax - wzmin) / glm::distance(zMinPos, zMaxPos);
+		
 
 		Eigen::MatrixXf s = (jacobian + jacobian.transpose()) / 2.f;
 		Eigen::MatrixXf omega = (jacobian - jacobian.transpose()) / 2.f;
@@ -149,13 +132,13 @@ bool FlowVolume::checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords, bool altMethod
 
 		Eigen::EigenSolver<Eigen::MatrixXf> es(vorticity);
 		//std::cout << es.eigenvalues() << std::endl;
-
-		if (es.eigenvalues()[0].real() < 0.f) numLambdaNegs++;
-		if (es.eigenvalues()[1].real() < 0.f) numLambdaNegs++;
-		if (es.eigenvalues()[2].real() < 0.f) numLambdaNegs++;
+		
+		for (int i = 0; i < 3; ++i)
+			lambdas.push_back(es.eigenvalues()[i].real());
 	}
 
-	return numLambdaNegs >= 2;
+	std::sort(lambdas.begin(), lambdas.end());
+	return lambdas[1];
 }
 
 void FlowVolume::recalcVolumeBounds()

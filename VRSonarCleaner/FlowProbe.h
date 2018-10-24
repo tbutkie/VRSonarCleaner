@@ -26,5 +26,8 @@ private:
 	virtual void activateProbe();
 	virtual void deactivateProbe();
 	void placeDyePot();
+	
+	float m_fLambda2Min;
+	float m_fLambda2Max;
 };
 

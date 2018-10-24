@@ -1,5 +1,7 @@
 #include "FlowProbe.h"
 #include <gtc\random.hpp>
+#include <sstream>
+#include <limits>
 
 using namespace std::chrono_literals;
 
@@ -9,6 +11,8 @@ FlowProbe::FlowProbe(ViveController* pController, FlowVolume* flowVolume)
 	, m_pFlowVolume(flowVolume)
 	, m_pEmitter(NULL)
 	, m_fTipEmitterRadius(0.f)
+	, m_fLambda2Min(std::numeric_limits<float>::max())
+	, m_fLambda2Max(std::numeric_limits<float>::min())
 {
 	m_vec4ProbeColorDiff = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
 }
@@ -104,34 +108,29 @@ void FlowProbe::draw()
 			0.01f,
 			Renderer::TextSizeDim::HEIGHT
 		);
-		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition(), false))
-		{
-			glm::vec3 swirlLabelPos((getTransformProbeToWorld() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.01f)))[3]);
-			Renderer::getInstance().drawText(
-				"SWIRL",
-				m_vec4ProbeActivateColorDiff = glm::vec4(1.f, 1.f, 0.f, 1.f),
-				swirlLabelPos,
-				glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
-				0.01f,
-				Renderer::TextSizeDim::HEIGHT,
-				Renderer::TextAlignment::RIGHT,
-				Renderer::TextAnchor::TOP_RIGHT
-			);
-		}
-		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition(), true))
-		{
-			glm::vec3 swirlLabelPos((getTransformProbeToWorld() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.01f)))[3]);
-			Renderer::getInstance().drawText(
-				"SWIRL",
-				m_vec4ProbeActivateColorDiff = glm::vec4(0.f, 1.f, 1.f, 1.f),
-				swirlLabelPos,
-				glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
-				0.01f,
-				Renderer::TextSizeDim::HEIGHT,
-				Renderer::TextAlignment::LEFT,
-				Renderer::TextAnchor::TOP_LEFT
-			);
-		}
+
+		float l2 = m_pFlowVolume->getLambda2(getPosition());
+
+		if (l2 < m_fLambda2Min) m_fLambda2Min = l2;
+		if (l2 > m_fLambda2Max) m_fLambda2Max = l2;
+
+		std::stringstream ss;
+
+		ss.precision(2);
+		ss << std::fixed << "Lambda2 = " << l2;
+
+		glm::vec3 swirlLabelPos((getTransformProbeToWorld() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.01f)))[3]);
+
+		Renderer::getInstance().drawText(
+			ss.str(),
+			l2 < 0.f ? glm::mix(glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), l2/m_fLambda2Min) : glm::mix(glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), l2 / m_fLambda2Max),
+			swirlLabelPos,
+			glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
+			0.01f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::LEFT,
+			Renderer::TextAnchor::TOP_LEFT
+		);		
 	}
 }
 

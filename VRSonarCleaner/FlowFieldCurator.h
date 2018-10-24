@@ -2,6 +2,7 @@
 #include "BehaviorBase.h"
 #include "TrackedDeviceManager.h"
 #include "FlowVolume.h"
+#include "VectorFieldGenerator.h"
 #include <unordered_map>
 
 class FlowFieldCurator :
