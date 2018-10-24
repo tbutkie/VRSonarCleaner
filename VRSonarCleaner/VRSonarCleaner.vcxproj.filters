@@ -222,6 +222,9 @@
     <ClCompile Include="SonarScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="VectorFieldGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -406,6 +409,9 @@
     </ClInclude>
     <ClInclude Include="SonarScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="VectorFieldGenerator.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

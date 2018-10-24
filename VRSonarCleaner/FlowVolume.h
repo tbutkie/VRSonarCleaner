@@ -29,7 +29,7 @@ public:
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
 
-	bool checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords);
+	bool checkSwirlwWorldCoords(glm::vec3 pt_WorldCoords, bool altMethod);
 
 	void draw();
 

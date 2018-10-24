@@ -422,6 +422,8 @@ bool ViveController::justUnpressedMenu()
 	return true;
 }
 
+
+
 glm::mat4 ViveController::getLastDeviceToWorldTransform()
 {
 	return m_mat4LastDeviceToWorldTransform;

@@ -218,6 +218,7 @@
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
     <ClCompile Include="utilities.cpp" />
+    <ClCompile Include="VectorFieldGenerator.cpp" />
     <ClCompile Include="ViveController.cpp" />
     <ClCompile Include="WelcomeBehavior.cpp" />
   </ItemGroup>
@@ -281,6 +282,7 @@
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />
     <ClInclude Include="utilities.h" />
+    <ClInclude Include="VectorFieldGenerator.h" />
     <ClInclude Include="ViveController.h" />
     <ClInclude Include="WelcomeBehavior.h" />
   </ItemGroup>

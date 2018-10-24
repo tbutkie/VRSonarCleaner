@@ -104,16 +104,32 @@ void FlowProbe::draw()
 			0.01f,
 			Renderer::TextSizeDim::HEIGHT
 		);
-		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition()))
+		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition(), false))
 		{
-			glm::vec3 swirlLabelPos((glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.01f)) * getTransformProbeToWorld())[3]);
+			glm::vec3 swirlLabelPos((getTransformProbeToWorld() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.01f)))[3]);
 			Renderer::getInstance().drawText(
 				"SWIRL",
-				m_vec4ProbeActivateColorDiff = glm::vec4(0.f, 1.f, 0.f, 1.f),
+				m_vec4ProbeActivateColorDiff = glm::vec4(1.f, 1.f, 0.f, 1.f),
 				swirlLabelPos,
 				glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
 				0.01f,
-				Renderer::TextSizeDim::HEIGHT
+				Renderer::TextSizeDim::HEIGHT,
+				Renderer::TextAlignment::RIGHT,
+				Renderer::TextAnchor::TOP_RIGHT
+			);
+		}
+		if (m_pFlowVolume->checkSwirlwWorldCoords(getPosition(), true))
+		{
+			glm::vec3 swirlLabelPos((getTransformProbeToWorld() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, 0.01f)))[3]);
+			Renderer::getInstance().drawText(
+				"SWIRL",
+				m_vec4ProbeActivateColorDiff = glm::vec4(0.f, 1.f, 1.f, 1.f),
+				swirlLabelPos,
+				glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
+				0.01f,
+				Renderer::TextSizeDim::HEIGHT,
+				Renderer::TextAlignment::LEFT,
+				Renderer::TextAnchor::TOP_LEFT
 			);
 		}
 	}

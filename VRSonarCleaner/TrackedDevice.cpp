@@ -78,6 +78,19 @@ uint32_t TrackedDevice::getComponentID(std::string componentName)
 	return vr::k_unTrackedDeviceIndexInvalid;
 }
 
+uint32_t TrackedDevice::getComponentID(vr::EVRButtonId buttonEnum)
+{
+	for (auto &c : m_vpComponents)
+	{
+		if (!c->isVisible())
+			continue;
+		for (auto &b : c->m_vButtonsAssociated)
+			if (b == buttonEnum)
+				return c->m_unComponentIndex;
+	}
+	return vr::k_unTrackedDeviceIndexInvalid;
+}
+
 glm::mat4 TrackedDevice::getComponentPose(uint32_t componentID)
 {
 	vr::TrackedDevicePose_t p;

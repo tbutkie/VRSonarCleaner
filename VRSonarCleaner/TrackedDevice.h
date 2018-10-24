@@ -26,6 +26,7 @@ public:
 	bool poseValid();
 	glm::mat4 getPose();
 	uint32_t getComponentID(std::string componentName);
+	uint32_t getComponentID(vr::EVRButtonId buttonEnum);
 	glm::mat4 getComponentPose(uint32_t componentID);
 
 	char getClassChar();
