@@ -225,6 +225,9 @@
     <ClCompile Include="VectorFieldGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="StudyTrialScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -411,6 +414,9 @@
       <Filter>Scenes</Filter>
     </ClInclude>
     <ClInclude Include="VectorFieldGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

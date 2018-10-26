@@ -19,6 +19,7 @@ public:
 private:
 	TrackedDeviceManager* m_pTDM;
 	FlowVolume* m_pFlowVolume;
+	VectorFieldGenerator* m_pVFG;
 
 	struct ControlPoint {
 		glm::vec3 pos_raw; // control point position in R^3 bounded by [-1, 1]

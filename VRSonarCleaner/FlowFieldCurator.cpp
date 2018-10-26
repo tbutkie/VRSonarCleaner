@@ -140,9 +140,14 @@ void FlowFieldCurator::draw()
 
 bool FlowFieldCurator::loadRandomFlowGrid()
 {
-	std::stringstream ss;
-	ss << "resources\\data\\flowgrid\\VecFieldGen.exe -outfile flowgrid_test.fg -grid " << m_iGridRes;
-	if (system(ss.str().c_str()) == EXIT_SUCCESS)
+	m_pVFG = new VectorFieldGenerator();
+
+	m_pVFG->setGridResolution(32u);
+	m_pVFG->setGaussianShape(1.2f);
+	m_pVFG->createRandomControlPoints(6u);
+	m_pVFG->generate();
+
+	if (m_pVFG->save("flowgrid_test.fg", false))
 	{
 		m_pFlowVolume->addFlowGrid("flowgrid_test.fg", true);
 		loadMetaFile("flowgrid_test.fg.cp");

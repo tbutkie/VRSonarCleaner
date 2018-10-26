@@ -22,6 +22,11 @@ public:
 
 	void generate();
 
+	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed);
+
+	glm::vec3 eulerForward(glm::vec3 pos, float delta);
+	glm::vec3 rk4(glm::vec3 pos, float delta);
+
 	bool checkSphereAdvection(float dt, float totalTime, glm::vec3 sphereCenter, float sphereRadius, float &timeToAdvect, float &distanceToAdvect, float &totalDistance, glm::vec3 &exitPoint);
 	std::vector<std::vector<glm::vec3>> getAdvectedParticles(int numParticles, float dt, float totalTime);
 
@@ -49,6 +54,7 @@ private:
 private:
 	void solveLUdecomp();
 	glm::vec3 interpolate(glm::vec3 pt);
+	bool inBounds(glm::vec3 pos);
 	float gaussianBasis(float r, float eta);
 };
 

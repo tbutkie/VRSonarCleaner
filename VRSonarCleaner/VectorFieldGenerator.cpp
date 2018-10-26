@@ -71,7 +71,8 @@ void VectorFieldGenerator::generate()
 				point.y = -1.f + j * cellSize;
 				point.z = -1.f + i * cellSize;
 
-				glm::vec3 flowHere = interpolate(point);
+				// Get vector at point and scale it to the new grid
+				glm::vec3 flowHere = interpolate(point) * static_cast<float>(m_iGridResolution) * 0.5f;
 
 				row.push_back(std::pair<glm::vec3, glm::vec3>(point, flowHere));
 			}
@@ -116,23 +117,100 @@ void VectorFieldGenerator::solveLUdecomp()
 
 glm::vec3 VectorFieldGenerator::interpolate(glm::vec3 pt)
 {
-	// find interpolated 3D vector by summing influence from each CP via radial basis function (RBF)
 	glm::vec3 outVec(0.f);
-	for (int m = 0; m < static_cast<int>(m_vControlPoints.size()); ++m)
+
+	// Only interpolate if within domain [-1,1] in R^3
+	if (inBounds(pt))
 	{
-		float r = glm::length(pt - m_vControlPoints[m].pos);
-		float gaussian = gaussianBasis(r, m_fGaussianShape);
+		// find interpolated 3D vector by summing influence from each CP via radial basis function (RBF)
+		for (int m = 0; m < static_cast<int>(m_vControlPoints.size()); ++m)
+		{
+			float r = glm::length(pt - m_vControlPoints[m].pos);
+			float gaussian = gaussianBasis(r, m_fGaussianShape);
 
-		// interpolate each separate (linearly independent) component of our 3D vector to get CP influence
-		float interpX = m_vLambdaX[m] * gaussian;
-		float interpY = m_vLambdaY[m] * gaussian;
-		float interpZ = m_vLambdaZ[m] * gaussian;
+			// interpolate each separate (linearly independent) component of our 3D vector to get CP influence
+			float interpX = m_vLambdaX[m] * gaussian;
+			float interpY = m_vLambdaY[m] * gaussian;
+			float interpZ = m_vLambdaZ[m] * gaussian;
 
-		// add CP influence to resultant vector
-		outVec += glm::vec3(interpX, interpY, interpZ);
+			// add CP influence to resultant vector
+			outVec += glm::vec3(interpX, interpY, interpZ);
+		}
 	}
 
 	return outVec;
+}
+
+bool VectorFieldGenerator::inBounds(glm::vec3 pos)
+{
+	if (pos.x >= -1.f || pos.x <= 1.f ||
+		pos.y >= -1.f || pos.y <= 1.f ||
+		pos.z >= -1.f || pos.z <= 1.f)
+		return true;
+
+	return false;
+}
+
+std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed)
+{
+	std::vector<glm::vec3> streamline;
+	streamline.push_back(pos);
+
+	for (int i = 0; i < propagation_max_units; ++i)
+	{
+		glm::vec3 flowhere = interpolate(streamline.back());
+		
+		// Short-circuit loop if at or below terminal speed
+		if (glm::length(flowhere) <= terminal_speed)
+			break;
+		
+		glm::vec3 newPos = rk4(streamline.back(), propagation_unit);
+
+		if (newPos == pos)
+			break;
+		else
+			streamline.push_back(newPos);
+	}
+
+	return streamline;
+}
+
+glm::vec3 VectorFieldGenerator::eulerForward(glm::vec3 pos, float delta)
+{
+	glm::vec3 interpPos(pos);
+
+	if (inBounds(pos))
+		interpPos += interpolate(pos) * delta;	
+
+	return interpPos;
+}
+
+glm::vec3 VectorFieldGenerator::rk4(glm::vec3 pos, float delta)
+{
+	if (!inBounds(pos))
+		return pos;
+		
+	glm::vec3 k1 = interpolate(pos);
+
+	glm::vec3 y1 = pos + k1 * delta * 0.5f;
+
+	glm::vec3 k2 = interpolate(y1);
+
+	glm::vec3 y2 = pos + k2 * delta * 0.5f;
+
+	glm::vec3 k3 = interpolate(y2);
+
+	glm::vec3 y3 = pos + k3 * delta;
+
+	glm::vec3 k4 = interpolate(y3);
+
+	glm::vec3 newPos = pos + delta * (k1 + 2.f * k2 + 2.f * k3 + k4) / 6.f;
+
+	//check in bounds or not
+	if (!inBounds(newPos))
+		return pos;
+
+	return newPos;
 }
 
 std::vector<std::vector<glm::vec3>> VectorFieldGenerator::getAdvectedParticles(int numParticles, float dt, float totalTime)
