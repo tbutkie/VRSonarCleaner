@@ -149,7 +149,7 @@ void FlowGrid::init()
 	m_fIllustrativeParticleSize = 1.f;
 
 	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
-	m_fIllustrativeParticleVelocityScale = 0.01f;//0.000001;
+	m_fIllustrativeParticleVelocityScale = 0.001f;//0.000001;
 }
 
 void FlowGrid::deleteSelf()

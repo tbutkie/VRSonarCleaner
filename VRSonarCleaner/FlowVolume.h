@@ -29,7 +29,7 @@ public:
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
 
-	float getLambda2(glm::vec3 pt_WorldCoords);
+	float getLambda2(glm::vec3 pt_WorldCoords, float h = 1.f);
 
 	void draw();
 

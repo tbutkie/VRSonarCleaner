@@ -86,16 +86,16 @@ glm::vec3 FlowVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 		return glm::vec3(0.f);
 }
 
-float FlowVolume::getLambda2(glm::vec3 pt_WorldCoords)
+float FlowVolume::getLambda2(glm::vec3 pt_WorldCoords, float h)
 {
 	glm::vec3 domainPt = convertToRawDomainCoords(pt_WorldCoords);
 
-	glm::vec3 xMinPos(glm::max(domainPt.x - 1.f, static_cast<float>(getMinXDataBound())), domainPt.y, domainPt.z);
-	glm::vec3 xMaxPos(glm::min(domainPt.x + 1.f, static_cast<float>(getMaxXDataBound())), domainPt.y, domainPt.z);
-	glm::vec3 yMinPos(domainPt.x, glm::max(domainPt.y - 1.f, static_cast<float>(getMinYDataBound())), domainPt.z);
-	glm::vec3 yMaxPos(domainPt.x, glm::min(domainPt.y + 1.f, static_cast<float>(getMaxYDataBound())), domainPt.z);
-	glm::vec3 zMinPos(domainPt.x, domainPt.y, glm::max(domainPt.z - 1.f, static_cast<float>(getMinZDataBound())));
-	glm::vec3 zMaxPos(domainPt.x, domainPt.y, glm::min(domainPt.z + 1.f, static_cast<float>(getMaxZDataBound())));
+	glm::vec3 xMinPos(glm::max(domainPt.x - h, static_cast<float>(getMinXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 xMaxPos(glm::min(domainPt.x + h, static_cast<float>(getMaxXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 yMinPos(domainPt.x, glm::max(domainPt.y - h, static_cast<float>(getMinYDataBound())), domainPt.z);
+	glm::vec3 yMaxPos(domainPt.x, glm::min(domainPt.y + h, static_cast<float>(getMaxYDataBound())), domainPt.z);
+	glm::vec3 zMinPos(domainPt.x, domainPt.y, glm::max(domainPt.z - h, static_cast<float>(getMinZDataBound())));
+	glm::vec3 zMaxPos(domainPt.x, domainPt.y, glm::min(domainPt.z + h, static_cast<float>(getMaxZDataBound())));
 
 	float uxmin, uxmax, uymin, uymax, uzmin, uzmax, vxmin, vxmax, vymin, vymax, vzmin, vzmax, wxmin, wxmax, wymin, wymax, wzmin, wzmax;
 
@@ -112,17 +112,21 @@ float FlowVolume::getLambda2(glm::vec3 pt_WorldCoords)
 
 		Eigen::MatrixXf jacobian = Eigen::MatrixXf(3, 3);
 
-		jacobian(0, 0) = (uxmax - uxmin) / glm::distance(xMinPos, xMaxPos);
-		jacobian(0, 1) = (vxmax - vxmin) / glm::distance(xMinPos, xMaxPos);
-		jacobian(0, 2) = (wxmax - wxmin) / glm::distance(xMinPos, xMaxPos);
+		float dx = 2.f * h;
+		float dy = 2.f * h;
+		float dz = 2.f * h;
 
-		jacobian(1, 0) = (uymax - uymin) / glm::distance(yMinPos, yMaxPos);
-		jacobian(1, 1) = (vymax - vymin) / glm::distance(yMinPos, yMaxPos);
-		jacobian(1, 2) = (wymax - wymin) / glm::distance(yMinPos, yMaxPos);
+		jacobian(0, 0) = (uxmax - uxmin) / dx;
+		jacobian(0, 1) = (vxmax - vxmin) / dx;
+		jacobian(0, 2) = (wxmax - wxmin) / dx;
 
-		jacobian(2, 0) = (uzmax - uzmin) / glm::distance(zMinPos, zMaxPos);
-		jacobian(2, 1) = (vzmax - vzmin) / glm::distance(zMinPos, zMaxPos);
-		jacobian(2, 2) = (wzmax - wzmin) / glm::distance(zMinPos, zMaxPos);
+		jacobian(1, 0) = (uymax - uymin) / dy;
+		jacobian(1, 1) = (vymax - vymin) / dy;
+		jacobian(1, 2) = (wymax - wymin) / dy;
+
+		jacobian(2, 0) = (uzmax - uzmin) / dz;
+		jacobian(2, 1) = (vzmax - vzmin) / dz;
+		jacobian(2, 2) = (wzmax - wzmin) / dz;
 		
 
 		Eigen::MatrixXf s = (jacobian + jacobian.transpose()) / 2.f;

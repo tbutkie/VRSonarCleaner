@@ -123,7 +123,7 @@ void FlowProbe::draw()
 
 		Renderer::getInstance().drawText(
 			ss.str(),
-			l2 < 0.f ? glm::mix(glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), l2/m_fLambda2Min) : glm::mix(glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), l2 / m_fLambda2Max),
+			l2 < 0.f ? glm::mix(glm::vec4(1.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), l2/m_fLambda2Min) : glm::mix(glm::vec4(1.f, 1.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), l2 / m_fLambda2Max),
 			swirlLabelPos,
 			glm::quat(getTransformProbeToWorld() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f))),
 			0.01f,
