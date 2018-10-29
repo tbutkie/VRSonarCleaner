@@ -1,10 +1,16 @@
 #pragma once
 #include "SceneBase.h"
+
+#include "TrackedDeviceManager.h"
+#include "VectorFieldGenerator.h"
+#include "DataVolume.h"
+#include "DataLogger.h"
+
 class StudyTrialScene :
 	public Scene
 {
 public:
-	StudyTrialScene();
+	StudyTrialScene(TrackedDeviceManager* pTDM);
 	~StudyTrialScene();
 
 	void init();
@@ -14,5 +20,11 @@ public:
 	void update();
 
 	void draw();
+
+private:
+	TrackedDeviceManager* m_pTDM;
+	VectorFieldGenerator* m_pVFG;
+
+	glm::vec3 m_vvvec3Streamlines;
 };
 

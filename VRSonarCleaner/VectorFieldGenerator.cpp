@@ -5,11 +5,16 @@
 #include <fstream>
 #include <filesystem>
 
-VectorFieldGenerator::VectorFieldGenerator()
-	: m_iGridResolution(10u)
+VectorFieldGenerator::VectorFieldGenerator(glm::vec3 pos, glm::quat rot, glm::vec3 dims)
+	: DataVolume(pos, rot, dims)
+	, m_iGridResolution(10u)
 	, m_fGaussianShape(1.f)
 {
 	m_RNG.seed(std::random_device()());
+	Dataset* ds = new Dataset("vfg");
+	ds->checkNewPosition(glm::dvec3(-1.));
+	ds->checkNewPosition(glm::dvec3(1.));
+	add(ds);
 
 	m_Distribuion = std::uniform_real_distribution<float>(-1.f, 1.f);
 }

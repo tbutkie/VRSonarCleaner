@@ -7,10 +7,13 @@
 
 #include <Eigen/Dense>
 
-class VectorFieldGenerator
+#include "DataVolume.h"
+
+class VectorFieldGenerator :
+	public DataVolume
 {
 public:	
-	VectorFieldGenerator();
+	VectorFieldGenerator(glm::vec3 pos, glm::quat rot, glm::vec3 dims);
 	~VectorFieldGenerator();
 
 	void setGridResolution(unsigned int res);

@@ -140,7 +140,7 @@ void FlowFieldCurator::draw()
 
 bool FlowFieldCurator::loadRandomFlowGrid()
 {
-	m_pVFG = new VectorFieldGenerator();
+	m_pVFG = new VectorFieldGenerator(glm::vec3(), glm::quat(), glm::vec3(1.f));
 
 	m_pVFG->setGridResolution(32u);
 	m_pVFG->setGaussianShape(1.2f);

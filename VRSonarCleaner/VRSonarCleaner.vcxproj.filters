@@ -226,7 +226,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StudyTrialScene.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -417,7 +417,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StudyTrialScene.h">
-      <Filter>Header Files</Filter>
+      <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
