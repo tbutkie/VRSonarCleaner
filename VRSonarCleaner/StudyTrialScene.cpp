@@ -79,7 +79,7 @@ void StudyTrialScene::draw()
 
 		for (size_t i = 0; i < nPts - 1; ++i)
 		{
-			Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", sl[i], sl[i + 1], 0.005f, (i % 2) ? glm::vec4(0.f, 0.f, 0.f, 1.f) : glm::vec4(1.f));
+			Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", sl[i], sl[i + 1], 0.005f, (i % 2) ? glm::vec4(0.2f, 0.2f, 0.2f, 1.f) : glm::vec4(0.8f, 0.8f, 0.8f, 1.f), glm::vec4(0.f));
 		}
 	}	
 	
