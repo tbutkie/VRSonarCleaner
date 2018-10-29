@@ -16,7 +16,7 @@ VectorFieldGenerator::VectorFieldGenerator(glm::vec3 pos, glm::quat rot, glm::ve
 	ds->checkNewPosition(glm::dvec3(1.));
 	add(ds);
 
-	m_Distribuion = std::uniform_real_distribution<float>(-1.f, 1.f);
+	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
 }
 
 VectorFieldGenerator::~VectorFieldGenerator()
@@ -38,7 +38,7 @@ void VectorFieldGenerator::createRandomControlPoints(unsigned int nControlPoints
 	clearControlPoints();
 
 	for (unsigned int i = 0u; i < nControlPoints; ++i)
-		setControlPoint(glm::vec3(m_Distribuion(m_RNG), m_Distribuion(m_RNG), m_Distribuion(m_RNG)) , glm::vec3(m_Distribuion(m_RNG), m_Distribuion(m_RNG), m_Distribuion(m_RNG)));
+		setControlPoint(glm::vec3(m_Distribution(m_RNG), m_Distribution(m_RNG), m_Distribution(m_RNG)) , glm::vec3(m_Distribution(m_RNG), m_Distribution(m_RNG), m_Distribution(m_RNG)));
 }
 
 void VectorFieldGenerator::setControlPoint(glm::vec3 pos, glm::vec3 dir)
@@ -148,15 +148,15 @@ glm::vec3 VectorFieldGenerator::interpolate(glm::vec3 pt)
 
 bool VectorFieldGenerator::inBounds(glm::vec3 pos)
 {
-	if (pos.x >= -1.f || pos.x <= 1.f ||
-		pos.y >= -1.f || pos.y <= 1.f ||
-		pos.z >= -1.f || pos.z <= 1.f)
+	if (pos.x >= -1.f && pos.x <= 1.f &&
+		pos.y >= -1.f && pos.y <= 1.f &&
+		pos.z >= -1.f && pos.z <= 1.f)
 		return true;
 
 	return false;
 }
 
-std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed)
+std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain)
 {
 	std::vector<glm::vec3> streamline;
 	streamline.push_back(pos);
@@ -171,7 +171,7 @@ std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float 
 		
 		glm::vec3 newPos = rk4(streamline.back(), propagation_unit);
 
-		if (newPos == pos)
+		if (newPos == pos || (clipToDomain && !inBounds(newPos)))
 			break;
 		else
 			streamline.push_back(newPos);
@@ -224,7 +224,7 @@ std::vector<std::vector<glm::vec3>> VectorFieldGenerator::getAdvectedParticles(i
 	std::vector<glm::vec3> seedPoints;
 
 	for (int i = 0; i < numParticles; ++i)
-		seedPoints.push_back(glm::vec3(m_Distribuion(m_RNG), m_Distribuion(m_RNG), m_Distribuion(m_RNG)));
+		seedPoints.push_back(glm::vec3(m_Distribution(m_RNG), m_Distribution(m_RNG), m_Distribution(m_RNG)));
 	
 	for (auto &pt : seedPoints)
 	{

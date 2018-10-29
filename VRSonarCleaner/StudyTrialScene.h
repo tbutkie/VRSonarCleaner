@@ -25,6 +25,10 @@ private:
 	TrackedDeviceManager* m_pTDM;
 	VectorFieldGenerator* m_pVFG;
 
-	glm::vec3 m_vvvec3Streamlines;
+	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
+	std::vector<std::vector<glm::vec3>> m_vvvec3TransformedStreamlines;
+
+private:
+	void generateStreamLines();
 };
 

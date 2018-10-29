@@ -25,7 +25,7 @@ public:
 
 	void generate();
 
-	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed);
+	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain = true);
 
 	glm::vec3 eulerForward(glm::vec3 pos, float delta);
 	glm::vec3 rk4(glm::vec3 pos, float delta);
@@ -43,7 +43,7 @@ private:
 
 private:	
 	std::mt19937 m_RNG; // Mersenne Twister
-	std::uniform_real_distribution<float> m_Distribuion;
+	std::uniform_real_distribution<float> m_Distribution;
 
 	std::vector<ControlPoint> m_vControlPoints;
 
