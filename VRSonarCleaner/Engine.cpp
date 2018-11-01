@@ -318,7 +318,7 @@ void Engine::drawScene()
 		std::stringstream ss;
 		ss.precision(2);
 
-		ss << std::fixed << "Total Frame Time: " << m_msFrameTime.count() << "ms | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps" << std::endl;
+		ss << std::fixed << "Total Frrame Time: " << m_msFrameTime.count() << "ms | " << 1.f / std::chrono::duration_cast<std::chrono::duration<float>>(m_msFrameTime).count() << "fps" << std::endl;
 		ss << std::fixed << "Input Handling: " << m_msInputHandleTime.count() << "ms" << std::endl;
 		ss << std::fixed << "State Update: " << m_msUpdateTime.count() << "ms" << std::endl;
 		ss << std::fixed << "Scene Drawing: " << m_msDrawTime.count() << "ms" << std::endl;
@@ -334,7 +334,7 @@ void Engine::drawScene()
 			Renderer::LEFT,
 			Renderer::BOTTOM_LEFT
 		);
-	}		std::stringstream ss;
+	}
 
 	BehaviorManager::getInstance().draw();
 	

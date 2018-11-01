@@ -51,29 +51,32 @@ void StudyTrialScene::update()
 {
 	m_pVFG->update();
 
-	{
-		m_vvvec3TransformedStreamlines.clear();
-
-		for (auto &sl : m_vvvec3RawStreamlines)
-		{
-			std::vector<glm::vec3> tempSL;
-
-			for (auto &pt : sl)
-				tempSL.push_back(m_pVFG->convertToWorldCoords(pt));
-
-			m_vvvec3TransformedStreamlines.push_back(tempSL);
-		}
-	}
-
-	if (!BehaviorManager::getInstance().getBehavior("grab"))
-		BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pVFG));
-	if (!BehaviorManager::getInstance().getBehavior("scale"))
-		BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pVFG));
+	//{
+	//	m_vvvec3TransformedStreamlines.clear();
+	//
+	//	for (auto &sl : m_vvvec3RawStreamlines)
+	//	{
+	//		std::vector<glm::vec3> tempSL;
+	//
+	//		for (auto &pt : sl)
+	//			tempSL.push_back(m_pVFG->convertToWorldCoords(pt));
+	//
+	//		m_vvvec3TransformedStreamlines.push_back(tempSL);
+	//	}
+	//}
 
 	if (m_pTDM->getPrimaryController())
 	{
 		if (m_pTDM->getPrimaryController()->justPressedMenu())
 			init();
+	}
+
+	if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
+	{
+		if (!BehaviorManager::getInstance().getBehavior("grab"))
+			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pVFG));
+		if (!BehaviorManager::getInstance().getBehavior("scale"))
+			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pVFG));
 	}
 }
 
@@ -238,6 +241,7 @@ void StudyTrialScene::generateStreamLines()
 		m_rs.indexType = GL_UNSIGNED_SHORT;
 		m_rs.diffuseColor = glm::vec4(1.f, 1.f, 0.f, 1.f);
 		m_rs.specularColor = glm::vec4(0.f);
+		m_rs.specularExponent = 1.f;
 		m_rs.hasTransparency = false;
 	}
 
@@ -266,6 +270,7 @@ void StudyTrialScene::generateStreamLines()
 		m_rsHalo.indexType = GL_UNSIGNED_SHORT;
 		m_rsHalo.diffuseColor = glm::vec4(0.f, 0.f, 0.f, 1.f);
 		m_rsHalo.specularColor = glm::vec4(0.f);
+		m_rsHalo.specularExponent = 0.f;
 		m_rsHalo.hasTransparency = false;
 		m_rsHalo.vertWindingOrder = GL_CW;
 	}

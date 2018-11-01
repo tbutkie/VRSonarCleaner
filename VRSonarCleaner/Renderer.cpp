@@ -643,6 +643,8 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		// skybox last
 		if (m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
 		{
+			glFrontFace(GL_CCW);
+
 			glDepthFunc(GL_LEQUAL); 
 		
 			glUseProgram(*m_mapShaders["skybox"]);
@@ -888,13 +890,6 @@ void Renderer::render()
 			m_pWindowFramebuffer->m_nResolveTextureId,
 			true
 		);
-
-		//Renderer::getInstance().sortTransparentObjects(glm::vec3(glm::inverse(m_sviWindow3DInfo.view)[3]));
-		//
-		//Renderer::getInstance().renderFrame(&m_sviWindow3DInfo, m_pWindowFramebuffer);
-		//
-		//Renderer::getInstance().renderFullscreenTexture(0, 0, m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pWindowFramebuffer->m_nResolveTextureId);
-
 	}
 }
 
