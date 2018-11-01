@@ -30,6 +30,8 @@ private:
 
 private:
 	void generateStreamLines();
-	glm::mat3 getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
+	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
+
+	//std::vector<glm::vec3> m_vvec3Pts;
 };
 

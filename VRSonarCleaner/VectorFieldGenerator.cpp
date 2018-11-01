@@ -171,7 +171,7 @@ std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float 
 		
 		glm::vec3 newPos = rk4(streamline.back(), propagation_unit);
 
-		if (newPos == pos || (clipToDomain && !inBounds(newPos)))
+		if (newPos == streamline.back() || (clipToDomain && !inBounds(newPos)))
 			break;
 		else
 			streamline.push_back(newPos);
