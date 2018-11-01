@@ -5,6 +5,7 @@
 #include "VectorFieldGenerator.h"
 #include "DataVolume.h"
 #include "DataLogger.h"
+#include "Renderer.h"
 
 class StudyTrialScene :
 	public Scene
@@ -32,6 +33,9 @@ private:
 	void generateStreamLines();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
 
-	//std::vector<glm::vec3> m_vvec3Pts;
+	GLuint m_glVBO, m_glEBO, m_glVAO;
+	GLuint m_glHaloVBO, m_glHaloVAO;
+	
+	Renderer::RendererSubmission m_rs, m_rsHalo;
 };
 

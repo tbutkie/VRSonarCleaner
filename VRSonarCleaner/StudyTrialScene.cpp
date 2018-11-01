@@ -1,5 +1,4 @@
 #include "StudyTrialScene.h"
-#include "Renderer.h"
 #include "BehaviorManager.h"
 #include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -10,6 +9,11 @@
 StudyTrialScene::StudyTrialScene(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
 	, m_pVFG(NULL)
+	, m_glVBO(0)
+	, m_glEBO(0)
+	, m_glVAO(0)
+	, m_glHaloVBO(0)
+	, m_glHaloVAO(0)
 {
 }
 
@@ -77,17 +81,7 @@ void StudyTrialScene::draw()
 {
 	m_pVFG->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
 	m_pVFG->drawBBox(0.f);
-
-	for (auto &sl : m_vvvec3TransformedStreamlines)
-	{
-		auto nPts = sl.size();
-
-		for (size_t i = 0; i < nPts - 1; ++i)
-		{
-			Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", sl[i], sl[i + 1], 0.005f, (i % 2) ? glm::vec4(0.2f, 0.2f, 0.2f, 1.f) : glm::vec4(0.8f, 0.8f, 0.8f, 1.f), glm::vec4(0.f));
-		}
-	}
-
+	
 	if (m_pTDM->getPrimaryController())
 	{
 		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getPrimaryController()->getIndex(), m_pTDM->getPrimaryController()->getComponentID(vr::k_EButton_ApplicationMenu));
@@ -111,26 +105,17 @@ void StudyTrialScene::draw()
 		);
 	}
 
-	for (int i = 0; i < m_vvec3Pts.size() - 1; ++i)
-	{
-		glm::vec3 transPt(m_pVFG->getTransformRawDomainToVolume() * glm::vec4(m_vvec3Pts[i], 1.f));
-		Renderer::getInstance().drawDirectedPrimitive("cylinder", transPt, m_pVFG->getTransformRawDomainToVolume() * glm::vec4(m_vvec3Pts[i + 1], 1.f), 0.001f, glm::vec4(1.f, 0.f, 0.f, 1.f));
-		//Renderer::getInstance().drawText(
-		//	std::to_string(i),
-		//	glm::vec4(1.f),
-		//	transPt,
-		//	utils::getBillBoardTransform(transPt, m_pTDM->getHMDToWorldTransform()[3], glm::vec3(0.f, 1.f, 0.f), true),
-		//	0.01f,
-		//	Renderer::TextSizeDim::HEIGHT
-		//);
-	}
+	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pVFG->getTransformRawDomainToVolume();
+
+	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
+	Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
 }
 
 void StudyTrialScene::generateStreamLines()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	int gridRes = 2;
+	int gridRes = 4;
 	// 4x4x4 regularly-spaced seeding grid within volume
 	for (int i = 0; i < gridRes; ++i)
 		for (int j = 0; j < gridRes; ++j)
@@ -144,15 +129,17 @@ void StudyTrialScene::generateStreamLines()
 	// except for the first and last, each circular 'rib' will be on the uv-plane of the averaged coordinate frames between the two connected segments
 
 	// make unit circle for 'rib' that will be moved along streamline
+	float radius = 0.005f;
 	int numSegments = 8;
+	int numCircleVerts = numSegments + 1;
 	std::vector<glm::vec3> circleVerts;
-	for (int i = 0; i <= numSegments; ++i)
+	for (int i = 0; i < numCircleVerts; ++i)
 	{
-		float angle = ((float)i / (float)(numSegments)) * glm::two_pi<float>();
+		float angle = ((float)i / (float)(numCircleVerts - 1)) * glm::two_pi<float>();
 		circleVerts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
 	}
 
-	std::vector<Renderer::PrimVert> verts;
+	std::vector<Renderer::PrimVert> verts, haloverts;
 	std::vector<GLushort> inds;
 	for (auto &sl : m_vvvec3RawStreamlines)
 	{
@@ -174,7 +161,7 @@ void StudyTrialScene::generateStreamLines()
 		ribOrientations.push_back(getSegmentOrientationMatrixNormalized(sl[sl.size() - 1] - sl[sl.size() - 2]));
 
 		assert(ribOrientations.size() == sl.size());
-
+		
 		for (size_t i = 0; i < ribOrientations.size(); ++i)
 		{
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
@@ -183,87 +170,113 @@ void StudyTrialScene::generateStreamLines()
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
 				Renderer::PrimVert pv;
-				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * 0.005f, 1.f));
+				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius, 1.f));
 				pv.n = glm::normalize(pv.p - sl[i]);
 				pv.c = glm::vec4(1.f);
 				pv.t = glm::vec2(j / (circleVerts.size() - 1), i);
-			}
 
-			int base = inds.size();
-			if (i < ribOrientations.size() - 1)
-			{
+				verts.push_back(pv);
 
+				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius * 2.f, 1.f));
+				haloverts.push_back(pv);
+
+				if (i > 0 && j > 0)
+				{
+					GLushort thisInd(verts.size() - 1);
+					inds.push_back(thisInd);
+					inds.push_back(thisInd - numCircleVerts);
+					inds.push_back(thisInd - numCircleVerts - 1);
+
+					inds.push_back(thisInd);
+					inds.push_back(thisInd - numCircleVerts - 1);
+					inds.push_back(thisInd - 1);
+				}
 			}
 		}
 	}
-	//
-	//std::vector<GLushort> inds;
-	//
-	//
-	//size_t baseInd = verts.size();
-	//
-	//// Base endcap
-	//verts.push_back(Renderer::PrimVert({ glm::vec3(0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	//for (int i = 0; i < numSegments; ++i)
-	//{
-	//	float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-	//	verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
-	//
-	//	if (i > 0)
-	//	{
-	//		inds.push_back(baseInd);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//	}
-	//}
-	//inds.push_back(baseInd);
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//inds.push_back(baseInd + 1);
-	//
-	//// Distal endcap
-	//verts.push_back(PrimVert({ glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), glm::vec2(0.5f, 0.5f) }));
-	//for (int i = 0; i < numSegments; ++i)
-	//{
-	//	float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-	//	verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(0.f, 0.f, 1.f), glm::vec4(1.f), (glm::vec2(sin(angle), cos(angle)) + 1.f) / 2.f }));
-	//
-	//	if (i > 0)
-	//	{
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (i + 2)); // ctr pt of endcap
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	//	}
-	//}
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments + 1));
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - (numSegments));
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//
-	//// Shaft
-	//for (int i = 0; i < numSegments; ++i)
-	//{
-	//	float angle = ((float)i / (float)(numSegments - 1)) * glm::two_pi<float>();
-	//	verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 0.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 0.f) }));
-	//
-	//	verts.push_back(PrimVert({ glm::vec3(sin(angle), cos(angle), 1.f), glm::vec3(sin(angle), cos(angle), 0.f), glm::vec4(1.f), glm::vec2((float)i / (float)(numSegments - 1), 1.f) }));
-	//
-	//	if (i > 0)
-	//	{
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 4);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	//
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 3);
-	//		inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//	}
-	//}
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
-	//
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2);
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - numSegments * 2 + 1);
-	//inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
+
+	if (!m_glVBO)
+	{
+		glCreateBuffers(1, &m_glVBO);
+		glNamedBufferStorage(m_glVBO, gridRes * gridRes * gridRes * 101 * numCircleVerts * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+	if (!m_glHaloVBO)
+	{
+		glCreateBuffers(1, &m_glHaloVBO);
+		glNamedBufferStorage(m_glHaloVBO, gridRes * gridRes * gridRes * 101 * numCircleVerts * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+	if (!m_glEBO)
+	{
+		glCreateBuffers(1, &m_glEBO);
+		glNamedBufferStorage(m_glEBO, gridRes * gridRes * gridRes * 100 * numSegments * 6 * sizeof(GLushort), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+	if (!m_glVAO)
+	{
+		glGenVertexArrays(1, &m_glVAO);
+		glBindVertexArray(this->m_glVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, t));
+		glBindVertexArray(0);
+
+		m_rs.VAO = m_glVAO;
+		m_rs.glPrimitiveType = GL_TRIANGLES;
+		m_rs.shaderName = "lighting";
+		m_rs.indexType = GL_UNSIGNED_SHORT;
+		m_rs.diffuseColor = glm::vec4(1.f, 1.f, 0.f, 1.f);
+		m_rs.specularColor = glm::vec4(0.f);
+		m_rs.hasTransparency = false;
+	}
+
+	if (!m_glHaloVAO)
+	{
+		glGenVertexArrays(1, &m_glHaloVAO);
+		glBindVertexArray(this->m_glHaloVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, this->m_glHaloVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, t));
+		glBindVertexArray(0);
+
+		m_rsHalo.VAO = m_glHaloVAO;
+		m_rsHalo.glPrimitiveType = GL_TRIANGLES;
+		m_rsHalo.shaderName = "flat";
+		m_rsHalo.indexType = GL_UNSIGNED_SHORT;
+		m_rsHalo.diffuseColor = glm::vec4(0.f, 0.f, 0.f, 1.f);
+		m_rsHalo.specularColor = glm::vec4(0.f);
+		m_rsHalo.hasTransparency = false;
+		m_rsHalo.vertWindingOrder = GL_CW;
+	}
+
+	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(Renderer::PrimVert), verts.data());
+	glNamedBufferSubData(m_glHaloVBO, 0, haloverts.size() * sizeof(Renderer::PrimVert), haloverts.data());
+	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLushort), inds.data());
+
+	m_rs.vertCount = inds.size();
+	m_rsHalo.vertCount = inds.size();
+
 }
 
 glm::quat StudyTrialScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection)
