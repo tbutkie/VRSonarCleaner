@@ -111,7 +111,7 @@ void StudyTrialScene::draw()
 	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pVFG->getTransformRawDomainToVolume();
 
 	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
-	Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	//Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
 }
 
 void StudyTrialScene::generateStreamLines()
@@ -119,6 +119,10 @@ void StudyTrialScene::generateStreamLines()
 	m_vvvec3RawStreamlines.clear();
 
 	int gridRes = 4;
+	float radius = 0.005f;
+	int numSegments = 16;
+
+
 	// 4x4x4 regularly-spaced seeding grid within volume
 	for (int i = 0; i < gridRes; ++i)
 		for (int j = 0; j < gridRes; ++j)
@@ -132,8 +136,6 @@ void StudyTrialScene::generateStreamLines()
 	// except for the first and last, each circular 'rib' will be on the uv-plane of the averaged coordinate frames between the two connected segments
 
 	// make unit circle for 'rib' that will be moved along streamline
-	float radius = 0.005f;
-	int numSegments = 8;
 	int numCircleVerts = numSegments + 1;
 	std::vector<glm::vec3> circleVerts;
 	for (int i = 0; i < numCircleVerts; ++i)
@@ -165,6 +167,7 @@ void StudyTrialScene::generateStreamLines()
 
 		assert(ribOrientations.size() == sl.size());
 		
+		// Make the shaft of the streamtube
 		for (size_t i = 0; i < ribOrientations.size(); ++i)
 		{
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
@@ -178,6 +181,8 @@ void StudyTrialScene::generateStreamLines()
 				pv.c = glm::vec4(1.f);
 				pv.t = glm::vec2(j / (circleVerts.size() - 1), i);
 
+				GLushort thisInd(verts.size());
+
 				verts.push_back(pv);
 
 				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius * 2.f, 1.f));
@@ -185,7 +190,6 @@ void StudyTrialScene::generateStreamLines()
 
 				if (i > 0 && j > 0)
 				{
-					GLushort thisInd(verts.size() - 1);
 					inds.push_back(thisInd);
 					inds.push_back(thisInd - numCircleVerts);
 					inds.push_back(thisInd - numCircleVerts - 1);
@@ -196,24 +200,66 @@ void StudyTrialScene::generateStreamLines()
 				}
 			}
 		}
+
+		// Make the proximal endcap
+		glm::quat frontCap = ribOrientations.front();
+		glm::quat endCap = glm::rotate(ribOrientations.back(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+
+		for (auto &q : { frontCap, endCap })
+		{
+			Renderer::PrimVert pv;
+			pv.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
+			pv.c = glm::vec4(1.f);
+			pv.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
+
+			// base vertex
+			int baseVert = verts.size();
+
+			// center vertex
+			pv.p = q == frontCap ? sl.front() : sl.back();
+			verts.push_back(pv);
+			haloverts.push_back(pv);
+
+			glm::mat4 xform(glm::toMat3(q));
+			xform[3] = glm::vec4(pv.p, 1.f);
+
+			// circle verts (no need for last and first vert to be same)
+			for (int i = 0; i < circleVerts.size(); ++i)
+			{
+				int thisVert = verts.size();
+
+				pv.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius, 1.f));
+				verts.push_back(pv);
+
+				pv.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius * 2.f, 1.f));
+				haloverts.push_back(pv);
+
+				if (i > 0)
+				{
+					inds.push_back(baseVert);
+					inds.push_back(thisVert - 1);
+					inds.push_back(thisVert);
+				}
+			}
+		}
 	}
 
 	if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
-		glNamedBufferStorage(m_glVBO, gridRes * gridRes * gridRes * 101 * numCircleVerts * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glHaloVBO)
 	{
 		glCreateBuffers(1, &m_glHaloVBO);
-		glNamedBufferStorage(m_glHaloVBO, gridRes * gridRes * gridRes * 101 * numCircleVerts * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glHaloVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, gridRes * gridRes * gridRes * 100 * numSegments * 6 * sizeof(GLushort), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glEBO, gridRes * gridRes * gridRes * (100 * 6 + 2*3) * numSegments * sizeof(GLushort), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glVAO)
