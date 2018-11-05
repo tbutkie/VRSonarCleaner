@@ -71,6 +71,7 @@ Renderer::Renderer()
 	, m_glFrameUBO(0)
 	, m_bShowWireframe(false)
 	, m_uiFontPointSize(144u)
+	, m_tpStart(std::chrono::high_resolution_clock::now())
 {
 }
 
@@ -831,6 +832,10 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 
 void Renderer::render()
 {
+	auto tick = std::chrono::high_resolution_clock::now();
+	float secsElapsed = std::chrono::duration<float>(tick - m_tpStart).count();
+	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, fGlobalTime), sizeof(FrameUniforms::fGlobalTime), &secsElapsed);
+
 	// VR
 	{
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);

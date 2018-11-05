@@ -12,6 +12,18 @@ layout(location = DIFFUSE_COLOR_UNIFORM_LOCATION)
 	uniform vec4 diffColor;
 layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
 	uniform vec4 specColor;
+	
+	
+layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION) 
+	uniform FrameUniforms
+	{
+		vec4 v4Viewport;
+		mat4 m4View;
+		mat4 m4Projection;
+		mat4 m4ViewProjection;
+		float fGlobalTime;
+	};
+
 
 in vec3 v3Normal;
 in vec3 v3FragPos;
@@ -55,13 +67,17 @@ vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fr
 
 void main()
 {
+	float rate = 2.f;
+	float loopCount;
+	float timeRatio = modf(fGlobalTime / rate, loopCount);
+
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
 	vec4 surfaceDiffColor = v4Color * diffColor;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
 	float intPart;
-	float ratioAlongSegment = modf(mod(v2TexCoords.y, 2.f), intPart);
+	float ratioAlongSegment = modf(mod(v2TexCoords.y - timeRatio, 2.f), intPart);
 
 	//if (intPart == 1.f)
 	//    surfaceDiffColor.rgb = vec3(0.f);

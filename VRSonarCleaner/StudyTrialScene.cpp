@@ -45,7 +45,7 @@ void StudyTrialScene::init()
 
 void StudyTrialScene::processSDLEvent(SDL_Event & ev)
 {
-	if (ev.key.keysym.sym == SDLK_r)
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_r)
 	{
 		init();
 	}

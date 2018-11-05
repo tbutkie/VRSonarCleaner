@@ -15,6 +15,7 @@ struct FrameUniforms {
 	glm::mat4 m4View;
 	glm::mat4 m4Projection;
 	glm::mat4 m4ViewProjection;
+	float fGlobalTime; // in seconds
 };
 
 class Renderer
@@ -264,6 +265,8 @@ private:
 		glm::ivec2 Bearing;  // Offset from baseline to left/top of glyph
 		glm::ivec2 Advance;    // Horizontal offset to advance to next glyph
 	};
+
+	std::chrono::high_resolution_clock::time_point m_tpStart;
 
 	SDL_Window *m_pWindow;
 	SDL_Cursor *m_pWindowCursor;

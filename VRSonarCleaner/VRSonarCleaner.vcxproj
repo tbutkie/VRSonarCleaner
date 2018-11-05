@@ -298,8 +298,6 @@
     <None Include="resources\shaders\lighting.vert" />
     <None Include="resources\shaders\lightingWF.frag" />
     <None Include="resources\shaders\lightingWF.geom" />
-    <None Include="resources\shaders\renderModels.frag" />
-    <None Include="resources\shaders\renderModels.vert" />
     <None Include="resources\shaders\skybox.frag" />
     <None Include="resources\shaders\skybox.vert" />
     <None Include="resources\shaders\streamline.frag" />
@@ -307,8 +305,6 @@
     <None Include="resources\shaders\text.vert" />
     <None Include="resources\shaders\vrwindow.vert" />
     <None Include="resources\shaders\windowtexture.frag" />
-    <None Include="shaders\skybox.frag" />
-    <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

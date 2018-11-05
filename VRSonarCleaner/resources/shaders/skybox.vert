@@ -8,6 +8,7 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 		mat4 m4View;
 		mat4 m4Projection;
 		mat4 m4ViewProjection;
+		float fGlobalTime;
 	};
 
 out vec3 v3TexCoord;
