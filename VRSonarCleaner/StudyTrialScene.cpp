@@ -45,6 +45,10 @@ void StudyTrialScene::init()
 
 void StudyTrialScene::processSDLEvent(SDL_Event & ev)
 {
+	if (ev.key.keysym.sym == SDLK_r)
+	{
+		init();
+	}
 }
 
 void StudyTrialScene::update()
@@ -145,7 +149,7 @@ void StudyTrialScene::generateStreamLines()
 	}
 
 	std::vector<Renderer::PrimVert> verts, haloverts;
-	std::vector<GLushort> inds;
+	std::vector<GLuint> inds;
 	for (auto &sl : m_vvvec3RawStreamlines)
 	{
 		if (sl.size() < 2)
@@ -181,7 +185,7 @@ void StudyTrialScene::generateStreamLines()
 				pv.c = glm::vec4(1.f);
 				pv.t = glm::vec2(j / (circleVerts.size() - 1), i);
 
-				GLushort thisInd(verts.size());
+				GLuint thisInd(verts.size());
 
 				verts.push_back(pv);
 
@@ -201,7 +205,7 @@ void StudyTrialScene::generateStreamLines()
 			}
 		}
 
-		// Make the proximal endcap
+		// Make the endcaps
 		glm::quat frontCap = ribOrientations.front();
 		glm::quat endCap = glm::rotate(ribOrientations.back(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
 
@@ -226,7 +230,7 @@ void StudyTrialScene::generateStreamLines()
 			// circle verts (no need for last and first vert to be same)
 			for (int i = 0; i < circleVerts.size(); ++i)
 			{
-				int thisVert = verts.size();
+				GLuint thisVert = verts.size();
 
 				pv.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius, 1.f));
 				verts.push_back(pv);
@@ -259,7 +263,7 @@ void StudyTrialScene::generateStreamLines()
 	if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, gridRes * gridRes * gridRes * (100 * 6 + 2*3) * numSegments * sizeof(GLushort), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glEBO, gridRes * gridRes * gridRes * (100 * 6 + 2*3) * numSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glVAO)
@@ -284,7 +288,7 @@ void StudyTrialScene::generateStreamLines()
 		m_rs.VAO = m_glVAO;
 		m_rs.glPrimitiveType = GL_TRIANGLES;
 		m_rs.shaderName = "lighting";
-		m_rs.indexType = GL_UNSIGNED_SHORT;
+		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f, 1.f, 0.f, 1.f);
 		m_rs.specularColor = glm::vec4(0.f);
 		m_rs.specularExponent = 1.f;
@@ -313,7 +317,7 @@ void StudyTrialScene::generateStreamLines()
 		m_rsHalo.VAO = m_glHaloVAO;
 		m_rsHalo.glPrimitiveType = GL_TRIANGLES;
 		m_rsHalo.shaderName = "flat";
-		m_rsHalo.indexType = GL_UNSIGNED_SHORT;
+		m_rsHalo.indexType = GL_UNSIGNED_INT;
 		m_rsHalo.diffuseColor = glm::vec4(0.f, 0.f, 0.f, 1.f);
 		m_rsHalo.specularColor = glm::vec4(0.f);
 		m_rsHalo.specularExponent = 0.f;
@@ -323,7 +327,7 @@ void StudyTrialScene::generateStreamLines()
 
 	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(Renderer::PrimVert), verts.data());
 	glNamedBufferSubData(m_glHaloVBO, 0, haloverts.size() * sizeof(Renderer::PrimVert), haloverts.data());
-	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLushort), inds.data());
+	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
 
 	m_rs.vertCount = inds.size();
 	m_rsHalo.vertCount = inds.size();
