@@ -29,13 +29,15 @@ private:
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
 	std::vector<std::vector<glm::vec3>> m_vvvec3TransformedStreamlines;
 
-private:
-	void generateStreamLines();
-	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
-
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
 	
 	Renderer::RendererSubmission m_rs, m_rsHalo;
+
+	bool m_bShowHalos;
+
+private:
+	void generateStreamLines();
+	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
 };
 

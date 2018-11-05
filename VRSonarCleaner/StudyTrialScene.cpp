@@ -14,6 +14,7 @@ StudyTrialScene::StudyTrialScene(TrackedDeviceManager* pTDM)
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
+	, m_bShowHalos(false)
 {
 }
 
@@ -46,9 +47,10 @@ void StudyTrialScene::init()
 void StudyTrialScene::processSDLEvent(SDL_Event & ev)
 {
 	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_r)
-	{
 		init();
-	}
+
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_h)
+		m_bShowHalos = !m_bShowHalos;
 }
 
 void StudyTrialScene::update()
@@ -86,7 +88,7 @@ void StudyTrialScene::update()
 
 void StudyTrialScene::draw()
 {
-	m_pVFG->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+	//m_pVFG->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
 	m_pVFG->drawBBox(0.f);
 	
 	if (m_pTDM->getPrimaryController())
@@ -115,7 +117,8 @@ void StudyTrialScene::draw()
 	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pVFG->getTransformRawDomainToVolume();
 
 	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
-	//Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	if (m_bShowHalos)
+		Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
 }
 
 void StudyTrialScene::generateStreamLines()
@@ -131,7 +134,10 @@ void StudyTrialScene::generateStreamLines()
 	for (int i = 0; i < gridRes; ++i)
 		for (int j = 0; j < gridRes; ++j)
 			for (int k = 0; k < gridRes; ++k)
-				m_vvvec3RawStreamlines.push_back(m_pVFG->getStreamline(glm::vec3(-1.f + (2.f/(gridRes + 1.f))) + (2.f / (gridRes + 1.f)) * glm::vec3(i, j, k), 1.f / 32.f, 100, 0.1f));
+			{
+				glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes + 1.f))) + (2.f / (gridRes + 1.f)) * glm::vec3(i, j, k));
+				m_vvvec3RawStreamlines.push_back(m_pVFG->getStreamline(seedPos, 1.f / 32.f, 100, 0.1f));
+			}
 
 
 	// For each streamline segment
