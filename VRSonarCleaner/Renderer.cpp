@@ -536,10 +536,12 @@ void Renderer::setupShaders()
 	m_mapShaders["skybox"] = m_Shaders.AddProgramFromExts({ "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
 	m_mapShaders["instanced"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
 	m_mapShaders["instanced_lit"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/lighting.frag" });
+	m_mapShaders["streamline"] = m_Shaders.AddProgramFromExts({ "resources/shaders/lighting.vert", "resources/shaders/streamline.frag" });
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["instanced_lit"]);
+	m_pLighting->addShaderToUpdate(m_mapShaders["streamline"]);
 }
 
 void Renderer::setupTextures()

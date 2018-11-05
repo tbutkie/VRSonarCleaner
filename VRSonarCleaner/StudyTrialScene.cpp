@@ -287,12 +287,12 @@ void StudyTrialScene::generateStreamLines()
 
 		m_rs.VAO = m_glVAO;
 		m_rs.glPrimitiveType = GL_TRIANGLES;
-		m_rs.shaderName = "lighting";
+		m_rs.shaderName = "streamline";
 		m_rs.indexType = GL_UNSIGNED_INT;
-		m_rs.diffuseColor = glm::vec4(1.f, 1.f, 0.f, 1.f);
+		m_rs.diffuseColor = glm::vec4(1.f);
 		m_rs.specularColor = glm::vec4(0.f);
 		m_rs.specularExponent = 1.f;
-		m_rs.hasTransparency = false;
+		m_rs.hasTransparency = true;
 	}
 
 	if (!m_glHaloVAO)
