@@ -51,6 +51,9 @@ void StudyTrialScene::processSDLEvent(SDL_Event & ev)
 
 	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_h)
 		m_bShowHalos = !m_bShowHalos;
+
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_s)
+		Renderer::getInstance().toggleSkybox();
 }
 
 void StudyTrialScene::update()
@@ -125,9 +128,9 @@ void StudyTrialScene::generateStreamLines()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	int gridRes = 4;
+	int gridRes = 9;
 	float radius = 0.005f;
-	int numSegments = 16;
+	int numSegments = 8;
 
 
 	// 4x4x4 regularly-spaced seeding grid within volume
@@ -136,6 +139,7 @@ void StudyTrialScene::generateStreamLines()
 			for (int k = 0; k < gridRes; ++k)
 			{
 				glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes + 1.f))) + (2.f / (gridRes + 1.f)) * glm::vec3(i, j, k));
+				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
 				m_vvvec3RawStreamlines.push_back(m_pVFG->getStreamline(seedPos, 1.f / 32.f, 100, 0.1f));
 			}
 

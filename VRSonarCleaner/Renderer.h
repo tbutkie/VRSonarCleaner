@@ -203,6 +203,8 @@ public:
 	GLTexture* getTexture(std::string texName);
 	bool addTexture(GLTexture* tex);
 
+	void toggleSkybox();
+
 	void render();
 	void swapAndClear();
 
@@ -258,6 +260,8 @@ private:
 
 		Skybox() : texID(0) {}
 	};
+
+	bool m_bShowSkybox;
 
 	struct Character {
 		GLuint TextureID;   // ID handle of the glyph texture

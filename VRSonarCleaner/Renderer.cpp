@@ -72,6 +72,7 @@ Renderer::Renderer()
 	, m_bShowWireframe(false)
 	, m_uiFontPointSize(144u)
 	, m_tpStart(std::chrono::high_resolution_clock::now())
+	, m_bShowSkybox(true)
 {
 }
 
@@ -510,6 +511,11 @@ bool Renderer::addTexture(GLTexture * tex)
 	}
 }
 
+void Renderer::toggleSkybox()
+{
+	m_bShowSkybox = !m_bShowSkybox;
+}
+
 void Renderer::sortTransparentObjects(glm::vec3 HMDPos)
 {
 	std::sort(m_vStaticRenderQueue_Transparency.begin(), m_vStaticRenderQueue_Transparency.end(), ObjectSorter(HMDPos));
@@ -644,7 +650,7 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		processRenderQueue(m_vDynamicRenderQueue_Opaque);
 
 		// skybox last
-		if (m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
+		if (m_bShowSkybox && m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
 		{
 			glFrontFace(GL_CCW);
 
