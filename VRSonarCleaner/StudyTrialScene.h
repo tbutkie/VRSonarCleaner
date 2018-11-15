@@ -36,8 +36,11 @@ private:
 
 	bool m_bShowHalos;
 
+	std::vector<glm::vec3> m_vvec3Zeros;
+	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
+
 private:
 	void generateStreamLines();
-	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection);
+	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };
 

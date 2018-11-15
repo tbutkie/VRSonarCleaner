@@ -25,7 +25,14 @@ public:
 
 	void generate();
 
+	float streamRibbonRotation(glm::vec3 domainPt, float delta);
 	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain = true);
+
+	float divergence(glm::vec3 domainPt, float delta);
+	glm::vec3 curl(glm::vec3 domainPt, float delta);
+	glm::mat3 jacobian(glm::vec3 domainPt, float delta);
+	bool findZeroNewtonRaphson(glm::vec3 domainStartPt, float delta, int maxSteps, float stopVelocity, float stopStepDelta, std::vector<glm::vec3> &pLines);
+	float lambda2(glm::vec3 domainPt, float delta);
 
 	glm::vec3 eulerForward(glm::vec3 pos, float delta);
 	glm::vec3 rk4(glm::vec3 pos, float delta);
@@ -50,7 +57,7 @@ private:
 	int m_iGridResolution;
 	float m_fGaussianShape;
 	Eigen::MatrixXf m_matControlPointKernel;
-	Eigen::VectorXf m_vCPXVals, m_vCPYVals, m_vCPZVals;
+	Eigen::VectorXf m_vCPUVals, m_vCPVVals, m_vCPWVals;
 	Eigen::VectorXf m_vLambdaX, m_vLambdaY, m_vLambdaZ;
 	std::vector<std::vector<std::vector<std::pair<glm::vec3, glm::vec3>>>> m_v3DGridPairs;
 
@@ -59,5 +66,6 @@ private:
 	glm::vec3 interpolate(glm::vec3 pt);
 	bool inBounds(glm::vec3 pos);
 	float gaussianBasis(float r, float eta);
+	Eigen::MatrixXf jacobianEigen(glm::vec3 domainPt, float delta);
 };
 

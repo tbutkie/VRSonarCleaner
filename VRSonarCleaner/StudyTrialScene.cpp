@@ -28,6 +28,9 @@ void StudyTrialScene::init()
 	if (m_pVFG)
 		delete m_pVFG;
 
+	m_vvec3Zeros.clear();
+	m_vvvec3ZeroLines.clear();
+
 	m_pVFG = new VectorFieldGenerator(glm::vec3(0.f, 1.f, 0.f), glm::quat(), glm::vec3(1.f));
 	
 	m_pVFG->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
@@ -35,8 +38,42 @@ void StudyTrialScene::init()
 
 	m_pVFG->setGridResolution(32u);
 	m_pVFG->setGaussianShape(1.2f);
-	m_pVFG->createRandomControlPoints(6u);
-	m_pVFG->generate();
+	
+	int cpCount;
+	do {
+		m_pVFG->createRandomControlPoints(6u);
+		m_pVFG->generate();
+
+		cpCount = 0;
+
+		for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j)
+				for (int k = 0; k < 10; ++k)
+				{
+					std::vector<glm::vec3> lines;
+					glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (10.f + 1.f))) + (2.f / (10.f + 1.f)) * glm::vec3(i, j, k));
+					if (m_pVFG->findZeroNewtonRaphson(seedPos, 1e-4f, 10000, 1e-7f, 1e-10f, lines))
+					{
+						float threshold = (2.f / 3.f) / 2.f;
+						if (lines.back().x < -threshold || lines.back().x > threshold ||
+							lines.back().y < -threshold || lines.back().y > threshold ||
+							lines.back().z < -threshold || lines.back().z > threshold)
+							continue;
+
+						bool alreadyFound = false;
+						for (auto &z : m_vvec3Zeros)
+							if (glm::distance2(lines.back(), z) < 10e-5f)
+								alreadyFound = true;
+
+						if (!alreadyFound)
+						{
+							m_vvec3Zeros.push_back(lines.back());
+							//m_vvvec3ZeroLines.push_back(lines);
+							cpCount++;
+						}
+					}
+				}
+	} while (cpCount != 3);
 
 	generateStreamLines();
 
@@ -80,6 +117,19 @@ void StudyTrialScene::update()
 			init();
 	}
 
+	if (m_pTDM->getSecondaryController())
+	{
+		if (m_pTDM->getSecondaryController()->justPressedMenu())
+		{
+			std::vector<glm::vec3> lines;
+			if (m_pVFG->findZeroNewtonRaphson(m_pVFG->convertToRawDomainCoords(m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3]), 1e-4f, 1000000, 1e-7f, 1e-10f, lines))
+			{
+				m_vvec3Zeros.push_back(lines.back());
+				m_vvvec3ZeroLines.push_back(lines);
+			}
+		}
+	}
+
 	if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
 	{
 		if (!BehaviorManager::getInstance().getBehavior("grab"))
@@ -116,6 +166,41 @@ void StudyTrialScene::draw()
 			glm::vec4(1.f, 1.f, 1.f, 0.75f)
 		);
 	}
+
+	if (m_pTDM->getSecondaryController())
+	{
+		// CP Count Label
+		glm::mat4 statusTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		Renderer::getInstance().drawText(
+			std::to_string(m_vvec3Zeros.size()),
+			glm::vec4(0.8f, 0.2f, 0.8f, 1.f),
+			statusTextAnchorTrans[3],
+			glm::quat(statusTextAnchorTrans),
+			0.02f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_BOTTOM
+		);
+
+		Renderer::getInstance().drawText(
+			std::string("Critical Points"),
+			glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
+			statusTextAnchorTrans[3],
+			glm::quat(statusTextAnchorTrans),
+			0.0075f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_TOP
+		);
+	}
+
+	for (auto &line : m_vvvec3ZeroLines)
+		for (int i = 0; i < line.size() - 1; ++i)
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_pVFG->convertToWorldCoords(line[i]), m_pVFG->convertToWorldCoords(line[i + 1]), 0.001f, glm::vec4(1.f, 1.f, 0.f, 1.f));
+
+	for (auto &zero : m_vvec3Zeros)
+		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), m_pVFG->convertToWorldCoords(zero)) * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 
 	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pVFG->getTransformRawDomainToVolume();
 
@@ -344,9 +429,8 @@ void StudyTrialScene::generateStreamLines()
 
 }
 
-glm::quat StudyTrialScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection)
+glm::quat StudyTrialScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)
 {
-	glm::vec3 up(0.f, 1.f, 0.f);
 	glm::vec3 w(glm::normalize(segmentDirection));
 	glm::vec3 u(glm::normalize(glm::cross(up, w)));
 	glm::vec3 v(glm::normalize(glm::cross(w, u)));

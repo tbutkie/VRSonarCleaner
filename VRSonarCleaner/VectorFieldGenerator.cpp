@@ -92,16 +92,16 @@ void VectorFieldGenerator::solveLUdecomp()
 	int nControlPoints = static_cast<int>(m_vControlPoints.size());
 
 	m_matControlPointKernel = Eigen::MatrixXf(nControlPoints, nControlPoints);
-	m_vCPXVals = Eigen::VectorXf(nControlPoints);
-	m_vCPYVals = Eigen::VectorXf(nControlPoints);
-	m_vCPZVals = Eigen::VectorXf(nControlPoints);
+	m_vCPUVals = Eigen::VectorXf(nControlPoints);
+	m_vCPVVals = Eigen::VectorXf(nControlPoints);
+	m_vCPWVals = Eigen::VectorXf(nControlPoints);
 
 	for (int i = 0; i < nControlPoints; ++i)
 	{
 		// store each vector component of the control point value
-		m_vCPXVals(i) = m_vControlPoints[i].dir.x;
-		m_vCPYVals(i) = m_vControlPoints[i].dir.y;
-		m_vCPZVals(i) = m_vControlPoints[i].dir.z;
+		m_vCPUVals(i) = m_vControlPoints[i].dir.x;
+		m_vCPVVals(i) = m_vControlPoints[i].dir.y;
+		m_vCPWVals(i) = m_vControlPoints[i].dir.z;
 
 		// fill in the distance matrix kernel entries for this control point
 		m_matControlPointKernel(i, i) = 1.f;
@@ -115,9 +115,9 @@ void VectorFieldGenerator::solveLUdecomp()
 
 	// solve for lambda coefficients in each (linearly independent) dimension using LU decomposition of distance matrix
 	//     -the lambda coefficients are the interpolation weights for each control(/interpolation data) point
-	m_vLambdaX = m_matControlPointKernel.fullPivLu().solve(m_vCPXVals);
-	m_vLambdaY = m_matControlPointKernel.fullPivLu().solve(m_vCPYVals);
-	m_vLambdaZ = m_matControlPointKernel.fullPivLu().solve(m_vCPZVals);
+	m_vLambdaX = m_matControlPointKernel.fullPivLu().solve(m_vCPUVals);
+	m_vLambdaY = m_matControlPointKernel.fullPivLu().solve(m_vCPVVals);
+	m_vLambdaZ = m_matControlPointKernel.fullPivLu().solve(m_vCPWVals);
 }
 
 glm::vec3 VectorFieldGenerator::interpolate(glm::vec3 pt)
@@ -156,6 +156,12 @@ bool VectorFieldGenerator::inBounds(glm::vec3 pos)
 	return false;
 }
 
+// From Ueng et al 1996
+float VectorFieldGenerator::streamRibbonRotation(glm::vec3 domainPt, float delta)
+{
+	return 0.5f * glm::dot(curl(domainPt, delta), glm::normalize(interpolate(domainPt)));
+}
+
 std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain)
 {
 	std::vector<glm::vec3> streamline;
@@ -178,6 +184,117 @@ std::vector<glm::vec3> VectorFieldGenerator::getStreamline(glm::vec3 pos, float 
 	}
 
 	return streamline;
+}
+
+float VectorFieldGenerator::divergence(glm::vec3 domainPt, float delta)
+{
+	glm::mat3 j(jacobian(domainPt, delta));
+
+	return j[0][0] + j[1][1] + j[2][2];
+}
+
+glm::vec3 VectorFieldGenerator::curl(glm::vec3 domainPt, float delta)
+{
+	glm::mat3 j(jacobian(domainPt, delta));
+	
+	// curl = [dwdy - dvdz, dudz - dwdx, dvdx - dudy]
+	return glm::vec3(j[1][2] - j[2][1], j[2][0] - j[0][2], j[0][1] - j[1][0]);
+}
+
+// Can be considered the 3D vector field equivalent of gradient in 2D?
+glm::mat3 VectorFieldGenerator::jacobian(glm::vec3 domainPt, float delta)
+{
+	// We will use a central difference scheme
+	glm::vec3 xMinPos(glm::max(domainPt.x - delta, static_cast<float>(getMinXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 xMaxPos(glm::min(domainPt.x + delta, static_cast<float>(getMaxXDataBound())), domainPt.y, domainPt.z);
+	glm::vec3 yMinPos(domainPt.x, glm::max(domainPt.y - delta, static_cast<float>(getMinYDataBound())), domainPt.z);
+	glm::vec3 yMaxPos(domainPt.x, glm::min(domainPt.y + delta, static_cast<float>(getMaxYDataBound())), domainPt.z);
+	glm::vec3 zMinPos(domainPt.x, domainPt.y, glm::max(domainPt.z - delta, static_cast<float>(getMinZDataBound())));
+	glm::vec3 zMaxPos(domainPt.x, domainPt.y, glm::min(domainPt.z + delta, static_cast<float>(getMaxZDataBound())));
+
+	glm::vec3 u_xMin = interpolate(xMinPos);
+	glm::vec3 u_xMax = interpolate(xMaxPos);
+	glm::vec3 u_yMin = interpolate(yMinPos);
+	glm::vec3 u_yMax = interpolate(yMaxPos);
+	glm::vec3 u_zMin = interpolate(zMinPos);
+	glm::vec3 u_zMax = interpolate(zMaxPos);
+
+	float dh = 2.f * delta;
+
+	glm::mat3 j(
+		(u_xMax - u_xMin) / glm::length(xMaxPos - xMinPos),// dh,
+		(u_yMax - u_yMin) / glm::length(yMaxPos - yMinPos),// dh,
+		(u_zMax - u_zMin) / glm::length(zMaxPos - zMinPos)// dh
+	);
+
+	return j;
+}
+
+bool VectorFieldGenerator::findZeroNewtonRaphson(glm::vec3 domainStartPt, float delta, int maxSteps, float stopVelocity, float stopStepDelta, std::vector<glm::vec3> &pLines)
+{
+	if (!inBounds(domainStartPt))
+		return false;
+
+	glm::vec3 currentPt = domainStartPt;
+
+	glm::vec3 vel;
+
+	float stopVel_sq = stopVelocity * stopVelocity;
+	float stopStep_sq = stopStepDelta * stopStepDelta;
+
+	bool runWithoutStepLimit = maxSteps < 1;
+
+	if (runWithoutStepLimit)
+		maxSteps = 1;
+
+	for (int i = 0; i < maxSteps; )
+	{
+		vel = interpolate(currentPt);
+
+		if (glm::length2(vel) < stopVel_sq)
+			return true;
+
+		pLines.push_back(currentPt);
+
+		glm::mat3 j = jacobian(currentPt, delta);
+		
+		glm::vec3 step = glm::inverse(j) * vel;
+
+		if (glm::length2(step) < stopStep_sq)
+			return false;
+
+		glm::vec3 nextPt = currentPt - step;
+
+		if (!inBounds(nextPt))
+			return false;
+
+		currentPt = nextPt;
+
+		if (!runWithoutStepLimit)
+			++i;
+	}
+
+	return false;
+}
+
+// Lambda2 of point given in vector field coordinate system
+float VectorFieldGenerator::lambda2(glm::vec3 domainPt, float delta)
+{
+	Eigen::MatrixXf j = jacobianEigen(domainPt, delta);
+
+	Eigen::MatrixXf s = (j + j.transpose()) / 2.f;
+	Eigen::MatrixXf omega = (j - j.transpose()) / 2.f;
+
+	Eigen::MatrixXf gradVelTensor_decomp = s * s + omega * omega;
+
+	Eigen::EigenSolver<Eigen::MatrixXf> es(gradVelTensor_decomp);
+
+	std::vector<float> lambdas;
+	for (int i = 0; i < 3; ++i)
+		lambdas.push_back(es.eigenvalues()[i].real());
+	
+	std::sort(lambdas.begin(), lambdas.end());
+	return lambdas[1];
 }
 
 glm::vec3 VectorFieldGenerator::eulerForward(glm::vec3 pos, float delta)
@@ -352,6 +469,27 @@ bool VectorFieldGenerator::checkSphereAdvection(
 float VectorFieldGenerator::gaussianBasis(float radius, float eta)
 {
 	return exp(-(eta * radius * radius));
+}
+
+Eigen::MatrixXf VectorFieldGenerator::jacobianEigen(glm::vec3 domainPt, float delta)
+{
+	glm::mat3 jac = jacobian(domainPt, delta);
+
+	Eigen::MatrixXf j = Eigen::MatrixXf(3, 3);
+
+	j(0, 0) = jac[0][0];
+	j(0, 1) = jac[0][1];
+	j(0, 2) = jac[0][2];
+
+	j(1, 0) = jac[1][0];
+	j(1, 1) = jac[1][1];
+	j(1, 2) = jac[1][2];
+
+	j(2, 0) = jac[2][0];
+	j(2, 1) = jac[2][1];
+	j(2, 2) = jac[2][2];
+
+	return j;
 }
 
 bool VectorFieldGenerator::save(std::string path, bool verbose)
