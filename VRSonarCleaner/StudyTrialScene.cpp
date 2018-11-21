@@ -28,9 +28,6 @@ void StudyTrialScene::init()
 	if (m_pVFG)
 		delete m_pVFG;
 
-	m_vvec3Zeros.clear();
-	m_vvvec3ZeroLines.clear();
-
 	m_pVFG = new VectorFieldGenerator(glm::vec3(0.f, 1.f, 0.f), glm::quat(), glm::vec3(1.f));
 	
 	m_pVFG->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
@@ -40,11 +37,19 @@ void StudyTrialScene::init()
 	m_pVFG->setGaussianShape(1.2f);
 	
 	int cpCount;
+	int numCPsInCenter;
 	do {
 		m_pVFG->createRandomControlPoints(6u);
 		m_pVFG->generate();
 
+		m_vvec3Zeros.clear();
+		m_vvvec3ZeroLines.clear();
+
 		cpCount = 0;
+		numCPsInCenter = 0;
+
+		float domainSize = 2.f;
+		float threshold = (domainSize / 3.f) / 2.f;
 
 		for (int i = 0; i < 10; ++i)
 			for (int j = 0; j < 10; ++j)
@@ -54,12 +59,6 @@ void StudyTrialScene::init()
 					glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (10.f + 1.f))) + (2.f / (10.f + 1.f)) * glm::vec3(i, j, k));
 					if (m_pVFG->findZeroNewtonRaphson(seedPos, 1e-4f, 10000, 1e-7f, 1e-10f, lines))
 					{
-						float threshold = (2.f / 3.f) / 2.f;
-						if (lines.back().x < -threshold || lines.back().x > threshold ||
-							lines.back().y < -threshold || lines.back().y > threshold ||
-							lines.back().z < -threshold || lines.back().z > threshold)
-							continue;
-
 						bool alreadyFound = false;
 						for (auto &z : m_vvec3Zeros)
 							if (glm::distance2(lines.back(), z) < 10e-5f)
@@ -70,10 +69,15 @@ void StudyTrialScene::init()
 							m_vvec3Zeros.push_back(lines.back());
 							//m_vvvec3ZeroLines.push_back(lines);
 							cpCount++;
+
+							if (lines.back().x > -threshold && lines.back().x < threshold &&
+								lines.back().y > -threshold && lines.back().y < threshold &&
+								lines.back().z > -threshold && lines.back().z < threshold)
+								numCPsInCenter++;
 						}
 					}
 				}
-	} while (cpCount != 3);
+	} while (numCPsInCenter == 0);
 
 	generateStreamLines();
 
@@ -213,7 +217,7 @@ void StudyTrialScene::generateStreamLines()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	int gridRes = 9;
+	int gridRes = 4;
 	float radius = 0.005f;
 	int numSegments = 8;
 
