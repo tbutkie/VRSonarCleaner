@@ -1322,8 +1322,8 @@ void Renderer::generateDisc(int numSegments, std::vector<PrimVert> &verts, std::
 			inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 2);
 		}
 	}
-	inds.push_back(baseInd);
-	inds.push_back(baseInd + 1);
+	inds.push_back(0);
+	inds.push_back(1);
 	inds.push_back(static_cast<GLushort>(verts.size() - baseInd) - 1);
 
 	//Back

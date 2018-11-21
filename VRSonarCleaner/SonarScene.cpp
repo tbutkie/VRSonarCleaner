@@ -27,7 +27,7 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_vec3RoomSize(1.f, 3.f, 1.f)
 	, m_bUseDesktop(false)
 	, m_bStudyMode(false)
-	, m_bUseVR(false)
+	, m_bUseVR(true)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
 	, m_bMiddleMouseDown(false)
@@ -684,7 +684,7 @@ void SonarScene::draw()
 		rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
 		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 		rs.instanced = true;
-		rs.specularExponent = 32.f;
+		rs.specularExponent = 0.f;
 		//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
 		//rs.diffuseTexName = "resources/images/circle.png";
 
