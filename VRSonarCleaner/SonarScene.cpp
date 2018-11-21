@@ -673,7 +673,7 @@ void SonarScene::draw()
 
 		dv->drawVolumeBacking(trans, 1.f);
 		dv->drawBBox(0.f);
-		//dv->drawAxes();
+		dv->drawAxes(0.01f);
 
 		//draw table
 		Renderer::RendererSubmission rs;

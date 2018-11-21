@@ -76,7 +76,7 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	if (true)
+	if (false)
 	{
 		m_pCurrentScene = new SonarScene(m_pTDM);
 	}

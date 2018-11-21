@@ -42,7 +42,7 @@ void HairyFlowProbe::draw()
 				float ratioHeight = gridRes == 1 ? 0.f : (float)j / (gridRes - 1);
 				glm::vec3 pos = probePos + glm::vec3(probeMat[0]) * ratioWidth * width - glm::vec3(probeMat[2]) * ratioHeight * height;
 				glm::vec3 flow = m_pFlowVolume->getFlowWorldCoords(pos);
-				Renderer::getInstance().drawPointerLit(pos, pos + flow, 0.001f, glm::vec4(1.f, 1.f, 0.f, 1.f));
+				Renderer::getInstance().drawPointerLit(pos, pos + flow, 0.001f, glm::vec4(1.f), glm::vec4(1.f), glm::vec4(1.f));
 				//Renderer::getInstance().drawDirectedPrimitive("cylinder", pos, pos + flow, 0.005f, glm::vec4(1.f, 1.f, 0.f, 1.f));
 			}
 		}

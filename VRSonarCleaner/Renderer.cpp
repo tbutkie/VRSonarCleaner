@@ -478,12 +478,12 @@ void Renderer::drawDirectedPrimitiveLit(std::string primname, glm::vec3 from, gl
 }
 	
 
-void Renderer::drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 diffColor, glm::vec4 specColor, float specExp)
+void Renderer::drawPointerLit(glm::vec3 from, glm::vec3 to, float thickness, glm::vec4 baseColor, glm::vec4 shaftColor, glm::vec4 arrowColor, glm::vec4 specColor, float specExp)
 {
 	glm::vec3 connectorVec(to - from);
-	Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), from) * glm::scale(glm::mat4(), glm::vec3(thickness * 0.75f)), glm::vec4(1.f));
-	Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", from, to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, thickness, diffColor, glm::vec4(1.f), specExp);
-	Renderer::getInstance().drawDirectedPrimitiveLit("cone", to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, to, thickness * 2.f, glm::vec4(0.9f, 0.f, 0.f, 1.f), glm::vec4(1.f), specExp);
+	Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), from) * glm::scale(glm::mat4(), glm::vec3(thickness * 0.75f)), baseColor);
+	Renderer::getInstance().drawDirectedPrimitiveLit("cylinder", from, to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, thickness, shaftColor, specColor, specExp);
+	Renderer::getInstance().drawDirectedPrimitiveLit("cone", to - connectorVec * 0.1f - glm::normalize(connectorVec) * thickness, to, thickness * 2.f, arrowColor, specColor, specExp);
 }
 
 
