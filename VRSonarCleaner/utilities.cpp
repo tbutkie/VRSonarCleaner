@@ -164,4 +164,116 @@ namespace utils
 		else
 			return baseIndex + (((index - baseIndex) % range) + range) % range;
 	}
+
+
+	///////////////////////////
+	//						 //
+	//    COLOR UTILITIES    //
+	//						 //
+	///////////////////////////
+	namespace color {
+		// taken from David H. https://stackoverflow.com/questions/3018313/algorithm-to-convert-rgb-to-hsv-and-hsv-to-rgb-in-range-0-255-for-both
+		bool rgb2hsv(glm::vec3 in, float &hOut, float &sOut, float &vOut)
+		{
+			double      min, max, delta;
+
+			min = in.r < in.g ? in.r : in.g;
+			min = min < in.b ? min : in.b;
+
+			max = in.r > in.g ? in.r : in.g;
+			max = max > in.b ? max : in.b;
+
+			vOut = max;                                // v
+			delta = max - min;
+			if (delta < 0.00001)
+			{
+				sOut = 0;
+				hOut = 0; // undefined, maybe nan?
+				return false;
+			}
+			if (max > 0.0) { // NOTE: if Max is == 0, this divide would cause a crash
+				sOut = (delta / max);                  // s
+			}
+			else {
+				// if max is 0, then r = g = b = 0              
+				// s = 0, h is undefined
+				sOut = 0.0;
+				hOut = NAN;                            // its now undefined
+				return false;
+			}
+			if (in.r >= max)                           // > is bogus, just keeps compilor happy
+				hOut = (in.g - in.b) / delta;        // between yellow & magenta
+			else
+				if (in.g >= max)
+					hOut = 2.0 + (in.b - in.r) / delta;  // between cyan & yellow
+				else
+					hOut = 4.0 + (in.r - in.g) / delta;  // between magenta & cyan
+
+			hOut *= 60.0;                              // degrees
+
+			if (hOut < 0.0)
+				hOut += 360.0;
+
+			return true;
+		}
+
+
+		glm::vec3 hsv2rgb(float h, float s, float v)
+		{
+			double      hh, p, q, t, ff;
+			long        i;
+			glm::vec3         out;
+
+			if (s <= 0.0) {       // < is bogus, just shuts up warnings
+				out.r = v;
+				out.g = v;
+				out.b = v;
+				return out;
+			}
+			hh = h;
+			if (hh >= 360.0) hh = 0.0;
+			hh /= 60.0;
+			i = (long)hh;
+			ff = hh - i;
+			p = v * (1.0 - s);
+			q = v * (1.0 - (s * ff));
+			t = v * (1.0 - (s * (1.0 - ff)));
+
+			switch (i) {
+			case 0:
+				out.r = v;
+				out.g = t;
+				out.b = p;
+				break;
+			case 1:
+				out.r = q;
+				out.g = v;
+				out.b = p;
+				break;
+			case 2:
+				out.r = p;
+				out.g = v;
+				out.b = t;
+				break;
+
+			case 3:
+				out.r = p;
+				out.g = q;
+				out.b = v;
+				break;
+			case 4:
+				out.r = t;
+				out.g = p;
+				out.b = v;
+				break;
+			case 5:
+			default:
+				out.r = v;
+				out.g = p;
+				out.b = q;
+				break;
+			}
+			return out;
+		}
+	}
 }

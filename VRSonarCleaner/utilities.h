@@ -51,4 +51,26 @@ namespace utils
 	);
 
 	int getIndexWrapped(int index, int maxIndex, int baseIndex = 0, bool rebaseToZero = false);
+	
+
+	///////////////////////////
+	//						 //
+	//    COLOR UTILITIES    //
+	//						 //
+	///////////////////////////
+	// taken from David H. https://stackoverflow.com/questions/3018313/algorithm-to-convert-rgb-to-hsv-and-hsv-to-rgb-in-range-0-255-for-both
+	namespace color {
+		bool rgb2hsv(
+			glm::vec3 in, 
+			float &hOut, 
+			float &sOut, 
+			float &vOut
+		);
+
+		glm::vec3 hsv2rgb(
+			float h, 
+			float s, 
+			float v
+		);
+	}
 }
