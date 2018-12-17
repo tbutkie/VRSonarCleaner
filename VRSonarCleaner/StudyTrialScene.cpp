@@ -30,7 +30,7 @@ void StudyTrialScene::init()
 
 	m_pVFG = new VectorFieldGenerator(glm::vec3(0.f, 1.f, 0.f), glm::quat(), glm::vec3(1.f));
 	
-	m_pVFG->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
+	m_pVFG->setBackingColor(glm::vec4(0.5f, 0.35f, 0.1f, 1.f));
 	m_pVFG->setFrameColor(glm::vec4(1.f));
 
 	m_pVFG->setGridResolution(32u);
@@ -145,8 +145,22 @@ void StudyTrialScene::update()
 
 void StudyTrialScene::draw()
 {
-	//m_pVFG->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+	m_pVFG->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
 	m_pVFG->drawBBox(0.f);
+
+	glm::vec3 dimratio = m_pVFG->getDimensions() / m_pVFG->getOriginalDimensions();
+	
+	for (auto &cp : m_pVFG->getControlPoints())
+	{
+		Renderer::getInstance().drawPointerLit(
+			m_pVFG->convertToWorldCoords(cp.first),
+			m_pVFG->convertToWorldCoords(cp.second),
+			0.01f * glm::length(dimratio),
+			glm::vec4(0.1f, 0.5f, 0.1f, 1.f),
+			glm::vec4(0.5f, 0.75f, 0.5f, 1.f),
+			glm::vec4(0.1f, 0.5f, 0.1f, 1.f)
+		);
+	}
 	
 	if (m_pTDM->getPrimaryController())
 	{
@@ -217,9 +231,9 @@ void StudyTrialScene::generateStreamLines()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	int gridRes = 4;
+	int gridRes = 10;
 	float radius = 0.005f;
-	int numSegments = 8;
+	int numSegments = 16;
 
 
 	// 4x4x4 regularly-spaced seeding grid within volume

@@ -22,6 +22,7 @@ public:
 	void createRandomControlPoints(unsigned int nControlPoints);
 	void setControlPoint(glm::vec3 pos, glm::vec3 dir);
 	void clearControlPoints();
+	std::vector<std::pair<glm::vec3, glm::vec3>> getControlPoints();
 
 	void generate();
 

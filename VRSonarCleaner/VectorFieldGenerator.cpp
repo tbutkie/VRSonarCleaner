@@ -52,6 +52,15 @@ void VectorFieldGenerator::clearControlPoints()
 		m_vControlPoints.clear();
 }
 
+std::vector<std::pair<glm::vec3, glm::vec3>> VectorFieldGenerator::getControlPoints()
+{
+	std::vector<std::pair<glm::vec3, glm::vec3>> ret;
+	for (auto &cp : m_vControlPoints)
+		ret.push_back(std::make_pair(cp.pos, cp.dir));
+	
+	return ret;
+}
+
 void VectorFieldGenerator::generate()
 {
 	solveLUdecomp();
