@@ -489,7 +489,7 @@ void DataVolume::updateTransforms()
 			glm::mat4 trans = m_mat4AdjustedDomainToVolumeTransform;
 			trans *= handednessConversion; // 3. Inverts the z-coordinate to change handedness, if needed
 			trans *= glm::translate(glm::mat4(), dataPositionOffsetInVolume); // 2. Positions center of dataset within data volume
-			trans *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
+			//trans *= glm::translate(glm::mat4(), dataCenteringOffset); // 1. Move origin to center of dataset
 
 			m_mapDataTransforms[dataset] = trans;
 
