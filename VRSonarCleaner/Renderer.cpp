@@ -86,8 +86,10 @@ void Renderer::shutdown()
 		if (fb)
 			Renderer::getInstance().destroyFrameBuffer(*fb);
 
+#if _DEBUG
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
 	glDebugMessageCallback(nullptr, nullptr);
+#endif
 
 	SDL_DestroyWindow(m_pWindow);
 }
@@ -120,12 +122,31 @@ bool Renderer::init()
 		return false;
 	}
 
+	int nDisps = SDL_GetNumVideoDisplays();
+
+	for (int i = 0; i < nDisps; ++i)
+	{
+		int nModes = SDL_GetNumDisplayModes(i);
+
+		SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+
+		for (int j = 0; j < nModes; ++j)
+		{
+			SDL_GetDisplayMode(i, j, &mode);
+			SDL_Log("SDL_GetDisplayMode(%i, %i, &mode):\t\t%i bpp\t%i x %i\t@%iHz",
+				i, j, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate);
+		}
+	}
+
 	m_pWindow = createFullscreenWindow(1);
 
 	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
 	
 	m_pGLContext = SDL_GL_CreateContext(m_pWindow);
 
+	//int val;
+	//SDL_GL_GetAttribute(SDL_GL_STEREO, &val);
+	//SDL_Log("SDL_GL_STEREO: %i", val);
 
 	if (m_pGLContext == NULL)
 	{
@@ -922,7 +943,7 @@ bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubm
 }
 
 
-SDL_Window * Renderer::createFullscreenWindow(int displayIndex)
+SDL_Window * Renderer::createFullscreenWindow(int displayIndex, bool stereo)
 {
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS;
 
@@ -939,17 +960,39 @@ SDL_Window * Renderer::createFullscreenWindow(int displayIndex)
 	SDL_Rect displayBounds;
 
 	if (SDL_GetDisplayBounds(displayIndex, &displayBounds) < 0)
-		SDL_GetDisplayBounds(0, &displayBounds);
+	{
+		displayIndex = 0;
+		SDL_GetDisplayBounds(displayIndex, &displayBounds);
+	}
+
+	if (stereo)
+	{
+		SDL_GL_SetAttribute(SDL_GL_STEREO, 1);	
+	}
 
 	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
 
 	if (win == NULL)
 		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 
+	if (stereo)
+	{
+		SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+		
+		SDL_GetDisplayMode(displayIndex, 0, &mode);
+		SDL_Log("SDL_GetDisplayMode(%i, %i, &mode):\t\t%i bpp\t%i x %i\t@%iHz",
+			displayIndex, 0, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate);
+
+		mode.refresh_rate = 120;
+
+		SDL_SetWindowDisplayMode(win, &mode);
+	}
+
 	return win;
 }
 
-SDL_Window * Renderer::createWindow(int width, int height, int displayIndex)
+
+SDL_Window * Renderer::createWindow(int width, int height, int displayIndex, bool stereo)
 {
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 

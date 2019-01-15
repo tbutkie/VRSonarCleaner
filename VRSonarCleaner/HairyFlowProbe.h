@@ -7,6 +7,13 @@ class HairyFlowProbe :
 	public ProbeBehavior
 {
 public:
+	enum SEEDTYPE {
+		PARTICLE,
+		GLYPHS,
+		STREAMTUBES
+	};
+
+public:
 	HairyFlowProbe(ViveController* pController, FlowVolume* flowVolume);
 	~HairyFlowProbe();
 
@@ -18,6 +25,8 @@ private:
 	bool m_bProbeActive;
 
 	FlowVolume* m_pFlowVolume;
+
+	SEEDTYPE m_eSeedType;
 
 private:
 	virtual void activateProbe();

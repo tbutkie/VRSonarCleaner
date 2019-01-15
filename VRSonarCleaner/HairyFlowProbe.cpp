@@ -6,6 +6,7 @@ HairyFlowProbe::HairyFlowProbe(ViveController* pController, FlowVolume* flowVolu
 	: ProbeBehavior(pController, flowVolume)
 	, m_bProbeActive(false)
 	, m_pFlowVolume(flowVolume)
+	, m_eSeedType(GLYPHS)
 {
 	m_vec4ProbeColorDiff = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
 }
@@ -22,9 +23,11 @@ void HairyFlowProbe::update()
 
 void HairyFlowProbe::draw()
 {
-	int gridRes = 10;
-	float width = 0.1f;
-	float height = 0.1f;
+	int gridRes = 20;
+	float width = 0.25f;
+	float height = 0.25f;
+
+	float hairLength = 0.25f;
 
 	if (m_pController)
 	{
@@ -42,7 +45,8 @@ void HairyFlowProbe::draw()
 				float ratioHeight = gridRes == 1 ? 0.f : (float)j / (gridRes - 1);
 				glm::vec3 pos = probePos + glm::vec3(probeMat[0]) * ratioWidth * width - glm::vec3(probeMat[2]) * ratioHeight * height;
 				glm::vec3 flow = m_pFlowVolume->getFlowWorldCoords(pos);
-				Renderer::getInstance().drawPointerLit(pos, pos + flow, 0.001f, glm::vec4(1.f), glm::vec4(1.f), glm::vec4(1.f));
+				float mag = glm::length(flow);
+				Renderer::getInstance().drawPointerLit(pos, pos + flow * hairLength, 0.005f, glm::vec4(0.f, 0.f, 0.f, 0.5f), glm::vec4(1.f), glm::vec4(1.f, 1.f - glm::clamp(mag/0.75f, 0.f, 1.f), 0.f, 1.f));
 				//Renderer::getInstance().drawDirectedPrimitive("cylinder", pos, pos + flow, 0.005f, glm::vec4(1.f, 1.f, 0.f, 1.f));
 			}
 		}

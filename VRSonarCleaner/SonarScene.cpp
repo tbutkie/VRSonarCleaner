@@ -675,7 +675,6 @@ void SonarScene::draw()
 		dv->drawBBox(0.f);
 		dv->drawAxes(1.f);
 
-		//draw table
 		Renderer::RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
 		rs.shaderName = "instanced";

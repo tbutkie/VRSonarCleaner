@@ -216,8 +216,8 @@ private:
 	Renderer();
 	~Renderer();
 
-	SDL_Window* createFullscreenWindow(int displayIndex);
-	SDL_Window* createWindow(int width, int height, int displayIndex = 0);
+	SDL_Window* createFullscreenWindow(int displayIndex, bool stereo = false);
+	SDL_Window* createWindow(int width, int height, int displayIndex = 0, bool stereo = false);
 
 	bool createFrameBuffer(int nWidth, int nHeight, FramebufferDesc &framebufferDesc);
 	void destroyFrameBuffer(FramebufferDesc &framebufferDesc);

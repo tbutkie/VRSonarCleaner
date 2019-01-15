@@ -246,7 +246,6 @@ void Dataset::update()
 		m_dvec3Range = m_dvec3MaxBounds - m_dvec3MinBounds;
 
 		m_dvec3CenteringOffsets = -(m_dvec3MinBounds + m_dvec3Range * 0.5); // origin at center
-		//m_dvec3Adjustments = -m_dvec3MinBounds; // origin at min bound
 
 		m_vec3CenteredMaxBounds = m_dvec3MaxBounds + m_dvec3CenteringOffsets;
 		m_vec3CenteredMinBounds = m_dvec3MinBounds + m_dvec3CenteringOffsets;
