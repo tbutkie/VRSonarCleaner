@@ -73,13 +73,6 @@ public:
 		{}
 	};
 
-	struct PrimVert {
-		glm::vec3 p; // point
-		glm::vec3 n; // normal
-		glm::vec4 c; // color
-		glm::vec2 t; // texture coord
-	};
-
 	enum TextAlignment {
 		LEFT,
 		CENTER,
@@ -229,16 +222,6 @@ private:
 	void setupTextures();
 
 	void setupPrimitives();
-	void generateIcosphere(int recursionLevel, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateDisc(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateTorus(float coreRadius, float meridianRadius, int numCoreSegments, int numMeridianSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateCylinder(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateFacetedCone(int numSegments, std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateSmoothCone(int numSegments, std::vector<PrimVert>& verts, std::vector<GLushort>& inds);
-	void generatePlane(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateCube(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateBBox(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
-	void generateFullscreenQuad(std::vector<PrimVert> &verts, std::vector<GLushort> &inds);
 
 	void setupText();
 	void updateUI(glm::ivec2 dims, std::chrono::high_resolution_clock::time_point tick);

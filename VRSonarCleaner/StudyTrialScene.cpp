@@ -261,7 +261,14 @@ void StudyTrialScene::generateStreamLines()
 		circleVerts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
 	}
 
-	std::vector<Renderer::PrimVert> verts, haloverts;
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
+	std::vector<PrimVert> verts, haloverts;
 	std::vector<GLuint> inds;
 	for (auto &sl : m_vvvec3RawStreamlines)
 	{
@@ -292,7 +299,7 @@ void StudyTrialScene::generateStreamLines()
 
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
-				Renderer::PrimVert pv;
+				PrimVert pv;
 				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius, 1.f));
 				pv.n = glm::normalize(pv.p - sl[i]);
 				pv.c = glm::vec4(1.f);
@@ -324,7 +331,7 @@ void StudyTrialScene::generateStreamLines()
 
 		for (auto &q : { frontCap, endCap })
 		{
-			Renderer::PrimVert pv;
+			PrimVert pv;
 			pv.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
 			pv.c = glm::vec4(1.f);
 			pv.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
@@ -364,13 +371,13 @@ void StudyTrialScene::generateStreamLines()
 	if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
-		glNamedBufferStorage(m_glVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glHaloVBO)
 	{
 		glCreateBuffers(1, &m_glHaloVBO);
-		glNamedBufferStorage(m_glHaloVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(Renderer::PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glHaloVBO, gridRes * gridRes * gridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glEBO)
@@ -389,13 +396,13 @@ void StudyTrialScene::generateStreamLines()
 
 			// Set the vertex attribute pointers
 			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, p));
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
 			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, n));
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
 			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, c));
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
 			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, t));
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rs.VAO = m_glVAO;
@@ -418,13 +425,13 @@ void StudyTrialScene::generateStreamLines()
 
 			// Set the vertex attribute pointers
 			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, p));
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
 			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, n));
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
 			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, c));
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
 			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(Renderer::PrimVert), (GLvoid*)offsetof(Renderer::PrimVert, t));
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rsHalo.VAO = m_glHaloVAO;
@@ -438,8 +445,8 @@ void StudyTrialScene::generateStreamLines()
 		m_rsHalo.vertWindingOrder = GL_CW;
 	}
 
-	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(Renderer::PrimVert), verts.data());
-	glNamedBufferSubData(m_glHaloVBO, 0, haloverts.size() * sizeof(Renderer::PrimVert), haloverts.data());
+	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(PrimVert), verts.data());
+	glNamedBufferSubData(m_glHaloVBO, 0, haloverts.size() * sizeof(PrimVert), haloverts.data());
 	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
 
 	m_rs.vertCount = inds.size();

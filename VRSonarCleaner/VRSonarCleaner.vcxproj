@@ -182,6 +182,7 @@
     <ClCompile Include="HairyFlowProbe.cpp" />
     <ClCompile Include="Object3D.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
+    <ClCompile Include="PrimitivesFactory.cpp" />
     <ClCompile Include="RenderModel.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="ColorScaler.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="GrabTutorial.h" />
     <ClInclude Include="HairyFlowProbe.h" />
     <ClInclude Include="Object3D.h" />
+    <ClInclude Include="PrimitivesFactory.h" />
     <ClInclude Include="SceneBase.h" />
     <ClInclude Include="PointCleanProbe.h" />
     <ClInclude Include="RenderModel.h" />

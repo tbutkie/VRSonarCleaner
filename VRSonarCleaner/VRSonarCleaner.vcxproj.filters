@@ -228,6 +228,9 @@
     <ClCompile Include="StudyTrialScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="PrimitivesFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -418,6 +421,9 @@
     </ClInclude>
     <ClInclude Include="StudyTrialScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="PrimitivesFactory.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
