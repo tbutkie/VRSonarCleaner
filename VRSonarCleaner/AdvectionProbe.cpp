@@ -49,8 +49,6 @@ void AdvectionProbe::draw()
 	glm::vec3 vecCursorSphere(spherePos - cursorPos);
 	float connectorLength = glm::length(vecCursorSphere) - sphereRad;
 	glm::vec3 probePos(cursorPos + glm::normalize(vecCursorSphere) * connectorLength);
-	//DebugDrawer::getInstance().setTransformDefault();
-	//DebugDrawer::getInstance().drawLine(cursorPos, probePos, glm::vec4(0.f, 0.7f, 0.f, 0.5f));
 
 	// Draw an 'X' at the probe point
 	{
@@ -58,9 +56,6 @@ void AdvectionProbe::draw()
 		glm::vec3 y = glm::normalize(glm::cross(x, probePos - spherePos));
 
 		float crossSize = sphereRad / 16.f;
-
-		//DebugDrawer::getInstance().drawLine(probePos - crossSize * x, probePos + crossSize * x, glm::vec4(1.f, 1.f, 0.f, 0.75f));
-		//DebugDrawer::getInstance().drawLine(probePos - crossSize * y, probePos + crossSize * y, glm::vec4(1.f, 1.f, 0.f, 0.75f));
 	}
 }
 
