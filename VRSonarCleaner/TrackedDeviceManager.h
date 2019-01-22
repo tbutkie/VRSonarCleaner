@@ -33,6 +33,7 @@ public:
 	glm::mat4 getDeviceComponentPose(uint32_t deviceID, uint32_t componentID);
 	ViveController* getPrimaryController();
 	ViveController* getSecondaryController();
+	TrackedDevice* getTracker();
 	bool isPrimaryControllerInRighthandPosition();
 	
 	glm::mat4 getHMDEyeProjection(vr::Hmd_Eye nEye, float nearClipPlane, float farClipPlane);
@@ -52,6 +53,7 @@ private:
 	TrackedDevice* m_rpTrackedDevices[vr::k_unMaxTrackedDeviceCount];
 	ViveController* m_pPrimaryController;
 	ViveController* m_pSecondaryController;
+	TrackedDevice* m_pTracker;
 
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;

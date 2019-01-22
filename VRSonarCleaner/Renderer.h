@@ -154,6 +154,8 @@ public:
 	void showMessage(std::string message, float duration = 5.f);
 
 	void setSkybox(std::string right, std::string left, std::string top, std::string bottom, std::string front, std::string back);
+	void setSkyboxTransform(glm::mat4 trans);
+	glm::mat4 getSkyboxTransform();
 
 	void setWindowTitle(std::string title);
 	void setWindowToDisplay(int displayIndex);
@@ -240,6 +242,7 @@ private:
 	struct Skybox {
 		std::string right, left, top, bottom, front, back;
 		GLuint texID;
+		glm::mat4 transform;
 
 		Skybox() : texID(0) {}
 	};

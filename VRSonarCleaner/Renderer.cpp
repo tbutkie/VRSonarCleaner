@@ -319,6 +319,16 @@ void Renderer::setSkybox(std::string right, std::string left, std::string top, s
 	glTextureParameteri(m_Skybox.texID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
+void Renderer::setSkyboxTransform(glm::mat4 trans)
+{
+	m_Skybox.transform = trans;
+}
+
+glm::mat4 Renderer::getSkyboxTransform()
+{
+	return m_Skybox.transform;
+}
+
 void Renderer::setWindowTitle(std::string title)
 {
 	SDL_SetWindowTitle(m_pWindow, title.c_str());
@@ -677,7 +687,10 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		{
 			glFrontFace(GL_CCW);
 
-			glDepthFunc(GL_LEQUAL); 
+			glDepthFunc(GL_LEQUAL);
+
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneView3DInfo->view * m_Skybox.transform));
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat * m_Skybox.transform));
 		
 			glUseProgram(*m_mapShaders["skybox"]);
 		
@@ -691,6 +704,9 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 
 		if (m_vTransparentRenderQueue.size() > 0)
 		{
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4View), sizeof(FrameUniforms::m4View), glm::value_ptr(sceneView3DInfo->view));
+			glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
+
 			glEnable(GL_BLEND);
 			//glDisable(GL_DEPTH_TEST);
 			//glDepthMask(GL_FALSE);

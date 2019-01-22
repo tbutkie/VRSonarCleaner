@@ -9,6 +9,7 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 , m_pRenderModels(NULL)
 , m_pPrimaryController(NULL)
 , m_pSecondaryController(NULL)
+, m_pTracker(NULL)
 , m_iTrackedControllerCount(0)
 , m_iTrackedControllerCount_Last(-1)
 , m_iValidPoseCount(0)
@@ -133,6 +134,9 @@ bool TrackedDeviceManager::setupTrackedDevice(vr::TrackedDeviceIndex_t unTracked
 	else
 	{
 		thisDevice = new TrackedDevice(unTrackedDeviceIndex, m_pHMD, m_pRenderModels);
+
+		if (!m_pTracker && m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_GenericTracker)
+			m_pTracker = thisDevice;
 	}
 
 	thisDevice->BInit();	
@@ -160,6 +164,12 @@ void TrackedDeviceManager::removeTrackedDevice(vr::TrackedDeviceIndex_t unTracke
 			m_pSecondaryController = NULL;
 		}
 	}
+	else if (m_pTracker && m_pHMD->GetTrackedDeviceClass(unTrackedDeviceIndex) == vr::TrackedDeviceClass_GenericTracker)
+	{
+		delete m_pTracker;
+		m_pTracker = NULL;
+	}
+	
 
 	m_rpTrackedDevices[unTrackedDeviceIndex] = NULL;
 }
@@ -322,6 +332,11 @@ ViveController * TrackedDeviceManager::getPrimaryController()
 ViveController * TrackedDeviceManager::getSecondaryController()
 {
 	return m_pSecondaryController;
+}
+
+TrackedDevice * TrackedDeviceManager::getTracker()
+{
+	return m_pTracker;
 }
 
 bool TrackedDeviceManager::isPrimaryControllerInRighthandPosition()

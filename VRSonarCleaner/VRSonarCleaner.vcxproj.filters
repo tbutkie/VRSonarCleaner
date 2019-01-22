@@ -260,9 +260,6 @@
     <ClInclude Include="TrackedDeviceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DebugDrawer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="InfoBoxManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -252,7 +252,6 @@
     <ClInclude Include="ColorsAndSizes.h" />
     <ClInclude Include="ColorScaler.h" />
     <ClInclude Include="DataVolume.h" />
-    <ClInclude Include="DebugDrawer.h" />
     <ClInclude Include="FlowGrid.h" />
     <ClInclude Include="FlowProbe.h" />
     <ClInclude Include="FlowVolume.h" />
