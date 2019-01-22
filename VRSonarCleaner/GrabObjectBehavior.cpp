@@ -3,9 +3,9 @@
 #include "Renderer.h"
 #include "DataLogger.h"
 
-GrabObjectBehavior::GrabObjectBehavior(TrackedDeviceManager* pTDM, Object3D* dataVolume)
+GrabObjectBehavior::GrabObjectBehavior(TrackedDeviceManager* pTDM, Object3D* object)
 	: m_pTDM(pTDM)
-	, m_pDataVolume(dataVolume)
+	, m_pObject(object)
 	, m_bPreGripping(false)
 	, m_bGripping(false)
 	, m_bRotationInProgress(false)
@@ -60,7 +60,7 @@ void GrabObjectBehavior::draw()
 		{
 			float cylThickness = 0.02f * (1.f - m_pTDM->getSecondaryController()->getTriggerPullAmount());
 
-			glm::vec3 controllerToVolumeVec = m_pDataVolume->getPosition() - glm::vec3(m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3]);
+			glm::vec3 controllerToVolumeVec = m_pObject->getPosition() - glm::vec3(m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3]);
 			glm::vec3 start = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
 			glm::vec3 end = start + controllerToVolumeVec * m_pTDM->getSecondaryController()->getTriggerPullAmount();
 
@@ -69,7 +69,7 @@ void GrabObjectBehavior::draw()
 
 		if (m_bGripping)
 		{
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3], m_pDataVolume->getPosition(), 0.001f, glm::vec4(1.f, 1.f, 0.f, 0.25f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3], m_pObject->getPosition(), 0.001f, glm::vec4(1.f, 1.f, 0.f, 0.25f));
 			Renderer::getInstance().drawDirectedPrimitive("cylinder", m_mat4ControllerPoseAtRotationStart[3], m_mat4DataVolumePoseAtRotationStart[3], 0.001f, glm::vec4(1.f, 1.f, 1.f, 0.25f));
 		}
 	}
@@ -106,7 +106,7 @@ void GrabObjectBehavior::startRotation()
 
 	m_mat4ControllerPoseAtRotationStart = m_pTDM->getSecondaryController()->getDeviceToWorldTransform();
 	//m_mat4PoseAtRotationStart = glm::translate(glm::mat4(), m_vec3Pos) * glm::mat4_cast(m_qOrientation);
-	m_mat4DataVolumePoseAtRotationStart = glm::translate(glm::mat4(), m_pDataVolume->getPosition()) * glm::mat4_cast(m_pDataVolume->getOrientation());
+	m_mat4DataVolumePoseAtRotationStart = glm::translate(glm::mat4(), m_pObject->getPosition()) * glm::mat4_cast(m_pObject->getOrientation());
 
 	//save volume pose in controller space
 	m_mat4ControllerToVolumeTransform = glm::inverse(m_mat4ControllerPoseAtRotationStart) * m_mat4DataVolumePoseAtRotationStart;
@@ -122,11 +122,11 @@ void GrabObjectBehavior::startRotation()
 
 		ss << "Manipulation Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 		ss << "\t";
-		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << "vol-pos:\"" << m_pObject->getPosition().x << "," << m_pObject->getPosition().y << "," << m_pObject->getPosition().z << "\"";
 		ss << ";";
-		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << "vol-quat:\"" << m_pObject->getOrientation().x << "," << m_pObject->getOrientation().y << "," << m_pObject->getOrientation().z << "," << m_pObject->getOrientation().w << "\"";
 		ss << ";";
-		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << "vol-dims:\"" << m_pObject->getDimensions().x << "," << m_pObject->getDimensions().y << "," << m_pObject->getDimensions().z << "\"";
 		ss << ";";
 		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
 		ss << ";";
@@ -168,8 +168,8 @@ void GrabObjectBehavior::continueRotation()
 	glm::mat4 newVolTrans = mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform;
 	glm::vec3 newVolPos((mat4ControllerPoseCurrent * m_mat4ControllerToVolumeTransform)[3]);
 
-	m_pDataVolume->setPosition(newVolPos);
-	m_pDataVolume->setOrientation(glm::quat_cast(newVolTrans));
+	m_pObject->setPosition(newVolPos);
+	m_pObject->setOrientation(glm::quat_cast(newVolTrans));
 }
 
 void GrabObjectBehavior::endRotation()
@@ -186,11 +186,11 @@ void GrabObjectBehavior::endRotation()
 
 		ss << "Manipulation End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 		ss << "\t";
-		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
+		ss << "vol-pos:\"" << m_pObject->getPosition().x << "," << m_pObject->getPosition().y << "," << m_pObject->getPosition().z << "\"";
 		ss << ";";
-		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
+		ss << "vol-quat:\"" << m_pObject->getOrientation().x << "," << m_pObject->getOrientation().y << "," << m_pObject->getOrientation().z << "," << m_pObject->getOrientation().w << "\"";
 		ss << ";";
-		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
+		ss << "vol-dims:\"" << m_pObject->getDimensions().x << "," << m_pObject->getDimensions().y << "," << m_pObject->getDimensions().z << "\"";
 		ss << ";";
 		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
 		ss << ";";

@@ -144,9 +144,9 @@ void StudyTrialScene::update()
 
 	if (m_pTDM->getTracker())
 	{
-		Renderer::getInstance().setSkyboxTransform(m_pTDM->getTracker()->getDeviceToWorldTransform());
-		m_pVFG->setPosition(m_pTDM->getTracker()->getDeviceToWorldTransform()[3]);
-		m_pVFG->setOrientation(m_pTDM->getTracker()->getDeviceToWorldTransform());
+		Renderer::getInstance().setSkyboxTransform(m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+		m_pVFG->setPosition((m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)))[3]);
+		m_pVFG->setOrientation(m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)));
 	}
 }
 

@@ -8,7 +8,7 @@ class GrabObjectBehavior :
 	public BehaviorBase
 {
 public:
-	GrabObjectBehavior(TrackedDeviceManager* m_pTDM, Object3D* dataVolume);
+	GrabObjectBehavior(TrackedDeviceManager* m_pTDM, Object3D* object);
 	virtual ~GrabObjectBehavior();
 
 	void update();
@@ -17,7 +17,7 @@ public:
 
 private:
 	TrackedDeviceManager* m_pTDM;
-	Object3D* m_pDataVolume;
+	Object3D* m_pObject;
 
 	bool m_bPreGripping;
 	bool m_bGripping;

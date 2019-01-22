@@ -214,7 +214,7 @@ void TrackedDeviceManager::update()
 		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
 	}
 
-	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
+	if (m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd] && m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->poseValid())
 	{
 		m_mat4HMDToWorldTransform = m_rpTrackedDevices[vr::k_unTrackedDeviceIndex_Hmd]->getDeviceToWorldTransform();
 		m_mat4WorldToHMDTransform = glm::inverse(m_mat4HMDToWorldTransform);
