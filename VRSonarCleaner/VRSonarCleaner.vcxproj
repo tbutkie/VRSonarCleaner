@@ -180,6 +180,7 @@
     <ClCompile Include="GrabObjectBehavior.cpp" />
     <ClCompile Include="GrabTutorial.cpp" />
     <ClCompile Include="HairyFlowProbe.cpp" />
+    <ClCompile Include="MotionCompensationScene.cpp" />
     <ClCompile Include="Object3D.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="PrimitivesFactory.cpp" />
@@ -212,6 +213,8 @@
     <ClCompile Include="StudyEditTutorial.cpp" />
     <ClCompile Include="StudyIntroBehavior.cpp" />
     <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
+    <ClCompile Include="StudyTrialMotionCompensation.cpp" />
+    <ClCompile Include="StudyTrialNoMotionCompensation.cpp" />
     <ClCompile Include="StudyTrialScene.cpp" />
     <ClCompile Include="StudyTrialSittingBehavior.cpp" />
     <ClCompile Include="StudyTrialStandingBehavior.cpp" />
@@ -243,6 +246,7 @@
     <ClInclude Include="GrabObjectBehavior.h" />
     <ClInclude Include="GrabTutorial.h" />
     <ClInclude Include="HairyFlowProbe.h" />
+    <ClInclude Include="MotionCompensationScene.h" />
     <ClInclude Include="Object3D.h" />
     <ClInclude Include="PrimitivesFactory.h" />
     <ClInclude Include="SceneBase.h" />
@@ -277,6 +281,8 @@
     <ClInclude Include="StudyEditTutorial.h" />
     <ClInclude Include="StudyIntroBehavior.h" />
     <ClInclude Include="StudyTrialDesktopBehavior.h" />
+    <ClInclude Include="StudyTrialMotionCompensation.h" />
+    <ClInclude Include="StudyTrialNoMotionCompensation.h" />
     <ClInclude Include="StudyTrialScene.h" />
     <ClInclude Include="StudyTrialSittingBehavior.h" />
     <ClInclude Include="StudyTrialStandingBehavior.h" />

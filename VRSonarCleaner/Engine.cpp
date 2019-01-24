@@ -6,6 +6,7 @@
 #include "FlowScene.h"
 #include "SonarScene.h"
 #include "StudyTrialScene.h"
+#include "MotionCompensationScene.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -82,7 +83,7 @@ bool Engine::init()
 	}
 	else
 	{
-		m_pCurrentScene = new StudyTrialScene(m_pTDM);
+		m_pCurrentScene = new MotionCompensationScene(m_pTDM);
 	}
 
 	m_pCurrentScene->init();

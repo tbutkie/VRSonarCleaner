@@ -38,8 +38,6 @@ private:
 	std::vector<std::pair<std::experimental::filesystem::v1::path, std::string>> m_vStudyDatasets;
 	std::queue<InitializableBehavior*> m_qTrials;
 
-	std::future<void> m_Future;
-
 	bool m_bTrialsLoaded;
 
 	// VR Vars

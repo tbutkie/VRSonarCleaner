@@ -141,13 +141,6 @@ void StudyTrialScene::update()
 		if (!BehaviorManager::getInstance().getBehavior("scale"))
 			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pVFG));
 	}
-
-	if (m_pTDM->getTracker())
-	{
-		Renderer::getInstance().setSkyboxTransform(m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-		m_pVFG->setPosition((m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)))[3]);
-		m_pVFG->setOrientation(m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)));
-	}
 }
 
 void StudyTrialScene::draw()
@@ -232,22 +225,6 @@ void StudyTrialScene::draw()
 	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 	if (m_bShowHalos)
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
-
-	TrackedDevice* pTracker = m_pTDM->getTracker();
-	
-	if (pTracker)
-	{
-		float size = 0.1f;
-		glm::vec3 origin = pTracker->getDeviceToWorldTransform()[3];
-		glm::vec3 u = pTracker->getDeviceToWorldTransform() * glm::vec4(size, 0.f, 0.f, 0.f);
-		glm::vec3 v = pTracker->getDeviceToWorldTransform() * glm::vec4(0.f, size, 0.f, 0.f);
-		glm::vec3 w = pTracker->getDeviceToWorldTransform() * glm::vec4(0.f, 0.f, size, 0.f);
-		float thickness = 0.1f * (glm::length(u) + glm::length(v) + glm::length(w)) / 3.f;
-	
-		Renderer::getInstance().drawPointerLit(origin, origin + u, thickness, glm::vec4(1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
-		Renderer::getInstance().drawPointerLit(origin, origin + v, thickness, glm::vec4(1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
-		Renderer::getInstance().drawPointerLit(origin, origin + w, thickness, glm::vec4(1.f), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
-	}
 }
 
 void StudyTrialScene::generateStreamLines()
