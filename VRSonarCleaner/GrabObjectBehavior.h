@@ -15,6 +15,8 @@ public:
 
 	void draw();
 
+	bool isBeingRotated();
+
 private:
 	TrackedDeviceManager* m_pTDM;
 	Object3D* m_pObject;
@@ -34,6 +36,5 @@ private:
 	void startRotation();
 	void continueRotation();
 	void endRotation();
-	bool isBeingRotated();
 };
 

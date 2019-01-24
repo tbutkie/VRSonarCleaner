@@ -231,13 +231,13 @@
     <ClCompile Include="PrimitivesFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="StudyTrialMotionCompensation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MotionCompensationScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
     <ClCompile Include="StudyTrialNoMotionCompensation.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTrialMotionCompensation.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
   </ItemGroup>
@@ -431,13 +431,13 @@
     <ClInclude Include="PrimitivesFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StudyTrialMotionCompensation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MotionCompensationScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
     <ClInclude Include="StudyTrialNoMotionCompensation.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialMotionCompensation.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>

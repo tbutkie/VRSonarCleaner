@@ -103,7 +103,14 @@ void StudyTrialNoMotionCompensation::update()
 	if (m_pTDM->getTracker())
 	{
 		glm::mat4 matTracker = m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-		glm::mat4 matTrackerToVolume = matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f));
+
+		GrabObjectBehavior* grab = static_cast<GrabObjectBehavior*>(BehaviorManager::getInstance().getBehavior("grab"));
+		if (grab && !grab->isBeingRotated())
+		{
+			m_mat4TrackerToVolumeOffset = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * m_pDataVolume->getTransformVolume();
+		}
+
+		glm::mat4 matTrackerToVolume = matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, 0.5f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		m_pDataVolume->setPosition(matTrackerToVolume[3]);
 		m_pDataVolume->setOrientation(matTrackerToVolume);
 
@@ -121,10 +128,10 @@ void StudyTrialNoMotionCompensation::draw()
 		matTrackerToVolume = matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f));
 	}
 	// Platform
-	Renderer::getInstance().drawPrimitive("plane", matTracker * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(4.f, 4.f, 1.f)), glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(1.f), 132.f);
+	Renderer::getInstance().drawPrimitive("plane", matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(1.5f, 3.f, 1.f)), glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(1.f), 132.f);
 
-	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
-	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
+	//m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
+	//m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
 	m_pDataVolume->drawBBox(0.f);
 
 	Renderer::RendererSubmission rs;
@@ -148,7 +155,7 @@ void StudyTrialNoMotionCompensation::draw()
 		}
 		clouds.push_back(static_cast<SonarPointCloud*>(cloud));
 		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-		rs.modelToWorldTransform = matTrackerToVolume * m_pDataVolume->getTransformDataset(cloud);
+		rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(cloud);
 		rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}

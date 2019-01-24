@@ -37,6 +37,8 @@ private:
 	unsigned int m_nPointsCleaned;
 	unsigned int m_nCleanedGoodPoints;
 
+	glm::mat4 m_mat4TrackerToVolumeOffset;
+
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdate;
 
 	std::vector<std::pair<unsigned int, std::chrono::time_point<std::chrono::high_resolution_clock>>> m_vPointUpdateAnimations;
