@@ -14,6 +14,7 @@ using namespace std::chrono;
 StudyTrialMotionCompensation::StudyTrialMotionCompensation(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
 	: m_pTDM(pTDM)
 	, m_bInitialColorRefresh(false)
+	, m_bCompensation(false)
 	, m_strFileName(fileName)
 	, m_strCategory(category)
 	, m_nPointsLeft(0u)
@@ -33,6 +34,8 @@ StudyTrialMotionCompensation::StudyTrialMotionCompensation(TrackedDeviceManager*
 	m_pDataVolume = new DataVolume(hmdPos + forward * 1.5f, glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(1.f));
 
 	m_pDataVolume->add(m_pPointCloud);
+
+	m_pPointCloud->setRefreshNeeded();
 
 	m_pColorScaler->resetMinMaxForColorScale(m_pDataVolume->getMinDataBound().z, m_pDataVolume->getMaxDataBound().z);
 	m_pColorScaler->resetBiValueScaleMinMax(
@@ -97,22 +100,42 @@ void StudyTrialMotionCompensation::update()
 
 		m_bActive = false;
 	}
+
+	if (m_pTDM->getTracker())
+	{
+		glm::mat4 matTracker = m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		GrabObjectBehavior* grab = static_cast<GrabObjectBehavior*>(BehaviorManager::getInstance().getBehavior("grab"));
+		if (grab && !grab->isBeingRotated())
+		{
+			m_mat4TrackerToVolumeOffset = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * m_pDataVolume->getTransformVolume();
+		}
+
+		glm::mat4 matTrackerToVolume = matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, 0.5f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+		m_pDataVolume->setPosition(matTrackerToVolume[3]);
+		m_pDataVolume->setOrientation(matTrackerToVolume);
+
+		if (m_bCompensation)
+			Renderer::getInstance().setSkyboxTransform(glm::mat4());
+		else
+			Renderer::getInstance().setSkyboxTransform(matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, -1.f, 0.f)));
+	}
 }
 
 void StudyTrialMotionCompensation::draw()
 {
 	glm::mat4 matTracker, matTrackerToPlatform, matTrackerToVolume;
-
+	
 	if (m_pTDM->getTracker())
 	{
 		matTracker = m_pTDM->getTracker()->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
 		matTrackerToVolume = matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f));
 	}
 	// Platform
-	Renderer::getInstance().drawPrimitive("plane", matTracker * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::translate(glm::mat4(), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(4.f, 4.f, 1.f)), glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(1.f), 132.f);
+	Renderer::getInstance().drawPrimitive("plane", matTracker * glm::translate(glm::mat4(), glm::vec3(0.f, -1.f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(1.5f, 3.f, 1.f)), glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(1.f), 132.f);
 
-	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
-	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
+	//m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
+	//m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
 	m_pDataVolume->drawBBox(0.f);
 
 	Renderer::RendererSubmission rs;
@@ -123,7 +146,7 @@ void StudyTrialMotionCompensation::draw()
 	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 	rs.instanced = true;
-	rs.specularExponent = 0.f;
+	rs.specularExponent = 0.1f;
 
 	bool unloadedData = false;
 	std::vector<SonarPointCloud*> clouds;
@@ -136,7 +159,7 @@ void StudyTrialMotionCompensation::draw()
 		}
 		clouds.push_back(static_cast<SonarPointCloud*>(cloud));
 		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-		rs.modelToWorldTransform = matTrackerToVolume * m_pDataVolume->getTransformDataset(cloud);
+		rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(cloud);
 		rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
@@ -144,7 +167,6 @@ void StudyTrialMotionCompensation::draw()
 
 	if (!unloadedData && !m_bInitialColorRefresh)
 	{
-		std::vector<SonarPointCloud*> clouds;
 		refreshColorScale(m_pColorScaler, clouds);
 		m_bInitialColorRefresh = true;
 	}
@@ -240,6 +262,22 @@ void StudyTrialMotionCompensation::draw()
 		Renderer::TextSizeDim::HEIGHT,
 		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_LEFT
+	);
+}
+
+void StudyTrialMotionCompensation::toggleCompensation()
+{
+	m_bCompensation = !m_bCompensation;
+
+	std::stringstream ss;
+	ss << "Motion Compensation = " << m_bCompensation;
+	Renderer::getInstance().drawUIText(
+		ss.str(),
+		glm::vec4(1.f),
+		glm::vec3(0.f),
+		glm::quat(),
+		10.f,
+		Renderer::TextSizeDim::HEIGHT
 	);
 }
 

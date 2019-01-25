@@ -20,6 +20,8 @@ public:
 
 	void draw();
 
+	void toggleCompensation();
+
 private:
 	void refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds);
 
@@ -29,6 +31,7 @@ private:
 	DataVolume* m_pDataVolume;
 
 	bool m_bInitialColorRefresh;
+	bool m_bCompensation;
 
 	std::string m_strFileName;
 	std::string m_strCategory;
@@ -36,6 +39,8 @@ private:
 	unsigned int m_nPointsLeft;
 	unsigned int m_nPointsCleaned;
 	unsigned int m_nCleanedGoodPoints;
+
+	glm::mat4 m_mat4TrackerToVolumeOffset;
 
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdate;
 

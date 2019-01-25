@@ -3,7 +3,6 @@
 #include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
 #include "StudyTrialMotionCompensation.h"
-#include "StudyTrialNoMotionCompensation.h"
 #include <gtc/quaternion.hpp>
 #include <experimental/filesystem>
 #include <random>
@@ -12,7 +11,6 @@
 
 MotionCompensationScene::MotionCompensationScene(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
-	, m_bMotionCompensation(false)
 {
 }
 
@@ -39,10 +37,7 @@ void MotionCompensationScene::init()
 		{
 			std::cout << __FUNCTION__ << ": Found study file " << (*it).path().filename() << std::endl;
 
-			if (m_bMotionCompensation)
-				m_vTrials.push_back(new StudyTrialMotionCompensation(m_pTDM, it->path().string(), fileCategory));
-			else
-				m_vTrials.push_back(new StudyTrialNoMotionCompensation(m_pTDM, it->path().string(), fileCategory));
+			m_vTrials.push_back(new StudyTrialMotionCompensation(m_pTDM, it->path().string(), fileCategory));
 		}
 		else if (is_directory(*it))
 		{
@@ -54,10 +49,7 @@ void MotionCompensationScene::init()
 				{
 					std::cout << __FUNCTION__ << ": Found " << fileCategory << " study file " << (*subIt).path().filename() << std::endl;
 
-					if (m_bMotionCompensation)
-						m_vTrials.push_back(new StudyTrialMotionCompensation(m_pTDM, subIt->path().string(), fileCategory));
-					else
-						m_vTrials.push_back(new StudyTrialNoMotionCompensation(m_pTDM, subIt->path().string(), fileCategory));
+					m_vTrials.push_back(new StudyTrialMotionCompensation(m_pTDM, subIt->path().string(), fileCategory));
 				}
 			}
 		}
@@ -82,8 +74,8 @@ void MotionCompensationScene::processSDLEvent(SDL_Event & ev)
 	//if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_RETURN && m_vTrials.size() > 0u)
 	//	m_vTrials.back()->init();
 
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_m)
-		m_bMotionCompensation = !m_bMotionCompensation;
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_m && m_vTrials.size() > 0)
+		static_cast<StudyTrialMotionCompensation*>(m_vTrials.back())->toggleCompensation();
 
 	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_s)
 		Renderer::getInstance().toggleSkybox();

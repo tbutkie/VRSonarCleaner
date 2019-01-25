@@ -214,7 +214,6 @@
     <ClCompile Include="StudyIntroBehavior.cpp" />
     <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
     <ClCompile Include="StudyTrialMotionCompensation.cpp" />
-    <ClCompile Include="StudyTrialNoMotionCompensation.cpp" />
     <ClCompile Include="StudyTrialScene.cpp" />
     <ClCompile Include="StudyTrialSittingBehavior.cpp" />
     <ClCompile Include="StudyTrialStandingBehavior.cpp" />
@@ -282,7 +281,6 @@
     <ClInclude Include="StudyIntroBehavior.h" />
     <ClInclude Include="StudyTrialDesktopBehavior.h" />
     <ClInclude Include="StudyTrialMotionCompensation.h" />
-    <ClInclude Include="StudyTrialNoMotionCompensation.h" />
     <ClInclude Include="StudyTrialScene.h" />
     <ClInclude Include="StudyTrialSittingBehavior.h" />
     <ClInclude Include="StudyTrialStandingBehavior.h" />

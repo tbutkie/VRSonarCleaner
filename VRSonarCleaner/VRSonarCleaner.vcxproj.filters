@@ -234,9 +234,6 @@
     <ClCompile Include="MotionCompensationScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
-    <ClCompile Include="StudyTrialNoMotionCompensation.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
     <ClCompile Include="StudyTrialMotionCompensation.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
@@ -433,9 +430,6 @@
     </ClInclude>
     <ClInclude Include="MotionCompensationScene.h">
       <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyTrialNoMotionCompensation.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
     <ClInclude Include="StudyTrialMotionCompensation.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>

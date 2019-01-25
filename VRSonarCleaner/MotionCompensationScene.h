@@ -22,7 +22,6 @@ public:
 private:
 	TrackedDeviceManager* m_pTDM;
 
-	bool m_bMotionCompensation;
 	std::vector<InitializableBehavior*> m_vTrials;
 };
 
