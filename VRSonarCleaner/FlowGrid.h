@@ -16,6 +16,7 @@ class FlowGrid : public Dataset
 	public:
 		//FlowGrid(float minX, float maxX, int cellsX, float minY, float maxY, int cellsY, int cellsZ, int timesteps);
 		FlowGrid(const char* filename, bool useZInsteadOfDepth);
+		FlowGrid(const char* filename, float xMin, float xMax, int xCount, float yMin, float yMax, int yCount, float zMin, float zMax, int zCount);
 		virtual ~FlowGrid();
 
 		void init();

@@ -99,6 +99,75 @@ FlowGrid::FlowGrid(const char* filename, bool useZInsteadOfDepth)
 
 }//end file loading constructor
 
+FlowGrid::FlowGrid(const char * filename, float xMin, float xMax, int xCount, float yMin, float yMax, int yCount, float zMin, float zMax, int zCount)
+	: Dataset(filename)
+	, m_fMinTime(-1.f)
+	, m_fMaxTime(-1.f)
+	, m_bUsesZInsteadOfDepth(true)
+	, m_fXMin(xMin)
+	, m_fXMax(xMax)
+	, m_nXCells(xCount)
+	, m_fYMin(yMin)
+	, m_fYMax(yMax)
+	, m_nYCells(yCount)
+	, m_fZMin(zMin)
+	, m_fZMax(zMax)
+	, m_nZCells(zCount)
+	, m_nTimesteps(1)
+{
+	FILE *inputFile;
+	printf("Opening binary file as flowgrid: %s\n", filename);
+
+	inputFile = fopen(filename, "rb");
+
+	if (inputFile == NULL)
+	{
+		printf("Unable to open binary input file!");
+		return;
+	}
+
+	setName(filename);
+
+	checkNewPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
+	checkNewPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
+
+	init();
+
+	for (int i = 0; i < m_nZCells; i++)
+		setDepthValue(i, static_cast<float>(i) * m_fZCellSize);
+
+	for (int i = 0; i < m_nTimesteps; i++)
+	{
+		setTimeValue(i, 1.f);
+	}
+
+	int index4d;
+	float tempU, tempV, tempW;
+	for (int x = 0; x < m_nXCells; x++)
+	{
+		for (int y = 0; y < m_nYCells; y++)
+		{
+			for (int z = 0; z < m_nZCells; z++)
+			{
+				for (int t = 0; t < m_nTimesteps; t++)
+				{
+					index4d = (t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
+					fread(&tempU, sizeof(float), 1, inputFile);
+					fread(&tempV, sizeof(float), 1, inputFile);
+					fread(&tempW, sizeof(float), 1, inputFile);
+					setIsWaterValue(x, y, z, t, true);
+					setCellValue(x, y, z, t, tempU, tempV, tempW);
+				}//end for z
+			}//end for z
+		}//end for y
+	}//end for x
+
+	fclose(inputFile);
+
+	m_bLoaded = true;
+
+	printf("Imported FlowGrid from binary file %s\n", filename);
+}
 
 FlowGrid::~FlowGrid()
 {

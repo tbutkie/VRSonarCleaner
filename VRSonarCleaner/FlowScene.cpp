@@ -37,8 +37,8 @@ void FlowScene::init()
 	}
 	else
 	{
-		flowGrids.push_back("resources/data/flowgrid/test.fg");
-		m_pFlowVolume = new FlowVolume(flowGrids, true);
+		flowGrids.push_back("resources/data/bin/vectors_400.bov");
+		m_pFlowVolume = new FlowVolume(flowGrids, true, false);
 		m_pFlowVolume->setParticleVelocityScale(0.01f);
 
 	}
@@ -124,8 +124,8 @@ void FlowScene::update()
 		}
 
 
-		if (!BehaviorManager::getInstance().getBehavior("flowcurator"))
-			BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
+		//if (!BehaviorManager::getInstance().getBehavior("flowcurator"))
+		//	BehaviorManager::getInstance().addBehavior("flowcurator", new FlowFieldCurator(m_pTDM, m_pFlowVolume));
 
 		//if (!BehaviorManager::getInstance().getBehavior("debugprobe"))
 		//	BehaviorManager::getInstance().addBehavior("debugprobe", new DebugProbe(m_pTDM->getPrimaryController(), m_pFlowVolume));

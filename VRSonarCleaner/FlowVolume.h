@@ -21,10 +21,10 @@ class FlowVolume
 	: public DataVolume
 {
 public:
-	FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth);
+	FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile = true);
 	virtual ~FlowVolume();
 
-	void addFlowGrid(std::string fileName, bool useZInsteadOfDepth);
+	void addFlowGrid(std::string fileName, bool useZInsteadOfDepth, bool fgFile = true);
 	void removeFlowGrid(std::string fileName);
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);

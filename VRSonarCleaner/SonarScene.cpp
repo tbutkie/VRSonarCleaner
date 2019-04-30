@@ -67,12 +67,12 @@ void SonarScene::init()
 	Renderer::getInstance().getCamera()->lookat = tablePosition;
 
 	m_pColorScalerTPU = new ColorScaler();
-	m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
-	m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
-	//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
-	//m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
+	//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
+	//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
+	m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
+	m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
-	m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
@@ -80,27 +80,28 @@ void SonarScene::init()
 	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
 
 
-	//using namespace std::experimental::filesystem::v1;
-	//
-	////path dataset("south_santa_rosa");
-	////path dataset("santa_cruz_south");
+	using namespace std::experimental::filesystem::v1;
+	
+	//path dataset("south_santa_rosa");
+	//path dataset("santa_cruz_south");
 	//path dataset("santa_cruz_basin");
-	//
-	//auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-	//
-	//auto acceptsPath = path(basePath).append(path("accept"));
-	//
-	//for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
-	//{
-	//	if (is_regular_file(*it))
-	//	{
-	//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-	//		{
-	//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-	//			m_vpClouds.push_back(tmp);
-	//		}
-	//	}
-	//}
+	path dataset("davidson_seamount");
+	
+	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+	
+	auto acceptsPath = path(basePath).append(path("accept"));
+	
+	for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+	{
+		if (is_regular_file(*it))
+		{
+			if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+			{
+				SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+				m_vpClouds.push_back(tmp);
+			}
+		}
+	}
 
 	for (auto const &cloud : m_vpClouds)
 	{
@@ -109,7 +110,7 @@ void SonarScene::init()
 	}
 
 	m_vpDataVolumes.push_back(m_pTableVolume);
-	m_vpDataVolumes.push_back(m_pWallVolume);
+	//m_vpDataVolumes.push_back(m_pWallVolume);
 
 	if (m_bUseDesktop)
 	{
@@ -695,9 +696,9 @@ void SonarScene::draw()
 				continue;
 			}
 
-			rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getVAO();
+			rs.VAO = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewVAO() : static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
 			rs.modelToWorldTransform = dv->getTransformDataset(cloud);
-			rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPointCount();
+			rs.instanceCount = dv == m_pWallVolume ? static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount() : static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}
 	}

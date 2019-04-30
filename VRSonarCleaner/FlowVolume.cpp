@@ -5,7 +5,7 @@
 
 using namespace std::chrono_literals;
 
-FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth)
+FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile)
 	: DataVolume(
 		glm::vec3(0.f, 1.f, 0.f), 
 		glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
@@ -21,7 +21,7 @@ FlowVolume::FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDep
 	//Z-toward monitor
 
 	for (auto fg : flowGrids)
-		addFlowGrid(fg, useZInsteadOfDepth);
+		addFlowGrid(fg, useZInsteadOfDepth, fgFile);
 		
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_tpLastTimeUpdate = std::chrono::high_resolution_clock::now();
@@ -34,12 +34,12 @@ FlowVolume::~FlowVolume()
 
 }
 
-void FlowVolume::addFlowGrid(std::string fileName, bool useZInsteadOfDepth)
+void FlowVolume::addFlowGrid(std::string fileName, bool useZInsteadOfDepth, bool fgFile)
 {
 	// Check if flowgrid already exists with that name
 	removeFlowGrid(fileName);
 
-	FlowGrid* tempFG = new FlowGrid(fileName.c_str(), useZInsteadOfDepth);
+	FlowGrid* tempFG = fgFile ? new FlowGrid(fileName.c_str(), useZInsteadOfDepth) : new FlowGrid(fileName.c_str(), 0.f, 1.f, 400, 0.f, 1.f, 400, 0.f, 1.f, 400);
 	m_vpFlowGrids.push_back(tempFG);
 	add(tempFG);
 
