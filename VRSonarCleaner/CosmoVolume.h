@@ -14,21 +14,20 @@
 #include "HolodeckBackground.h"
 #include "DataVolume.h"
 #include "IllustrativeParticleSystem.h"
-#include "FlowGrid.h"
+#include "CosmoGrid.h"
+#include "LightingSystem.h"
 
-class FlowVolume
+class CosmoVolume
 	: public DataVolume
 {
 public:
-	FlowVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile = true);
-	virtual ~FlowVolume();
+	CosmoVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile = true);
+	virtual ~CosmoVolume();
 
-	void addFlowGrid(std::string fileName, bool useZInsteadOfDepth, bool fgFile = true);
+	void addFlowGrid(std::string fileName);
 	void removeFlowGrid(std::string fileName);
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
-
-	float getLambda2(glm::vec3 pt_WorldCoords, float h = 1.f);
 
 	void draw();
 
@@ -51,7 +50,7 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTimeUpdate;
 	std::chrono::duration<float, std::milli> m_msLoopTime;
 		
-	std::vector<FlowGrid*> m_vpFlowGrids;
+	std::vector<CosmoGrid*> m_vpCosmoGrids;
 			
 	IllustrativeParticleSystem *m_pParticleSystem;
 	bool m_bParticleSystemUpdating;

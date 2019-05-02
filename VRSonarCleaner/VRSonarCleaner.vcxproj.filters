@@ -237,6 +237,15 @@
     <ClCompile Include="StudyTrialMotionCompensation.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
+    <ClCompile Include="CosmoStudyTrialScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="CosmoVolume.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CosmoGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -433,6 +442,15 @@
     </ClInclude>
     <ClInclude Include="StudyTrialMotionCompensation.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="CosmoStudyTrialScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="CosmoVolume.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CosmoGrid.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

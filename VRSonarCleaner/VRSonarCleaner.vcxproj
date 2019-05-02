@@ -169,6 +169,9 @@
     <ClCompile Include="arcball.cpp" />
     <ClCompile Include="BehaviorManager.cpp" />
     <ClCompile Include="CloudEditControllerTutorial.cpp" />
+    <ClCompile Include="CosmoGrid.cpp" />
+    <ClCompile Include="CosmoStudyTrialScene.cpp" />
+    <ClCompile Include="CosmoVolume.cpp" />
     <ClCompile Include="CurateStudyDataBehavior.cpp" />
     <ClCompile Include="DataLogger.cpp" />
     <ClCompile Include="Dataset.cpp" />
@@ -234,6 +237,9 @@
     <ClInclude Include="BehaviorBase.h" />
     <ClInclude Include="BehaviorManager.h" />
     <ClInclude Include="CloudEditControllerTutorial.h" />
+    <ClInclude Include="CosmoGrid.h" />
+    <ClInclude Include="CosmoStudyTrialScene.h" />
+    <ClInclude Include="CosmoVolume.h" />
     <ClInclude Include="CurateStudyDataBehavior.h" />
     <ClInclude Include="DataLogger.h" />
     <ClInclude Include="Dataset.h" />
