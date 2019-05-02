@@ -24,8 +24,8 @@ public:
 	CosmoVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile = true);
 	virtual ~CosmoVolume();
 
-	void addFlowGrid(std::string fileName);
-	void removeFlowGrid(std::string fileName);
+	void addCosmoGrid(std::string fileName);
+	void removeCosmoGrid(std::string fileName);
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
 
@@ -33,27 +33,19 @@ public:
 
 	void recalcVolumeBounds();
 
+	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain = true);
+
 	void update();
 
-	void setParticleVelocityScale(float velocityScale);
-	float getParticleVelocityScale();
-
-	IllustrativeParticleEmitter* placeDyeEmitterWorldCoords(glm::vec3 pos);
-	bool removeDyeEmitterClosestToWorldCoords(glm::vec3 pos);
-
-	void particleSystemIntegrateEuler();
-	void particleSystemIntegrateRK4();
+	glm::vec3 rk4(glm::vec3 pos, float delta);
 
 private:
+	bool inBounds(glm::vec3 pos);
+
 	float m_fFlowRoomTime;
 	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTimeUpdate;
 	std::chrono::duration<float, std::milli> m_msLoopTime;
 		
 	std::vector<CosmoGrid*> m_vpCosmoGrids;
-			
-	IllustrativeParticleSystem *m_pParticleSystem;
-	bool m_bParticleSystemUpdating;
-
-	std::future<void> m_Future;
 };

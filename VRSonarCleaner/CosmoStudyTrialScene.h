@@ -3,7 +3,7 @@
 
 #include "TrackedDeviceManager.h"
 #include "DataVolume.h"
-#include "FlowVolume.h"
+#include "CosmoVolume.h"
 #include "DataLogger.h"
 #include "Renderer.h"
 
@@ -24,7 +24,7 @@ public:
 
 private:
 	TrackedDeviceManager* m_pTDM;
-	FlowVolume* m_pFlowVolume;
+	CosmoVolume* m_pCosmoVolume;
 
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
 	std::vector<std::vector<glm::vec3>> m_vvvec3TransformedStreamlines;

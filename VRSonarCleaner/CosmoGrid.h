@@ -18,22 +18,13 @@ class CosmoGrid : public Dataset
 
 		void init();
 
-		void deleteSelf();
-
-		void setTimeValue(int timeIndex, float timeValue);		
-		
-		void setCellValue(int x, int y, int z, int timestep, float u, float v);
+		void setTimeValue(int timeIndex, float timeValue);
 		void setCellValue(int x, int y, int z, int timestep, float u, float v, float w);
 		
-		bool getUVWat(float lonX, float latY, float depth, float time, float *u, float *v, float *w);
-		bool getVelocityAt(float lonX, float latY, float depth, float time, float *velocity);
+		bool getUVWat(float x, float y, float z, float time, float *u, float *v, float *w);
+		bool getVelocityAt(float x, float y, float z, float time, float *velocity);
 
-		bool contains(float x, float y);
 		bool contains(float x, float y, float z);
-		
-		//dynamic terrain mod:
-		int getNumXYCells();
-		void getXYZofCell(int cellIndex, float *lonX, float *latY, float *depth);
 
 		//bbox access:
 		float getXMin();
@@ -44,7 +35,6 @@ class CosmoGrid : public Dataset
 		float getZMax();
 
 		//direct cell access (used for ROIs)
-		bool getCellBounds(float xmin, float xmax, float ymin, float ymax, int *xcellmin, int *xcellmax, int *ycellmin, int *ycellmax);
 		float getXCellSize();
 		float getYCellSize();
 		float getZCellSize();
@@ -77,23 +67,10 @@ public:
 		float* m_arrfVValues;
 		float* m_arrfWValues;
 		float* m_arrfVelocityValues;
-		//float* tValues;
-		//float* sValues;
 		float* m_arrfTimes;
 		int m_nTimesteps;
 		
 		int m_nActiveTimestep;
-
-		//particle sys stuff:
-		bool m_bIllustrativeParticlesEnabled;
-		int m_nIllustrativeParticles;
-		glm::vec3 m_vec3IllustrativeParticlesColor;
-
-		float m_fIllustrativeParticleVelocityScale;
-		std::chrono::milliseconds m_fIllustrativeParticleLifetime;
-		std::chrono::milliseconds m_fIllustrativeParticleTrailTime;
-		float m_fIllustrativeParticleSize;
-
 
 		char m_strName[512];
 

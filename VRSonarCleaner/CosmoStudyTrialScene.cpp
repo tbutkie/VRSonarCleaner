@@ -24,19 +24,15 @@ CosmoStudyTrialScene::~CosmoStudyTrialScene()
 
 void CosmoStudyTrialScene::init()
 {
-	std::vector<std::string> flowGrids;
+	m_pCosmoVolume = new CosmoVolume(std::vector<std::string>({ "resources/data/bin/vectors_400.bov" }), true, false);
 
-	flowGrids.push_back("resources/data/bin/vectors_400.bov");
-	m_pFlowVolume = new FlowVolume(flowGrids, true, false);
-	m_pFlowVolume->setParticleVelocityScale(0.01f);
-
-	m_pFlowVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
-	m_pFlowVolume->setFrameColor(glm::vec4(1.f));
+	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
+	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
 
 	generateStreamLines();
 
-	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
-	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pCosmoVolume));
+	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pCosmoVolume));
 }
 
 void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
@@ -53,7 +49,7 @@ void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
 
 void CosmoStudyTrialScene::update()
 {
-	m_pFlowVolume->update();
+	m_pCosmoVolume->update();
 
 	//{
 	//	m_vvvec3TransformedStreamlines.clear();
@@ -86,18 +82,18 @@ void CosmoStudyTrialScene::update()
 	if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
 	{
 		if (!BehaviorManager::getInstance().getBehavior("grab"))
-			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pFlowVolume));
+			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pCosmoVolume));
 		if (!BehaviorManager::getInstance().getBehavior("scale"))
-			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pFlowVolume));
+			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pCosmoVolume));
 	}
 }
 
 void CosmoStudyTrialScene::draw()
 {
-	m_pFlowVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
-	m_pFlowVolume->drawBBox(0.f);
+	m_pCosmoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+	m_pCosmoVolume->drawBBox(0.f);
 
-	glm::vec3 dimratio = m_pFlowVolume->getDimensions() / m_pFlowVolume->getOriginalDimensions();
+	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();
 	
 	if (m_pTDM->getPrimaryController())
 	{
@@ -151,7 +147,7 @@ void CosmoStudyTrialScene::draw()
 	}
 
 	
-	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pFlowVolume->getTransformRawDomainToVolume();
+	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
 	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 	if (m_bShowHalos)
@@ -174,7 +170,7 @@ void CosmoStudyTrialScene::generateStreamLines()
 			{
 				glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes + 1.f))) + (2.f / (gridRes + 1.f)) * glm::vec3(i, j, k));
 				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
-				m_vvvec3RawStreamlines.push_back(m_pVFG->getStreamline(seedPos, 1.f / 32.f, 100, 0.1f));
+				m_vvvec3RawStreamlines.push_back(m_pCosmoVolume->getStreamline(seedPos, 1.f / 32.f, 100, 0.1f));
 			}
 
 

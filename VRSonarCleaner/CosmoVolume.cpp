@@ -10,22 +10,18 @@ CosmoVolume::CosmoVolume(std::vector<std::string> flowGrids, bool useZInsteadOfD
 		glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		glm::vec3(1.f))
 	, m_msLoopTime(35s)
-	, m_bParticleSystemUpdating(false)
 	, m_fFlowRoomMinTime(std::numeric_limits<float>::max())
 	, m_fFlowRoomMaxTime(std::numeric_limits<float>::min())
-	, m_pParticleSystem(NULL)
 {
 	//X-Right-Left
 	//Y-UP-vertical
 	//Z-toward monitor
 
 	for (auto fg : flowGrids)
-		addFlowGrid(fg);
+		addCosmoGrid(fg);
 		
 	m_fFlowRoomTime = m_fFlowRoomMinTime;
 	m_tpLastTimeUpdate = std::chrono::high_resolution_clock::now();
-	
-	m_pParticleSystem = new IllustrativeParticleSystem(m_vpCosmoGrids);
 }
 
 CosmoVolume::~CosmoVolume()
@@ -33,78 +29,26 @@ CosmoVolume::~CosmoVolume()
 
 }
 
-void CosmoVolume::addFlowGrid(std::string fileName)
+void CosmoVolume::addCosmoGrid(std::string fileName)
 {
-	FILE *inputFile;
-	printf("Opening binary 3-vector file: %s\n", fileName);
+	CosmoGrid* tempCG = new CosmoGrid(fileName.c_str());
+	m_vpCosmoGrids.push_back(tempCG);
+	add(tempCG);
 
-	inputFile = fopen(fileName.c_str(), "rb");
-
-	if (inputFile == NULL)
-	{
-		printf("Unable to open binary input file!\n");
-		return;
-	}
-
-	setName(fileName);
-
-	checkNewPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
-	checkNewPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
-
-	init();
-
-	for (int i = 0; i < m_nZCells; i++)
-		setDepthValue(i, static_cast<float>(i) * m_fZCellSize);
-
-	for (int i = 0; i < m_nTimesteps; i++)
-	{
-		setTimeValue(i, 1.f);
-	}
-
-	int index4d;
-	float tempU, tempV, tempW;
-	for (int x = 0; x < m_nXCells; x++)
-	{
-		for (int y = 0; y < m_nYCells; y++)
-		{
-			for (int z = 0; z < m_nZCells; z++)
-			{
-				for (int t = 0; t < m_nTimesteps; t++)
-				{
-					index4d = (t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
-					fread(&tempU, sizeof(float), 1, inputFile);
-					fread(&tempV, sizeof(float), 1, inputFile);
-					fread(&tempW, sizeof(float), 1, inputFile);
-					setIsWaterValue(x, y, z, t, true);
-					setCellValue(x, y, z, t, tempU, tempV, tempW);
-				}//end for z
-			}//end for z
-		}//end for y
-	}//end for x
-
-	fclose(inputFile);
-
-	m_bLoaded = true;
-
-	printf("Imported FlowGrid from binary file %s\n", filename);
+	if (tempCG->m_fMinTime < m_fFlowRoomMinTime)
+		m_fFlowRoomMinTime = tempCG->m_fMinTime;
+	if (tempCG->m_fMaxTime > m_fFlowRoomMaxTime)
+		m_fFlowRoomMaxTime = tempCG->m_fMaxTime;
 }
 
-void CosmoVolume::removeFlowGrid(std::string fileName)
+void CosmoVolume::removeCosmoGrid(std::string fileName)
 {
-	auto fgPresent = std::find_if(m_vpFlowGrids.begin(), m_vpFlowGrids.end(), [&fileName](FlowGrid* fg) { return strcmp(fg->getName(), fileName.c_str()) == 0; });
+	auto fgPresent = std::find_if(m_vpCosmoGrids.begin(), m_vpCosmoGrids.end(), [&fileName](FlowGrid* fg) { return strcmp(fg->getName(), fileName.c_str()) == 0; });
 
-	if (fgPresent != m_vpFlowGrids.end())
+	if (fgPresent != m_vpCosmoGrids.end())
 	{
-		if (m_pParticleSystem)
-		{
-			m_pParticleSystem->m_vpFlowGridCollection = m_vpFlowGrids;
-			for (auto &p : m_pParticleSystem->m_vpParticles)
-				if (p->m_pFlowGrid == (*fgPresent))
-					p->m_pFlowGrid = NULL;
-		}
-
 		remove(*fgPresent);
-		m_vpFlowGrids.erase(fgPresent);
+		m_vpCosmoGrids.erase(fgPresent);
 	}
 }
 
@@ -112,7 +56,7 @@ glm::vec3 CosmoVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 {
 	glm::vec3 domainPt = convertToRawDomainCoords(pt_WorldCoords);
 
-	for (auto &fg : m_vpFlowGrids)
+	for (auto &fg : m_vpCosmoGrids)
 	{
 		float u, v, w;
 		if (fg->getUVWat(domainPt.x, domainPt.y, domainPt.z, 0, &u, &v, &w))
@@ -126,7 +70,7 @@ void CosmoVolume::recalcVolumeBounds()
 	glm::vec3 minCoords(std::numeric_limits<float>::max());
 	glm::vec3 maxCoords(std::numeric_limits<float>::min());
 
-	for (auto fg : m_vpFlowGrids)
+	for (auto fg : m_vpCosmoGrids)
 	{
 		if (fg)
 		{
@@ -140,56 +84,76 @@ void CosmoVolume::recalcVolumeBounds()
 			if (fg->getYMax() < maxCoords.y)
 				maxCoords.y = fg->getYMax();
 
-			float zMin = fg->m_bUsesZInsteadOfDepth ? fg->getMinDepth() : -fg->getMinDepth();
-			float zMax = fg->m_bUsesZInsteadOfDepth ? fg->getMaxDepth() : -fg->getMaxDepth();
-
-			if (zMin < minCoords.z)
-				minCoords.z = zMin;
-			if (zMax < maxCoords.z)
-				maxCoords.z = zMax;
+			if (fg->getZMin() < minCoords.z)
+				minCoords.z = fg->getZMin();
+			if (fg->getZMax() < maxCoords.z)
+				maxCoords.z = fg->getZMax();
 		}
 	}
 
 	//setCustomBounds(minCoords, maxCoords);
 }
 
-IllustrativeParticleEmitter* CosmoVolume::placeDyeEmitterWorldCoords(glm::vec3 pos)
+std::vector<glm::vec3> CosmoVolume::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain)
 {
-	glm::vec3 innerPos = convertToRawDomainCoords(pos);
+	std::vector<glm::vec3> streamline;
+	streamline.push_back(pos);
 
-	printf("Dye In:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
+	for (int i = 0; i < propagation_max_units; ++i)
+	{
+		glm::vec3 flowhere = interpolate(streamline.back());
 
-	IllustrativeParticleEmitter *tmp = new IllustrativeParticleEmitter(innerPos);
-	tmp->setRate(0.f);
-	tmp->changeColor(m_pParticleSystem->m_vpDyePots.size() % 9);
-	m_pParticleSystem->m_vpDyePots.push_back(tmp);
+		// Short-circuit loop if at or below terminal speed
+		if (glm::length(flowhere) <= terminal_speed)
+			break;
 
-	return tmp;
+		glm::vec3 newPos = rk4(streamline.back(), propagation_unit);
+
+		if (newPos == streamline.back() || (clipToDomain && !inBounds(newPos)))
+			break;
+		else
+			streamline.push_back(newPos);
+	}
+
+	return streamline;
 }
 
-bool CosmoVolume::removeDyeEmitterClosestToWorldCoords(glm::vec3 pos)
+bool CosmoVolume::inBounds(glm::vec3 pos)
 {
-	glm::vec3 innerPos = convertToRawDomainCoords(pos);
+	if (pos.x >= -1.f && pos.x <= 1.f &&
+		pos.y >= -1.f && pos.y <= 1.f &&
+		pos.z >= -1.f && pos.z <= 1.f)
+		return true;
 
-	printf("Deleting Dye Pot Closest to:  %0.4f, %0.4f, %0.4f\n", innerPos.x, innerPos.y, innerPos.z);
-
-	IllustrativeParticleEmitter *tmp = m_pParticleSystem->getDyePotClosestTo(innerPos.x, innerPos.y, innerPos.z);
-	if (tmp)
-	{
-		m_pParticleSystem->m_vpDyePots.erase(std::remove(m_pParticleSystem->m_vpDyePots.begin(), m_pParticleSystem->m_vpDyePots.end(), tmp), m_pParticleSystem->m_vpDyePots.end());
-		delete tmp;
-	}
 	return false;
 }
 
-void CosmoVolume::particleSystemIntegrateEuler()
+glm::vec3 CosmoVolume::rk4(glm::vec3 pos, float delta)
 {
-	m_pParticleSystem->setEulerIntegration();
-}
+	if (!inBounds(pos))
+		return pos;
 
-void CosmoVolume::particleSystemIntegrateRK4()
-{
-	m_pParticleSystem->setRK4Integration();
+	glm::vec3 k1 = interpolate(pos);
+
+	glm::vec3 y1 = pos + k1 * delta * 0.5f;
+
+	glm::vec3 k2 = interpolate(y1);
+
+	glm::vec3 y2 = pos + k2 * delta * 0.5f;
+
+	glm::vec3 k3 = interpolate(y2);
+
+	glm::vec3 y3 = pos + k3 * delta;
+
+	glm::vec3 k4 = interpolate(y3);
+
+	glm::vec3 newPos = pos + delta * (k1 + 2.f * k2 + 2.f * k3 + k4) / 6.f;
+
+	//check in bounds or not
+	if (!inBounds(newPos))
+		return pos;
+
+	return newPos;
 }
 
 void CosmoVolume::update()
@@ -224,53 +188,9 @@ void CosmoVolume::update()
 			//playing = false;
 		}
 	}//end if need update
-
-	if (m_Future.valid() && m_Future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-	{
-		m_pParticleSystem->prepareForRender();
-
-		m_bParticleSystemUpdating = false;
-	}
-
-	 //m_pParticleSystem->update(m_fFlowRoomTime);
-	if (!m_bParticleSystemUpdating)
-	{
-		m_Future = std::async(std::launch::async, [&] { m_pParticleSystem->update(m_fFlowRoomTime); });
-		m_bParticleSystemUpdating = true;
-	}
 }
 
 void CosmoVolume::draw()
 {
-	if (m_pParticleSystem->getIndexCount() < 2)
-		return;
-
-	Renderer::RendererSubmission rs;
-
-	rs.glPrimitiveType = GL_LINES;
-	rs.shaderName = "flat";	
-	rs.VAO = m_pParticleSystem->getVAO();
-	rs.vertCount = m_pParticleSystem->getIndexCount();
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.hasTransparency = true;
-	rs.transparencySortPosition = getTransformVolume()[3];
-	rs.modelToWorldTransform = getTransformRawDomainToVolume();
-
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
-}
-
-void CosmoVolume::setParticleVelocityScale(float velocityScale)
-{
-	for (auto fg : m_vpFlowGrids)
-		if (fg)
-			fg->m_fIllustrativeParticleVelocityScale = velocityScale;
-}
-
-float CosmoVolume::getParticleVelocityScale()
-{
-	for (auto fg : m_vpFlowGrids)
-		if (fg)
-			return fg->m_fIllustrativeParticleVelocityScale;
 	
-	return -1.f;
 }

@@ -69,7 +69,11 @@ CosmoGrid::CosmoGrid(const char * filename)
 
 CosmoGrid::~CosmoGrid()
 {
-
+	delete[] m_arrfTimes;
+	delete[] m_arrfUValues;
+	delete[] m_arrfVValues;
+	delete[] m_arrfWValues;
+	delete[] m_arrfVelocityValues;
 }
 
 void CosmoGrid::init()
@@ -100,25 +104,6 @@ void CosmoGrid::init()
 	m_arrfVelocityValues = new float[m_nGridSize4d];
 
 	m_fLastTimeRequested = -1.f;
-
-	m_bIllustrativeParticlesEnabled = true;
-	m_nIllustrativeParticles = 10000;
-	m_fIllustrativeParticleTrailTime = 500ms;
-	m_fIllustrativeParticleLifetime = 2500ms;
-	m_fIllustrativeParticleSize = 1.f;
-
-	m_vec3IllustrativeParticlesColor = glm::vec3(0.25f, 0.95f, 1.f);
-	m_fIllustrativeParticleVelocityScale = 0.001f;//0.000001;
-}
-
-void CosmoGrid::deleteSelf()
-{
-	delete[] m_arrfTimes;
-	delete[] m_arrfUValues;
-	delete[] m_arrfVValues;
-	delete[] m_arrfWValues;
-	delete[] m_arrfVelocityValues;
-
 }
 
 
@@ -129,17 +114,6 @@ void CosmoGrid::setTimeValue(int timeIndex, float timeValue)
 		m_fMinTime = timeValue;
 	if (timeValue > m_fMaxTime || m_fMaxTime == -1.f)
 		m_fMaxTime = timeValue;
-}
-
-void CosmoGrid::setCellValue(int x, int y, int z, int timestep, float u, float v)
-{
-	int index4d = (timestep*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
-	m_arrfUValues[index4d] = u;
-	m_arrfVValues[index4d] = v;
-	m_arrfVelocityValues[index4d] = sqrt(u*u + v*v);
-	
-	if (m_arrfVelocityValues[index4d] > m_fMaxVelocity)
-		m_fMaxVelocity = m_arrfVelocityValues[index4d];
 }
 
 void CosmoGrid::setCellValue(int x, int y, int z, int timestep, float u, float v, float w)
@@ -264,7 +238,7 @@ bool CosmoGrid::getUVWat(float x, float y, float z, float time, float *u, float 
 
 
 
-bool CosmoGrid::getVelocityAt(float lonX, float latY, float depth, float time, float *velocity)
+bool CosmoGrid::getVelocityAt(float x, float y, float z, float time, float *velocity)
 {
 	//first we check time requested to see if its the same as last time
 	if (time != m_fLastTimeRequested)
@@ -339,17 +313,17 @@ bool CosmoGrid::getVelocityAt(float lonX, float latY, float depth, float time, f
 	//now we have time(s) and factor(s)
 
 	//get index of requested location
-	int x = (int)floor(((lonX-m_fXMin)/m_fXCellSize)+0.5);
-	int y = (int)floor(((latY- m_fYMin)/ m_fYCellSize)+0.5);
-	int z = (int)floor(((depth - m_fZMin) / m_fZCellSize) + 0.5);
+	int xInd = (int)floor(((x - m_fXMin) / m_fXCellSize) + 0.5);
+	int yInd = (int)floor(((y - m_fYMin) / m_fYCellSize) + 0.5);
+	int zInd = (int)floor(((z - m_fZMin) / m_fZCellSize) + 0.5);
 		
 	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
 
 	//check if in bounds of the dataset
-	if (x < 0 || y < 0 || z < 0 || x > m_nXCells -1 || y > m_nYCells-1 || z > m_nZCells-1)
+	if (xInd < 0 || yInd < 0 || zInd < 0 || xInd > m_nXCells -1 || yInd > m_nYCells-1 || zInd > m_nZCells-1)
 		return false;
 	//xyz index
-	int index3d = ((z*m_nXYCells)+(y*m_nXCells)+(x));
+	int index3d = zInd * m_nXYCells + yInd * m_nXCells + xInd;
 
 	//if single timestep
 	if (m_bLastTimeOnTimestep)
@@ -363,20 +337,6 @@ bool CosmoGrid::getVelocityAt(float lonX, float latY, float depth, float time, f
 
 	return true;
 }//end getVelocityAt()
-
-bool CosmoGrid::contains(float x, float y)
-{
-	if (x < m_fXMin)
-		return false;
-	else if (x > m_fXMax)
-		return false;
-	else if (y < m_fYMin)
-		return false;
-	else if (y > m_fYMax)
-		return false;
-	else
-		return true;
-}
 
 bool CosmoGrid::contains(float x, float y, float z)
 {
@@ -394,25 +354,6 @@ bool CosmoGrid::contains(float x, float y, float z)
 		return false;
 	else
 		return true;
-}
-
-
-int CosmoGrid::getNumXYCells()
-{
-	return m_nXYCells;
-}
-
-void CosmoGrid::getXYZofCell(int cellIndex, float *lonX, float *latY, float *depth)
-{
-	int x = cellIndex % m_nXCells;
-	int y = cellIndex / m_nXCells;
-	int z = cellIndex / m_nZCells;
-	
-	*lonX = m_fXMin + (x * m_fXCellSize);
-	*latY = m_fYMin + (y * m_fYCellSize);
-	*depth = m_fZMin + (z * m_fZCellSize);
-
-	//printf("Cell %d of %d is %f, %f, %f\n", cellIndex, gridSize2d, *lonX, *latY, *depth);
 }
 
 
@@ -460,128 +401,6 @@ float CosmoGrid::getYCellSize()
 float CosmoGrid::getZCellSize()
 {
 	return m_fZCellSize;
-}
-
-bool CosmoGrid::getCellBounds(float m_fXMin, float m_fXMax, float ymin, float ymax, int *xcellmin, int *xcellmax, int *ycellmin, int *ycellmax)
-{
-	//find min x cell
-	int minXCell;
-	if (m_fXMin < m_fXMin) //beyond and contains edge
-	{
-		minXCell = 0;
-	}
-	else if (m_fXMin > m_fXMax) //not in bounds, should not happen
-	{
-		printf("ERROR 15151515 in getCellBounds\n");
-		return false;
-	}
-	else //within
-	{
-		minXCell = 0;
-		float xHere;
-		for (int i=0;i<m_nXCells -1;i++)
-		{
-			xHere = m_fXMin + (m_fXCellSize*i);
-			if (xHere < m_fXMin)
-				minXCell = i;
-			else
-				break;
-		}
-	}
-
-
-	//find max x cell
-	int maxXCell;
-	if (m_fXMax > m_fXMax) //beyond and contains edge
-	{
-		maxXCell = m_nXCells -1;
-	}
-	else if (m_fXMax < m_fXMin) //not in bounds, should not happen
-	{
-		printf("ERROR 377257 in getCellBounds\n");
-		return false;
-	}
-	else //within
-	{
-		maxXCell = m_nXCells -1;
-		float xHere;
-		for (int i= m_nXCells -1;i>-1;i--)
-		{
-			xHere = m_fXMin + m_fXCellSize + (m_fXCellSize*i); //extra m_fXCellSize because want far edge
-			if (xHere > m_fXMax)
-				maxXCell = i;
-			else
-				break;
-		}
-	}
-
-	//find min y cell
-	int minYCell;
-	if (ymin < m_fYMin) //beyond and contains edge
-	{
-		minYCell = 0;
-	}
-	else if (ymin > m_fYMax) //not in bounds, should not happen
-	{
-		printf("ERROR 254572 in getCellBounds\n");
-		return false;
-	}
-	else //within
-	{
-		minYCell = 0;
-		float yHere;
-		for (int i=0;i<m_nYCells-1;i++)
-		{
-			yHere = m_fYMin + (m_fYCellSize*i);
-			if (yHere < m_fXMin)
-				minYCell = i;
-			else
-				break;
-		}
-	}
-
-
-	//find max y cell
-	int maxYCell;
-	if (ymax > m_fYMax) //beyond and contains edge
-	{
-		maxYCell = m_nYCells-1;
-	}
-	else if (ymax < m_fYMin) //not in bounds, should not happen
-	{
-		printf("ERROR 546854683 in getCellBounds\n");
-		return false;
-	}
-	else //within
-	{
-		maxYCell = m_nYCells-1;
-		float yHere;
-		for (int i=m_nYCells-1;i>-1;i--)
-		{
-			yHere = m_fYMin + m_fYCellSize + (m_fYCellSize*i); //extra m_fXCellSize because want far edge
-			if (yHere > ymax)
-				maxYCell = i;
-			else
-				break;
-		}
-	}
-
-	//*xcellmin = minXCell;
-	//*xcells = maxXCell - minXCell;
-
-	//*ycellmin = minYCell;
-	//*ycells = maxYCell - minYCell;
-
-	*xcellmin = std::min(minXCell, maxXCell);
-	*xcellmax = std::max(minXCell, maxXCell);
-
-	//*xcells = max(minXCell, maxXCell) - min(minXCell, maxXCell) + 1;
-
-	*ycellmin = std::min(minYCell, maxYCell);
-	*ycellmax = std::max(minYCell, maxYCell);
-	//*ycells = max(minYCell, maxYCell) - min(minYCell, maxYCell) + 1;
-
-	return true;
 }
 
 float CosmoGrid::getTimeAtTimestep(int timestep)
