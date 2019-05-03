@@ -2,25 +2,24 @@
 
 using namespace std::chrono_literals;
 
-CosmoGrid::CosmoGrid(const char * filename)
-	: Dataset(filename)
-	, m_fMinTime(-1.f)
-	, m_fMaxTime(-1.f)
+CosmoGrid::CosmoGrid(const char * dataDir)
+	: Dataset(dataDir)
 	, m_fXMin(0.f)
 	, m_fXMax(1.f)
-	, m_nXCells(400)
+	, m_nXPoints(400)
 	, m_fYMin(0.f)
 	, m_fYMax(1.f)
-	, m_nYCells(400)
+	, m_nYPoints(400)
 	, m_fZMin(0.f)
 	, m_fZMax(1.f)
-	, m_nZCells(400)
-	, m_nTimesteps(1)
+	, m_nZPoints(400)
 {
-	FILE *inputFile;
-	printf("Opening binary file as CosmoGrid: %s\n", filename);
+	std::string filename = std::string(dataDir) + "/vectors_400.bov";
 
-	inputFile = fopen(filename, "rb");
+	FILE *inputFile;
+	printf("Opening binary file as CosmoGrid: %s\n", filename.c_str());
+	
+	inputFile = fopen(filename.c_str(), "rb");
 
 	if (inputFile == NULL)
 	{
@@ -28,34 +27,24 @@ CosmoGrid::CosmoGrid(const char * filename)
 		return;
 	}
 
-	setName(filename);
+	setName(filename.c_str());
 
 	checkNewPosition(glm::dvec3(m_fXMin, m_fYMin, m_fZMin));
 	checkNewPosition(glm::dvec3(m_fXMax, m_fYMax, m_fZMax));
 
 	init();
 
-	for (int i = 0; i < m_nTimesteps; i++)
-	{
-		setTimeValue(i, 1.f);
-	}
-
-	int index4d;
 	float tempU, tempV, tempW;
-	for (int x = 0; x < m_nXCells; x++)
+	for (int x = 0; x < m_nXPoints; x++)
 	{
-		for (int y = 0; y < m_nYCells; y++)
+		for (int y = 0; y < m_nYPoints; y++)
 		{
-			for (int z = 0; z < m_nZCells; z++)
+			for (int z = 0; z < m_nZPoints; z++)
 			{
-				for (int t = 0; t < m_nTimesteps; t++)
-				{
-					index4d = (t*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
-					fread(&tempU, sizeof(float), 1, inputFile);
-					fread(&tempV, sizeof(float), 1, inputFile);
-					fread(&tempW, sizeof(float), 1, inputFile);
-					setCellValue(x, y, z, t, tempU, tempV, tempW);
-				}//end for z
+				fread(&tempU, sizeof(float), 1, inputFile);
+				fread(&tempV, sizeof(float), 1, inputFile);
+				fread(&tempW, sizeof(float), 1, inputFile);
+				setPointUVWValue(x, y, z, tempU, tempV, tempW);
 			}//end for z
 		}//end for y
 	}//end for x
@@ -69,291 +58,108 @@ CosmoGrid::CosmoGrid(const char * filename)
 
 CosmoGrid::~CosmoGrid()
 {
-	delete[] m_arrfTimes;
 	delete[] m_arrfUValues;
 	delete[] m_arrfVValues;
 	delete[] m_arrfWValues;
 	delete[] m_arrfVelocityValues;
+	delete[] m_arrDensityValues;
+	delete[] m_arrH2IIDensityValues;
+	delete[] m_arrTemperatureValues;
 }
 
 void CosmoGrid::init()
 {
-	m_nActiveTimestep = -1;
-	m_arrfTimes = new float[m_nTimesteps];
-	m_nGridSize2d = m_nXCells * m_nYCells;
-	m_nGridSize3d = m_nXCells * m_nYCells * m_nZCells;
-	m_nGridSize4d = m_nXCells * m_nYCells * m_nZCells * m_nTimesteps;
-	m_nXYCells = m_nXCells * m_nYCells;
-	m_nXYZCells = m_nXCells * m_nYCells * m_nZCells;
-	m_fXCells = (float)m_nXCells;
-	m_fYCells = (float)m_nYCells;
-	m_fZCells = (float)m_nZCells;
+	m_nGridSize2d = m_nXPoints * m_nYPoints;
+	m_nGridSize3d = m_nXPoints * m_nYPoints * m_nZPoints;
+	m_nXYPoints = m_nXPoints * m_nYPoints;
+	m_nXYZPoints = m_nXPoints * m_nYPoints * m_nZPoints;
 	m_fXRange = glm::abs(m_fXMax - m_fXMin);
 	m_fYRange = glm::abs(m_fYMax - m_fYMin);
 	m_fZRange = glm::abs(m_fZMax - m_fZMin);
 
-	m_fXCellSize = m_fXRange / m_fXCells;
-	m_fYCellSize = m_fYRange / m_fYCells;
-	m_fZCellSize = m_fZRange / m_fZCells;
+	m_fXCellSize = m_fXRange / static_cast<float>(m_nXPoints - 1);
+	m_fYCellSize = m_fYRange / static_cast<float>(m_nYPoints - 1);
+	m_fZCellSize = m_fZRange / static_cast<float>(m_nZPoints - 1);
+
+	m_fMinVelocity = std::numeric_limits<float>::max();
+	m_fMaxVelocity = std::numeric_limits<float>::min();
+
+	m_arrfUValues = new float[m_nGridSize3d];
+	m_arrfVValues = new float[m_nGridSize3d];
+	m_arrfWValues = new float[m_nGridSize3d];
+	m_arrfVelocityValues = new float[m_nGridSize3d];
+	m_arrDensityValues = new float[m_nGridSize3d];
+	m_arrH2IIDensityValues = new float[m_nGridSize3d];
+	m_arrTemperatureValues = new float[m_nGridSize3d];
+}
+
+void CosmoGrid::setPointUVWValue(int x, int y, int z, float u, float v, float w)
+{
+	int index3d = z * m_nXYPoints + y * m_nXPoints + x;
+	m_arrfUValues[index3d] = u;
+	m_arrfVValues[index3d] = v;
+	m_arrfWValues[index3d] = w;
+	m_arrfVelocityValues[index3d] = sqrt(u*u + v*v + w*w);
+
+	if (m_arrfVelocityValues[index3d] < m_fMinVelocity)
+		m_fMinVelocity = m_arrfVelocityValues[index3d];
 	
-	m_fMaxVelocity = 0;
-
-	m_arrfUValues = new float[m_nGridSize4d];
-	m_arrfVValues = new float[m_nGridSize4d];
-	m_arrfWValues = new float[m_nGridSize4d];
-	m_arrfVelocityValues = new float[m_nGridSize4d];
-
-	m_fLastTimeRequested = -1.f;
+	if (m_arrfVelocityValues[index3d] > m_fMaxVelocity)
+		m_fMaxVelocity = m_arrfVelocityValues[index3d];	
 }
 
-
-void CosmoGrid::setTimeValue(int timeIndex, float timeValue)
+glm::vec3 CosmoGrid::getUVWat(glm::vec3 pos)
 {
-	m_arrfTimes[timeIndex] = timeValue;
-	if (timeValue < m_fMinTime || m_fMinTime == -1.f)
-		m_fMinTime = timeValue;
-	if (timeValue > m_fMaxTime || m_fMaxTime == -1.f)
-		m_fMaxTime = timeValue;
-}
-
-void CosmoGrid::setCellValue(int x, int y, int z, int timestep, float u, float v, float w)
-{
-	int index4d = (timestep*m_nXYZCells) + (z*m_nXYCells) + (y*m_nXCells) + x;
-	m_arrfUValues[index4d] = u;
-	m_arrfVValues[index4d] = v;
-	m_arrfWValues[index4d] = w;
-	m_arrfVelocityValues[index4d] = sqrt(u*u + v*v + w*w);
+	if (!contains(pos))
+		return glm::vec3();	
 	
-	if (m_arrfVelocityValues[index4d] > m_fMaxVelocity)
-		m_fMaxVelocity = m_arrfVelocityValues[index4d];
+	return glm::vec3(
+		trilinear(&m_arrfUValues, pos),
+		trilinear(&m_arrfVValues, pos),
+		trilinear(&m_arrfWValues, pos)
+	);
 }
 
-bool CosmoGrid::getUVWat(float x, float y, float z, float time, float *u, float *v, float *w)
+float CosmoGrid::getVelocityAt(glm::vec3 pos)
 {
-	if (x < m_fXMin || x > m_fXMax ||
-		y < m_fYMin || y > m_fYMax ||
-		z < m_fZMin || z > m_fZMax)
+	if (!contains(pos))
+		return 0.f;
+	
+	return trilinear(&m_arrfVelocityValues, pos);
+}
+
+bool CosmoGrid::contains(glm::vec3 pos)
+{
+	if (pos.x < m_fXMin || pos.x > m_fXMax ||
+		pos.y < m_fYMin || pos.y > m_fYMax ||
+		pos.z < m_fZMin || pos.z > m_fZMax)
 		return false;
-
-	//first we check time requested to see if its the same as last time
-	if (time != m_fLastTimeRequested)
-	{
-		//new time, have to find time values anew
-		m_fLastTimeRequested = time;
-		
-		//find if on timestep exactly, or is between what times
-		int above = -1;
-		int below = -1;
-		m_bLastTimeOnTimestep = false;
-		for (int i=0;i<m_nTimesteps;i++)
-		{
-			if (time > m_arrfTimes[i])
-			{
-				below = i;
-			}
-			else if (time == m_arrfTimes[i])
-			{
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = i;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = i;
-				m_fLastTimeFactor2 = 0;
-				above = i;
-				below = i;
-				break;
-			}
-			else if (time < m_arrfTimes[i])
-			{
-				above = i;
-				break;
-			}
-		}
-		if (!m_bLastTimeOnTimestep) //if didn't match a timestep exactly
-		{
-			//if was below min time
-			if (below == -1)
-			{
-				//set to min time
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = 0;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = 0;
-				m_fLastTimeFactor2 = 0;
-			}
-			//if was above max time
-			else if (above == -1)
-			{
-				//set to max time
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = m_nTimesteps-1;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = m_nTimesteps-1;
-				m_fLastTimeFactor2 = 0;
-			}
-			else //is in between two timesteps
-			{
-				//set both times and factor for each
-				float range = m_arrfTimes[above] - m_arrfTimes[below];
-				float fromBelow = time - m_arrfTimes[below];
-				float factor = fromBelow / range;
-				m_iLastTime1 = below;
-				m_fLastTimeFactor1 = 1-factor;
-				m_iLastTime2 = above;
-				m_fLastTimeFactor2 = factor;
-			}
-		}//end if !lastTimeOnTimestep
-
-	}//if time not same as last time
-	//now we have time(s) and factor(s)
-
-	//get index of requested location
-	int xInd = (int)floor(((x - m_fXMin) / m_fXCellSize));
-	int yInd = (int)floor(((y - m_fYMin) / m_fYCellSize));
-	int zInd = (int)floor(((z - m_fZMin) / m_fZCellSize));
-
-	//check if in bounds of the dataset
-	if (xInd < 0 || yInd < 0 || zInd < 0 || xInd > m_nXCells-1 || yInd > m_nYCells-1 || zInd > m_nZCells-1)
-		return false;
-
-	//xyz index
-	int index3d = ((zInd*m_nXYCells)+(yInd*m_nXCells)+(xInd));
-
-	//if single timestep
-	if (m_bLastTimeOnTimestep)
-	{
-		*u = m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d];
-		*v = m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d];
-		*w = m_arrfWValues[(m_iLastTime1*m_nXYZCells) + index3d];
-	}
-	else //between timesteps
-	{ 
-		//printf("betwen timesteps\n");
-		*u = (m_arrfUValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfUValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
-		*v = (m_arrfVValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfVValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
-		*w = (m_arrfWValues[(m_iLastTime1*m_nXYZCells) + index3d]*m_fLastTimeFactor1) + (m_arrfWValues[(m_iLastTime2*m_nXYZCells) + index3d]*m_fLastTimeFactor2);
-	}
-
+	
 	return true;
-}//end getUVWat()
+}
 
-
-
-bool CosmoGrid::getVelocityAt(float x, float y, float z, float time, float *velocity)
+glm::vec3 CosmoGrid::rk4(glm::vec3 pos, float delta)
 {
-	//first we check time requested to see if its the same as last time
-	if (time != m_fLastTimeRequested)
-	{
-		//new time, have to find time values anew
-		m_fLastTimeRequested = time;
-		
-		//find if on timestep exactly, or is between what times
-		int above = -1;
-		int below = -1;
-		m_bLastTimeOnTimestep = false;
-		for (int i=0;i<m_nTimesteps;i++)
-		{
-			if (time > m_arrfTimes[i])
-			{
-				below = i;
-			}
-			else if (time == m_arrfTimes[i])
-			{
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = i;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = i;
-				m_fLastTimeFactor2 = 0;
-				above = i;
-				below = i;
-				break;
-			}
-			else if (time < m_arrfTimes[i])
-			{
-				above = i;
-				break;
-			}
-		}
-		if (!m_bLastTimeOnTimestep) //if didn't match a timestep exactly
-		{
-			//if was below min time
-			if (below == -1)
-			{
-				//set to min time
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = 0;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = 0;
-				m_fLastTimeFactor2 = 0;
-			}
-			//if was above max time
-			else if (above == -1)
-			{
-				//set to max time
-				m_bLastTimeOnTimestep = true;
-				m_iLastTime1 = m_nTimesteps-1;
-				m_fLastTimeFactor1 = 1;
-				m_iLastTime2 = m_nTimesteps-1;
-				m_fLastTimeFactor2 = 0;
-			}
-			else //is in between two timesteps
-			{
-				//set both times and factor for each
-				float range = m_arrfTimes[above] - m_arrfTimes[below];
-				float fromBelow = time - m_arrfTimes[below];
-				float factor = fromBelow / range;
-				m_iLastTime1 = below;
-				m_fLastTimeFactor1 = 1-factor;
-				m_iLastTime2 = above;
-				m_fLastTimeFactor2 = factor;
-			}
-		}//end if !lastTimeOnTimestep
+	if (!contains(pos))
+		return pos;
 
-	}//if time not same as last time
-	
-	//now we have time(s) and factor(s)
+	glm::vec3 k1 = getUVWat(pos);
 
-	//get index of requested location
-	int xInd = (int)floor(((x - m_fXMin) / m_fXCellSize) + 0.5);
-	int yInd = (int)floor(((y - m_fYMin) / m_fYCellSize) + 0.5);
-	int zInd = (int)floor(((z - m_fZMin) / m_fZCellSize) + 0.5);
-		
-	//printf("UVAT: x: %d of %d  y: %d of %d  z: %d of %d\n", x, xCells, y, yCells, z, zCells);
+	glm::vec3 y1 = pos + k1 * delta * 0.5f;
 
-	//check if in bounds of the dataset
-	if (xInd < 0 || yInd < 0 || zInd < 0 || xInd > m_nXCells -1 || yInd > m_nYCells-1 || zInd > m_nZCells-1)
-		return false;
-	//xyz index
-	int index3d = zInd * m_nXYCells + yInd * m_nXCells + xInd;
+	glm::vec3 k2 = getUVWat(y1);
 
-	//if single timestep
-	if (m_bLastTimeOnTimestep)
-	{
-		*velocity = m_arrfVelocityValues[(m_iLastTime1*m_nXYZCells) + index3d];
-	}
-	else //between timesteps
-	{ 
-		*velocity = (m_arrfVelocityValues[(m_iLastTime1*m_nXYZCells) + index3d]* m_fLastTimeFactor1) + (m_arrfVelocityValues[(m_iLastTime2*m_nXYZCells) + index3d]* m_fLastTimeFactor2);
-	}
+	glm::vec3 y2 = pos + k2 * delta * 0.5f;
 
-	return true;
-}//end getVelocityAt()
+	glm::vec3 k3 = getUVWat(y2);
 
-bool CosmoGrid::contains(float x, float y, float z)
-{
-	if (x < m_fXMin)
-		return false;
-	else if (x > m_fXMax)
-		return false;
-	else if (y < m_fYMin)
-		return false;
-	else if (y > m_fYMax)
-		return false;
-	else if (z < m_fZMin)
-		return false;
-	else if (z > m_fZMax)
-		return false;
-	else
-		return true;
+	glm::vec3 y3 = pos + k3 * delta;
+
+	glm::vec3 k4 = getUVWat(y3);
+
+	glm::vec3 newPos = pos + delta * (k1 + 2.f * k2 + 2.f * k3 + k4) / 6.f;
+
+	return newPos;
 }
 
 
@@ -403,15 +209,6 @@ float CosmoGrid::getZCellSize()
 	return m_fZCellSize;
 }
 
-float CosmoGrid::getTimeAtTimestep(int timestep)
-{
-	return m_arrfTimes[timestep];
-}
-
-int CosmoGrid::getNumTimeCells()
-{
-	return m_nTimesteps;
-}
 
 char* CosmoGrid::getName()
 {
@@ -423,3 +220,38 @@ void CosmoGrid::setName(const char* name)
 	strcpy(m_strName, name);
 }
 
+
+int CosmoGrid::gridIndex(int xInd, int yInd, int zInd)
+{
+	return zInd * m_nXYPoints + yInd * m_nXPoints + xInd;
+}
+
+float CosmoGrid::trilinear(float ** arr, glm::vec3 pos)
+{
+	if (!contains(pos))
+		return 0.f;
+
+	// Normalized to the grid indices.
+	float xn = (pos.x - m_fXMin) / m_fXCellSize;
+	float yn = (pos.y - m_fYMin) / m_fYCellSize;
+	float zn = (pos.z - m_fZMin) / m_fZCellSize;
+
+	// Indices of grid cell containing point
+	unsigned xi = static_cast<int>(xn);
+	unsigned yi = static_cast<int>(yn);
+	unsigned zi = static_cast<int>(zn);
+
+	// Deltas
+	float xt = xn - floor(xn);
+	float yt = yn - floor(yn);
+	float zt = zn - floor(zn);
+
+	return (1.f - xt) * (1.f - yt) * (1.f - zt) * (*arr)[gridIndex(xi, yi, zi)] +
+		xt * (1.f - yt) * (1.f - zt) * (*arr)[gridIndex(xi + 1u, yi, zi)] +
+		(1.f - xt) * yt * (1.f - zt) * (*arr)[gridIndex(xi, yi + 1u, zi)] +
+		xt * yt * (1.f - zt) * (*arr)[gridIndex(xi + 1u, yi + 1u, zi)] +
+		(1.f - xt) * (1.f - yt) * zt * (*arr)[gridIndex(xi, yi, zi + 1u)] +
+		xt * (1.f - yt) * zt * (*arr)[gridIndex(xi + 1u, yi, zi + 1u)] +
+		(1.f - xt) * yt * zt * (*arr)[gridIndex(xi, yi + 1u, zi + 1u)] +
+		xt * yt * zt * (*arr)[gridIndex(xi + 1u, yi + 1u, zi + 1u)];
+}

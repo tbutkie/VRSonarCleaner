@@ -17,14 +17,11 @@ class CosmoGrid : public Dataset
 		virtual ~CosmoGrid();
 
 		void init();
-
-		void setTimeValue(int timeIndex, float timeValue);
-		void setCellValue(int x, int y, int z, int timestep, float u, float v, float w);
 		
-		bool getUVWat(float x, float y, float z, float time, float *u, float *v, float *w);
-		bool getVelocityAt(float x, float y, float z, float time, float *velocity);
+		glm::vec3 getUVWat(glm::vec3 pos);
+		float getVelocityAt(glm::vec3 pos);
 
-		bool contains(float x, float y, float z);
+		bool contains(glm::vec3 pos);
 
 		//bbox access:
 		float getXMin();
@@ -38,42 +35,36 @@ class CosmoGrid : public Dataset
 		float getXCellSize();
 		float getYCellSize();
 		float getZCellSize();
-		float getTimeAtTimestep(int timestep);
-		int getNumTimeCells();
 
 		char* getName();
 		void setName(const char* name);
+
+		glm::vec3 rk4(glm::vec3 pos, float delta);
 		
 public:
-		float m_fXMin, m_fXMax, m_fXRange, m_fXCells, m_fXCellSize;
-		int m_nXCells;
-		float m_fYMin, m_fYMax, m_fYRange, m_fYCells, m_fYCellSize;
-		int m_nYCells;		
-		float m_fZMin, m_fZMax, m_fZRange, m_fZCells, m_fZCellSize;
-		int m_nZCells;
+		void setPointUVWValue(int x, int y, int z, float u, float v, float w);
+		int gridIndex(int xInd, int yInd, int zInd);
+		float trilinear(float** arr, glm::vec3 pos);
 
-		int m_nGridSize2d, m_nGridSize3d, m_nGridSize4d;
-		int m_nXYZCells, m_nXYCells;
+		float m_fXMin, m_fXMax, m_fXRange, m_fXCellSize;
+		int m_nXPoints;
+		float m_fYMin, m_fYMax, m_fYRange, m_fYCellSize;
+		int m_nYPoints;		
+		float m_fZMin, m_fZMax, m_fZRange, m_fZCellSize;
+		int m_nZPoints;
 
-		
-		float m_fLastTimeRequested;
-		bool m_bLastTimeOnTimestep;
-		int m_iLastTime1, m_iLastTime2;
-		float m_fLastTimeFactor1, m_fLastTimeFactor2;
+		int m_nGridSize2d, m_nGridSize3d;
+		int m_nXYZPoints, m_nXYPoints;
 	
-		float m_fMaxVelocity;
+		float m_fMinVelocity, m_fMaxVelocity;
 
 		float* m_arrfUValues;
 		float* m_arrfVValues;
 		float* m_arrfWValues;
 		float* m_arrfVelocityValues;
-		float* m_arrfTimes;
-		int m_nTimesteps;
-		
-		int m_nActiveTimestep;
+		float* m_arrDensityValues;
+		float* m_arrH2IIDensityValues;
+		float* m_arrTemperatureValues;
 
 		char m_strName[512];
-
-		float m_fMinTime;
-		float m_fMaxTime;
 };

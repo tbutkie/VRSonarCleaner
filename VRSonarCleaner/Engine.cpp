@@ -6,6 +6,7 @@
 #include "FlowScene.h"
 #include "SonarScene.h"
 #include "StudyTrialScene.h"
+#include "CosmoStudyTrialScene.h"
 #include "MotionCompensationScene.h"
 
 #include "HolodeckBackground.h"
@@ -77,13 +78,13 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	if (true)
+	if (false)
 	{
 		m_pCurrentScene = new FlowScene(m_pTDM);
 	}
 	else
 	{
-		m_pCurrentScene = new MotionCompensationScene(m_pTDM);
+		m_pCurrentScene = new CosmoStudyTrialScene(m_pTDM);
 	}
 
 	m_pCurrentScene->init();

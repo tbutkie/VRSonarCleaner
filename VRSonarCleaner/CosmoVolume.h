@@ -21,11 +21,8 @@ class CosmoVolume
 	: public DataVolume
 {
 public:
-	CosmoVolume(std::vector<std::string> flowGrids, bool useZInsteadOfDepth, bool fgFile = true);
+	CosmoVolume(std::string cosmoDataDir);
 	virtual ~CosmoVolume();
-
-	void addCosmoGrid(std::string fileName);
-	void removeCosmoGrid(std::string fileName);
 
 	glm::vec3 getFlowWorldCoords(glm::vec3 pt_WorldCoords);
 
@@ -37,15 +34,10 @@ public:
 
 	void update();
 
-	glm::vec3 rk4(glm::vec3 pos, float delta);
-
 private:
-	bool inBounds(glm::vec3 pos);
 
-	float m_fFlowRoomTime;
-	float m_fFlowRoomMinTime, m_fFlowRoomMaxTime;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastTimeUpdate;
 	std::chrono::duration<float, std::milli> m_msLoopTime;
 		
-	std::vector<CosmoGrid*> m_vpCosmoGrids;
+	CosmoGrid* m_pCosmoGrid;
 };

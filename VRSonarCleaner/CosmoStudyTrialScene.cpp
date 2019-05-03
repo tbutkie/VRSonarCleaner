@@ -24,7 +24,7 @@ CosmoStudyTrialScene::~CosmoStudyTrialScene()
 
 void CosmoStudyTrialScene::init()
 {
-	m_pCosmoVolume = new CosmoVolume(std::vector<std::string>({ "resources/data/bin/vectors_400.bov" }), true, false);
+	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
 	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
 	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
@@ -159,7 +159,7 @@ void CosmoStudyTrialScene::generateStreamLines()
 	m_vvvec3RawStreamlines.clear();
 
 	int gridRes = 10;
-	float radius = 0.005f;
+	float radius = 0.001f;
 	int numSegments = 16;
 
 
@@ -168,9 +168,9 @@ void CosmoStudyTrialScene::generateStreamLines()
 		for (int j = 0; j < gridRes; ++j)
 			for (int k = 0; k < gridRes; ++k)
 			{
-				glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes + 1.f))) + (2.f / (gridRes + 1.f)) * glm::vec3(i, j, k));
+				glm::vec3 seedPos(glm::vec3(i, j, k) * (1.f/gridRes));
 				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
-				m_vvvec3RawStreamlines.push_back(m_pCosmoVolume->getStreamline(seedPos, 1.f / 32.f, 100, 0.1f));
+				m_vvvec3RawStreamlines.push_back(m_pCosmoVolume->getStreamline(seedPos, 1.f, 100, 0.f));
 			}
 
 
