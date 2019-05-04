@@ -35,30 +35,7 @@ glm::vec3 CosmoVolume::getFlowWorldCoords(glm::vec3 pt_WorldCoords)
 	return glm::vec3(0.f);
 }
 
-void CosmoVolume::recalcVolumeBounds()
-{
-	glm::vec3 minCoords(std::numeric_limits<float>::max());
-	glm::vec3 maxCoords(std::numeric_limits<float>::min());
-
-	if (m_pCosmoGrid->getXMin() < minCoords.x)
-		minCoords.x = m_pCosmoGrid->getXMin();
-	if (m_pCosmoGrid->getXMax() > maxCoords.x)
-		maxCoords.x = m_pCosmoGrid->getXMax();
-
-	if (m_pCosmoGrid->getYMin() < minCoords.y)
-		minCoords.y = m_pCosmoGrid->getYMin();
-	if (m_pCosmoGrid->getYMax() < maxCoords.y)
-		maxCoords.y = m_pCosmoGrid->getYMax();
-
-	if (m_pCosmoGrid->getZMin() < minCoords.z)
-		minCoords.z = m_pCosmoGrid->getZMin();
-	if (m_pCosmoGrid->getZMax() < maxCoords.z)
-		maxCoords.z = m_pCosmoGrid->getZMax();
-
-	//setCustomBounds(minCoords, maxCoords);
-}
-
-std::vector<glm::vec3> CosmoVolume::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain)
+std::vector<glm::vec3> CosmoVolume::getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool reverse, bool clipToDomain)
 {
 	std::vector<glm::vec3> streamline;
 	streamline.push_back(pos);
@@ -72,7 +49,7 @@ std::vector<glm::vec3> CosmoVolume::getStreamline(glm::vec3 pos, float propagati
 		if (velhere <= terminal_speed)
 			break;
 
-		glm::vec3 newPos = m_pCosmoGrid->rk4(streamline.back(), propagation_unit);
+		glm::vec3 newPos = m_pCosmoGrid->rk4(streamline.back(), reverse ? -propagation_unit : propagation_unit);
 
 		if (newPos == streamline.back() || (clipToDomain && !m_pCosmoGrid->contains(newPos)))
 			break;
@@ -81,6 +58,11 @@ std::vector<glm::vec3> CosmoVolume::getStreamline(glm::vec3 pos, float propagati
 	}
 
 	return streamline;
+}
+
+float CosmoVolume::getRelativeVelocity(glm::vec3 pos)
+{
+	return (m_pCosmoGrid->getVelocityAt(pos) - m_pCosmoGrid->getMinVelocity()) / (m_pCosmoGrid->getMaxVelocity() - m_pCosmoGrid->getMinVelocity());
 }
 
 void CosmoVolume::update()

@@ -28,9 +28,9 @@ public:
 
 	void draw();
 
-	void recalcVolumeBounds();
+	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool reverse = false, bool clipToDomain = true);
 
-	std::vector<glm::vec3> getStreamline(glm::vec3 pos, float propagation_unit, int propagation_max_units, float terminal_speed, bool clipToDomain = true);
+	float getRelativeVelocity(glm::vec3 pos);
 
 	void update();
 

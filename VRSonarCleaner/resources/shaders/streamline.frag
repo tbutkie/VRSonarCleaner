@@ -67,7 +67,7 @@ vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fr
 
 void main()
 {
-	float rate = 1.f; // seconds per segment
+	float rate = 0.5f; // seconds per segment
 	float loopCount;
 	float timeRatio = modf(fGlobalTime / rate, loopCount);
 

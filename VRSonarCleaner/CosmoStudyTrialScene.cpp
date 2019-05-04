@@ -68,14 +68,14 @@ void CosmoStudyTrialScene::update()
 	if (m_pTDM->getPrimaryController())
 	{
 		if (m_pTDM->getPrimaryController()->justPressedMenu())
-			init();
+			;
 	}
 
 	if (m_pTDM->getSecondaryController())
 	{
-		if (m_pTDM->getSecondaryController()->justPressedMenu())
+		if (m_pTDM->getSecondaryController()->isTouchpadClicked() || m_pTDM->getSecondaryController()->justPressedMenu())
 		{
-			
+			generateStreamLines();
 		}
 	}
 
@@ -90,7 +90,7 @@ void CosmoStudyTrialScene::update()
 
 void CosmoStudyTrialScene::draw()
 {
-	m_pCosmoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+	//m_pCosmoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
 	m_pCosmoVolume->drawBBox(0.f);
 
 	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();
@@ -159,19 +159,35 @@ void CosmoStudyTrialScene::generateStreamLines()
 	m_vvvec3RawStreamlines.clear();
 
 	int gridRes = 10;
-	float radius = 0.001f;
+	float radius = 0.0025f;
 	int numSegments = 16;
 
+	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->isTouchpadClicked())
+	{	
+		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(m_pCosmoVolume->convertToRawDomainCoords((m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.05f)))[3]), 1.f, 500, 0.f);
+		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(m_pCosmoVolume->convertToRawDomainCoords((m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.05f)))[3]), 1.f, 500, 0.f, true);
+		std::reverse(rev.begin(), rev.end());
+		rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+	
+		m_vvvec3RawStreamlines.push_back(rev);
+	}
+	else
+	{
+		// 4x4x4 regularly-spaced seeding grid within volume
+		for (int i = 0; i < gridRes; ++i)
+			for (int j = 0; j < gridRes; ++j)
+				for (int k = 0; k < gridRes; ++k)
+				{
+					glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
+					//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
+					std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, 1.f, 50, 0.f);
+					std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, 1.f, 50, 0.f, true);
+					std::reverse(rev.begin(), rev.end());
+					rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
-	// 4x4x4 regularly-spaced seeding grid within volume
-	for (int i = 0; i < gridRes; ++i)
-		for (int j = 0; j < gridRes; ++j)
-			for (int k = 0; k < gridRes; ++k)
-			{
-				glm::vec3 seedPos(glm::vec3(i, j, k) * (1.f/gridRes));
-				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
-				m_vvvec3RawStreamlines.push_back(m_pCosmoVolume->getStreamline(seedPos, 1.f, 100, 0.f));
-			}
+					m_vvvec3RawStreamlines.push_back(rev);
+				}
+	}
 
 
 	// For each streamline segment
@@ -224,12 +240,14 @@ void CosmoStudyTrialScene::generateStreamLines()
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
 			xform[3] = glm::vec4(sl[i], 1.f);
 
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(sl[i]));
+
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
 				PrimVert pv;
 				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius, 1.f));
 				pv.n = glm::normalize(pv.p - sl[i]);
-				pv.c = glm::vec4(1.f);
+				pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
 				pv.t = glm::vec2(j / (circleVerts.size() - 1), i);
 
 				GLuint thisInd(verts.size());
@@ -260,14 +278,17 @@ void CosmoStudyTrialScene::generateStreamLines()
 		{
 			PrimVert pv;
 			pv.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
-			pv.c = glm::vec4(1.f);
-			pv.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
+			pv.t = glm::vec2(0.5f, 0.5f);
 
 			// base vertex
 			int baseVert = verts.size();
 
 			// center vertex
 			pv.p = q == frontCap ? sl.front() : sl.back();
+			
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pv.p));
+			pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
+			
 			verts.push_back(pv);
 			haloverts.push_back(pv);
 
@@ -337,8 +358,8 @@ void CosmoStudyTrialScene::generateStreamLines()
 		m_rs.shaderName = "streamline";
 		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f);
-		m_rs.specularColor = glm::vec4(0.f);
-		m_rs.specularExponent = 1.f;
+		m_rs.specularColor = glm::vec4(1.f);
+		m_rs.specularExponent = 32.f;
 		m_rs.hasTransparency = true;
 	}
 

@@ -19,7 +19,10 @@ class CosmoGrid : public Dataset
 		void init();
 		
 		glm::vec3 getUVWat(glm::vec3 pos);
+
 		float getVelocityAt(glm::vec3 pos);
+		float getMinVelocity();
+		float getMaxVelocity();
 
 		bool contains(glm::vec3 pos);
 
@@ -43,6 +46,7 @@ class CosmoGrid : public Dataset
 		
 public:
 		void setPointUVWValue(int x, int y, int z, float u, float v, float w);
+		void setPointValue(int x, int y, int z, float **arr, float val);
 		int gridIndex(int xInd, int yInd, int zInd);
 		float trilinear(float** arr, glm::vec3 pos);
 
@@ -55,16 +59,18 @@ public:
 
 		int m_nGridSize2d, m_nGridSize3d;
 		int m_nXYZPoints, m_nXYPoints;
-	
-		float m_fMinVelocity, m_fMaxVelocity;
 
 		float* m_arrfUValues;
 		float* m_arrfVValues;
 		float* m_arrfWValues;
-		float* m_arrfVelocityValues;
+		float* m_arrfVelocityValues;	
+		float m_fMinVelocity, m_fMaxVelocity, m_fAvgVelocity;
 		float* m_arrDensityValues;
+		float m_fMinDensity, m_fMaxDensity, m_fAvgDensity;
 		float* m_arrH2IIDensityValues;
+		float m_fMinH2IIDensity, m_fMaxH2IIDensity, m_fAvgH2IIDensity;
 		float* m_arrTemperatureValues;
+		float m_fMinTemperature, m_fMaxTemperature, m_fAvgTemperature;
 
 		char m_strName[512];
 };
