@@ -502,5 +502,8 @@
     <None Include="resources\shaders\streamline.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\streamline.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

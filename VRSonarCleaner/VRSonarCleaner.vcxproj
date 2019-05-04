@@ -312,6 +312,7 @@
     <None Include="resources\shaders\skybox.frag" />
     <None Include="resources\shaders\skybox.vert" />
     <None Include="resources\shaders\streamline.frag" />
+    <None Include="resources\shaders\streamline.vert" />
     <None Include="resources\shaders\text.frag" />
     <None Include="resources\shaders\text.vert" />
     <None Include="resources\shaders\vrwindow.vert" />

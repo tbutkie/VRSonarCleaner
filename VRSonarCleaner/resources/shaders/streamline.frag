@@ -88,7 +88,7 @@ void main()
 	surfaceDiffColor.rgb *= mix(vec3(0.f), vec3(1.f), ratioAlongSegment);
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
-		surfaceDiffColor = vec4(1.f, 1.f, 1.f, 1.f);
+		surfaceDiffColor = v4Color * diffColor;
 
 	if (surfaceDiffColor.a == 0.f)
 	    discard;

@@ -164,12 +164,19 @@ void CosmoStudyTrialScene::generateStreamLines()
 
 	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->isTouchpadClicked())
 	{	
-		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(m_pCosmoVolume->convertToRawDomainCoords((m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.05f)))[3]), 1.f, 500, 0.f);
-		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(m_pCosmoVolume->convertToRawDomainCoords((m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.05f)))[3]), 1.f, 500, 0.f, true);
-		std::reverse(rev.begin(), rev.end());
-		rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
-	
-		m_vvvec3RawStreamlines.push_back(rev);
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				glm::dvec3 pos = m_pCosmoVolume->convertToRawDomainCoords((m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.025f * j, 0.f, -0.025f * i)))[3]);
+				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(pos, 0.1f, 100, 0.f);
+				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(pos, 0.1f, 100, 0.f, true);
+				std::reverse(rev.begin(), rev.end());
+				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+
+				m_vvvec3RawStreamlines.push_back(rev);
+			}
+		}
 	}
 	else
 	{
@@ -180,8 +187,8 @@ void CosmoStudyTrialScene::generateStreamLines()
 				{
 					glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
 					//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
-					std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, 1.f, 50, 0.f);
-					std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, 1.f, 50, 0.f, true);
+					std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, 2.f, 100, 0.f);
+					std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, 2.f, 100, 0.f, true);
 					std::reverse(rev.begin(), rev.end());
 					rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
@@ -278,7 +285,7 @@ void CosmoStudyTrialScene::generateStreamLines()
 		{
 			PrimVert pv;
 			pv.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
-			pv.t = glm::vec2(0.5f, 0.5f);
+			pv.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
 
 			// base vertex
 			int baseVert = verts.size();
