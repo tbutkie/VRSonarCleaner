@@ -119,30 +119,23 @@ void CosmoStudyTrialScene::draw()
 	}
 
 	if (m_pTDM->getSecondaryController())
-	{
-		// CP Count Label
-		glm::mat4 statusTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+	{		
+		glm::mat4 touchButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getSecondaryController()->getIndex(), m_pTDM->getDeviceComponentID(m_pTDM->getSecondaryController()->getIndex(), "trackpad"));
+		glm::mat4 touchpadTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.01f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+		
+		std::stringstream ss;
+
+		ss << "SPACE" << std::endl << "NOODLES";
 
 		Renderer::getInstance().drawText(
-			std::to_string(m_vvec3Zeros.size()),
-			glm::vec4(0.8f, 0.2f, 0.8f, 1.f),
-			statusTextAnchorTrans[3],
-			glm::quat(statusTextAnchorTrans),
+			ss.str(),
+			m_pTDM->getSecondaryController()->isTouchpadClicked() ? glm::vec4(0.8f, 0.2f, 0.8f, 1.f) : glm::vec4(1.f),
+			touchpadTextAnchorTrans[3],
+			glm::quat(touchpadTextAnchorTrans),
 			0.02f,
 			Renderer::TextSizeDim::HEIGHT,
 			Renderer::TextAlignment::CENTER,
-			Renderer::TextAnchor::CENTER_BOTTOM
-		);
-
-		Renderer::getInstance().drawText(
-			std::string("Critical Points"),
-			glm::vec4(0.7f, 0.7f, 0.7f, 1.f),
-			statusTextAnchorTrans[3],
-			glm::quat(statusTextAnchorTrans),
-			0.0075f,
-			Renderer::TextSizeDim::HEIGHT,
-			Renderer::TextAlignment::CENTER,
-			Renderer::TextAnchor::CENTER_TOP
+			Renderer::TextAnchor::CENTER_MIDDLE
 		);
 	}
 
