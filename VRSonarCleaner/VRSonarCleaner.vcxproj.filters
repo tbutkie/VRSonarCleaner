@@ -246,6 +246,9 @@
     <ClCompile Include="CosmoGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HairyCosmoProbe.cpp">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -451,6 +454,9 @@
     </ClInclude>
     <ClInclude Include="CosmoGrid.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HairyCosmoProbe.h">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
