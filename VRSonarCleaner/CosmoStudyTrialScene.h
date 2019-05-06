@@ -8,6 +8,12 @@
 #include "Renderer.h"
 #include <random>
 
+#define STUDYPARAM_DECIMAL	1 << 0
+#define STUDYPARAM_POSNEG	1 << 1
+#define STUDYPARAM_ALPHA	1 << 2
+#define STUDYPARAM_NUMERIC	1 << 3
+#define STUDYPARAM_IP		1 << 4
+
 class CosmoStudyTrialScene :
 	public Scene
 {
@@ -28,7 +34,7 @@ private:
 	CosmoVolume* m_pCosmoVolume;
 
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
-	std::vector<std::vector<glm::vec3>> m_vvvec3TransformedStreamlines;
+	std::vector<glm::vec3> m_vvec3StreamlineSeedsDomain;
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
@@ -41,7 +47,9 @@ private:
 	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
 
 private:
-	void generateStreamLines();
+	void sampleCuttingPlane(bool reseed);
+	void sampleVolume(unsigned int gridRes = 10u);
+	void buildStreamTubes();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 
 	std::mt19937 m_RNG; // Mersenne Twister
@@ -61,10 +69,21 @@ private:
 	glm::vec3 m_vec3PlacedFrameDomain_x0y1;
 	glm::vec3 m_vec3PlacedFrameDomain_x1y0;
 	glm::vec3 m_vec3PlacedFrameDomain_x1y1;
+	glm::mat4 m_mat4PlacedFrameWorldPose;
 
 	glm::vec3 m_vec3ActiveFrameWorld_x0y0;
 	glm::vec3 m_vec3ActiveFrameWorld_x0y1;
 	glm::vec3 m_vec3ActiveFrameWorld_x1y0;
 	glm::vec3 m_vec3ActiveFrameWorld_x1y1;
+
+
+	struct StudyParam {
+		std::string desc;
+		std::string buf;
+		uint16_t format;
+	};
+
+	std::vector<StudyParam> m_vParams;
+	StudyParam* m_pEditParam;
 };
 

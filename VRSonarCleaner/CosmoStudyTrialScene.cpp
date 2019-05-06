@@ -25,9 +25,18 @@ CosmoStudyTrialScene::CosmoStudyTrialScene(TrackedDeviceManager* pTDM)
 	, m_fRK4StepSize(0.1f)
 	, m_fRK4StopVelocity(0.f)
 	, m_uiRK4MaxPropagation_OneWay(25u)
+	, m_pEditParam(NULL)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
+	
+	m_vParams.push_back({ "RK4 Step Size" , std::to_string(m_fRK4StepSize), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "RK4 Max Steps" , std::to_string(m_uiRK4MaxPropagation_OneWay), STUDYPARAM_NUMERIC });
+	m_vParams.push_back({ "RK4 End Velocity" , std::to_string(m_fRK4StopVelocity), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Cutting Plane Seeding Resolution" , std::to_string(m_uiCuttingPlaneGridRes), STUDYPARAM_NUMERIC });
+	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 }
 
 
@@ -42,7 +51,8 @@ void CosmoStudyTrialScene::init()
 	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
 	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
 
-	generateStreamLines();
+	sampleVolume();
+	buildStreamTubes();
 
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pCosmoVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pCosmoVolume));
@@ -50,33 +60,175 @@ void CosmoStudyTrialScene::init()
 
 void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
 {
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_r)
-		init();
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
+	{
+		if (m_pEditParam)
+		{
+			if (ev.key.keysym.sym == SDLK_BACKSPACE && m_pEditParam->buf.length() > 0)
+				m_pEditParam->buf.pop_back();
 
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_h)
-		m_bShowHalos = !m_bShowHalos;
+			if (m_pEditParam->format & STUDYPARAM_NUMERIC)
+			{
+				if (ev.key.keysym.sym >= SDLK_0 && ev.key.keysym.sym <= SDLK_9)
+					m_pEditParam->buf += std::to_string(ev.key.keysym.sym - SDLK_0);
+			}
 
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && ev.key.keysym.sym == SDLK_s)
-		Renderer::getInstance().toggleSkybox();
+			if (m_pEditParam->format & STUDYPARAM_ALPHA)
+			{
+				if (ev.key.keysym.sym >= SDLK_a && ev.key.keysym.sym <= SDLK_z)
+					m_pEditParam->buf += SDL_GetKeyName(ev.key.keysym.sym);
+			}
+
+			if (m_pEditParam->format & STUDYPARAM_POSNEG)
+			{
+				if (ev.key.keysym.sym == SDLK_MINUS)
+				{
+					if (m_pEditParam->buf[0] == '-')
+						m_pEditParam->buf.erase(0, 1);
+					else
+						m_pEditParam->buf.insert(0, 1, '-');
+				}
+			}
+
+			if (m_pEditParam->format & STUDYPARAM_DECIMAL)
+			{
+				if (ev.key.keysym.sym == SDLK_PERIOD)
+				{
+					auto decimalCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), '.');
+
+					if (decimalCount == 0 || ((m_pEditParam->format & STUDYPARAM_IP) && decimalCount < 3))
+						m_pEditParam->buf += ".";
+				}
+			}
+
+
+			if (ev.key.keysym.sym == SDLK_RETURN && m_pEditParam->buf.length() > 0)
+			{
+				Renderer::getInstance().showMessage(m_pEditParam->desc + " set to " + m_pEditParam->buf);
+				bool cuttingPlaneReseed = false;
+
+				if (m_pEditParam->desc.compare("RK4 Step Size") == 0)
+				{
+					m_fRK4StepSize = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("RK4 Max Steps") == 0)
+				{
+					m_uiRK4MaxPropagation_OneWay = std::stoi(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("RK4 End Velocity") == 0)
+				{
+					m_fRK4StopVelocity = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Cutting Plane Seeding Resolution") == 0)
+				{
+					m_uiCuttingPlaneGridRes = std::stoi(m_pEditParam->buf); 
+					cuttingPlaneReseed = true;
+				}
+
+				if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
+				{
+					m_fCuttingPlaneWidth = std::stof(m_pEditParam->buf);
+					cuttingPlaneReseed = true;
+				}
+
+				if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
+				{
+					m_fCuttingPlaneHeight = std::stof(m_pEditParam->buf);
+					cuttingPlaneReseed = true;
+				}
+
+				if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
+				{
+					m_fTubeRadius = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_bCuttingPlaneSet)
+					sampleCuttingPlane(cuttingPlaneReseed);
+				else if (m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->isTouchpadClicked())
+					sampleVolume();
+
+				buildStreamTubes();
+
+				m_pEditParam = NULL;
+			}
+		}
+		else
+		{
+			if (ev.key.keysym.sym == SDLK_F1)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("RK4 Step Size") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F2)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("RK4 Max Steps") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F3)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("RK4 End Velocity") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F4)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Cutting Plane Seeding Resolution") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F5)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Cutting Plane Width") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F6)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Cutting Plane Height") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F7)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Streamtube Radius") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_h)
+			{
+				m_bShowHalos = !m_bShowHalos;
+				Renderer::getInstance().showMessage("Illustrative Haloing set to " + std::to_string(m_bShowHalos));
+			}
+
+			if (ev.key.keysym.sym == SDLK_j)
+			{
+				m_bCuttingPlaneJitter = !m_bCuttingPlaneJitter;
+				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_bCuttingPlaneJitter));
+			}
+
+			if (ev.key.keysym.sym == SDLK_s)
+			{
+				Renderer::getInstance().toggleSkybox();
+			}
+		}
+	}
 }
 
 void CosmoStudyTrialScene::update()
 {
 	m_pCosmoVolume->update();
-
-	//{
-	//	m_vvvec3TransformedStreamlines.clear();
-	//
-	//	for (auto &sl : m_vvvec3RawStreamlines)
-	//	{
-	//		std::vector<glm::vec3> tempSL;
-	//
-	//		for (auto &pt : sl)
-	//			tempSL.push_back(m_pVFG->convertToWorldCoords(pt));
-	//
-	//		m_vvvec3TransformedStreamlines.push_back(tempSL);
-	//	}
-	//}
 
 	if (m_pTDM->getPrimaryController())
 	{
@@ -94,20 +246,29 @@ void CosmoStudyTrialScene::update()
 		m_vec3ActiveFrameWorld_x1y0 = probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth;
 		m_vec3ActiveFrameWorld_x1y1 = probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[2]) * m_fCuttingPlaneHeight;
 
-		if (m_pTDM->getSecondaryController()->isTouchpadClicked() || m_pTDM->getSecondaryController()->justPressedMenu())
+		m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y0);
+		m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y1);
+		m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y0);
+		m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y1);
+		m_mat4PlacedFrameWorldPose = probeMat;
+
+		if (m_pTDM->getSecondaryController()->isTouchpadClicked())
 		{
 			m_bCuttingPlaneSet = false;
-			generateStreamLines();
+			sampleCuttingPlane(true);
+			buildStreamTubes();
 		}
 
 		if (m_pTDM->getSecondaryController()->justUnpressedTouchpad())
 		{
 			m_bCuttingPlaneSet = true;
+		}
 
-			m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y0);
-			m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y1);
-			m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y0);
-			m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y1);
+		if (m_pTDM->getSecondaryController()->justPressedMenu())
+		{
+			m_bCuttingPlaneSet = false;
+			sampleVolume();
+			buildStreamTubes();
 		}
 	}
 
@@ -127,27 +288,25 @@ void CosmoStudyTrialScene::draw()
 
 	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();
 	
+	if (m_pEditParam)
+	{
+		Renderer::getInstance().drawUIText(
+			m_pEditParam->desc + ": " + m_pEditParam->buf + "_",
+			glm::vec4(1.f),
+			glm::vec3(0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().y / 50.f,
+			Renderer::HEIGHT,
+			Renderer::LEFT,
+			Renderer::BOTTOM_LEFT
+		);
+	}
+
 	if (m_pTDM->getPrimaryController())
 	{
 		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getPrimaryController()->getIndex(), m_pTDM->getPrimaryController()->getComponentID(vr::k_EButton_ApplicationMenu));
 		glm::mat4 menuButtonTextAnchorTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.025f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-
-		Renderer::getInstance().drawText(
-			"Load Random\nFlowGrid",
-			glm::vec4(1.f),
-			menuButtonTextAnchorTrans[3],
-			glm::quat(menuButtonTextAnchorTrans),
-			0.015f,
-			Renderer::TextSizeDim::HEIGHT,
-			Renderer::TextAlignment::CENTER,
-			Renderer::TextAnchor::CENTER_LEFT
-		);
-		Renderer::getInstance().drawDirectedPrimitive("cylinder",
-			menuButtonTextAnchorTrans[3],
-			menuButtonPose[3],
-			0.001f,
-			glm::vec4(1.f, 1.f, 1.f, 0.75f)
-		);
+				
 	}
 
 	if (m_pTDM->getSecondaryController())
@@ -197,13 +356,27 @@ void CosmoStudyTrialScene::draw()
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
 }
 
-void CosmoStudyTrialScene::generateStreamLines()
+void CosmoStudyTrialScene::sampleCuttingPlane(bool reseed)
 {
 	m_vvvec3RawStreamlines.clear();
 
-	if (m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->isTouchpadClicked())
+	if (!reseed)
 	{
-		glm::mat4 probeMat = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f) * 0.1f);
+		for (auto &seed : m_vvec3StreamlineSeedsDomain)
+		{
+			std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+			std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+			std::reverse(rev.begin(), rev.end());
+			rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+
+			m_vvvec3RawStreamlines.push_back(rev);
+		}
+	}
+	else
+	{
+		m_vvec3StreamlineSeedsDomain.clear();
+
+		glm::mat4 probeMat = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f) * 0.1f);
 		glm::vec3 probePos = probeMat[3];
 
 		float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
@@ -226,29 +399,37 @@ void CosmoStudyTrialScene::generateStreamLines()
 				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
 				m_vvvec3RawStreamlines.push_back(rev);
+
+				m_vvec3StreamlineSeedsDomain.push_back(domainPos);
 			}
 		}
 	}
-	else
-	{
-		int gridRes = 10;
-		// 4x4x4 regularly-spaced seeding grid within volume
-		for (int i = 0; i < gridRes; ++i)
-			for (int j = 0; j < gridRes; ++j)
-				for (int k = 0; k < gridRes; ++k)
-				{
-					glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
-					//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
-					std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-					std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
-					std::reverse(rev.begin(), rev.end());
-					rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+}
 
-					m_vvvec3RawStreamlines.push_back(rev);
-				}
-	}
+void CosmoStudyTrialScene::sampleVolume(unsigned int gridRes)
+{
+	m_vvvec3RawStreamlines.clear();
+	m_vvec3StreamlineSeedsDomain.clear();
 
+	for (int i = 0; i < gridRes; ++i)
+		for (int j = 0; j < gridRes; ++j)
+			for (int k = 0; k < gridRes; ++k)
+			{
+				glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
+				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
+				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+				std::reverse(rev.begin(), rev.end());
+				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
+				m_vvvec3RawStreamlines.push_back(rev);
+
+				m_vvec3StreamlineSeedsDomain.push_back(seedPos);
+			}
+}
+
+void CosmoStudyTrialScene::buildStreamTubes()
+{
 	// For each streamline segment
 	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
 	// the u & v axes are unit vectors scaled to the radius of the tube
@@ -292,7 +473,7 @@ void CosmoStudyTrialScene::generateStreamLines()
 		ribOrientations.push_back(getSegmentOrientationMatrixNormalized(sl[sl.size() - 1] - sl[sl.size() - 2]));
 
 		assert(ribOrientations.size() == sl.size());
-		
+
 		// Make the shaft of the streamtube
 		for (size_t i = 0; i < ribOrientations.size(); ++i)
 		{
@@ -345,11 +526,11 @@ void CosmoStudyTrialScene::generateStreamLines()
 
 			// center vertex
 			pv.p = q == frontCap ? sl.front() : sl.back();
-			
+
 			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pv.p));
 			//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
 			pv.c = glm::mix(glm::vec4(0.f, 0.f, 0.5f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), vel);
-			
+
 			verts.push_back(pv);
 			haloverts.push_back(pv);
 
@@ -392,26 +573,26 @@ void CosmoStudyTrialScene::generateStreamLines()
 	if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2*3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
 		glBindVertexArray(this->m_glVAO);
-			// Load data into vertex buffers
-			glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
 
-			// Set the vertex attribute pointers
-			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rs.VAO = m_glVAO;
@@ -428,19 +609,19 @@ void CosmoStudyTrialScene::generateStreamLines()
 	{
 		glGenVertexArrays(1, &m_glHaloVAO);
 		glBindVertexArray(this->m_glHaloVAO);
-			// Load data into vertex buffers
-			glBindBuffer(GL_ARRAY_BUFFER, this->m_glHaloVBO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glHaloVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
 
-			// Set the vertex attribute pointers
-			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rsHalo.VAO = m_glHaloVAO;
@@ -460,7 +641,6 @@ void CosmoStudyTrialScene::generateStreamLines()
 
 	m_rs.vertCount = inds.size();
 	m_rsHalo.vertCount = inds.size();
-
 }
 
 glm::quat CosmoStudyTrialScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)

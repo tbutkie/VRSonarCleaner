@@ -218,7 +218,6 @@ bool Engine::handleInput()
 
 				if (sdlEvent.key.keysym.sym == SDLK_j)
 				{
-					Renderer::getInstance().showMessage("This is a test!");
 				}
 				
 				if (sdlEvent.key.keysym.sym == SDLK_f)
