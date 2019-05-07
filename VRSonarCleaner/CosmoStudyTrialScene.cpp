@@ -26,6 +26,10 @@ CosmoStudyTrialScene::CosmoStudyTrialScene(TrackedDeviceManager* pTDM)
 	, m_fRK4StopVelocity(0.f)
 	, m_uiRK4MaxPropagation_OneWay(25u)
 	, m_pEditParam(NULL)
+	, m_fHaloRadiusFactor(2.f)
+	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
+	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
+	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
@@ -37,6 +41,11 @@ CosmoStudyTrialScene::CosmoStudyTrialScene(TrackedDeviceManager* pTDM)
 	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Min Velocity Color" , colorString(m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Max Velocity Color" , colorString(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Halo Color" , colorString(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Clear Color" , colorString(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }
 
 
@@ -96,8 +105,33 @@ void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
 				{
 					auto decimalCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), '.');
 
-					if (decimalCount == 0 || ((m_pEditParam->format & STUDYPARAM_IP) && decimalCount < 3))
+					if (decimalCount == 0 ||
+						((m_pEditParam->format & STUDYPARAM_IP) && decimalCount < 3) || 
+						((m_pEditParam->format & STUDYPARAM_RGB) && decimalCount < 3) ||
+						((m_pEditParam->format & STUDYPARAM_RGBA) && decimalCount < 4))
 						m_pEditParam->buf += ".";
+				}
+			}
+
+			if (m_pEditParam->format & STUDYPARAM_RGB)
+			{
+				if (ev.key.keysym.sym == SDLK_COMMA)
+				{
+					auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
+
+					if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGB) && commaCount < 2))
+						m_pEditParam->buf += ",";
+				}
+			}
+
+			if (m_pEditParam->format & STUDYPARAM_RGBA)
+			{
+				if (ev.key.keysym.sym == SDLK_COMMA)
+				{
+					auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
+
+					if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGBA) && commaCount < 3))
+						m_pEditParam->buf += ",";
 				}
 			}
 
@@ -143,6 +177,32 @@ void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
 				if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
 				{
 					m_fTubeRadius = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
+				{
+					m_vec4VelColorMin = parseRGBText(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
+				{
+					m_vec4VelColorMax = parseRGBText(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
+				{
+					m_fHaloRadiusFactor = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Halo Color") == 0)
+				{
+					m_vec4HaloColor = parseRGBText(m_pEditParam->buf);
+					m_rsHalo.diffuseColor = m_vec4HaloColor;
+				}
+
+				if (m_pEditParam->desc.compare("Clear Color") == 0)
+				{
+					Renderer::getInstance().setClearColor(parseRGBText(m_pEditParam->buf));
 				}
 
 				if (m_bCuttingPlaneSet)
@@ -206,6 +266,41 @@ void CosmoStudyTrialScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
+			if (ev.key.keysym.sym == SDLK_F8)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Min Velocity Color") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F9)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Max Velocity Color") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F10)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Halo Radius Factor") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F11)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Halo Color") == 0;
+				}));
+			}
+
+			if (ev.key.keysym.sym == SDLK_F12)
+			{
+				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+					return p.desc.compare("Clear Color") == 0;
+				}));
+			}
+
 			if (ev.key.keysym.sym == SDLK_h)
 			{
 				m_bShowHalos = !m_bShowHalos;
@@ -246,17 +341,17 @@ void CosmoStudyTrialScene::update()
 		m_vec3ActiveFrameWorld_x1y0 = probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth;
 		m_vec3ActiveFrameWorld_x1y1 = probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[2]) * m_fCuttingPlaneHeight;
 
-		m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y0);
-		m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y1);
-		m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y0);
-		m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y1);
-		m_mat4PlacedFrameWorldPose = probeMat;
-
 		if (m_pTDM->getSecondaryController()->isTouchpadClicked())
 		{
 			m_bCuttingPlaneSet = false;
 			sampleCuttingPlane(true);
 			buildStreamTubes();
+
+			m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y0);
+			m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x0y1);
+			m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y0);
+			m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(m_vec3ActiveFrameWorld_x1y1);
+			m_mat4PlacedFrameWorldPose = probeMat;
 		}
 
 		if (m_pTDM->getSecondaryController()->justUnpressedTouchpad())
@@ -316,14 +411,14 @@ void CosmoStudyTrialScene::draw()
 		
 		std::stringstream ss;
 
-		ss << "SPACE" << std::endl << "NOODLES";
+		ss << "SAMPLE" << std::endl << "CUTTING" << std::endl << "PLANE";
 
 		Renderer::getInstance().drawText(
 			ss.str(),
 			m_pTDM->getSecondaryController()->isTouchpadClicked() ? glm::vec4(0.8f, 0.2f, 0.8f, 1.f) : glm::vec4(1.f),
 			touchpadTextAnchorTrans[3],
 			glm::quat(touchpadTextAnchorTrans),
-			0.015f,
+			0.02f,
 			Renderer::TextSizeDim::HEIGHT,
 			Renderer::TextAlignment::CENTER,
 			Renderer::TextAnchor::CENTER_MIDDLE
@@ -484,19 +579,22 @@ void CosmoStudyTrialScene::buildStreamTubes()
 
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
-				PrimVert pv;
-				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius, 1.f));
-				pv.n = glm::normalize(pv.p - sl[i]);
+				PrimVert pvTube, pvHalo;
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius, 1.f));
+				pvTube.n = glm::normalize(pvTube.p - sl[i]);
 				//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
-				pv.c = glm::mix(glm::vec4(0.f, 0.f, 0.5f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), vel);
-				pv.t = glm::vec2(j / (circleVerts.size() - 1), i);
+				pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
+				pvTube.t = glm::vec2(j / (circleVerts.size() - 1), i);
 
 				GLuint thisInd(verts.size());
 
-				verts.push_back(pv);
+				verts.push_back(pvTube);
 
-				pv.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * 2.f, 1.f));
-				haloverts.push_back(pv);
+				pvHalo = pvTube;
+
+				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * m_fHaloRadiusFactor, 1.f));
+				pvHalo.c = glm::vec4(1.f);
+				haloverts.push_back(pvHalo);
 
 				if (i > 0 && j > 0)
 				{
@@ -517,36 +615,39 @@ void CosmoStudyTrialScene::buildStreamTubes()
 
 		for (auto &q : { frontCap, endCap })
 		{
-			PrimVert pv;
-			pv.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
-			pv.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
+			PrimVert pvTube, pvHalo;
+			pvTube.n = glm::vec3(glm::rotate(q, glm::vec3(0.f, 0.f, -1.f)));
+			pvTube.t = glm::vec2(0.5f, q == frontCap ? 0.f : 1.f * sl.size());
 
 			// base vertex
 			int baseVert = verts.size();
 
 			// center vertex
-			pv.p = q == frontCap ? sl.front() : sl.back();
+			pvTube.p = q == frontCap ? sl.front() : sl.back();
 
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pv.p));
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pvTube.p));
 			//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
-			pv.c = glm::mix(glm::vec4(0.f, 0.f, 0.5f, 1.f), glm::vec4(1.f, 1.f, 0.f, 1.f), vel);
+			pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 
-			verts.push_back(pv);
-			haloverts.push_back(pv);
+			verts.push_back(pvTube);
+
+			pvHalo = pvTube;
+			pvHalo.c = glm::vec4(1.f);
+			haloverts.push_back(pvHalo);
 
 			glm::mat4 xform(glm::toMat3(q));
-			xform[3] = glm::vec4(pv.p, 1.f);
+			xform[3] = glm::vec4(pvTube.p, 1.f);
 
 			// circle verts (no need for last and first vert to be same)
 			for (int i = 0; i < circleVerts.size(); ++i)
 			{
 				GLuint thisVert = verts.size();
 
-				pv.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius, 1.f));
-				verts.push_back(pv);
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius, 1.f));
+				verts.push_back(pvTube);
 
-				pv.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * 2.f, 1.f));
-				haloverts.push_back(pv);
+				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * m_fHaloRadiusFactor, 1.f));
+				haloverts.push_back(pvHalo);
 
 				if (i > 0)
 				{
@@ -602,7 +703,7 @@ void CosmoStudyTrialScene::buildStreamTubes()
 		m_rs.diffuseColor = glm::vec4(1.f);
 		m_rs.specularColor = glm::vec4(1.f);
 		m_rs.specularExponent = 32.f;
-		m_rs.hasTransparency = false;
+		m_rs.hasTransparency = true;
 	}
 
 	if (!m_glHaloVAO)
@@ -628,7 +729,7 @@ void CosmoStudyTrialScene::buildStreamTubes()
 		m_rsHalo.glPrimitiveType = GL_TRIANGLES;
 		m_rsHalo.shaderName = "flat";
 		m_rsHalo.indexType = GL_UNSIGNED_INT;
-		m_rsHalo.diffuseColor = glm::vec4(0.f, 0.f, 0.f, 1.f);
+		m_rsHalo.diffuseColor = m_vec4HaloColor;
 		m_rsHalo.specularColor = glm::vec4(0.f);
 		m_rsHalo.specularExponent = 0.f;
 		m_rsHalo.hasTransparency = false;
@@ -641,6 +742,29 @@ void CosmoStudyTrialScene::buildStreamTubes()
 
 	m_rs.vertCount = inds.size();
 	m_rsHalo.vertCount = inds.size();
+}
+
+glm::vec4 CosmoStudyTrialScene::parseRGBText(std::string color)
+{
+	std::stringstream ss(color);
+
+	int i = 0;
+	glm::vec4 ret;
+	ret.a = 1.f;
+
+	while (ss.good() && i < 4)
+	{
+		std::string substr;
+		std::getline(ss, substr, ',');
+		ret[i++] = std::stof(substr);
+	}
+
+	return ret;
+}
+
+std::string CosmoStudyTrialScene::colorString(glm::vec4 color)
+{
+	return std::string(std::to_string(color.r) + std::string(",") + std::to_string(color.g) + "," + std::to_string(color.b) + "," + std::to_string(color.a));
 }
 
 glm::quat CosmoStudyTrialScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)

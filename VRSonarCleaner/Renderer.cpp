@@ -75,6 +75,7 @@ Renderer::Renderer()
 	, m_uiFontPointSize(144u)
 	, m_tpStart(std::chrono::high_resolution_clock::now())
 	, m_bShowSkybox(true)
+	, m_vec4ClearColor(glm::vec4(0.15f, 0.15f, 0.18f, 1.f))
 {
 }
 
@@ -206,6 +207,16 @@ bool Renderer::init()
 void Renderer::update()
 {
 	m_Shaders.UpdatePrograms();
+}
+
+glm::vec4 Renderer::getClearColor()
+{
+	return m_vec4ClearColor;
+}
+
+void Renderer::setClearColor(glm::vec4 color)
+{
+	m_vec4ClearColor = color;
 }
 
 void Renderer::addToStaticRenderQueue(RendererSubmission &rs)
@@ -659,7 +670,7 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 	glViewport(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight);
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(0, 0, sceneView3DInfo->m_nRenderWidth, sceneView3DInfo->m_nRenderHeight)));
 
-	glClearColor(0.15f, 0.15f, 0.18f, 1.0f); // nice background color, but not black
+	glClearColor(m_vec4ClearColor.r, m_vec4ClearColor.g, m_vec4ClearColor.b, m_vec4ClearColor.a); // nice background color, but not black
 	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
 	glEnable(GL_MULTISAMPLE);
 

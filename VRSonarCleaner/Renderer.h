@@ -145,6 +145,9 @@ public:
 	bool init();
 	void update();
 
+	glm::vec4 getClearColor();
+	void setClearColor(glm::vec4 color);
+
 	void addToStaticRenderQueue(RendererSubmission &rs);
 	void addToDynamicRenderQueue(RendererSubmission &rs);
 	void clearDynamicRenderQueue();
@@ -306,6 +309,8 @@ private:
 	GLuint m_glPrimitivesVAO, m_glPrimitivesVBO, m_glPrimitivesEBO;
 
 	GLuint m_glFrameUBO;
+
+	glm::vec4 m_vec4ClearColor;
 
 public:
 	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE

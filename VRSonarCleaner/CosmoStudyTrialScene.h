@@ -13,6 +13,8 @@
 #define STUDYPARAM_ALPHA	1 << 2
 #define STUDYPARAM_NUMERIC	1 << 3
 #define STUDYPARAM_IP		1 << 4
+#define STUDYPARAM_RGB		1 << 5
+#define STUDYPARAM_RGBA		1 << 6
 
 class CosmoStudyTrialScene :
 	public Scene
@@ -50,10 +52,15 @@ private:
 	void sampleCuttingPlane(bool reseed);
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
+	glm::vec4 parseRGBText(std::string color);
+	std::string colorString(glm::vec4 color);
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 
 	std::mt19937 m_RNG; // Mersenne Twister
 	std::uniform_real_distribution<float> m_Distribution;
+
+	glm::vec4 m_vec4HaloColor, m_vec4VelColorMin, m_vec4VelColorMax;
+	float m_fHaloRadiusFactor;
 
 	unsigned int m_uiCuttingPlaneGridRes, m_uiNumTubeSegments;
 	float m_fCuttingPlaneWidth, m_fCuttingPlaneHeight;
