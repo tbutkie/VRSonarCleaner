@@ -32,10 +32,11 @@ private:
 	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msDrawTime, m_msRenderTime;
 
 	bool m_bGLInitialized;
-	bool m_bGreatBayModel;
 	bool m_bShowDesktopFrustum;
 	bool m_bDemoMode;
 	bool m_bShowDiagnostics;
+
+	bool m_bUseVR;
 
 	vr::IVRSystem *m_pHMD;
 

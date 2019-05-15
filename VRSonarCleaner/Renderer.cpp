@@ -75,7 +75,10 @@ Renderer::Renderer()
 	, m_uiFontPointSize(144u)
 	, m_tpStart(std::chrono::high_resolution_clock::now())
 	, m_bShowSkybox(true)
+	, m_bStereoWindow(false)
+	, m_bStereoRender(true)
 	, m_vec4ClearColor(glm::vec4(0.15f, 0.15f, 0.18f, 1.f))
+	, m_sviMonoInfo(&m_sviLeftEyeInfo)
 {
 }
 
@@ -88,6 +91,8 @@ void Renderer::shutdown()
 	for (auto fb : { m_pWindowFramebuffer , m_pLeftEyeFramebuffer, m_pRightEyeFramebuffer })
 		if (fb)
 			Renderer::getInstance().destroyFrameBuffer(*fb);
+
+	m_pMonoFramebuffer = NULL;
 
 #if _DEBUG
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
@@ -115,6 +120,8 @@ void Renderer::setStereoRenderSize(glm::ivec2 res)
 		utils::dprintf("Could not create left eye framebuffer!\n");
 	if (!createFrameBuffer(res.x, res.y, *m_pRightEyeFramebuffer))
 		utils::dprintf("Could not create right eye framebuffer!\n");
+
+	m_pMonoFramebuffer = m_pLeftEyeFramebuffer;
 }
 
 bool Renderer::init()
@@ -345,9 +352,19 @@ void Renderer::setWindowTitle(std::string title)
 	SDL_SetWindowTitle(m_pWindow, title.c_str());
 }
 
+Renderer::SceneViewInfo * Renderer::getMonoInfo()
+{
+	return &(*m_sviMonoInfo);
+}
+
 Renderer::SceneViewInfo * Renderer::getLeftEyeInfo()
 {
 	return &m_sviLeftEyeInfo;
+}
+
+Renderer::FramebufferDesc * Renderer::getMonoFrameBuffer()
+{
+	return m_pMonoFramebuffer;
 }
 
 Renderer::FramebufferDesc * Renderer::getLeftEyeFrameBuffer()
@@ -381,6 +398,11 @@ Renderer::Camera* Renderer::getCamera()
 }
 
 glm::ivec2 Renderer::getUIRenderSize()
+{
+	return m_ivec2WindowSize;
+}
+
+glm::ivec2 Renderer::getPresentationWindowSize()
 {
 	return m_ivec2WindowSize;
 }
@@ -892,13 +914,30 @@ void Renderer::render()
 	float secsElapsed = std::chrono::duration<float>(tick - m_tpStart).count();
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, fGlobalTime), sizeof(FrameUniforms::fGlobalTime), &secsElapsed);
 
-	// VR
+	if (m_bStereoRender)
 	{
+		// VR Render
+		// We don't draw the UI layer to the VR left/right eye textures, only to presentation windows on the PC display
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);		
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+	}
+	else
+	{
+		Renderer::getInstance().renderFrame(&(*m_sviMonoInfo), m_pMonoFramebuffer);
 	}
 
-	//DESKTOP
+	if (m_bStereoWindow) //DESKTOP STEREO RENDER
+	{
+		// FOR LEFT EYE
+		// Bind left eye framebuffer render buffer to read/write
+		// Draw UI Layer to left eye render target and resolve to left eye texture
+		// Bind Read Framebuffer to resolved left eye texture
+		// Bind Draw Framebuffer to window/default
+		// Set glDrawBuffer to GL_BACK_LEFT
+		// Render to full-screen quad
+		// Repeat for right eye, setting glDrawBuffer to GL_BACK_RIGHT
+	}
+	else //DESKTOP NON-STEREO
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_pWindowFramebuffer->m_nRenderFramebufferId);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -906,9 +945,9 @@ void Renderer::render()
 		GLint srcX0, srcX1, srcY0, srcY1;
 		GLint dstX0, dstX1, dstY0, dstY1;
 
-		if (m_sviWindowUIInfo.m_nRenderWidth < m_sviLeftEyeInfo.m_nRenderWidth)
+		if (m_sviWindowUIInfo.m_nRenderWidth < m_sviMonoInfo->m_nRenderWidth)
 		{
-			srcX0 = m_sviLeftEyeInfo.m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
+			srcX0 = m_sviMonoInfo->m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
 			srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
 			dstX0 = 0;
 			dstX1 = m_sviWindowUIInfo.m_nRenderWidth;
@@ -916,15 +955,15 @@ void Renderer::render()
 		else
 		{
 			srcX0 = 0;
-			srcX1 = m_sviLeftEyeInfo.m_nRenderWidth;
+			srcX1 = m_sviMonoInfo->m_nRenderWidth;
 
-			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviLeftEyeInfo.m_nRenderWidth / 2;;
-			dstX1 = dstX0 + m_sviLeftEyeInfo.m_nRenderWidth;
+			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviMonoInfo->m_nRenderWidth / 2;;
+			dstX1 = dstX0 + m_sviMonoInfo->m_nRenderWidth;
 		}
 
-		if (m_sviWindowUIInfo.m_nRenderHeight < m_sviLeftEyeInfo.m_nRenderHeight)
+		if (m_sviWindowUIInfo.m_nRenderHeight < m_sviMonoInfo->m_nRenderHeight)
 		{
-			srcY0 = m_sviLeftEyeInfo.m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
+			srcY0 = m_sviMonoInfo->m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
 			srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
 			dstY0 = 0;
 			dstY1 = m_sviWindowUIInfo.m_nRenderHeight;
@@ -932,14 +971,14 @@ void Renderer::render()
 		else
 		{
 			srcY0 = 0;
-			srcY1 = m_sviLeftEyeInfo.m_nRenderHeight;
+			srcY1 = m_sviMonoInfo->m_nRenderHeight;
 
-			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviLeftEyeInfo.m_nRenderHeight / 2;;
-			dstY1 = dstY0 + m_sviLeftEyeInfo.m_nRenderHeight;
+			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviMonoInfo->m_nRenderHeight / 2;;
+			dstY1 = dstY0 + m_sviMonoInfo->m_nRenderHeight;
 		}
 
 		glBlitNamedFramebuffer(
-			m_pLeftEyeFramebuffer->m_nRenderFramebufferId,
+			m_pMonoFramebuffer->m_nRenderFramebufferId,
 			m_pWindowFramebuffer->m_nRenderFramebufferId,
 			srcX0, srcY0, srcX1, srcY1,
 			dstX0, dstY0, dstX1, dstY1,

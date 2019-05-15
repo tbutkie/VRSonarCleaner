@@ -162,7 +162,9 @@ public:
 
 	void setWindowTitle(std::string title);
 	void setWindowToDisplay(int displayIndex);
-	
+
+	SceneViewInfo* getMonoInfo();
+	FramebufferDesc* getMonoFrameBuffer();
 	SceneViewInfo* getLeftEyeInfo();
 	FramebufferDesc* getLeftEyeFrameBuffer();
 	SceneViewInfo* getRightEyeInfo();
@@ -172,6 +174,7 @@ public:
 	Camera* getCamera();
 
 	glm::ivec2 getUIRenderSize();
+	glm::ivec2 getPresentationWindowSize();
 
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, std::string diffuseTextureName, std::string specularTextureName = "white", float specularExponent = 32.f);
 	bool drawPrimitive(std::string primName, glm::mat4 modelTransform, glm::vec4 diffuseColor, glm::vec4 specularColor = glm::vec4(1.f), float specularExponent = 32.f);
@@ -251,6 +254,8 @@ private:
 	};
 
 	bool m_bShowSkybox;
+	bool m_bStereoWindow;
+	bool m_bStereoRender;
 
 	struct Character {
 		GLuint TextureID;   // ID handle of the glyph texture
@@ -275,8 +280,10 @@ private:
 
 	ShaderSet m_Shaders;
 
+	Renderer::SceneViewInfo *m_sviMonoInfo;
 	Renderer::SceneViewInfo m_sviLeftEyeInfo;
 	Renderer::SceneViewInfo m_sviRightEyeInfo;
+	Renderer::FramebufferDesc *m_pMonoFramebuffer;
 	Renderer::FramebufferDesc *m_pLeftEyeFramebuffer;
 	Renderer::FramebufferDesc *m_pRightEyeFramebuffer;
 	
