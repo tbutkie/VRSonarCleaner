@@ -17,9 +17,9 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_fCuttingPlaneWidth(0.5f)
 	, m_fCuttingPlaneHeight(0.5f)
 	, m_uiCuttingPlaneGridRes(30u)
-	, m_fTubeRadius(0.0005f)
+	, m_fTubeRadius(0.005f)
 	, m_uiNumTubeSegments(16u)
-	, m_fRK4StepSize(0.1f)
+	, m_fRK4StepSize(1.f)
 	, m_fRK4StopVelocity(0.f)
 	, m_uiRK4MaxPropagation_OneWay(25u)
 	, m_pEditParam(NULL)
@@ -27,6 +27,8 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
 	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
+	, m_fOscAmpDeg(30.f)
+	, m_fOscTime(5.f)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
@@ -52,13 +54,15 @@ CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
 
 void CosmoStudyTrialDesktopScene::init()
 {
+	m_tpStart = std::chrono::high_resolution_clock::now();
+
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
 	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
 	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
 	
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
-	cam->pos = glm::vec3(1.f, 1.f, 0.f);
+	cam->pos = glm::vec3(0.f, 1.f, -1.f);
 	cam->lookat = m_pCosmoVolume->getPosition();
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
@@ -333,11 +337,30 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 void CosmoStudyTrialDesktopScene::update()
 {
 	m_pCosmoVolume->update();
+	
+	using clock = std::chrono::high_resolution_clock;
+
+	clock::time_point tick = clock::now();
+
+	float elapsedTimeMS = std::chrono::duration<float, std::milli>(tick - m_tpStart).count();
+
+	float oscTimeMS = m_fOscTime * 1000.f;
+
+	float ratio = glm::mod(elapsedTimeMS, oscTimeMS) / oscTimeMS;
+
+	float amount = glm::sin(glm::two_pi<float>() * ratio);
+
+	float rotNow = amount * (m_fOscAmpDeg / 2.f);
+
+	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 0.f, 1.f)));
+	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
+
+	std::cout << elapsedTimeMS << " | " << ratio << " | " << amount << " | " << rotNow << std::endl;
 }
 
 void CosmoStudyTrialDesktopScene::draw()
 {
-	//m_pCosmoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 1.f);
+	m_pCosmoVolume->drawVolumeBacking(glm::inverse(Renderer::getInstance().getMonoInfo()->view), 1.f);
 	m_pCosmoVolume->drawBBox(0.f);
 
 	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();
@@ -627,9 +650,9 @@ void CosmoStudyTrialDesktopScene::buildStreamTubes()
 		m_rs.shaderName = "streamline";
 		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f);
-		m_rs.specularColor = glm::vec4(1.f);
+		m_rs.specularColor = glm::vec4(0.f);
 		m_rs.specularExponent = 32.f;
-		m_rs.hasTransparency = true;
+		m_rs.hasTransparency = false;
 	}
 
 	if (!m_glHaloVAO)

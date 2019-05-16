@@ -6,6 +6,7 @@
 #include "DataLogger.h"
 #include "Renderer.h"
 #include <random>
+#include <chrono>
 
 #define STUDYPARAM_DECIMAL	1 << 0
 #define STUDYPARAM_POSNEG	1 << 1
@@ -53,6 +54,10 @@ private:
 	glm::vec4 parseRGBText(std::string color);
 	std::string colorString(glm::vec4 color);
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
+
+	std::chrono::high_resolution_clock::time_point m_tpStart;
+	float m_fOscAmpDeg;
+	float m_fOscTime;
 
 	std::mt19937 m_RNG; // Mersenne Twister
 	std::uniform_real_distribution<float> m_Distribution;
