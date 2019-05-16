@@ -249,6 +249,9 @@
     <ClCompile Include="HairyCosmoProbe.cpp">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClCompile>
+    <ClCompile Include="CosmoStudyTrialDesktopScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -457,6 +460,9 @@
     </ClInclude>
     <ClInclude Include="HairyCosmoProbe.h">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="CosmoStudyTrialDesktopScene.h">
+      <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -7,6 +7,7 @@
 #include "SonarScene.h"
 #include "StudyTrialScene.h"
 #include "CosmoStudyTrialScene.h"
+#include "CosmoStudyTrialDesktopScene.h"
 #include "MotionCompensationScene.h"
 
 #include "HolodeckBackground.h"
@@ -92,7 +93,7 @@ bool Engine::init()
 	}
 	else
 	{
-		m_pCurrentScene = new CosmoStudyTrialScene(m_pTDM);
+		m_pCurrentScene = new CosmoStudyTrialDesktopScene();
 	}
 
 	m_pCurrentScene->init();
@@ -139,20 +140,20 @@ bool Engine::initVR()
 
 	Renderer::getInstance().setStereoRenderSize(glm::ivec2(renderWidth, renderHeight));
 
-	//Renderer::SceneViewInfo* leftSVI = Renderer::getInstance().getLeftEyeInfo();
-	//Renderer::SceneViewInfo* rightSVI = Renderer::getInstance().getRightEyeInfo();
-	//
-	//leftSVI->m_nRenderWidth = renderWidth;
-	//leftSVI->m_nRenderHeight = renderHeight;
-	//leftSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
-	//leftSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
-	//leftSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
-	//
-	//rightSVI->m_nRenderWidth = renderWidth;
-	//rightSVI->m_nRenderHeight = renderHeight;
-	//rightSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
-	//rightSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
-	//rightSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
+	Renderer::SceneViewInfo* leftSVI = Renderer::getInstance().getLeftEyeInfo();
+	Renderer::SceneViewInfo* rightSVI = Renderer::getInstance().getRightEyeInfo();
+	
+	leftSVI->m_nRenderWidth = renderWidth;
+	leftSVI->m_nRenderHeight = renderHeight;
+	leftSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+	leftSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
+	leftSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
+	
+	rightSVI->m_nRenderWidth = renderWidth;
+	rightSVI->m_nRenderHeight = renderHeight;
+	rightSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+	rightSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
+	rightSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
 
 	return true;
 }
@@ -348,30 +349,48 @@ void Engine::drawScene()
 
 	BehaviorManager::getInstance().draw();
 	
-	m_pTDM->draw();
 
 	if (m_bUseVR)
+	{
+		m_pTDM->draw();
 		InfoBoxManager::getInstance().draw();
+	}
 
 	m_pCurrentScene->draw();
 }
 
 void Engine::render()
 {
-	// Update eye positions using current HMD position
-	Renderer::SceneViewInfo* le = Renderer::getInstance().getLeftEyeInfo();
-	Renderer::SceneViewInfo* re = Renderer::getInstance().getRightEyeInfo();
-	le->view = le->viewTransform * m_pTDM->getWorldToHMDTransform();
-	re->view = re->viewTransform * m_pTDM->getWorldToHMDTransform();
+	glm::vec3 transparencySortViewPos;
 
-	Renderer::getInstance().sortTransparentObjects(glm::vec3(m_pTDM->getHMDToWorldTransform()[3]));
+	if (m_bUseVR)
+	{
+		// Update eye positions using current HMD position
+		glm::mat4 worldToHMD = m_pTDM->getWorldToHMDTransform();
+		Renderer::SceneViewInfo* le = Renderer::getInstance().getLeftEyeInfo();
+		Renderer::SceneViewInfo* re = Renderer::getInstance().getRightEyeInfo();
+		le->view = le->viewTransform * worldToHMD;
+		re->view = re->viewTransform * worldToHMD;
 
+		transparencySortViewPos = glm::vec3(m_pTDM->getHMDToWorldTransform()[3]);
+	}
+	else
+	{
+		Renderer::Camera* cam = Renderer::getInstance().getCamera();
+		
+		transparencySortViewPos = glm::vec3(cam->pos);
+	}
+
+	Renderer::getInstance().sortTransparentObjects(transparencySortViewPos);
 	Renderer::getInstance().render();
 
-	vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getLeftEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-	vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getRightEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-	vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-	vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+	if (m_bUseVR)
+	{
+		vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getLeftEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getRightEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+	}
 
 	Renderer::getInstance().swapAndClear();
 }

@@ -142,7 +142,7 @@ public:
 
 	void setStereoRenderSize(glm::ivec2 res);
 	
-	bool init();
+	bool init(bool stereoRender = false, bool stereoContext = false);
 	void update();
 
 	glm::vec4 getClearColor();
@@ -254,8 +254,8 @@ private:
 	};
 
 	bool m_bShowSkybox;
-	bool m_bStereoWindow;
-	bool m_bStereoRender;
+	bool m_bStereoWindow; // render to a quad-buffered OpenGL context
+	bool m_bStereoRender; // render two views per loop
 
 	struct Character {
 		GLuint TextureID;   // ID handle of the glyph texture

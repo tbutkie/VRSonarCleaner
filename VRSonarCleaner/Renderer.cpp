@@ -124,8 +124,11 @@ void Renderer::setStereoRenderSize(glm::ivec2 res)
 	m_pMonoFramebuffer = m_pLeftEyeFramebuffer;
 }
 
-bool Renderer::init()
+bool Renderer::init(bool stereoRender, bool stereoContext)
 {
+	m_bStereoRender = stereoRender;
+	m_bStereoWindow = stereoContext;
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
 		utils::dprintf("%s - SDL could not initialize! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
@@ -148,15 +151,23 @@ bool Renderer::init()
 		}
 	}
 
-	m_pWindow = createFullscreenWindow(1);
+	m_pWindow = createFullscreenWindow(1, stereoContext);
 
 	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
 	
 	m_pGLContext = SDL_GL_CreateContext(m_pWindow);
 
-	//int val;
-	//SDL_GL_GetAttribute(SDL_GL_STEREO, &val);
-	//SDL_Log("SDL_GL_STEREO: %i", val);
+	if (stereoContext)
+	{
+		int val;
+		SDL_GL_GetAttribute(SDL_GL_STEREO, &val);
+		SDL_Log("SDL_GL_STEREO: %i", val);
+		if (!val)
+		{
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Stereo OpenGL Context Failure", "A stereoscopic OpenGL context was requested, but could not be made.", NULL);
+			return false;
+		}
+	}
 
 	if (m_pGLContext == NULL)
 	{
