@@ -62,8 +62,8 @@ void CosmoStudyTrialDesktopScene::init()
 	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
 	
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
-	cam->pos = glm::vec3(0.f, 1.f, -1.f);
-	cam->lookat = m_pCosmoVolume->getPosition();
+	cam->pos = glm::vec3(0.f, 0.f, 0.57f);
+	cam->lookat = glm::vec3(0.f);
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
 
@@ -78,16 +78,14 @@ void CosmoStudyTrialDesktopScene::init()
 
 
 
-	glm::vec3 COP = glm::vec3(0.f, 1.f, 57.f);
-	glm::quat COPRot = glm::inverse(glm::lookAt(COP, cam->lookat, glm::vec3(0.f, 1.f, 0.f)));
-	glm::vec3 COPRight = glm::normalize(glm::mat3_cast(COPRot)[0]);
-	glm::vec3 COPOffset = COPRight * 6.7f * 0.5f;
+	glm::vec3 COP = cam->pos;
+	glm::vec3 COPOffset = glm::vec3(1.f, 0.f, 0.f) * 0.067f * 0.5f;
 
 	// Update eye positions using current head position
 	glm::vec3 leftEyePos = COP - COPOffset;
 	glm::vec3 rightEyePos = COP + COPOffset;
 
-	glm::vec3 g_vec3ScreenPos(0.f, 0.5f, 0.f);
+	glm::vec3 g_vec3ScreenPos(0.f, 0.f, 0.f);
 	glm::vec3 g_vec3ScreenNormal(0.f, 0.f, 1.f);
 	glm::vec3 g_vec3ScreenUp(0.f, 1.f, 0.f);
 
@@ -101,7 +99,7 @@ void CosmoStudyTrialDesktopScene::init()
 	Renderer::SceneViewInfo* sviLE = Renderer::getInstance().getLeftEyeInfo();
 	Renderer::SceneViewInfo* sviRE = Renderer::getInstance().getRightEyeInfo();
 	sviLE->nearClip = 0.01f;
-	sviLE->farClip = 1000.f;
+	sviLE->farClip = 10.f;
 	sviLE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
 	sviLE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 	sviLE->view = glm::translate(glm::mat4(), -leftEyePos);
@@ -109,7 +107,7 @@ void CosmoStudyTrialDesktopScene::init()
 	sviLE->viewport = glm::ivec4(0, 0, sviLE->m_nRenderWidth, sviLE->m_nRenderHeight);
 
 	sviRE->nearClip = 0.01f;
-	sviRE->farClip = 1000.f;
+	sviRE->farClip = 10.f;
 	sviRE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
 	sviRE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 	sviRE->view = glm::translate(glm::mat4(), -rightEyePos);
@@ -392,10 +390,10 @@ void CosmoStudyTrialDesktopScene::update()
 
 	float rotNow = amount * (m_fOscAmpDeg / 2.f);
 
-	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 0.f, 1.f)));
+	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 1.f, 0.f)));
 	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
 
-	std::cout << elapsedTimeMS << " | " << ratio << " | " << amount << " | " << rotNow << std::endl;
+	//std::cout << elapsedTimeMS << " | " << ratio << " | " << amount << " | " << rotNow << std::endl;
 }
 
 void CosmoStudyTrialDesktopScene::draw()
@@ -775,8 +773,8 @@ glm::mat4 CosmoStudyTrialDesktopScene::getViewingFrustum(glm::vec3 eyePos, glm::
 
 	float l, r, t, b, n, f;
 
-	n = 1.f;
-	f = dist + 100.f;
+	n = 0.01f;
+	f = dist + 1.f;
 
 	// use similar triangles to scale to the near plane
 	float nearScale = n / dist;
