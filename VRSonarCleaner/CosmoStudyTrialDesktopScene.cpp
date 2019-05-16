@@ -67,14 +67,54 @@ void CosmoStudyTrialDesktopScene::init()
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
 
-	Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
-	svi->nearClip = 0.01f;
-	svi->farClip = 1000.f;
-	svi->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
-	svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
-	svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
-	svi->projection = glm::perspectiveFov(90.f, static_cast<float>(svi->m_nRenderWidth), static_cast<float>(svi->m_nRenderHeight), svi->nearClip, svi->farClip);
-	svi->viewport = glm::ivec4(0, 0, svi->m_nRenderWidth, svi->m_nRenderHeight);
+	//Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
+	//svi->nearClip = 0.01f;
+	//svi->farClip = 1000.f;
+	//svi->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
+	//svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
+	//svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
+	//svi->projection = glm::perspectiveFov(90.f, static_cast<float>(svi->m_nRenderWidth), static_cast<float>(svi->m_nRenderHeight), svi->nearClip, svi->farClip);
+	//svi->viewport = glm::ivec4(0, 0, svi->m_nRenderWidth, svi->m_nRenderHeight);
+
+
+
+	glm::vec3 COP = glm::vec3(0.f, 1.f, 57.f);
+	glm::quat COPRot = glm::inverse(glm::lookAt(COP, cam->lookat, glm::vec3(0.f, 1.f, 0.f)));
+	glm::vec3 COPRight = glm::normalize(glm::mat3_cast(COPRot)[0]);
+	glm::vec3 COPOffset = COPRight * 6.7f * 0.5f;
+
+	// Update eye positions using current head position
+	glm::vec3 leftEyePos = COP - COPOffset;
+	glm::vec3 rightEyePos = COP + COPOffset;
+
+	glm::vec3 g_vec3ScreenPos(0.f, 0.5f, 0.f);
+	glm::vec3 g_vec3ScreenNormal(0.f, 0.f, 1.f);
+	glm::vec3 g_vec3ScreenUp(0.f, 1.f, 0.f);
+
+	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
+
+	float sizer = (24.f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+
+	float width_m = winSize.x * sizer;
+	float height_m = winSize.y * sizer;
+
+	Renderer::SceneViewInfo* sviLE = Renderer::getInstance().getLeftEyeInfo();
+	Renderer::SceneViewInfo* sviRE = Renderer::getInstance().getRightEyeInfo();
+	sviLE->nearClip = 0.01f;
+	sviLE->farClip = 1000.f;
+	sviLE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
+	sviLE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
+	sviLE->view = glm::translate(glm::mat4(), -leftEyePos);
+	sviLE->projection = getViewingFrustum(leftEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
+	sviLE->viewport = glm::ivec4(0, 0, sviLE->m_nRenderWidth, sviLE->m_nRenderHeight);
+
+	sviRE->nearClip = 0.01f;
+	sviRE->farClip = 1000.f;
+	sviRE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
+	sviRE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
+	sviRE->view = glm::translate(glm::mat4(), -rightEyePos);
+	sviRE->projection = getViewingFrustum(rightEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
+	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 
 	sampleVolume();
 	buildStreamTubes();
@@ -722,4 +762,29 @@ glm::quat CosmoStudyTrialDesktopScene::getSegmentOrientationMatrixNormalized(glm
 	glm::vec3 u(glm::normalize(glm::cross(up, w)));
 	glm::vec3 v(glm::normalize(glm::cross(w, u)));
 	return glm::toQuat(glm::mat3(u, v, w));
+}
+
+
+// assumes that the center of the screen is the origin with +Z coming out of the screen
+// all parameters are given in world space coordinates
+glm::mat4 CosmoStudyTrialDesktopScene::getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize)
+{
+	glm::vec3 screenRight = glm::normalize(glm::cross(screenUp, screenNormal));
+
+	float dist = -glm::dot(screenCenter - eyePos, screenNormal);
+
+	float l, r, t, b, n, f;
+
+	n = 1.f;
+	f = dist + 100.f;
+
+	// use similar triangles to scale to the near plane
+	float nearScale = n / dist;
+
+	l = ((screenCenter - screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
+	r = ((screenCenter + screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
+	b = ((screenCenter - screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
+	t = ((screenCenter + screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
+
+	return glm::frustum(l, r, b, t, n, f);
 }

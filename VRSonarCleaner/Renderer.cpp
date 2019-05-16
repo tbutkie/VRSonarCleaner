@@ -930,7 +930,7 @@ void Renderer::render()
 		// VR Render
 		// We don't draw the UI layer to the VR left/right eye textures, only to presentation windows on the PC display
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);		
 	}
 	else
 	{
@@ -947,6 +947,13 @@ void Renderer::render()
 		// Set glDrawBuffer to GL_BACK_LEFT
 		// Render to full-screen quad
 		// Repeat for right eye, setting glDrawBuffer to GL_BACK_RIGHT
+
+
+		// Render UI to left and right eye frames
+		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pLeftEyeFramebuffer);
+		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pRightEyeFramebuffer);
+
+		Renderer::getInstance().renderStereoTexture(m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pLeftEyeFramebuffer->m_nResolveTextureId, m_pRightEyeFramebuffer->m_nResolveTextureId);
 	}
 	else //DESKTOP NON-STEREO
 	{

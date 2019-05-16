@@ -51,6 +51,7 @@ private:
 	void sampleCuttingPlane(bool reseed);
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
+	glm::mat4 getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize);
 	glm::vec4 parseRGBText(std::string color);
 	std::string colorString(glm::vec4 color);
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
