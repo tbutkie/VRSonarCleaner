@@ -726,10 +726,11 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		processRenderQueue(m_vStaticRenderQueue_Opaque);
 		processRenderQueue(m_vDynamicRenderQueue_Opaque);
 
+		glFrontFace(GL_CCW);
+
 		// skybox last
 		if (m_bShowSkybox && m_Skybox.texID != 0u && m_mapShaders["skybox"] && *m_mapShaders["skybox"])
 		{
-			glFrontFace(GL_CCW);
 
 			glDepthFunc(GL_LEQUAL);
 
