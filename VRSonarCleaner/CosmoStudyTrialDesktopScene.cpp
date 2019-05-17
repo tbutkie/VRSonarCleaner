@@ -398,7 +398,7 @@ void CosmoStudyTrialDesktopScene::update()
 
 void CosmoStudyTrialDesktopScene::draw()
 {
-	m_pCosmoVolume->drawVolumeBacking(glm::inverse(Renderer::getInstance().getMonoInfo()->view), 1.f);
+	//m_pCosmoVolume->drawVolumeBacking(glm::inverse(glm::lookAt(Renderer::getInstance().getCamera()->pos, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f))), 1.f);
 	m_pCosmoVolume->drawBBox(0.f);
 
 	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();

@@ -852,7 +852,7 @@ void Renderer::renderFullscreenTexture(int x, int y, int width, int height, GLui
 //-----------------------------------------------------------------------------
 void Renderer::renderStereoTexture(int width, int height, GLuint leftEyeTextureID, GLuint rightEyeTextureID)
 {
-	GLuint* shader = m_mapShaders["desktopwindow"];
+	GLuint* shader = m_mapShaders["vrwindow"];
 
 	if (shader == NULL)
 		return;

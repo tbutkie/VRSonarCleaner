@@ -57,7 +57,7 @@ Engine::~Engine()
 //-----------------------------------------------------------------------------
 bool Engine::init()
 {
-	if (!Renderer::getInstance().init(true, true))
+	if (!Renderer::getInstance().init())
 	{
 		utils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
