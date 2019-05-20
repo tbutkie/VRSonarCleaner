@@ -368,6 +368,17 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 			{
 				Renderer::getInstance().toggleSkybox();
 			}
+			
+			if (ev.key.keysym.sym == SDLK_p)
+			{
+				m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
+				m_fCuttingPlaneWidth = m_pCosmoVolume->getDimensions().x * 2.f;
+				m_fCuttingPlaneHeight = m_pCosmoVolume->getDimensions().y * 2.f;
+				m_bCuttingPlaneSet = true;
+				m_bCuttingPlaneJitter = false;
+				sampleCuttingPlane(true);
+				buildStreamTubes();
+			}
 		}
 	}
 }
@@ -442,7 +453,48 @@ void CosmoStudyTrialDesktopScene::sampleCuttingPlane(bool reseed)
 {
 	m_vvvec3RawStreamlines.clear();
 
-	if (!reseed)
+	if (reseed)
+	{
+		m_vvec3StreamlineSeedsDomain.clear();
+
+		m_fCuttingPlaneWidth = 1.f;
+		m_fCuttingPlaneHeight = 1.f;
+
+		glm::mat4 probeMat = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pCosmoVolume->getTransformVolume();
+		glm::vec3 probePos = probeMat[3];
+
+		float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
+		float maxJitterY = 0.25f * (m_fCuttingPlaneHeight / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
+
+		for (int i = 0; i < m_uiCuttingPlaneGridRes; ++i)
+		{
+			float ratioWidth = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)i / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
+
+			for (int j = 0; j < m_uiCuttingPlaneGridRes; ++j)
+			{
+				float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
+				glm::vec3 pos = probePos + glm::vec3(probeMat[0]) * ratioWidth * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * ratioHeight * m_fCuttingPlaneHeight;
+
+				if (m_bCuttingPlaneJitter)
+					pos += m_Distribution(m_RNG) * glm::vec3(probeMat[0]) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(probeMat[1]) * maxJitterY;
+
+				glm::dvec3 domainPos = m_pCosmoVolume->convertToRawDomainCoords(pos);
+
+				// Calculate forward and backward RK4 streamlines
+				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+
+				// Now glue them together into a single streamline without duplicating seed point
+				std::reverse(rev.begin(), rev.end());
+				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+
+				// Save streamline and seed
+				m_vvvec3RawStreamlines.push_back(rev);
+				m_vvec3StreamlineSeedsDomain.push_back(domainPos);
+			}
+		}
+	}
+	else
 	{
 		for (auto &seed : m_vvec3StreamlineSeedsDomain)
 		{
@@ -452,38 +504,6 @@ void CosmoStudyTrialDesktopScene::sampleCuttingPlane(bool reseed)
 			rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
 			m_vvvec3RawStreamlines.push_back(rev);
-		}
-	}
-	else
-	{
-		m_vvec3StreamlineSeedsDomain.clear();
-
-		glm::mat4 probeMat = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pCosmoVolume->getTransformVolume();
-		glm::vec3 probePos = probeMat[3];
-
-		float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
-		float maxJitterY = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
-
-		for (int i = 0; i < m_uiCuttingPlaneGridRes; ++i)
-		{
-			float ratioWidth = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)i / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
-
-			for (int j = 0; j < m_uiCuttingPlaneGridRes; ++j)
-			{
-				float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1);
-				glm::vec3 pos = probePos + glm::vec3(probeMat[0]) * ratioWidth * m_fCuttingPlaneWidth - glm::vec3(probeMat[2]) * ratioHeight * m_fCuttingPlaneHeight;
-				if (m_bCuttingPlaneJitter)
-					pos += m_Distribution(m_RNG) * glm::vec3(probeMat[0]) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(probeMat[2]) * maxJitterY;
-				glm::dvec3 domainPos = m_pCosmoVolume->convertToRawDomainCoords(pos);
-				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
-				std::reverse(rev.begin(), rev.end());
-				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
-
-				m_vvvec3RawStreamlines.push_back(rev);
-
-				m_vvec3StreamlineSeedsDomain.push_back(domainPos);
-			}
 		}
 	}
 }
