@@ -6,6 +6,7 @@
 #include <gtx/vector_angle.hpp>
 #include <cstdarg>
 #include <Windows.h>
+#include <sstream>
 
 namespace utils
 {
@@ -57,6 +58,32 @@ namespace utils
 		}
 		return ret;
 	}
+
+
+	// assumes that the center of the screen is the origin with +Z coming out of the screen
+	// all parameters are given in world space coordinates
+	glm::mat4 getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize)
+	{
+		glm::vec3 screenRight = glm::normalize(glm::cross(screenUp, screenNormal));
+
+		float dist = -glm::dot(screenCenter - eyePos, screenNormal);
+
+		float l, r, t, b, n, f;
+
+		n = 0.01f;
+		f = dist + 1.f;
+
+		// use similar triangles to scale to the near plane
+		float nearScale = n / dist;
+
+		l = ((screenCenter - screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
+		r = ((screenCenter + screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
+		b = ((screenCenter - screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
+		t = ((screenCenter + screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
+
+		return glm::frustum(l, r, b, t, n, f);
+	}
+
 
 	/////////////////////////////////////////////////////////////////////////////
 	// from http://paulbourke.net/geometry/pointlineplane/lineline.c		   //
@@ -275,5 +302,39 @@ namespace utils
 			}
 			return out;
 		}
+
+
+		glm::vec4 str2rgb(std::string color)
+		{
+			std::stringstream ss(color);
+
+			int i = 0;
+			glm::vec4 ret;
+			ret.a = 1.f;
+
+			while (ss.good() && i < 4)
+			{
+				std::string substr;
+				std::getline(ss, substr, ',');
+				ret[i++] = std::stof(substr);
+			}
+
+			return ret;
+		}
+
+
+		std::string rgb2str(glm::vec3 color)
+		{
+			return std::string(std::to_string(color.r) + std::string(",") + std::to_string(color.g) + "," + std::to_string(color.b));
+		}
+
+
+		std::string rgb2str(glm::vec4 color)
+		{
+			return std::string(std::to_string(color.r) + std::string(",") + std::to_string(color.g) + "," + std::to_string(color.b) + "," + std::to_string(color.a));
+		}
+
+
+
 	}
 }

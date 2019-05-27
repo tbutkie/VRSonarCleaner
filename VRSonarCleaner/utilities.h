@@ -24,6 +24,8 @@ namespace utils
 		const std::vector<glm::vec3> pts
 	);
 
+	glm::mat4 getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize);
+
 	bool LineLineIntersect(
 		glm::vec3 p1,
 		glm::vec3 p2,
@@ -72,5 +74,10 @@ namespace utils
 			float s, 
 			float v
 		);
+
+		glm::vec4 str2rgb(std::string color);
+
+		std::string rgb2str(glm::vec4 color);
+		std::string rgb2str(glm::vec3 color);
 	}
 }

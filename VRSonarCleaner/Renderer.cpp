@@ -621,6 +621,8 @@ void Renderer::setupShaders()
 	m_mapShaders["instanced"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
 	m_mapShaders["instanced_lit"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/lighting.frag" });
 	m_mapShaders["streamline"] = m_Shaders.AddProgramFromExts({ "resources/shaders/streamline.vert", "resources/shaders/streamline.frag" });
+	m_mapShaders["cosmo"] = m_Shaders.AddProgramFromExts({ "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
+
 
 	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
 	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
@@ -1057,6 +1059,7 @@ SDL_Window * Renderer::createFullscreenWindow(int displayIndex, bool stereo)
 		SDL_GL_SetAttribute(SDL_GL_STEREO, 1);	
 	}
 
+	printf("Creating fullscreen %ix%i window at position (%i,%i) on display %i\n", displayBounds.w, displayBounds.h, displayBounds.x, displayBounds.y, displayIndex);
 	SDL_Window* win = SDL_CreateWindow("CCOM VR", displayBounds.x, displayBounds.y, displayBounds.w, displayBounds.h, unWindowFlags);
 
 	if (win == NULL)

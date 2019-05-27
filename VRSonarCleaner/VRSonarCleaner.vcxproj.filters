@@ -517,5 +517,11 @@
     <None Include="resources\shaders\streamline.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\cosmo.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\cosmo.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

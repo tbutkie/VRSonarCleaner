@@ -1,4 +1,5 @@
 #include "CosmoGrid.h"
+#include "Renderer.h"
 #include <iostream>
 
 using namespace std::chrono_literals;
@@ -35,6 +36,7 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 
 	init();
 
+	std::vector<glm::vec3> texels;
 	float tempU, tempV, tempW;
 	for (int x = 0; x < m_nXPoints; x++)
 	{
@@ -46,6 +48,7 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 				fread(&tempV, sizeof(float), 1, inputFile);
 				fread(&tempW, sizeof(float), 1, inputFile);
 				setPointUVWValue(x, y, z, tempU, tempV, tempW);
+				texels.push_back(glm::vec3(tempU, tempV, tempW));
 			}//end for z
 		}//end for y
 	}//end for x
@@ -113,6 +116,52 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 	std::cout << "\tmax=" << m_fMaxTemperature << std::endl;
 	std::cout << "\trng=" << m_fMaxTemperature - m_fMinTemperature << std::endl;
 	std::cout << "\tavg=" << m_fAvgTemperature << std::endl;
+
+	glCreateTextures(GL_TEXTURE_3D, 1, &m_glVectorTex);
+	glTextureStorage3D(m_glVectorTex, 1, GL_RGB32F, m_nXPoints, m_nYPoints, m_nZPoints);
+	glTextureSubImage3D(m_glVectorTex, 0, 0, 0, 0, m_nXPoints, m_nYPoints, m_nZPoints, GL_RGB, GL_FLOAT, &texels[0]);
+
+	glTextureParameteri(m_glVectorTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_glVectorTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_glVectorTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTextureParameteri(m_glVectorTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTextureParameteri(m_glVectorTex, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+
+	texels.clear();
+
+	Renderer::getInstance().addTexture(new GLTexture("vectorfield", m_nXPoints, m_nYPoints, m_nZPoints, m_glVectorTex, false));
+
+	std::vector<glm::vec4> attribTexels;
+	for (int x = 0; x < m_nXPoints; x++)
+	{
+		for (int y = 0; y < m_nYPoints; y++)
+		{
+			for (int z = 0; z < m_nZPoints; z++)
+			{
+				int ind = gridIndex(x, y, z);
+				attribTexels.push_back(glm::vec4(
+					m_arrfVelocityValues[ind],
+					m_arrDensityValues[ind],
+					m_arrH2IIDensityValues[ind],
+					m_arrTemperatureValues[ind]
+				));
+			}//end for z
+		}//end for y
+	}//end for x
+
+	glCreateTextures(GL_TEXTURE_3D, 1, &m_glAttribTex);
+	glTextureStorage3D(m_glAttribTex, 1, GL_RGBA32F, m_nXPoints, m_nYPoints, m_nZPoints);
+	glTextureSubImage3D(m_glAttribTex, 0, 0, 0, 0, m_nXPoints, m_nYPoints, m_nZPoints, GL_RGBA, GL_FLOAT, &attribTexels[0]);
+
+	glTextureParameteri(m_glAttribTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_glAttribTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_glAttribTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTextureParameteri(m_glAttribTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTextureParameteri(m_glAttribTex, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+
+	attribTexels.clear();
+
+	Renderer::getInstance().addTexture(new GLTexture("vectorfieldattributes", m_nXPoints, m_nYPoints, m_nZPoints, m_glAttribTex, false));
 
 	m_bLoaded = true;
 }

@@ -39,8 +39,9 @@ private:
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
+	GLuint m_glPlaneVBO, m_glPlaneEBO, m_glPlaneVAO;
 	
-	Renderer::RendererSubmission m_rs, m_rsHalo;
+	Renderer::RendererSubmission m_rs, m_rsHalo, m_rsPlane;
 
 	bool m_bShowHalos;
 
@@ -51,9 +52,7 @@ private:
 	void sampleCuttingPlane(bool reseed);
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
-	glm::mat4 getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize);
-	glm::vec4 parseRGBText(std::string color);
-	std::string colorString(glm::vec4 color);
+	void buildPlane();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 
 	std::chrono::high_resolution_clock::time_point m_tpStart;

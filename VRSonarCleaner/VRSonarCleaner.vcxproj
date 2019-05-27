@@ -304,6 +304,8 @@
     <ClInclude Include="WelcomeBehavior.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\shaders\cosmo.frag" />
+    <None Include="resources\shaders\cosmo.vert" />
     <None Include="resources\shaders\desktopwindow.vert" />
     <None Include="resources\shaders\flat.frag" />
     <None Include="resources\shaders\flat.vert" />

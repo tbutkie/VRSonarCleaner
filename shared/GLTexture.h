@@ -10,10 +10,11 @@ class GLTexture
 {
 public:
 	GLTexture(std::string name, GLubyte color[4])
-		: m_uiID(0)
+		: m_uiID(0u)
 		, m_strName(name)
 		, m_uiWidth(1u)
 		, m_uiHeight(1u)
+		, m_uiDepth(1u)
 	{
 		if (color[3] == 0xFF)
 			m_bTransparency = false;
@@ -24,10 +25,11 @@ public:
 	}
 
 	GLTexture(std::string name, unsigned short width, unsigned short height, unsigned char const * data, bool hasTransparency)
-		: m_uiID(0)
+		: m_uiID(0u)
 		, m_strName(name)
 		, m_uiWidth(width)
 		, m_uiHeight(height)
+		, m_uiDepth(0u)
 		, m_bTransparency(hasTransparency)
 	{		
 		load(data);
@@ -38,14 +40,26 @@ public:
 		, m_strName(name)
 		, m_uiWidth(width)
 		, m_uiHeight(height)
+		, m_uiDepth(0u)
+		, m_bTransparency(hasTransparency)
+	{
+	}
+
+	GLTexture(std::string name, unsigned short width, unsigned short height, unsigned short depth, GLuint texID, bool hasTransparency)
+		: m_uiID(texID)
+		, m_strName(name)
+		, m_uiWidth(width)
+		, m_uiHeight(height)
+		, m_uiDepth(depth)
 		, m_bTransparency(hasTransparency)
 	{
 	}
 
 	GLTexture(std::string png_filename, bool hasTransparency)
-		: m_uiID(0)
-		, m_uiWidth(0)
-		, m_uiHeight(0)
+		: m_uiID(0u)
+		, m_uiWidth(0u)
+		, m_uiHeight(0u)
+		, m_uiDepth(0u)
 		, m_bTransparency(hasTransparency)
 	{
 		m_strName = png_filename;
@@ -76,7 +90,7 @@ public:
 private:
 	GLuint m_uiID;
 	std::string m_strName;
-	unsigned m_uiWidth, m_uiHeight;
+	unsigned m_uiWidth, m_uiHeight, m_uiDepth;
 	bool m_bTransparency;
 
 	void load(unsigned char const * data)

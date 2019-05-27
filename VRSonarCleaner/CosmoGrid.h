@@ -72,5 +72,8 @@ public:
 		float* m_arrTemperatureValues;
 		float m_fMinTemperature, m_fMaxTemperature, m_fAvgTemperature;
 
+		GLuint m_glVectorTex;
+		GLuint m_glAttribTex;
+
 		char m_strName[512];
 };

@@ -11,6 +11,9 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
+	, m_glPlaneVBO(0)
+	, m_glPlaneVAO(0)
+	, m_glPlaneEBO(0)
 	, m_bShowHalos(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
@@ -40,11 +43,11 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Min Velocity Color" , colorString(m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
-	m_vParams.push_back({ "Max Velocity Color" , colorString(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Min Velocity Color" , utils::color::rgb2str(m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Halo Color" , colorString(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
-	m_vParams.push_back({ "Clear Color" , colorString(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }
 
 
@@ -103,7 +106,7 @@ void CosmoStudyTrialDesktopScene::init()
 	sviLE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
 	sviLE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 	sviLE->view = glm::translate(glm::mat4(), -leftEyePos);
-	sviLE->projection = getViewingFrustum(leftEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
+	sviLE->projection = utils::getViewingFrustum(leftEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
 	sviLE->viewport = glm::ivec4(0, 0, sviLE->m_nRenderWidth, sviLE->m_nRenderHeight);
 
 	sviRE->nearClip = 0.01f;
@@ -111,7 +114,7 @@ void CosmoStudyTrialDesktopScene::init()
 	sviRE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
 	sviRE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 	sviRE->view = glm::translate(glm::mat4(), -rightEyePos);
-	sviRE->projection = getViewingFrustum(rightEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
+	sviRE->projection = utils::getViewingFrustum(rightEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
 	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 
 	sampleVolume();
@@ -232,12 +235,12 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 				if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
 				{
-					m_vec4VelColorMin = parseRGBText(m_pEditParam->buf);
+					m_vec4VelColorMin = utils::color::str2rgb(m_pEditParam->buf);
 				}
 
 				if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
 				{
-					m_vec4VelColorMax = parseRGBText(m_pEditParam->buf);
+					m_vec4VelColorMax = utils::color::str2rgb(m_pEditParam->buf);
 				}
 
 				if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
@@ -247,13 +250,13 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 				if (m_pEditParam->desc.compare("Halo Color") == 0)
 				{
-					m_vec4HaloColor = parseRGBText(m_pEditParam->buf);
+					m_vec4HaloColor = utils::color::str2rgb(m_pEditParam->buf);
 					m_rsHalo.diffuseColor = m_vec4HaloColor;
 				}
 
 				if (m_pEditParam->desc.compare("Clear Color") == 0)
 				{
-					Renderer::getInstance().setClearColor(parseRGBText(m_pEditParam->buf));
+					Renderer::getInstance().setClearColor(utils::color::str2rgb(m_pEditParam->buf));
 				}
 
 				//if (m_bCuttingPlaneSet)
@@ -378,6 +381,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				m_bCuttingPlaneJitter = false;
 				sampleCuttingPlane(true);
 				buildStreamTubes();
+				buildPlane();
 			}
 		}
 	}
@@ -439,10 +443,11 @@ void CosmoStudyTrialDesktopScene::draw()
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
 	}
 
 	
-	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
+	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
 	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 	if (m_bShowHalos)
@@ -493,6 +498,11 @@ void CosmoStudyTrialDesktopScene::sampleCuttingPlane(bool reseed)
 				m_vvec3StreamlineSeedsDomain.push_back(domainPos);
 			}
 		}
+
+		m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * -0.5f * m_fCuttingPlaneHeight);
+		m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * 0.5f * m_fCuttingPlaneHeight);
+		m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * -0.5f * m_fCuttingPlaneHeight);
+		m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * 0.5f * m_fCuttingPlaneHeight);
 	}
 	else
 	{
@@ -684,6 +694,7 @@ void CosmoStudyTrialDesktopScene::buildStreamTubes()
 		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
+
 	if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
@@ -751,27 +762,20 @@ void CosmoStudyTrialDesktopScene::buildStreamTubes()
 	m_rsHalo.vertCount = inds.size();
 }
 
-glm::vec4 CosmoStudyTrialDesktopScene::parseRGBText(std::string color)
+void CosmoStudyTrialDesktopScene::buildPlane()
 {
-	std::stringstream ss(color);
-
-	int i = 0;
-	glm::vec4 ret;
-	ret.a = 1.f;
-
-	while (ss.good() && i < 4)
-	{
-		std::string substr;
-		std::getline(ss, substr, ',');
-		ret[i++] = std::stof(substr);
-	}
-
-	return ret;
-}
-
-std::string CosmoStudyTrialDesktopScene::colorString(glm::vec4 color)
-{
-	return std::string(std::to_string(color.r) + std::string(",") + std::to_string(color.g) + "," + std::to_string(color.b) + "," + std::to_string(color.a));
+	m_rsPlane.VAO = Renderer::getInstance().getPrimitiveVAO();;
+	m_rsPlane.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("plane");
+	m_rsPlane.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("plane");
+	m_rsPlane.vertCount = Renderer::getInstance().getPrimitiveIndexCount("plane");
+	m_rsPlane.glPrimitiveType = GL_TRIANGLES;
+	m_rsPlane.shaderName = "cosmo";
+	m_rsPlane.indexType = GL_UNSIGNED_SHORT;
+	m_rsPlane.diffuseColor = glm::vec4(1.f);
+	m_rsPlane.specularColor = glm::vec4(0.f);
+	m_rsPlane.diffuseTexName = "vectorfield";
+	m_rsPlane.specularTexName = "vectorfieldattributes";
+	m_rsPlane.hasTransparency = true;
 }
 
 glm::quat CosmoStudyTrialDesktopScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)
@@ -780,29 +784,4 @@ glm::quat CosmoStudyTrialDesktopScene::getSegmentOrientationMatrixNormalized(glm
 	glm::vec3 u(glm::normalize(glm::cross(up, w)));
 	glm::vec3 v(glm::normalize(glm::cross(w, u)));
 	return glm::toQuat(glm::mat3(u, v, w));
-}
-
-
-// assumes that the center of the screen is the origin with +Z coming out of the screen
-// all parameters are given in world space coordinates
-glm::mat4 CosmoStudyTrialDesktopScene::getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize)
-{
-	glm::vec3 screenRight = glm::normalize(glm::cross(screenUp, screenNormal));
-
-	float dist = -glm::dot(screenCenter - eyePos, screenNormal);
-
-	float l, r, t, b, n, f;
-
-	n = 0.01f;
-	f = dist + 1.f;
-
-	// use similar triangles to scale to the near plane
-	float nearScale = n / dist;
-
-	l = ((screenCenter - screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
-	r = ((screenCenter + screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
-	b = ((screenCenter - screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
-	t = ((screenCenter + screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
-
-	return glm::frustum(l, r, b, t, n, f);
 }
