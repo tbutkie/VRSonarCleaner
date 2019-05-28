@@ -764,6 +764,8 @@ void CosmoStudyTrialDesktopScene::buildStreamTubes()
 
 void CosmoStudyTrialDesktopScene::buildPlane()
 {
+	CosmoGrid* cgrid = static_cast<CosmoGrid*>(m_pCosmoVolume->getDatasets()[0]);
+
 	m_rsPlane.VAO = Renderer::getInstance().getPrimitiveVAO();;
 	m_rsPlane.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("plane");
 	m_rsPlane.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("plane");
@@ -771,8 +773,8 @@ void CosmoStudyTrialDesktopScene::buildPlane()
 	m_rsPlane.glPrimitiveType = GL_TRIANGLES;
 	m_rsPlane.shaderName = "cosmo";
 	m_rsPlane.indexType = GL_UNSIGNED_SHORT;
-	m_rsPlane.diffuseColor = glm::vec4(1.f);
-	m_rsPlane.specularColor = glm::vec4(0.f);
+	m_rsPlane.diffuseColor = glm::vec4(cgrid->getMaxVelocity(), cgrid->getMaxDensity(), cgrid->getMaxH2IIDensity(), cgrid->getMaxTemperature());
+	m_rsPlane.specularColor = glm::vec4(cgrid->getMinVelocity(), cgrid->getMinDensity(), cgrid->getMinH2IIDensity(), cgrid->getMinTemperature());
 	m_rsPlane.diffuseTexName = "vectorfield";
 	m_rsPlane.specularTexName = "vectorfieldattributes";
 	m_rsPlane.hasTransparency = true;

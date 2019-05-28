@@ -23,6 +23,22 @@ class CosmoGrid : public Dataset
 		float getVelocityAt(glm::vec3 pos);
 		float getMinVelocity();
 		float getMaxVelocity();
+		float getAvgVelocity();
+
+		float getDensityAt(glm::vec3 pos);
+		float getMinDensity();
+		float getMaxDensity();
+		float getAvgDensity();
+
+		float getH2IIDensityAt(glm::vec3 pos);
+		float getMinH2IIDensity();
+		float getMaxH2IIDensity();
+		float getAvgH2IIDensity();
+
+		float getTemperstureAt(glm::vec3 pos);
+		float getMinTemperature();
+		float getMaxTemperature();
+		float getAvgTemperature();
 
 		bool contains(glm::vec3 pos);
 
@@ -65,11 +81,11 @@ public:
 		float* m_arrfWValues;
 		float* m_arrfVelocityValues;	
 		float m_fMinVelocity, m_fMaxVelocity, m_fAvgVelocity;
-		float* m_arrDensityValues;
+		float* m_arrfDensityValues;
 		float m_fMinDensity, m_fMaxDensity, m_fAvgDensity;
-		float* m_arrH2IIDensityValues;
+		float* m_arrfH2IIDensityValues;
 		float m_fMinH2IIDensity, m_fMaxH2IIDensity, m_fAvgH2IIDensity;
-		float* m_arrTemperatureValues;
+		float* m_arrfTemperatureValues;
 		float m_fMinTemperature, m_fMaxTemperature, m_fAvgTemperature;
 
 		GLuint m_glVectorTex;

@@ -57,7 +57,7 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 
 	printf("Imported CosmoGrid from binary file %s\n", filename.c_str());
 
-	for (auto &fp : std::vector<std::pair<std::string, float**>>({ std::make_pair("/Density_400.bov", &m_arrDensityValues), std::make_pair("/H2II_Density_400.bov", &m_arrH2IIDensityValues), std::make_pair("/Temperature_400.bov", &m_arrTemperatureValues) }))
+	for (auto &fp : std::vector<std::pair<std::string, float**>>({ std::make_pair("/Density_400.bov", &m_arrfDensityValues), std::make_pair("/H2II_Density_400.bov", &m_arrfH2IIDensityValues), std::make_pair("/Temperature_400.bov", &m_arrfTemperatureValues) }))
 	{
 		filename = std::string(dataDir) + fp.first;
 
@@ -141,9 +141,9 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 				int ind = gridIndex(x, y, z);
 				attribTexels.push_back(glm::vec4(
 					m_arrfVelocityValues[ind],
-					m_arrDensityValues[ind],
-					m_arrH2IIDensityValues[ind],
-					m_arrTemperatureValues[ind]
+					m_arrfDensityValues[ind],
+					m_arrfH2IIDensityValues[ind],
+					m_arrfTemperatureValues[ind]
 				));
 			}//end for z
 		}//end for y
@@ -172,9 +172,9 @@ CosmoGrid::~CosmoGrid()
 	delete[] m_arrfVValues;
 	delete[] m_arrfWValues;
 	delete[] m_arrfVelocityValues;
-	delete[] m_arrDensityValues;
-	delete[] m_arrH2IIDensityValues;
-	delete[] m_arrTemperatureValues;
+	delete[] m_arrfDensityValues;
+	delete[] m_arrfH2IIDensityValues;
+	delete[] m_arrfTemperatureValues;
 }
 
 void CosmoGrid::init()
@@ -209,9 +209,9 @@ void CosmoGrid::init()
 	m_arrfVValues = new float[m_nGridSize3d];
 	m_arrfWValues = new float[m_nGridSize3d];
 	m_arrfVelocityValues = new float[m_nGridSize3d];
-	m_arrDensityValues = new float[m_nGridSize3d];
-	m_arrH2IIDensityValues = new float[m_nGridSize3d];
-	m_arrTemperatureValues = new float[m_nGridSize3d];
+	m_arrfDensityValues = new float[m_nGridSize3d];
+	m_arrfH2IIDensityValues = new float[m_nGridSize3d];
+	m_arrfTemperatureValues = new float[m_nGridSize3d];
 }
 
 void CosmoGrid::setPointUVWValue(int x, int y, int z, float u, float v, float w)
@@ -238,19 +238,19 @@ void CosmoGrid::setPointValue(int x, int y, int z, float ** arr, float val)
 
 	float *minVal, *maxVal, *avgVal;
 
-	if (arr == &m_arrDensityValues)
+	if (arr == &m_arrfDensityValues)
 	{
 		minVal = &m_fMinDensity;
 		maxVal = &m_fMaxDensity;
 		avgVal = &m_fAvgDensity;
 	}
-	else if (arr == &m_arrH2IIDensityValues)
+	else if (arr == &m_arrfH2IIDensityValues)
 	{
 		minVal = &m_fMinH2IIDensity;
 		maxVal = &m_fMaxH2IIDensity;
 		avgVal = &m_fAvgH2IIDensity;
 	}
-	else if (arr == &m_arrTemperatureValues)
+	else if (arr == &m_arrfTemperatureValues)
 	{
 		minVal = &m_fMinTemperature;
 		maxVal = &m_fMaxTemperature;
@@ -294,6 +294,80 @@ float CosmoGrid::getMinVelocity()
 float CosmoGrid::getMaxVelocity()
 {
 	return m_fMaxVelocity;
+}
+
+float CosmoGrid::getAvgVelocity()
+{
+	return m_fAvgVelocity;
+}
+
+float CosmoGrid::getDensityAt(glm::vec3 pos)
+{
+	if (!contains(pos))
+		return 0.f;
+
+	return trilinear(&m_arrfDensityValues, pos);
+}
+
+float CosmoGrid::getMinDensity()
+{
+	return m_fMinDensity;
+}
+
+float CosmoGrid::getMaxDensity()
+{
+	return m_fMaxDensity;
+}
+
+float CosmoGrid::getAvgDensity()
+{
+	return m_fAvgDensity;
+}
+
+float CosmoGrid::getH2IIDensityAt(glm::vec3 pos)
+{
+	if (!contains(pos))
+		return 0.f;
+
+	return trilinear(&m_arrfH2IIDensityValues, pos);
+}
+
+float CosmoGrid::getMinH2IIDensity()
+{
+	return m_fMinH2IIDensity;
+}
+
+float CosmoGrid::getMaxH2IIDensity()
+{
+	return m_fMaxH2IIDensity;
+}
+
+float CosmoGrid::getAvgH2IIDensity()
+{
+	return m_fAvgH2IIDensity;
+}
+
+float CosmoGrid::getTemperstureAt(glm::vec3 pos)
+{
+	if (!contains(pos))
+		return 0.f;
+
+	return trilinear(&m_arrfTemperatureValues, pos);
+}
+
+float CosmoGrid::getMinTemperature()
+{
+	return m_fMinTemperature;
+}
+
+float CosmoGrid::getMaxTemperature()
+{
+	return m_fMaxTemperature;
+}
+
+float CosmoGrid::getAvgTemperature()
+{
+	return m_fAvgTemperature;
 }
 
 bool CosmoGrid::contains(glm::vec3 pos)
