@@ -36,7 +36,8 @@ void main()
    vec4 valrange = diffColor - specColor;
    vec4 normAttribs = (texAttribSample - specColor) / valrange;
 
-   outputColor = mix(vec4(0.8f, 0.f, 0.f, 1.f), vec4(0.f, 0.8f, 0.f, 1.f), normAttribs.r);//v4Color * diffColor;
-   outputColor.a = 0.5f;
-   //outputColor.a = sqrt(normAttribs.a);
+   outputColor = mix(vec4(0.8f, 0.f, 0.f, 0.1f), vec4(0.f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/10.f));
+   //outputColor.a = 0.5f;
+   outputColor = sqrt(sqrt(texSample));
+   outputColor.a = (normAttribs.r);
 }

@@ -15,6 +15,8 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_glPlaneVAO(0)
 	, m_glPlaneEBO(0)
 	, m_bShowHalos(true)
+	, m_bShowStreamtubes(true)
+	, m_bShowPlane(false)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
 	, m_fCuttingPlaneWidth(0.5f)
@@ -119,6 +121,7 @@ void CosmoStudyTrialDesktopScene::init()
 
 	sampleVolume();
 	buildStreamTubes();
+	buildScalarPlane();
 }
 
 void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
@@ -264,6 +267,9 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				//else if (m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->isTouchpadClicked())
 				//	sampleVolume();
 
+				if (cuttingPlaneReseed)
+					sampleCuttingPlane(cuttingPlaneReseed);
+
 				buildStreamTubes();
 
 				m_pEditParam = NULL;
@@ -367,12 +373,24 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_bCuttingPlaneJitter));
 			}
 
-			if (ev.key.keysym.sym == SDLK_s)
+			if (ev.key.keysym.sym == SDLK_b)
 			{
 				Renderer::getInstance().toggleSkybox();
 			}
-			
+
+			if (ev.key.keysym.sym == SDLK_s)
+			{
+				m_bShowStreamtubes = !m_bShowStreamtubes;
+				Renderer::getInstance().showMessage("Streamtubes set to " + std::to_string(m_bShowStreamtubes));
+			}
+
 			if (ev.key.keysym.sym == SDLK_p)
+			{
+				m_bShowPlane = !m_bShowPlane;
+				Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
+			}
+			
+			if (ev.key.keysym.sym == SDLK_RETURN)
 			{
 				m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
 				m_fCuttingPlaneWidth = m_pCosmoVolume->getDimensions().x * 2.f;
@@ -381,7 +399,6 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				m_bCuttingPlaneJitter = false;
 				sampleCuttingPlane(true);
 				buildStreamTubes();
-				buildPlane();
 			}
 		}
 	}
@@ -432,26 +449,32 @@ void CosmoStudyTrialDesktopScene::draw()
 		);
 	}
 
-	if (m_bCuttingPlaneSet)
-	{
-		glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
-		glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
-		glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
-		glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
-
-		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
-	}
-
 	
 	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
-	Renderer::getInstance().addToDynamicRenderQueue(m_rs);
-	if (m_bShowHalos)
-		Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	if (m_bShowStreamtubes)
+	{
+		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
+
+		if (m_bShowHalos)
+			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+
+		if (m_bCuttingPlaneSet)
+		{
+			glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
+			glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
+			glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
+			glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
+
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		}
+	}
+
+	if (m_bShowPlane)
+		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
 }
 
 void CosmoStudyTrialDesktopScene::sampleCuttingPlane(bool reseed)
@@ -762,7 +785,7 @@ void CosmoStudyTrialDesktopScene::buildStreamTubes()
 	m_rsHalo.vertCount = inds.size();
 }
 
-void CosmoStudyTrialDesktopScene::buildPlane()
+void CosmoStudyTrialDesktopScene::buildScalarPlane()
 {
 	CosmoGrid* cgrid = static_cast<CosmoGrid*>(m_pCosmoVolume->getDatasets()[0]);
 

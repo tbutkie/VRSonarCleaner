@@ -44,6 +44,8 @@ private:
 	Renderer::RendererSubmission m_rs, m_rsHalo, m_rsPlane;
 
 	bool m_bShowHalos;
+	bool m_bShowStreamtubes;
+	bool m_bShowPlane;
 
 	std::vector<glm::vec3> m_vvec3Zeros;
 	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
@@ -52,7 +54,7 @@ private:
 	void sampleCuttingPlane(bool reseed);
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
-	void buildPlane();
+	void buildScalarPlane();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 
 	std::chrono::high_resolution_clock::time_point m_tpStart;
