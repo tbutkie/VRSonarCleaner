@@ -32,8 +32,8 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
 	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
-	, m_fOscAmpDeg(30.f)
-	, m_fOscTime(5.f)
+	, m_fOscAmpDeg(10.f)
+	, m_fOscTime(2.5f)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);

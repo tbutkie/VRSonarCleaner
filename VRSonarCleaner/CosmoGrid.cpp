@@ -48,7 +48,8 @@ CosmoGrid::CosmoGrid(const char * dataDir)
 				fread(&tempV, sizeof(float), 1, inputFile);
 				fread(&tempW, sizeof(float), 1, inputFile);
 				setPointUVWValue(x, y, z, tempU, tempV, tempW);
-				texels.push_back(glm::vec3(tempU, tempV, tempW));
+				glm::vec3 flowNorm = glm::normalize(glm::vec3(tempU, tempV, tempW));
+				texels.push_back(flowNorm);
 			}//end for z
 		}//end for y
 	}//end for x

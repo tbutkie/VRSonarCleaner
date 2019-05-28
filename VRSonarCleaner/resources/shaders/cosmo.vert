@@ -22,9 +22,11 @@ const float spriteSize = 2.f;
 
 void main()
 {
-   float rate = 5.f; // seconds per segment
-   float loopCount;
-   float timeRatio = modf(fGlobalTime / rate, loopCount);
+	float rate = 5.f; // seconds per segment
+	float loopCount;
+	float timeRatio = modf(fGlobalTime / rate, loopCount);
+
+	//timeRatio = sin(2 * 3.14159 * timeRatio);
 
 	v4Color = v4ColorIn;
 	v3TexCoord = v3Position + 0.5f;

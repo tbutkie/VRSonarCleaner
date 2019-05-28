@@ -3,9 +3,9 @@ layout(location = DIFFUSE_COLOR_UNIFORM_LOCATION)
 layout(location = SPECULAR_COLOR_UNIFORM_LOCATION)
 	uniform vec4 specColor; // holds cosmo attrib min vals
 layout(binding = DIFFUSE_TEXTURE_BINDING)
-	uniform sampler3D vectorField;
+	uniform sampler3D vectorField; // normalized vector field
 layout(binding = SPECULAR_TEXTURE_BINDING)
-	uniform sampler3D vectorFieldAttribs;
+	uniform sampler3D vectorFieldAttribs; // raw attribs: r = velocity; g = density; b = H2II density; a = temperature
 	
 layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION) 
 	uniform FrameUniforms
@@ -36,8 +36,10 @@ void main()
    vec4 valrange = diffColor - specColor;
    vec4 normAttribs = (texAttribSample - specColor) / valrange;
 
-   outputColor = mix(vec4(0.8f, 0.f, 0.f, 0.1f), vec4(0.f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/10.f));
+   vec4 vecColor = (texSample + 1.f) / 2.f;
+
+   outputColor = mix(vec4(0.f, 0.f, 0.8f, 0.1f), vec4(0.8f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/12.f));
    //outputColor.a = 0.5f;
-   outputColor = sqrt(sqrt(texSample));
+   outputColor = vecColor;
    outputColor.a = (normAttribs.r);
 }
