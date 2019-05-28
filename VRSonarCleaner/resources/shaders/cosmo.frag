@@ -38,8 +38,8 @@ void main()
 
    vec4 vecColor = (texSample + 1.f) / 2.f;
 
-   outputColor = mix(vec4(0.f, 0.f, 0.8f, 0.1f), vec4(0.8f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/12.f));
+   //outputColor = mix(vec4(0.f, 0.f, 0.8f, 0.1f), vec4(0.8f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/12.f));
    //outputColor.a = 0.5f;
    outputColor = vecColor;
-   outputColor.a = (normAttribs.r);
+   //outputColor.a = (normAttribs.r);
 }
