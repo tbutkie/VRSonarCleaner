@@ -22,9 +22,9 @@ const float spriteSize = 2.f;
 
 void main()
 {
-	float rate = 5.f; // seconds per segment
+	float rate = 20.f; // seconds per segment
 
-	float easeRatio = (sin(2.f * 3.14159f * (mod(fGlobalTime, rate) / rate)) / 2.1f) + 0.5f;
+	float easeRatio = (sin(2.f * 3.14159f * (mod(fGlobalTime, rate) / rate)) / 2.05f) + 0.5f;
 
 	v4Color = v4ColorIn;
 	v3TexCoord = v3Position + 0.5f;

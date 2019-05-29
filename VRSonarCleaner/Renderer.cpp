@@ -151,7 +151,7 @@ bool Renderer::init(bool stereoRender, bool stereoContext)
 		}
 	}
 
-	m_pWindow = createFullscreenWindow(1, stereoContext);
+	m_pWindow = createFullscreenWindow(0, stereoContext);
 
 	SDL_GetWindowSize(m_pWindow, &m_ivec2WindowSize.x, &m_ivec2WindowSize.y);
 	
