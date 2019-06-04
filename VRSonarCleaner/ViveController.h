@@ -61,6 +61,9 @@ public:
 	static const glm::vec4 c_vec4TouchPadRight;
 	static const glm::vec4 c_vec4TouchPadTop;
 	static const glm::vec4 c_vec4TouchPadBottom;
+		
+	static const glm::vec4 c_vec4HoleCenter; // Vive Controller 1.5 hole center point on top plane
+	static const glm::vec4 c_vec4HoleNormal; // Vive Controller 1.5 (normalized) hole top plane normal
 
 protected:
 	struct CustomState {

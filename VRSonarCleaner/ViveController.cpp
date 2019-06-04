@@ -11,6 +11,9 @@ const glm::vec4 ViveController::c_vec4TouchPadRight(glm::vec4(0.02023f, 0.00495f
 const glm::vec4 ViveController::c_vec4TouchPadTop(glm::vec4(0.f, 0.00725f, 0.02924f, 1.f));
 const glm::vec4 ViveController::c_vec4TouchPadBottom(glm::vec4(0.f, 0.00265f, 0.06943f, 1.f));
 
+const glm::vec4 ViveController::c_vec4HoleCenter(glm::vec4(-0.00032f, 0.02732f, -0.02553f, 1.f));
+const glm::vec4 ViveController::c_vec4HoleNormal(glm::vec4(0.6948f, 0.3879f, 0.6056f, 0.f));
+
 ViveController::ViveController(vr::TrackedDeviceIndex_t unTrackedDeviceIndex, vr::IVRSystem *pHMD, vr::IVRRenderModels *pRenderModels)
 	: TrackedDevice(unTrackedDeviceIndex, pHMD, pRenderModels)
 	, m_bStateInitialized(false)
