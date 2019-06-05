@@ -124,6 +124,21 @@ void Renderer::setStereoRenderSize(glm::ivec2 res)
 	m_pMonoFramebuffer = m_pLeftEyeFramebuffer;
 }
 
+void Renderer::setMonoRenderSize(glm::ivec2 res)
+{
+	if (m_pMonoFramebuffer)
+	{
+		destroyFrameBuffer(*m_pMonoFramebuffer);
+		delete m_pMonoFramebuffer;
+	}
+	
+
+	m_pMonoFramebuffer = new Renderer::FramebufferDesc();
+
+	if (!createFrameBuffer(res.x, res.y, *m_pMonoFramebuffer))
+		utils::dprintf("Could not create framebuffer!\n");
+}
+
 bool Renderer::init(bool stereoRender, bool stereoContext)
 {
 	m_bStereoRender = stereoRender;

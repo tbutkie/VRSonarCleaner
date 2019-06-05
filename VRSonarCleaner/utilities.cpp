@@ -64,24 +64,29 @@ namespace utils
 	// all parameters are given in world space coordinates
 	glm::mat4 getViewingFrustum(glm::vec3 eyePos, glm::vec3 screenCenter, glm::vec3 screenNormal, glm::vec3 screenUp, glm::vec2 screenSize)
 	{
-		glm::vec3 screenRight = glm::normalize(glm::cross(screenUp, screenNormal));
+
+		glm::vec3 f(glm::normalize(screenCenter - eyePos));
+		glm::vec3 s(glm::normalize(glm::cross(f, screenUp)));
+		glm::vec3 u(glm::cross(s, f));
+
+		//glm::vec3 screenRight = glm::normalize(glm::cross(screenUp, screenNormal));
 
 		float dist = -glm::dot(screenCenter - eyePos, screenNormal);
 
-		float l, r, t, b, n, f;
+		float l, r, t, b, nClip, fClip;
 
-		n = 0.01f;
-		f = dist + 1.f;
+		nClip = 0.01f;
+		fClip = dist + 1.f;
 
 		// use similar triangles to scale to the near plane
-		float nearScale = n / dist;
+		float nearScale = nClip / dist;
 
-		l = ((screenCenter - screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
-		r = ((screenCenter + screenRight * screenSize.x * 0.5f) - eyePos).x * nearScale;
-		b = ((screenCenter - screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
-		t = ((screenCenter + screenUp * screenSize.y * 0.5f) - eyePos).y * nearScale;
+		l = ((screenCenter - s * screenSize.x * 0.5f) - eyePos).x * nearScale;
+		r = ((screenCenter + s * screenSize.x * 0.5f) - eyePos).x * nearScale;
+		b = ((screenCenter - u * screenSize.y * 0.5f) - eyePos).y * nearScale;
+		t = ((screenCenter + u * screenSize.y * 0.5f) - eyePos).y * nearScale;
 
-		return glm::frustum(l, r, b, t, n, f);
+		return glm::frustum(l, r, b, t, nClip, fClip);
 	}
 
 

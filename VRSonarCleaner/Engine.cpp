@@ -9,6 +9,7 @@
 #include "CosmoStudyTrialScene.h"
 #include "CosmoStudyTrialDesktopScene.h"
 #include "MotionCompensationScene.h"
+#include "FishTankScene.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -35,7 +36,8 @@ Engine::Engine()
 	, m_bDemoMode(false)
 	, m_bShowDiagnostics(false)
 	, m_bGLInitialized(false)
-	, m_bUseVR(false)
+	, m_bUseVR(true)
+	, m_bRenderToHMD(false)
 	, m_pCurrentScene(NULL)
 	, m_pHMD(NULL)
 	, m_pTDM(NULL)
@@ -63,17 +65,37 @@ bool Engine::init()
 		return false;
 	}
 
-	if (m_bUseVR)
+	if (m_bUseVR && !initVR())
 	{
-		if (!initVR())
-		{
-			utils::dprintf("%s - Unable to initialize VR!\n", __FUNCTION__);
-			return false;
-		}
+		utils::dprintf("%s - Unable to initialize OpenVR!\n", __FUNCTION__);
+		return false;		
+	}
+
+	if (m_bRenderToHMD)
+	{
+		uint32_t renderWidth, renderHeight;
+		m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+
+		Renderer::getInstance().setStereoRenderSize(glm::ivec2(renderWidth, renderHeight));
+
+		Renderer::SceneViewInfo* leftSVI = Renderer::getInstance().getLeftEyeInfo();
+		Renderer::SceneViewInfo* rightSVI = Renderer::getInstance().getRightEyeInfo();
+
+		leftSVI->m_nRenderWidth = renderWidth;
+		leftSVI->m_nRenderHeight = renderHeight;
+		leftSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
+		leftSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
+		leftSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
+
+		rightSVI->m_nRenderWidth = renderWidth;
+		rightSVI->m_nRenderHeight = renderHeight;
+		rightSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
+		rightSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
+		rightSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
 	}
 	else
 	{
-		Renderer::getInstance().setStereoRenderSize(Renderer::getInstance().getPresentationWindowSize());
+		Renderer::getInstance().setMonoRenderSize(Renderer::getInstance().getPresentationWindowSize());
 	}
 
 
@@ -88,14 +110,9 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	if (false)
-	{
-		m_pCurrentScene = new FlowScene(m_pTDM);
-	}
-	else
-	{
-		m_pCurrentScene = new CosmoStudyTrialDesktopScene();
-	}
+	//m_pCurrentScene = new FlowScene(m_pTDM);	
+	//m_pCurrentScene = new CosmoStudyTrialDesktopScene();
+	m_pCurrentScene = new FishTankScene(m_pTDM);
 
 	m_pCurrentScene->init();
 
@@ -135,26 +152,6 @@ bool Engine::initVR()
 	}
 
 	InfoBoxManager::getInstance().BInit(m_pTDM);
-	
-	uint32_t renderWidth, renderHeight;
-	m_pHMD->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
-
-	Renderer::getInstance().setStereoRenderSize(glm::ivec2(renderWidth, renderHeight));
-
-	Renderer::SceneViewInfo* leftSVI = Renderer::getInstance().getLeftEyeInfo();
-	Renderer::SceneViewInfo* rightSVI = Renderer::getInstance().getRightEyeInfo();
-	
-	leftSVI->m_nRenderWidth = renderWidth;
-	leftSVI->m_nRenderHeight = renderHeight;
-	leftSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Left));
-	leftSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Left, g_fNearClip, g_fFarClip);
-	leftSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
-	
-	rightSVI->m_nRenderWidth = renderWidth;
-	rightSVI->m_nRenderHeight = renderHeight;
-	rightSVI->viewTransform = glm::inverse(m_pTDM->getHMDEyeToHeadTransform(vr::Eye_Right));
-	rightSVI->projection = m_pTDM->getHMDEyeProjection(vr::Eye_Right, g_fNearClip, g_fFarClip);
-	rightSVI->viewport = glm::ivec4(0, 0, renderWidth, renderHeight);
 
 	return true;
 }
@@ -364,7 +361,7 @@ void Engine::render()
 {
 	glm::vec3 transparencySortViewPos;
 
-	if (m_bUseVR)
+	if (m_bRenderToHMD)
 	{
 		// Update eye positions using current HMD position
 		glm::mat4 worldToHMD = m_pTDM->getWorldToHMDTransform();
@@ -385,7 +382,7 @@ void Engine::render()
 	Renderer::getInstance().sortTransparentObjects(transparencySortViewPos);
 	Renderer::getInstance().render();
 
-	if (m_bUseVR)
+	if (m_bRenderToHMD)
 	{
 		vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getLeftEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 		vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)Renderer::getInstance().getRightEyeFrameBuffer()->m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };

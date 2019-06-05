@@ -179,6 +179,7 @@
     <ClCompile Include="DebugProbe.cpp" />
     <ClCompile Include="DemoBehavior.cpp" />
     <ClCompile Include="DesktopCleanBehavior.cpp" />
+    <ClCompile Include="FishTankScene.cpp" />
     <ClCompile Include="FlowFieldCurator.cpp" />
     <ClCompile Include="FlowScene.cpp" />
     <ClCompile Include="GrabObjectBehavior.cpp" />
@@ -249,6 +250,7 @@
     <ClInclude Include="DebugProbe.h" />
     <ClInclude Include="DemoBehavior.h" />
     <ClInclude Include="DesktopCleanBehavior.h" />
+    <ClInclude Include="FishTankScene.h" />
     <ClInclude Include="FlowFieldCurator.h" />
     <ClInclude Include="FlowScene.h" />
     <ClInclude Include="GrabObjectBehavior.h" />

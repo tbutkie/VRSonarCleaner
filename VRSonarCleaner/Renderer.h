@@ -141,6 +141,7 @@ public:
 	}
 
 	void setStereoRenderSize(glm::ivec2 res);
+	void setMonoRenderSize(glm::ivec2 res);
 	
 	bool init(bool stereoRender = false, bool stereoContext = false);
 	void update();

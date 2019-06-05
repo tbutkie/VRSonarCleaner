@@ -252,6 +252,9 @@
     <ClCompile Include="CosmoStudyTrialDesktopScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="FishTankScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -462,6 +465,9 @@
       <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
     <ClInclude Include="CosmoStudyTrialDesktopScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="FishTankScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>

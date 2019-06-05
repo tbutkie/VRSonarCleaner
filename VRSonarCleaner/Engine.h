@@ -37,6 +37,7 @@ private:
 	bool m_bShowDiagnostics;
 
 	bool m_bUseVR;
+	bool m_bRenderToHMD;
 
 	vr::IVRSystem *m_pHMD;
 
