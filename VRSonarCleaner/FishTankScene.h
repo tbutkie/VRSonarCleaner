@@ -30,6 +30,9 @@ private:
 	glm::vec3 m_vec3ScreenNormal;
 	glm::vec3 m_vec3ScreenUp;
 
+	glm::mat4 m_mat4ScreenToWorld;
+	glm::mat4 m_mat4WorldToScreen;
+
 private:
-	
+	void calcWorldToScreen();
 };
