@@ -1,9 +1,19 @@
 #include "FishTankScene.h"
 #include "BehaviorManager.h"
+#include "GrabObjectBehavior.h"
 #include <gtc/quaternion.hpp>
 #include "utilities.h"
 #include <random>
 
+class GrabCube : public Object3D {
+public:
+	GrabCube(glm::vec3 pos, glm::quat orientation, glm::vec3 dim)
+		: Object3D(pos, orientation, dim)
+	{}
+	~GrabCube() {}
+};
+
+GrabCube* g_pGrabCube;
 
 FishTankScene::FishTankScene(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
@@ -14,11 +24,19 @@ FishTankScene::FishTankScene(TrackedDeviceManager* pTDM)
 
 FishTankScene::~FishTankScene()
 {
+	if (g_pGrabCube)
+	{
+		delete g_pGrabCube;
+	}
 }
 
 void FishTankScene::init()
 {
 	Renderer::getInstance().toggleSkybox();
+
+	g_pGrabCube = new GrabCube(glm::vec3(0.f), glm::quat(), glm::vec3(0.1f));
+
+	BehaviorManager::getInstance().addBehavior("grabcube", new GrabObjectBehavior(m_pTDM, g_pGrabCube));
 
 	m_vec3ScreenCenter = glm::vec3(-0.2f, 1.f, 0.5f);
 	m_vec3ScreenNormal = glm::normalize(glm::vec3(0.2f, -0.5f, 1.f));
@@ -80,43 +98,36 @@ void FishTankScene::update()
 		
 		cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;
 		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+
+		g_pGrabCube->setPosition(m_mat4ScreenToWorld[3]);
+		g_pGrabCube->setOrientation(m_mat4ScreenToWorld);
+		g_pGrabCube->setDimensions(glm::vec3(0.1f));
 	}
 
 	if (m_pTDM->getTracker() && m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->isTouchpadClicked())
 	{
 		cam->pos = m_pTDM->getTracker()->getDeviceToWorldTransform()[3];
 		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-		//cam->lookat = m_vec3ScreenCenter;
-		//cam->up = m_pTDM->getTracker()->getDeviceToWorldTransform()[1];
 	}
 
-	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
-	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
-
-	float width_m = winSize.x * sizer;
-	float height_m = winSize.y * sizer;
-
 	Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
-	//svi->view = (m_pTDM->getTracker() && m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->isTouchpadClicked()) ? glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) : glm::lookAt(cam->pos, cam->lookat, cam->up);
+
 	svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
-	//svi->view = glm::lookAt(
-	//	glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->pos, 1.f)),
-	//	glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->lookat, 1.f)),
-	//	glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->up, 0.f))
-	//);
+
 	svi->projection = utils::getViewingFrustum(
 		m_mat4WorldToScreen * glm::vec4(cam->pos, 1.f),
 		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenCenter, 1.f),
 		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenNormal, 0.f),
 		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenUp, 0.f),
-		glm::vec2(width_m, height_m)
+		m_vec2ScreenSizeMeters
 	);
 
 }
 
 void FishTankScene::draw()
 {
-	Renderer::getInstance().drawPrimitive("cube", m_mat4ScreenToWorld *  glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f) * 0.0f) * glm::scale(glm::mat4(), glm::vec3(0.1f)), glm::vec4(0.5f, 0.f, 0.f, 1.f));
+	//Renderer::getInstance().drawPrimitive("cube", m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f) * 0.0f) * glm::scale(glm::mat4(), glm::vec3(0.1f)), glm::vec4(0.5f, 0.f, 0.f, 1.f));
+	Renderer::getInstance().drawPrimitive("cube", glm::translate(glm::mat4(), g_pGrabCube->getPosition()) * glm::mat4(g_pGrabCube->getOrientation()) * glm::scale(glm::mat4(), g_pGrabCube->getDimensions()), glm::vec4(0.5f, 0.f, 0.f, 1.f));
 	Renderer::getInstance().drawPrimitive("icosphere", m_mat4ScreenToWorld *  glm::translate(glm::mat4(), glm::vec3(-0.9f, 0.f, -0.5f) * 0.2f) * glm::scale(glm::mat4(), glm::vec3(0.02f)), glm::vec4(0.5f, 0.f, 0.5f, 1.f));
 	Renderer::getInstance().drawPrimitive("torus", m_mat4ScreenToWorld *  glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -1.f) * 0.25f) * glm::rotate(glm::mat4(), glm::radians(45.f), glm::normalize(glm::vec3(-0.25f, -0.58f, 0.88f))) * glm::scale(glm::mat4(), glm::vec3(0.05f)), glm::vec4(0.f, 0.f, 0.5f, 1.f));
 	Renderer::getInstance().drawPrimitive("cube", m_mat4ScreenToWorld *  glm::translate(glm::mat4(), glm::vec3(0.5f, -0.5f, -0.9f) * 0.3f) * glm::rotate(glm::mat4(), glm::radians(45.f), glm::normalize(glm::vec3(0.5f, -1.f, 0.33f))) * glm::scale(glm::mat4(), glm::vec3(0.07f)), glm::vec4(1.f, 1.f, 1.f, 1.f));

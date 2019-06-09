@@ -72,7 +72,7 @@ namespace utils
 
 		float l, r, t, b, n, f;
 
-		n = 0.01f;
+		n = glm::abs(dist - 0.5f);
 		f = dist + 1.f;
 
 		// use similar triangles to scale to the near plane
