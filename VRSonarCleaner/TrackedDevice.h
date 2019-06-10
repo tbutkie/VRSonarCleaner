@@ -23,8 +23,11 @@ public:
 	void setRenderModelName(std::string renderModelName);
 	bool hasRenderModel();
 
+	void hideRenderModel();
+	void showRenderModel();
+	bool isHidden();
+
 	bool poseValid();
-	glm::mat4 getPose();
 	uint32_t getComponentID(std::string componentName);
 	uint32_t getComponentID(vr::EVRButtonId buttonEnum);
 	glm::mat4 getComponentPose(uint32_t componentID);

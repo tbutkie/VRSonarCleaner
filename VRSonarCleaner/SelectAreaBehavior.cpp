@@ -198,13 +198,13 @@ void SelectAreaBehavior::draw()
 		// connector
 		float connectorRadius = 0.005f;
 
-		glm::vec3 controllerToCursorVec = m_vec3CurrentLocationOnPlane - glm::vec3(m_pTDM->getPrimaryController()->getPose()[3]);
+		glm::vec3 controllerToCursorVec = m_vec3CurrentLocationOnPlane - glm::vec3(m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]);
 
 		glm::quat rot = glm::rotation(glm::vec3(0.f, 0.f, 1.f), glm::normalize(controllerToCursorVec));
 
 		glm::mat4 rotMat = glm::mat4_cast(rot);
 
-		trans = glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->getPose()[3]));
+		trans = glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]));
 		trans *= rotMat;
 		trans *= glm::scale(glm::mat4(), glm::vec3(connectorRadius, connectorRadius, glm::length(controllerToCursorVec)));
 
@@ -296,8 +296,8 @@ glm::vec3 SelectAreaBehavior::calcHits()
 {
 	glm::vec3 planeOrigin = m_pDataVolumeSelection->getPosition() + glm::rotate(m_pDataVolumeSelection->getOrientation(), glm::vec3(0.f, 0.f, 1.f)) * m_pDataVolumeSelection->getDimensions().z * 0.5f;
 	glm::vec3 planeNormal = glm::rotate(m_pDataVolumeSelection->getOrientation(), glm::vec3(0.f, 0.f, 1.f));
-	glm::vec3 rayOrigin = glm::vec3(m_pTDM->getPrimaryController()->getPose()[3]);
-	glm::vec3 rayDirection = glm::normalize(glm::vec3(-m_pTDM->getPrimaryController()->getPose()[2]));
+	glm::vec3 rayOrigin = glm::vec3(m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3]);
+	glm::vec3 rayDirection = glm::normalize(glm::vec3(-m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[2]));
 	glm::vec3 ptOnPlane;
 
 	m_bRayHitPlane = castRay(rayOrigin, rayDirection, planeOrigin, planeNormal, &ptOnPlane);

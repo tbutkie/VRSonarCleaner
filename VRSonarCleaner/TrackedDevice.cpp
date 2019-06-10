@@ -59,14 +59,24 @@ bool TrackedDevice::hasRenderModel()
 	return m_bHasRenderModel;
 }
 
+void TrackedDevice::hideRenderModel()
+{
+	m_bHidden = true;
+}
+
+void TrackedDevice::showRenderModel()
+{
+	m_bHidden = false;
+}
+
+bool TrackedDevice::isHidden()
+{
+	return m_bHidden;
+}
+
 bool TrackedDevice::poseValid()
 {
 	return m_Pose.bPoseIsValid;
-}
-
-glm::mat4 TrackedDevice::getPose()
-{
-	return ConvertSteamVRMatrixToMatrix4(m_Pose.mDeviceToAbsoluteTracking);
 }
 
 uint32_t TrackedDevice::getComponentID(std::string componentName)

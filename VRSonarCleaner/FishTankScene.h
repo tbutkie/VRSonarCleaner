@@ -35,6 +35,10 @@ private:
 	glm::mat4 m_mat4ScreenToWorld;
 	glm::mat4 m_mat4WorldToScreen;
 
+	glm::mat4 m_mat4TrackerToEyeCenterOffset;
+
+	bool m_bHeadTracking;
+
 private:
 	void calcWorldToScreen();
 };
