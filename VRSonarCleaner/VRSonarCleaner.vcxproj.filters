@@ -255,6 +255,9 @@
     <ClCompile Include="FishTankScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="FishTankSonarScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -468,6 +471,9 @@
       <Filter>Scenes</Filter>
     </ClInclude>
     <ClInclude Include="FishTankScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="FishTankSonarScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>

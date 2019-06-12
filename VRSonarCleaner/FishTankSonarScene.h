@@ -3,17 +3,19 @@
 
 #include "DataVolume.h"
 #include "TrackedDeviceManager.h"
-#include "DataLogger.h"
+#include "DataVolume.h"
+#include "SonarPointCloud.h"
+#include "ColorScaler.h"
 #include "Renderer.h"
 #include <random>
 #include <chrono>
 
-class FishTankScene :
+class FishTankSonarScene :
 	public Scene
 {
 public:
-	FishTankScene(TrackedDeviceManager* pTDM, float screenDiagInches);
-	~FishTankScene();
+	FishTankSonarScene(TrackedDeviceManager* pTDM, float screenDiagInches);
+	~FishTankSonarScene();
 
 	void init();
 
@@ -28,11 +30,11 @@ private:
 
 	glm::vec3 m_vec3COPOffsetTrackerSpace;
 
-	float m_fScreenDiagonalMeters;
-
 	glm::vec3 m_vec3ScreenCenter;
 	glm::vec3 m_vec3ScreenNormal;
 	glm::vec3 m_vec3ScreenUp;
+
+	float m_fScreenDiagonalMeters;
 
 	glm::vec2 m_vec2ScreenSizeMeters;
 
@@ -43,6 +45,15 @@ private:
 
 	bool m_bHeadTracking;
 
+	DataVolume *m_pTableVolume;
+
+	ColorScaler* m_pColorScalerTPU;
+
+	std::vector<SonarPointCloud*> m_vpClouds;
+
+	bool m_bInitialColorRefresh;
+
 private:
 	void calcWorldToScreen();
+	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 };

@@ -28,7 +28,7 @@ out vec3 v3Normal;
 out vec4 v4Color;
 out vec2 v2TexCoords;
 
-float size = 0.001f;
+float size = 0.0005f;
 
 void main()
 {

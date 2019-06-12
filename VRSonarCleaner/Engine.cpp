@@ -10,6 +10,7 @@
 #include "CosmoStudyTrialDesktopScene.h"
 #include "MotionCompensationScene.h"
 #include "FishTankScene.h"
+#include "FishTankSonarScene.h"
 
 #include "HolodeckBackground.h"
 #include "utilities.h"
@@ -115,7 +116,7 @@ bool Engine::init()
 
 	//m_pCurrentScene = new FlowScene(m_pTDM);	
 	//m_pCurrentScene = new CosmoStudyTrialDesktopScene();
-	m_pCurrentScene = new FishTankScene(m_pTDM);
+	m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
 
 	m_pCurrentScene->init();
 

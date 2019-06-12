@@ -15,9 +15,11 @@ public:
 
 GrabCube* g_pGrabCube;
 
-FishTankScene::FishTankScene(TrackedDeviceManager* pTDM)
+FishTankScene::FishTankScene(TrackedDeviceManager* pTDM, float screenDiagInches)
 	: m_pTDM(pTDM)
 	, m_bHeadTracking(false)
+	, m_vec3COPOffsetTrackerSpace(0.00420141f, -0.0414f, 0.0778124f)
+	, m_fScreenDiagonalMeters(screenDiagInches * 0.0254f)
 {
 
 }
@@ -44,6 +46,8 @@ void FishTankScene::init()
 	m_vec3ScreenUp = glm::vec3(0.f, 1.f, 0.f);
 
 	calcWorldToScreen();
+
+	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
 	
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 	cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;// +glm::normalize(glm::cross(m_vec3ScreenNormal, m_vec3ScreenUp)) * 0.1f + m_vec3ScreenUp * 0.2f;
@@ -52,7 +56,7 @@ void FishTankScene::init()
 
 	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
 
-	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+	float sizer = m_fScreenDiagonalMeters / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
 
 	m_vec2ScreenSizeMeters.x = winSize.x * sizer;
 	m_vec2ScreenSizeMeters.y = winSize.y * sizer;
@@ -115,11 +119,10 @@ void FishTankScene::update()
 	{
 		m_pTDM->getSecondaryController()->hideRenderModel();
 
-		if (m_pTDM->getSecondaryController()->justPressedGrip())
+		if (m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getTracker())
 		{
 			glm::mat4 ctrTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getSecondaryController()->c_vec4HoleCenter));
 			glm::vec4 eyeCenterTrackerSpace = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * ctrTrans[3];
-			m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), glm::vec3(eyeCenterTrackerSpace));
 			std::cout << "Tracker to Center of Projection Offset: (" << m_mat4TrackerToEyeCenterOffset[3].x << ", " << m_mat4TrackerToEyeCenterOffset[3].y << ", " << m_mat4TrackerToEyeCenterOffset[3].z << ")" << std::endl;
 		}
 	}
