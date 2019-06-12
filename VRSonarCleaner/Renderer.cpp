@@ -193,7 +193,7 @@ bool Renderer::init(bool stereoRender, bool stereoContext)
 	SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR));
 
 	// Set V-Sync
-	if (SDL_GL_SetSwapInterval(0) < 0)
+	if (SDL_GL_SetSwapInterval(1) < 0)
 		printf("%s - Warning: Unable to set VSync! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 
 	glewExperimental = GL_TRUE;

@@ -19,7 +19,7 @@
 class Engine
 {
 public:
-	Engine();
+	Engine(bool demo, bool vr, bool renderToHMD, bool stereoContext, int displayIndex, float displayDiagInches);
 	virtual ~Engine();
 
 	bool init();
@@ -29,15 +29,19 @@ public:
 	void RunMainLoop();
 	
 private:
+	// Initialization Parameters
+	bool m_bDemoMode;
+	bool m_bUseVR;
+	bool m_bRenderToHMD;
+	bool m_bStereoOpenGL;
+	int m_nDisplayIndex;
+	float m_fDisplayDiagonalInches;
+
 	std::chrono::duration<double, std::milli> m_msFrameTime, m_msInputHandleTime, m_msUpdateTime, m_msDrawTime, m_msRenderTime;
 
 	bool m_bGLInitialized;
 	bool m_bShowDesktopFrustum;
-	bool m_bDemoMode;
 	bool m_bShowDiagnostics;
-
-	bool m_bUseVR;
-	bool m_bRenderToHMD;
 
 	vr::IVRSystem *m_pHMD;
 

@@ -31,13 +31,16 @@ float							g_fFarClip = 100.f;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-Engine::Engine()
-	: m_bShowDesktopFrustum(false)
-	, m_bDemoMode(false)
+Engine::Engine(bool demo, bool vr, bool renderToHMD, bool stereoContext, int displayIndex, float displayDiagInches)
+	: m_bDemoMode(demo)
+	, m_bUseVR(vr)
+	, m_bRenderToHMD(renderToHMD)
+	, m_bStereoOpenGL(stereoContext)
+	, m_nDisplayIndex(displayIndex)
+	, m_fDisplayDiagonalInches(displayDiagInches)
+	, m_bShowDesktopFrustum(false)
 	, m_bShowDiagnostics(false)
 	, m_bGLInitialized(false)
-	, m_bUseVR(true)
-	, m_bRenderToHMD(false)
 	, m_pCurrentScene(NULL)
 	, m_pHMD(NULL)
 	, m_pTDM(NULL)
@@ -59,7 +62,7 @@ Engine::~Engine()
 //-----------------------------------------------------------------------------
 bool Engine::init()
 {
-	if (!Renderer::getInstance().init())
+	if (!Renderer::getInstance().init(m_bRenderToHMD || m_bStereoOpenGL, m_bStereoOpenGL))
 	{
 		utils::dprintf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
 		return false;
