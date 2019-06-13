@@ -78,7 +78,11 @@ void main()
 	vec4 valrange = diffColor - specColor;
 	vec4 normAttribs = (texAttribSample - specColor) / valrange;
 
-	vec4 vecColor = (texSample + 1.f) / 2.f;
+	//unskew the normalized distribution
+	normAttribs.g = sqrt(sqrt(normAttribs.g));
+
+	//vec4 vecColor = (texSample + 1.f) / 2.f;
+	vec4 vecColor = normAttribs;
 
 	//outputColor = mix(vec4(0.f, 0.f, 0.8f, 1.f), vec4(0.8f, 0.8f, 0.f, 1.f), pow(normAttribs.g, 1.f/12.f));
 	//outputColor.a = 0.5f;
@@ -89,11 +93,11 @@ void main()
 	vec4 sharpColor = (sharpSample + 1.f) / 2.f;
 	//outputColor.rgb = vec3(sharpSample.g);
 	//outputColor.a = 1.f;
-	outputColor = vecColor;
+	outputColor = vec4(1.f, 0.f, 0.f, vecColor.g);
 
-	outputColor.a = sharpSample.g > 0.f ? sharpSample.g : 0.f;
+	//outputColor.a = sharpSample.g > 0.f ? sharpSample.g : 0.f;
 
 	// color areas with no data red
-	if (texAttribSample.r + texAttribSample.g + texAttribSample.b + texAttribSample.a == 0.f) 
-		outputColor = vec4(1.f, 0.f, 0.f, 1.f);
+	//if (texAttribSample.r + texAttribSample.g + texAttribSample.b + texAttribSample.a == 0.f) 
+	//	outputColor = vec4(1.f, 0.f, 0.f, 1.f);
 }

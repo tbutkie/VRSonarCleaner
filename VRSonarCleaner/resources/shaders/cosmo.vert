@@ -28,7 +28,7 @@ void main()
 
 	v4Color = v4ColorIn;
 	v3TexCoord = v3Position + 0.5f;
-	v3TexCoord.z = easeRatio;
+	//v3TexCoord.z = easeRatio;
 	vec4 v4EyePos = m4View * m4Model * vec4(v3TexCoord, 1.f);
 
 	gl_PointSize = spriteSize / length(v4EyePos.xyz);

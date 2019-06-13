@@ -1,5 +1,6 @@
 #include "CosmoStudyTrialDesktopScene.h"
 #include "BehaviorManager.h"
+#include "LightingSystem.h"
 #include <gtc/quaternion.hpp>
 #include "utilities.h"
 #include <random>
@@ -354,7 +355,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_F12)
+			if (ev.key.keysym.sym == SDLK_BACKSPACE)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
 					return p.desc.compare("Clear Color") == 0;
@@ -426,6 +427,9 @@ void CosmoStudyTrialDesktopScene::update()
 	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
 
 	//std::cout << elapsedTimeMS << " | " << ratio << " | " << amount << " | " << rotNow << std::endl;
+
+	LightingSystem::Light* l = LightingSystem::getInstance().getLight(0);
+	l->direction = glm::inverse(Renderer::getInstance().getLeftEyeInfo()->view) * glm::normalize(glm::vec4(-1.f, -1.f, -1.f, 0.f));
 }
 
 void CosmoStudyTrialDesktopScene::draw()
