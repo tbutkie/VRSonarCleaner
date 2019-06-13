@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	Engine *pEngine = new Engine(bDemo, bVR, !bNoHMD, bStereoGL, nScreenIndex, fScreenDiagInches);
+	Engine *pEngine = new Engine(bDemo, bVR, bVR && !bNoHMD, bStereoGL, nScreenIndex, fScreenDiagInches);
 
 	if (!pEngine->init())
 	{
