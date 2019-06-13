@@ -69,8 +69,7 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 
 
 Renderer::Renderer()
-	: m_pLighting(NULL)
-	, m_glFrameUBO(0)
+	: m_glFrameUBO(0)
 	, m_bShowWireframe(false)
 	, m_uiFontPointSize(144u)
 	, m_tpStart(std::chrono::high_resolution_clock::now())
@@ -212,9 +211,8 @@ bool Renderer::init(bool stereoRender, bool stereoContext)
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
 
-	m_pLighting = new LightingSystem();
 	// add a directional light and change its ambient coefficient
-	m_pLighting->addDirectLight(glm::vec4(1.f, -1.f, 1.f, 0.f))->ambientCoefficient = 0.5f;
+	LightingSystem::getInstance().addDirectLight(glm::vec4(1.f, -1.f, 1.f, 0.f))->ambientCoefficient = 0.5f;
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -639,10 +637,10 @@ void Renderer::setupShaders()
 	m_mapShaders["cosmo"] = m_Shaders.AddProgramFromExts({ "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 
 
-	m_pLighting->addShaderToUpdate(m_mapShaders["lighting"]);
-	m_pLighting->addShaderToUpdate(m_mapShaders["lightingWireframe"]);
-	m_pLighting->addShaderToUpdate(m_mapShaders["instanced_lit"]);
-	m_pLighting->addShaderToUpdate(m_mapShaders["streamline"]);
+	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["lighting"]);
+	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["lightingWireframe"]);
+	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["instanced_lit"]);
+	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["streamline"]);
 }
 
 void Renderer::setupTextures()
@@ -737,7 +735,7 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4Projection), sizeof(FrameUniforms::m4Projection), glm::value_ptr(sceneView3DInfo->projection));
 		glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
 
-		m_pLighting->update(sceneView3DInfo->view);
+		LightingSystem::getInstance().update(sceneView3DInfo->view);
 
 		// Opaque objects first while depth buffer writing enabled
 		processRenderQueue(m_vStaticRenderQueue_Opaque);

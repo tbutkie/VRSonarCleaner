@@ -277,8 +277,6 @@ private:
 	std::map<char, Character> m_mapSloanCharacters;
 	unsigned int m_uiFontPointSize;
 
-	LightingSystem* m_pLighting;
-
 	ShaderSet m_Shaders;
 
 	Renderer::SceneViewInfo *m_sviMonoInfo;

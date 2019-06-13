@@ -17,9 +17,7 @@ LightingSystem::LightingSystem()
 	: m_glLightingUBO(0)
 	, m_nLights(0)
 {
-	//glCreateBuffers(1, &m_glLightingUBO);
-	//glNamedBufferData(m_glLightingUBO, sizeof(FrameUniforms), NULL, GL_STATIC_DRAW); // allocate memory
-	//glBindBufferRange(GL_UNIFORM_BUFFER, SCENE_UNIFORM_BUFFER_LOCATION, m_glLightingUBO, 0, sizeof(FrameUniforms));
+
 }
 
 LightingSystem::~LightingSystem()
@@ -116,4 +114,11 @@ LightingSystem::Light* LightingSystem::addSpotLight(glm::vec4 position, glm::vec
 	return &m_arrLights[m_nLights++];
 }
 
+LightingSystem::Light* LightingSystem::getLight(int index)
+{
+	if (index >= MAX_LIGHTS)
+		return nullptr;
+
+	return &m_arrLights[index];
+}
 #endif

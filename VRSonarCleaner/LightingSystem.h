@@ -42,8 +42,12 @@ public:
 	};
 
 public:
-	LightingSystem();
-	~LightingSystem();
+	// Singleton instance access
+	static LightingSystem& getInstance()
+	{
+		static LightingSystem s_instance;
+		return s_instance;
+	}
 
 	void addShaderToUpdate(GLuint* shader);
 	void update(glm::mat4 view);
@@ -72,7 +76,13 @@ public:
 		, float outerCutOffDeg = 15.f
 		);
 
+	Light* getLight(int index);
+
 private:
+	LightingSystem();
+	~LightingSystem();
+
+
 	Light m_arrLights[MAX_LIGHTS];
 
 	GLuint m_glLightingUBO;
@@ -80,6 +90,11 @@ private:
 	std::vector<GLuint*> m_vpShadersWithLighting;
 
 	int m_nLights;
+
+public:
+	// DELETE THE FOLLOWING FUNCTIONS TO AVOID NON-SINGLETON USE
+	LightingSystem(LightingSystem const&) = delete;
+	void operator=(LightingSystem const&) = delete;
 };
 
 #endif
