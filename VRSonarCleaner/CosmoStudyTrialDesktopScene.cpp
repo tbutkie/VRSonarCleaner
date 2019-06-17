@@ -60,7 +60,8 @@ CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
 
 void CosmoStudyTrialDesktopScene::init()
 {
-	m_tpStart = std::chrono::high_resolution_clock::now();
+	Renderer::getInstance().addShader("streamline", { "resources/shaders/streamline.vert", "resources/shaders/streamline.frag" }, true);
+	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
@@ -408,12 +409,8 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 void CosmoStudyTrialDesktopScene::update()
 {
 	m_pCosmoVolume->update();
-	
-	using clock = std::chrono::high_resolution_clock;
 
-	clock::time_point tick = clock::now();
-
-	float elapsedTimeMS = std::chrono::duration<float, std::milli>(tick - m_tpStart).count();
+	float elapsedTimeMS = Renderer::getInstance().getElapsedMilliseconds();
 
 	float oscTimeMS = m_fOscTime * 1000.f;
 
@@ -425,8 +422,6 @@ void CosmoStudyTrialDesktopScene::update()
 
 	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 1.f, 0.f)));
 	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
-
-	//std::cout << elapsedTimeMS << " | " << ratio << " | " << amount << " | " << rotNow << std::endl;
 
 	LightingSystem::Light* l = LightingSystem::getInstance().getLight(0);
 	l->direction = glm::inverse(Renderer::getInstance().getLeftEyeInfo()->view) * glm::normalize(glm::vec4(-1.f, -1.f, -1.f, 0.f));

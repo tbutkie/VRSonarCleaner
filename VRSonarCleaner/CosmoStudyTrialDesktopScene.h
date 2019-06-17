@@ -57,7 +57,6 @@ private:
 	void buildScalarPlane();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 
-	std::chrono::high_resolution_clock::time_point m_tpStart;
 	float m_fOscAmpDeg;
 	float m_fOscTime;
 

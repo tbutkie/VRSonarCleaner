@@ -78,6 +78,7 @@ Renderer::Renderer()
 	, m_bStereoRender(true)
 	, m_vec4ClearColor(glm::vec4(0.15f, 0.15f, 0.18f, 1.f))
 	, m_sviMonoInfo(&m_sviLeftEyeInfo)
+	, m_nFrameCount(0u)
 {
 }
 
@@ -606,6 +607,21 @@ void Renderer::toggleSkybox()
 	m_bShowSkybox = !m_bShowSkybox;
 }
 
+float Renderer::getElapsedSeconds()
+{
+	return std::chrono::duration<float>(m_tpRender - m_tpStart).count();
+}
+
+float Renderer::getElapsedMilliseconds()
+{
+	return std::chrono::duration<float, std::milli>(m_tpRender - m_tpStart).count();
+}
+
+uint64_t Renderer::getRenderedFrameCount()
+{
+	return m_nFrameCount;
+}
+
 void Renderer::sortTransparentObjects(glm::vec3 HMDPos)
 {
 	std::sort(m_vStaticRenderQueue_Transparency.begin(), m_vStaticRenderQueue_Transparency.end(), ObjectSorter(HMDPos));
@@ -623,24 +639,36 @@ void Renderer::setupShaders()
 
 	m_Shaders.SetPreambleFile("GLSLpreamble.h");
 
-	m_mapShaders["vrwindow"] = m_Shaders.AddProgramFromExts({ "resources/shaders/vrwindow.vert", "resources/shaders/windowtexture.frag" });
-	m_mapShaders["desktopwindow"] = m_Shaders.AddProgramFromExts({ "resources/shaders/desktopwindow.vert", "resources/shaders/windowtexture.frag" });
-	m_mapShaders["lighting"] = m_Shaders.AddProgramFromExts({ "resources/shaders/lighting.vert", "resources/shaders/lighting.frag" });
-	m_mapShaders["lightingWireframe"] = m_Shaders.AddProgramFromExts({ "shaders/lighting.vert", "resources/shaders/lightingWF.geom", "shaders/lightingWF.frag" });
-	m_mapShaders["flat"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
-	m_mapShaders["debug"] = m_Shaders.AddProgramFromExts({ "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
-	m_mapShaders["text"] = m_Shaders.AddProgramFromExts({ "resources/shaders/text.vert", "resources/shaders/text.frag" });
-	m_mapShaders["skybox"] = m_Shaders.AddProgramFromExts({ "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
-	m_mapShaders["instanced"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
-	m_mapShaders["instanced_lit"] = m_Shaders.AddProgramFromExts({ "resources/shaders/instanced.vert", "resources/shaders/lighting.frag" });
-	m_mapShaders["streamline"] = m_Shaders.AddProgramFromExts({ "resources/shaders/streamline.vert", "resources/shaders/streamline.frag" });
-	m_mapShaders["cosmo"] = m_Shaders.AddProgramFromExts({ "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
+	addShader("vrwindow", { "resources/shaders/vrwindow.vert", "resources/shaders/windowtexture.frag" });
+	addShader("desktopwindow", { "resources/shaders/desktopwindow.vert", "resources/shaders/windowtexture.frag" });
+	addShader("lighting", { "resources/shaders/lighting.vert", "resources/shaders/lighting.frag" }, true);
+	addShader("lightingWireframe", { "shaders/lighting.vert", "resources/shaders/lightingWF.geom", "shaders/lightingWF.frag" }, true);
+	addShader("flat", { "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
+	addShader("debug", { "resources/shaders/flat.vert", "resources/shaders/flat.frag" });
+	addShader("text", { "resources/shaders/text.vert", "resources/shaders/text.frag" });
+	addShader("skybox", { "resources/shaders/skybox.vert", "resources/shaders/skybox.frag" });
+	addShader("instanced", { "resources/shaders/instanced.vert", "resources/shaders/instanced.frag" });
+	addShader("instanced_lit", { "resources/shaders/instanced.vert", "resources/shaders/lighting.frag" }, true);
+}
 
+bool Renderer::addShader(std::string shaderName, std::vector<std::string> shaderSources, bool lighting)
+{
+	if (m_mapShaders.find(shaderName) != m_mapShaders.end())
+		std::cout << "Replacing shader: " << shaderName << std::endl;
 
-	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["lighting"]);
-	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["lightingWireframe"]);
-	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["instanced_lit"]);
-	LightingSystem::getInstance().addShaderToUpdate(m_mapShaders["streamline"]);
+	auto shaderHandle = m_Shaders.AddProgramFromExts(shaderSources);
+
+	if (shaderHandle)
+	{
+		m_mapShaders[shaderName] = shaderHandle;
+
+		if (lighting)
+			LightingSystem::getInstance().addShaderToUpdate(shaderHandle);
+
+		return true;
+	}
+
+	return false;
 }
 
 void Renderer::setupTextures()
@@ -937,8 +965,9 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 
 void Renderer::render()
 {
-	auto tick = std::chrono::high_resolution_clock::now();
-	float secsElapsed = std::chrono::duration<float>(tick - m_tpStart).count();
+	m_tpRender = std::chrono::high_resolution_clock::now();
+
+	float secsElapsed = getElapsedSeconds();
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, fGlobalTime), sizeof(FrameUniforms::fGlobalTime), &secsElapsed);
 
 	if (m_bStereoRender)
@@ -1034,6 +1063,8 @@ void Renderer::swapAndClear()
 	SDL_GL_SwapWindow(m_pWindow);
 	clearDynamicRenderQueue();
 	clearUIRenderQueue();
+
+	m_nFrameCount++;
 }
 
 bool Renderer::sortByViewDistance(RendererSubmission const & rsLHS, RendererSubmission const & rsRHS, glm::vec3 const & HMDPos)

@@ -202,10 +202,17 @@ public:
 
 	void toggleWireframe();
 
+	bool addShader(std::string shaderName, std::vector<std::string> shaderSources, bool lighting = false);
+
 	GLTexture* getTexture(std::string texName);
 	bool addTexture(GLTexture* tex);
 
 	void toggleSkybox();
+
+	float getElapsedSeconds();
+	float getElapsedMilliseconds();
+
+	uint64_t getRenderedFrameCount();
 
 	void render();
 	void swapAndClear();
@@ -266,6 +273,9 @@ private:
 	};
 
 	std::chrono::high_resolution_clock::time_point m_tpStart;
+	std::chrono::high_resolution_clock::time_point m_tpRender;
+
+	uint64_t m_nFrameCount;
 
 	SDL_Window *m_pWindow;
 	SDL_Cursor *m_pWindowCursor;
