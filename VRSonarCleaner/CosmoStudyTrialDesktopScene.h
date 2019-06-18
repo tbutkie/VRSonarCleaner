@@ -33,13 +33,6 @@ public:
 
 private:
 	CosmoVolume* m_pCosmoVolume;
-
-	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
-	std::vector<glm::vec3> m_vvec3StreamlineSeedsDomain;
-
-	GLuint m_glVBO, m_glEBO, m_glVAO;
-	GLuint m_glHaloVBO, m_glHaloVAO;
-	GLuint m_glPlaneVBO, m_glPlaneEBO, m_glPlaneVAO;
 	
 	Renderer::RendererSubmission m_rs, m_rsHalo, m_rsPlane;
 
@@ -51,9 +44,6 @@ private:
 	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
 
 private:
-	void sampleCuttingPlane(bool reseed);
-	void sampleVolume(unsigned int gridRes = 10u);
-	void buildStreamTubes();
 	void buildScalarPlane();
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 

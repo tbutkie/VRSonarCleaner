@@ -12,9 +12,6 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
-	, m_glPlaneVBO(0)
-	, m_glPlaneVAO(0)
-	, m_glPlaneEBO(0)
 	, m_bShowHalos(true)
 	, m_bShowStreamtubes(true)
 	, m_bShowPlane(false)
@@ -410,11 +407,9 @@ void CosmoStudyTrialDesktopScene::update()
 {
 	m_pCosmoVolume->update();
 
-	float elapsedTimeMS = Renderer::getInstance().getElapsedMilliseconds();
-
 	float oscTimeMS = m_fOscTime * 1000.f;
 
-	float ratio = glm::mod(elapsedTimeMS, oscTimeMS) / oscTimeMS;
+	float ratio = glm::mod(Renderer::getInstance().getElapsedMilliseconds(), oscTimeMS) / oscTimeMS;
 
 	float amount = glm::sin(glm::two_pi<float>() * ratio);
 
