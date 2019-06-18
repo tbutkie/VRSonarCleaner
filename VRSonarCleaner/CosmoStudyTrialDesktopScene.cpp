@@ -7,41 +7,25 @@
 
 
 CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
-	: m_bShowHalos(true)
-	, m_bShowStreamtubes(true)
+	: m_pCosmoVolume(NULL)
+	, m_pHairySlice(NULL)
 	, m_bShowPlane(false)
-	, m_bCuttingPlaneJitter(true)
-	, m_bCuttingPlaneSet(false)
-	, m_fCuttingPlaneWidth(0.5f)
-	, m_fCuttingPlaneHeight(0.5f)
-	, m_uiCuttingPlaneGridRes(30u)
-	, m_fTubeRadius(0.005f)
-	, m_uiNumTubeSegments(16u)
-	, m_fRK4StepSize(1.f)
-	, m_fRK4StopVelocity(0.f)
-	, m_uiRK4MaxPropagation_OneWay(25u)
 	, m_pEditParam(NULL)
-	, m_fHaloRadiusFactor(2.f)
-	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
-	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
-	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
 	, m_fOscAmpDeg(10.f)
 	, m_fOscTime(2.5f)
 {
-	m_RNG.seed(std::random_device()());
-	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
 	
-	m_vParams.push_back({ "RK4 Step Size" , std::to_string(m_fRK4StepSize), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "RK4 Max Steps" , std::to_string(m_uiRK4MaxPropagation_OneWay), STUDYPARAM_NUMERIC });
-	m_vParams.push_back({ "RK4 End Velocity" , std::to_string(m_fRK4StopVelocity), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Cutting Plane Seeding Resolution" , std::to_string(m_uiCuttingPlaneGridRes), STUDYPARAM_NUMERIC });
-	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Min Velocity Color" , utils::color::rgb2str(m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
-	m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
-	m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	//m_vParams.push_back({ "RK4 Step Size" , std::to_string(m_fRK4StepSize), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "RK4 Max Steps" , std::to_string(m_uiRK4MaxPropagation_OneWay), STUDYPARAM_NUMERIC });
+	//m_vParams.push_back({ "RK4 End Velocity" , std::to_string(m_fRK4StopVelocity), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "Cutting Plane Seeding Resolution" , std::to_string(m_uiCuttingPlaneGridRes), STUDYPARAM_NUMERIC });
+	//m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "Min Velocity Color" , utils::color::rgb2str(m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	//m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	//m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	//m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }
 
@@ -52,36 +36,28 @@ CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
 
 void CosmoStudyTrialDesktopScene::init()
 {
-	Renderer::getInstance().addShader("streamline", { "resources/shaders/streamline.vert", "resources/shaders/streamline.frag" }, true);
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
 	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
 	m_pCosmoVolume->setFrameColor(glm::vec4(1.f));
+
+	if (m_pHairySlice)
+		delete m_pHairySlice;
+
+	m_pHairySlice = new HairySlice(m_pCosmoVolume);
 	
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 	cam->pos = glm::vec3(0.f, 0.f, 0.57f);
 	cam->lookat = glm::vec3(0.f);
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
-
-	//Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
-	//svi->nearClip = 0.01f;
-	//svi->farClip = 1000.f;
-	//svi->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
-	//svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
-	//svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
-	//svi->projection = glm::perspectiveFov(90.f, static_cast<float>(svi->m_nRenderWidth), static_cast<float>(svi->m_nRenderHeight), svi->nearClip, svi->farClip);
-	//svi->viewport = glm::ivec4(0, 0, svi->m_nRenderWidth, svi->m_nRenderHeight);
-
-
-
 	glm::vec3 COP = cam->pos;
 	glm::vec3 COPOffset = glm::vec3(1.f, 0.f, 0.f) * 0.067f * 0.5f;
 
 	// Update eye positions using current head position
-	glm::vec3 leftEyePos = COP - COPOffset;
+	glm::vec3 leftEyePos = COP;// -COPOffset;
 	glm::vec3 rightEyePos = COP + COPOffset;
 
 	glm::vec3 g_vec3ScreenPos(0.f, 0.f, 0.f);
@@ -90,7 +66,7 @@ void CosmoStudyTrialDesktopScene::init()
 
 	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
 
-	float sizer = (24.f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
 
 	float width_m = winSize.x * sizer;
 	float height_m = winSize.y * sizer;
@@ -113,8 +89,6 @@ void CosmoStudyTrialDesktopScene::init()
 	sviRE->projection = utils::getViewingFrustum(rightEyePos, g_vec3ScreenPos, g_vec3ScreenNormal, g_vec3ScreenUp, glm::vec2(width_m, height_m));
 	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 
-	sampleVolume();
-	buildStreamTubes();
 	buildScalarPlane();
 }
 
@@ -192,64 +166,64 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				Renderer::getInstance().showMessage(m_pEditParam->desc + " set to " + m_pEditParam->buf);
 				bool cuttingPlaneReseed = false;
 
-				if (m_pEditParam->desc.compare("RK4 Step Size") == 0)
-				{
-					m_fRK4StepSize = std::stof(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("RK4 Max Steps") == 0)
-				{
-					m_uiRK4MaxPropagation_OneWay = std::stoi(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("RK4 End Velocity") == 0)
-				{
-					m_fRK4StopVelocity = std::stof(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Cutting Plane Seeding Resolution") == 0)
-				{
-					m_uiCuttingPlaneGridRes = std::stoi(m_pEditParam->buf); 
-					cuttingPlaneReseed = true;
-				}
-
-				if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
-				{
-					m_fCuttingPlaneWidth = std::stof(m_pEditParam->buf);
-					cuttingPlaneReseed = true;
-				}
-
-				if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
-				{
-					m_fCuttingPlaneHeight = std::stof(m_pEditParam->buf);
-					cuttingPlaneReseed = true;
-				}
-
-				if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
-				{
-					m_fTubeRadius = std::stof(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
-				{
-					m_vec4VelColorMin = utils::color::str2rgb(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
-				{
-					m_vec4VelColorMax = utils::color::str2rgb(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
-				{
-					m_fHaloRadiusFactor = std::stof(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Halo Color") == 0)
-				{
-					m_vec4HaloColor = utils::color::str2rgb(m_pEditParam->buf);
-					m_rsHalo.diffuseColor = m_vec4HaloColor;
-				}
+				//if (m_pEditParam->desc.compare("RK4 Step Size") == 0)
+				//{
+				//	m_fRK4StepSize = std::stof(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("RK4 Max Steps") == 0)
+				//{
+				//	m_uiRK4MaxPropagation_OneWay = std::stoi(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("RK4 End Velocity") == 0)
+				//{
+				//	m_fRK4StopVelocity = std::stof(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Cutting Plane Seeding Resolution") == 0)
+				//{
+				//	m_uiCuttingPlaneGridRes = std::stoi(m_pEditParam->buf); 
+				//	cuttingPlaneReseed = true;
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
+				//{
+				//	m_fCuttingPlaneWidth = std::stof(m_pEditParam->buf);
+				//	cuttingPlaneReseed = true;
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
+				//{
+				//	m_fCuttingPlaneHeight = std::stof(m_pEditParam->buf);
+				//	cuttingPlaneReseed = true;
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
+				//{
+				//	m_fTubeRadius = std::stof(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
+				//{
+				//	m_vec4VelColorMin = utils::color::str2rgb(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
+				//{
+				//	m_vec4VelColorMax = utils::color::str2rgb(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
+				//{
+				//	m_fHaloRadiusFactor = std::stof(m_pEditParam->buf);
+				//}
+				//
+				//if (m_pEditParam->desc.compare("Halo Color") == 0)
+				//{
+				//	m_vec4HaloColor = utils::color::str2rgb(m_pEditParam->buf);
+				//	m_rsHalo.diffuseColor = m_vec4HaloColor;
+				//}
 
 				if (m_pEditParam->desc.compare("Clear Color") == 0)
 				{
@@ -261,10 +235,10 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				//else if (m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->isTouchpadClicked())
 				//	sampleVolume();
 
-				if (cuttingPlaneReseed)
-					sampleCuttingPlane(cuttingPlaneReseed);
-
-				buildStreamTubes();
+				//if (cuttingPlaneReseed)
+				//	sampleCuttingPlane(cuttingPlaneReseed);
+				//
+				//buildStreamTubes();
 
 				m_pEditParam = NULL;
 			}
@@ -355,28 +329,28 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_h)
-			{
-				m_bShowHalos = !m_bShowHalos;
-				Renderer::getInstance().showMessage("Illustrative Haloing set to " + std::to_string(m_bShowHalos));
-			}
+			//if (ev.key.keysym.sym == SDLK_h)
+			//{
+			//	m_bShowHalos = !m_bShowHalos;
+			//	Renderer::getInstance().showMessage("Illustrative Haloing set to " + std::to_string(m_bShowHalos));
+			//}
 
-			if (ev.key.keysym.sym == SDLK_j)
-			{
-				m_bCuttingPlaneJitter = !m_bCuttingPlaneJitter;
-				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_bCuttingPlaneJitter));
-			}
+			//if (ev.key.keysym.sym == SDLK_j)
+			//{
+			//	m_bCuttingPlaneJitter = !m_bCuttingPlaneJitter;
+			//	Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_bCuttingPlaneJitter));
+			//}
 
 			if (ev.key.keysym.sym == SDLK_b)
 			{
 				Renderer::getInstance().toggleSkybox();
 			}
 
-			if (ev.key.keysym.sym == SDLK_s)
-			{
-				m_bShowStreamtubes = !m_bShowStreamtubes;
-				Renderer::getInstance().showMessage("Streamtubes set to " + std::to_string(m_bShowStreamtubes));
-			}
+			//if (ev.key.keysym.sym == SDLK_s)
+			//{
+			//	m_bShowStreamtubes = !m_bShowStreamtubes;
+			//	Renderer::getInstance().showMessage("Streamtubes set to " + std::to_string(m_bShowStreamtubes));
+			//}
 
 			if (ev.key.keysym.sym == SDLK_p)
 			{
@@ -386,13 +360,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 			
 			if (ev.key.keysym.sym == SDLK_RETURN)
 			{
-				m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
-				m_fCuttingPlaneWidth = m_pCosmoVolume->getDimensions().x * 2.f;
-				m_fCuttingPlaneHeight = m_pCosmoVolume->getDimensions().y * 2.f;
-				m_bCuttingPlaneSet = true;
-				m_bCuttingPlaneJitter = false;
-				sampleCuttingPlane(true);
-				buildStreamTubes();
+				m_pHairySlice->set();
 			}
 		}
 	}
@@ -415,6 +383,8 @@ void CosmoStudyTrialDesktopScene::update()
 
 	LightingSystem::Light* l = LightingSystem::getInstance().getLight(0);
 	l->direction = glm::inverse(Renderer::getInstance().getLeftEyeInfo()->view) * glm::normalize(glm::vec4(-1.f, -1.f, -1.f, 0.f));
+
+	m_pHairySlice->update();
 }
 
 void CosmoStudyTrialDesktopScene::draw()
@@ -439,31 +409,12 @@ void CosmoStudyTrialDesktopScene::draw()
 	}
 
 	
-	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
-
-	if (m_bShowStreamtubes)
-	{
-		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
-
-		if (m_bShowHalos)
-			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
-
-		if (m_bCuttingPlaneSet)
-		{
-			glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
-			glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
-			glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
-			glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
-
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		}
-	}
+	m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
 	if (m_bShowPlane)
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
+
+	m_pHairySlice->draw();
 }
 
 
@@ -483,12 +434,4 @@ void CosmoStudyTrialDesktopScene::buildScalarPlane()
 	m_rsPlane.diffuseTexName = "vectorfield";
 	m_rsPlane.specularTexName = "vectorfieldattributes";
 	m_rsPlane.hasTransparency = true;
-}
-
-glm::quat CosmoStudyTrialDesktopScene::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)
-{
-	glm::vec3 w(glm::normalize(segmentDirection));
-	glm::vec3 u(glm::normalize(glm::cross(up, w)));
-	glm::vec3 v(glm::normalize(glm::cross(w, u)));
-	return glm::toQuat(glm::mat3(u, v, w));
 }

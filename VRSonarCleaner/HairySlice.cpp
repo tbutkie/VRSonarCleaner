@@ -1,58 +1,98 @@
-#include "HairyCosmoProbe.h"
+#include "HairySlice.h"
 
 using namespace std::chrono_literals;
 
-HairyCosmoProbe::HairyCosmoProbe(ViveController* pController, CosmoVolume* cosmoVolume)
-	: ProbeBehavior(pController, cosmoVolume)
-	, m_bProbeActive(false)
-	, m_pCosmoVolume(cosmoVolume)
+HairySlice::HairySlice(CosmoVolume* cosmoVolume)
+	: m_pCosmoVolume(cosmoVolume)
 	, m_eSeedType(STREAMTUBES)
 	, m_glVBO(0)
 	, m_glEBO(0)
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
+	, m_bShowHalos(true)
+	, m_bShowStreamtubes(true)
+	, m_bCuttingPlaneJitter(true)
+	, m_bCuttingPlaneSet(false)
+	, m_fCuttingPlaneWidth(0.5f)
+	, m_fCuttingPlaneHeight(0.5f)
+	, m_uiCuttingPlaneGridRes(30u)
+	, m_fTubeRadius(0.005f)
+	, m_uiNumTubeSegments(16u)
+	, m_fRK4StepSize(1.f)
+	, m_fRK4StopVelocity(0.f)
+	, m_uiRK4MaxPropagation_OneWay(25u)
+	, m_fHaloRadiusFactor(2.f)
+	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
+	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
+	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
 {
-	m_vec4ProbeColorDiff = glm::vec4(0.8f, 0.8f, 0.8f, 1.f);
+	m_RNG.seed(std::random_device()());
+	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
+
+	Renderer::getInstance().addShader("streamline", { "resources/shaders/streamline.vert", "resources/shaders/streamline.frag" }, true);
+
+	sampleVolume();
+	buildStreamTubes();
 }
 
 
-HairyCosmoProbe::~HairyCosmoProbe()
+HairySlice::~HairySlice()
 {
+	for (auto &buff : { m_glVBO, m_glHaloVBO, m_glEBO })
+		if (buff)
+			glDeleteBuffers(1, &buff);
+	
+	for (auto &vertarr : { m_glVAO, m_glHaloVAO })
+		if (vertarr)
+			glDeleteVertexArrays(1, &vertarr);
+	
 }
 
-void HairyCosmoProbe::update()
-{
-	ProbeBehavior::update();
-}
-
-void HairyCosmoProbe::draw()
+void HairySlice::update()
 {
 
 }
 
-void HairyCosmoProbe::activateProbe()
+void HairySlice::draw()
 {
-	//if (m_pTDM->getPrimaryController())
-	//{
-	//	auto pos = getPosition();
-	//	if (m_pDataVolume->isWorldCoordPointInDomainBounds(pos))
-	//	{
-	//		glm::dvec3 ptXform = m_pDataVolume->convertToRawDomainCoords(pos);
-	//		printf("World Pos (%0.4f, %0.4f, %0.4f) is INSIDE the data volume at (%0.4f, %0.4f, %0.4f).\n", pos.x, pos.y, pos.z, ptXform.x, ptXform.y, ptXform.z);
-	//	}
-	//	else
-	//		printf("World Pos (%0.4f, %0.4f, %0.4f) is outside the data volume.\n", pos.x, pos.y, pos.z);
-	//}
+	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
+
+	if (m_bShowStreamtubes)
+	{
+		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
+
+		if (m_bShowHalos)
+			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+
+		if (m_bCuttingPlaneSet)
+		{
+			glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
+			glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
+			glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
+			glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
+
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		}
+	}
 }
 
-void HairyCosmoProbe::deactivateProbe()
-{
-	m_bProbeActive = false;
+void HairySlice::set()
+{	
+	m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
+	m_fCuttingPlaneWidth = m_pCosmoVolume->getDimensions().x * 2.f;
+	m_fCuttingPlaneHeight = m_pCosmoVolume->getDimensions().y * 2.f;
+	m_bCuttingPlaneSet = true;
+	m_bCuttingPlaneJitter = true;
+	sampleCuttingPlane(true);
+	buildStreamTubes();
 }
 
 
-void HairyCosmoProbe::sampleCuttingPlane(bool reseed)
+void HairySlice::sampleCuttingPlane(bool reseed)
 {
 	m_vvvec3RawStreamlines.clear();
 
@@ -116,7 +156,7 @@ void HairyCosmoProbe::sampleCuttingPlane(bool reseed)
 	}
 }
 
-void HairyCosmoProbe::sampleVolume(unsigned int gridRes)
+void HairySlice::sampleVolume(unsigned int gridRes)
 {
 	m_vvvec3RawStreamlines.clear();
 	m_vvec3StreamlineSeedsDomain.clear();
@@ -138,7 +178,7 @@ void HairyCosmoProbe::sampleVolume(unsigned int gridRes)
 			}
 }
 
-void HairyCosmoProbe::buildStreamTubes()
+void HairySlice::buildStreamTubes()
 {
 	// For each streamline segment
 	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
@@ -358,4 +398,12 @@ void HairyCosmoProbe::buildStreamTubes()
 
 	m_rs.vertCount = inds.size();
 	m_rsHalo.vertCount = inds.size();
+}
+
+glm::quat HairySlice::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)
+{
+	glm::vec3 w(glm::normalize(segmentDirection));
+	glm::vec3 u(glm::normalize(glm::cross(up, w)));
+	glm::vec3 v(glm::normalize(glm::cross(w, u)));
+	return glm::toQuat(glm::mat3(u, v, w));
 }

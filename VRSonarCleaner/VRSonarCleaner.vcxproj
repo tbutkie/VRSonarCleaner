@@ -185,7 +185,7 @@
     <ClCompile Include="FlowScene.cpp" />
     <ClCompile Include="GrabObjectBehavior.cpp" />
     <ClCompile Include="GrabTutorial.cpp" />
-    <ClCompile Include="HairyCosmoProbe.cpp" />
+    <ClCompile Include="HairySlice.cpp" />
     <ClCompile Include="HairyFlowProbe.cpp" />
     <ClCompile Include="MotionCompensationScene.cpp" />
     <ClCompile Include="Object3D.cpp" />
@@ -257,7 +257,7 @@
     <ClInclude Include="FlowScene.h" />
     <ClInclude Include="GrabObjectBehavior.h" />
     <ClInclude Include="GrabTutorial.h" />
-    <ClInclude Include="HairyCosmoProbe.h" />
+    <ClInclude Include="HairySlice.h" />
     <ClInclude Include="HairyFlowProbe.h" />
     <ClInclude Include="MotionCompensationScene.h" />
     <ClInclude Include="Object3D.h" />
