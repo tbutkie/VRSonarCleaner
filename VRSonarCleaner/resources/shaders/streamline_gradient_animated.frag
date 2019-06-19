@@ -67,10 +67,26 @@ vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fr
 
 void main()
 {
+	float rate = 0.5f; // seconds per segment
+	float loopCount;
+	float timeRatio = modf(fGlobalTime / rate, loopCount);
+
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
 	vec4 surfaceDiffColor = v4Color * diffColor;
-		
+	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
+
+	float intPart;
+	float ratioAlongSegment = modf(v2TexCoords.y - timeRatio + 1.f, intPart);
+
+	//if (intPart == 1.f)
+	//    surfaceDiffColor.rgb = vec3(0.f);
+	//else
+	//    surfaceDiffColor.rgb = vec3(1.f);
+
+	//surfaceDiffColor.a *= ratioAlongSegment;
+	surfaceDiffColor.rgb *= mix(vec3(0.5f), vec3(1.f), ratioAlongSegment);
+	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
 		surfaceDiffColor = v4Color * diffColor;
 

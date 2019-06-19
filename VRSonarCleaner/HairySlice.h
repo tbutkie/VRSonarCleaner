@@ -6,9 +6,12 @@ class HairySlice
 {
 public:
 	enum SEEDTYPE {
-		PARTICLE,
-		GLYPHS,
-		STREAMTUBES
+		STREAMLET_ANIMATED,
+		STREAMLET_STATIC,
+		STREAMTUBE_STATIC,
+		STREAMTUBE_ANIMATED,
+		STREAMTUBE_HALO,
+		STREAMCONE
 	};
 
 public:
@@ -20,6 +23,10 @@ public:
 	void draw();
 
 	void set();
+
+	void nextShader();
+	void prevShader();
+	std::string getShaderName();
 
 private:
 	bool m_bProbeActive;
@@ -65,11 +72,14 @@ private:
 	float m_fRK4StepSize, m_fRK4StopVelocity;
 	unsigned int m_uiRK4MaxPropagation_OneWay;
 
+	std::vector<std::string> m_vstrShaderNames;
+	int m_iCurrentShader;
+
 private:
 	void sampleCuttingPlane(bool reseed);
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
+	void buildStreamCones();
 
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };
-

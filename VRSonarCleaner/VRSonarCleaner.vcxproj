@@ -323,6 +323,10 @@
     <None Include="resources\shaders\skybox.vert" />
     <None Include="resources\shaders\streamline.frag" />
     <None Include="resources\shaders\streamline.vert" />
+    <None Include="resources\shaders\streamline_gradient_animated.frag" />
+    <None Include="resources\shaders\streamline_gradient_static.frag" />
+    <None Include="resources\shaders\streamline_ring_animated.frag" />
+    <None Include="resources\shaders\streamline_ring_static.frag" />
     <None Include="resources\shaders\text.frag" />
     <None Include="resources\shaders\text.vert" />
     <None Include="resources\shaders\vrwindow.vert" />

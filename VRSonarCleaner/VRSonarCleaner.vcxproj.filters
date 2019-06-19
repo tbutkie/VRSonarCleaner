@@ -535,5 +535,17 @@
     <None Include="resources\shaders\cosmo.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\streamline_ring_animated.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\streamline_ring_static.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\streamline_gradient_animated.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\streamline_gradient_static.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

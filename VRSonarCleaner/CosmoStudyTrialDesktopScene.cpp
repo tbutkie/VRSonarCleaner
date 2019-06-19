@@ -26,6 +26,8 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	//m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	//m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	//m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
+	m_vParams.push_back({ "Osc. Amplitude" , std::to_string(m_fOscAmpDeg), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Osc. Period" , std::to_string(m_fOscTime), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }
 
@@ -37,6 +39,8 @@ CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
 void CosmoStudyTrialDesktopScene::init()
 {
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
+	Renderer::getInstance().toggleSkybox();
+	Renderer::getInstance().setClearColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
 
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
@@ -225,6 +229,16 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				//	m_rsHalo.diffuseColor = m_vec4HaloColor;
 				//}
 
+				if (m_pEditParam->desc.compare("Osc. Amplitude") == 0)
+				{
+					m_fOscAmpDeg = std::stof(m_pEditParam->buf);
+				}
+
+				if (m_pEditParam->desc.compare("Osc. Period") == 0)
+				{
+					m_fOscTime = std::stof(m_pEditParam->buf);
+				}
+
 				if (m_pEditParam->desc.compare("Clear Color") == 0)
 				{
 					Renderer::getInstance().setClearColor(utils::color::str2rgb(m_pEditParam->buf));
@@ -245,80 +259,106 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 		}
 		else
 		{
-			if (ev.key.keysym.sym == SDLK_F1)
+			//if (ev.key.keysym.sym == SDLK_F1)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("RK4 Step Size") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F2)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("RK4 Max Steps") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F3)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("RK4 End Velocity") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F4)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Cutting Plane Seeding Resolution") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F5)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Cutting Plane Width") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F6)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Cutting Plane Height") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F7)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Streamtube Radius") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F8)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Min Velocity Color") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F9)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Max Velocity Color") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F10)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Halo Radius Factor") == 0;
+			//	}));
+			//}
+			//
+			//if (ev.key.keysym.sym == SDLK_F11)
+			//{
+			//	m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+			//		return p.desc.compare("Halo Color") == 0;
+			//	}));
+			//}
+
+			if (ev.key.keysym.sym == SDLK_KP_PLUS)
+			{
+				m_pHairySlice->nextShader();
+				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_MINUS)
+			{
+				m_pHairySlice->prevShader();
+				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_1)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 Step Size") == 0;
+					return p.desc.compare("Osc. Amplitude") == 0;
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_F2)
+			if (ev.key.keysym.sym == SDLK_KP_2)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 Max Steps") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F3)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 End Velocity") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F4)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Seeding Resolution") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F5)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Width") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F6)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Height") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F7)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Streamtube Radius") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F8)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Min Velocity Color") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F9)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Max Velocity Color") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F10)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Halo Radius Factor") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_F11)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Halo Color") == 0;
+					return p.desc.compare("Osc. Period") == 0;
 				}));
 			}
 
@@ -423,9 +463,9 @@ void CosmoStudyTrialDesktopScene::buildScalarPlane()
 	CosmoGrid* cgrid = static_cast<CosmoGrid*>(m_pCosmoVolume->getDatasets()[0]);
 
 	m_rsPlane.VAO = Renderer::getInstance().getPrimitiveVAO();;
-	m_rsPlane.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("plane");
-	m_rsPlane.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("plane");
-	m_rsPlane.vertCount = Renderer::getInstance().getPrimitiveIndexCount("plane");
+	m_rsPlane.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quaddouble");
+	m_rsPlane.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quaddouble");
+	m_rsPlane.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quaddouble");
 	m_rsPlane.glPrimitiveType = GL_TRIANGLES;
 	m_rsPlane.shaderName = "cosmo";
 	m_rsPlane.indexType = GL_UNSIGNED_SHORT;
