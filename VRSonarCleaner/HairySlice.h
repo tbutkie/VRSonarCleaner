@@ -76,10 +76,12 @@ private:
 	int m_iCurrentShader;
 
 private:
-	void sampleCuttingPlane(bool reseed);
+	void reseed();
+	void sampleCuttingPlane();
 	void sampleVolume(unsigned int gridRes = 10u);
 	void buildStreamTubes();
-	void buildStreamCones();
+	void buildStreamCones(float coneEnlargementFactor = 5.f);
+	void buildStreamlets();
 
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };

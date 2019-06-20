@@ -11,7 +11,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
 	, m_bShowHalos(true)
-	, m_bShowStreamtubes(true)
+	, m_bShowStreamtubes(false)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
 	, m_fCuttingPlaneWidth(0.5f)
@@ -78,31 +78,32 @@ void HairySlice::draw()
 
 		if (m_bShowHalos)
 			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	}
 
-		if (m_bCuttingPlaneSet)
-		{
-			glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
-			glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
-			glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
-			glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
+	if (m_bCuttingPlaneSet)
+	{
+		glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
+		glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
+		glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
+		glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
 
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-			Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
-		}
+		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 	}
 }
 
 void HairySlice::set()
 {	
 	m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
-	m_fCuttingPlaneWidth = m_pCosmoVolume->getDimensions().x * 2.f;
-	m_fCuttingPlaneHeight = m_pCosmoVolume->getDimensions().y * 2.f;
+	m_fCuttingPlaneWidth = 0.2f;
+	m_fCuttingPlaneHeight = 0.2f;
 	m_bCuttingPlaneSet = true;
 	m_bCuttingPlaneJitter = true;
-	sampleCuttingPlane(true);
 	m_bShowHalos = false;
+	reseed();
+	sampleCuttingPlane();
 	buildStreamCones();
 }
 
@@ -128,68 +129,53 @@ std::string HairySlice::getShaderName()
 }
 
 
-void HairySlice::sampleCuttingPlane(bool reseed)
+void HairySlice::reseed()
+{
+	m_vvec3StreamlineSeedsDomain.clear();
+	
+	glm::mat4 planeXform = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pCosmoVolume->getTransformVolume();
+	glm::vec3 planeCtrPos = planeXform[3];
+
+	float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
+	float maxJitterY = 0.25f * (m_fCuttingPlaneHeight / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
+
+	for (int i = 0; i < m_uiCuttingPlaneGridRes; ++i)
+	{
+		float ratioWidth = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)i / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
+
+		for (int j = 0; j < m_uiCuttingPlaneGridRes; ++j)
+		{
+			float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
+			glm::vec3 pos = planeCtrPos + glm::vec3(planeXform[0]) * ratioWidth * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * ratioHeight * m_fCuttingPlaneHeight;
+
+			if (m_bCuttingPlaneJitter)
+				pos += m_Distribution(m_RNG) * glm::vec3(planeXform[0]) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(planeXform[1]) * maxJitterY;
+
+			glm::dvec3 domainPos = m_pCosmoVolume->convertToRawDomainCoords(pos);
+
+			m_vvec3StreamlineSeedsDomain.push_back(domainPos);
+		}
+	}
+
+	m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * -0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) *  0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) *  0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * -0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) *  0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) *  0.5f * m_fCuttingPlaneHeight);
+}
+
+void HairySlice::sampleCuttingPlane()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	if (reseed)
+	for (auto &seed : m_vvec3StreamlineSeedsDomain)
 	{
-		m_vvec3StreamlineSeedsDomain.clear();
+		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+		std::reverse(rev.begin(), rev.end());
+		rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
-		m_fCuttingPlaneWidth = 1.f;
-		m_fCuttingPlaneHeight = 1.f;
-
-		glm::mat4 probeMat = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pCosmoVolume->getTransformVolume();
-		glm::vec3 probePos = probeMat[3];
-
-		float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
-		float maxJitterY = 0.25f * (m_fCuttingPlaneHeight / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
-
-		for (int i = 0; i < m_uiCuttingPlaneGridRes; ++i)
-		{
-			float ratioWidth = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)i / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
-
-			for (int j = 0; j < m_uiCuttingPlaneGridRes; ++j)
-			{
-				float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
-				glm::vec3 pos = probePos + glm::vec3(probeMat[0]) * ratioWidth * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * ratioHeight * m_fCuttingPlaneHeight;
-
-				if (m_bCuttingPlaneJitter)
-					pos += m_Distribution(m_RNG) * glm::vec3(probeMat[0]) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(probeMat[1]) * maxJitterY;
-
-				glm::dvec3 domainPos = m_pCosmoVolume->convertToRawDomainCoords(pos);
-
-				// Calculate forward and backward RK4 streamlines
-				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
-
-				// Now glue them together into a single streamline without duplicating seed point
-				std::reverse(rev.begin(), rev.end());
-				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
-
-				// Save streamline and seed
-				m_vvvec3RawStreamlines.push_back(rev);
-				m_vvec3StreamlineSeedsDomain.push_back(domainPos);
-			}
-		}
-
-		m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * -0.5f * m_fCuttingPlaneHeight);
-		m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * 0.5f * m_fCuttingPlaneHeight);
-		m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * -0.5f * m_fCuttingPlaneHeight);
-		m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(probePos + glm::vec3(probeMat[0]) * 0.5f * m_fCuttingPlaneWidth - glm::vec3(probeMat[1]) * 0.5f * m_fCuttingPlaneHeight);
-	}
-	else
-	{
-		for (auto &seed : m_vvec3StreamlineSeedsDomain)
-		{
-			std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-			std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
-			std::reverse(rev.begin(), rev.end());
-			rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
-
-			m_vvvec3RawStreamlines.push_back(rev);
-		}
-	}
+		m_vvvec3RawStreamlines.push_back(rev);
+	}	
 }
 
 void HairySlice::sampleVolume(unsigned int gridRes)
@@ -202,7 +188,6 @@ void HairySlice::sampleVolume(unsigned int gridRes)
 			for (int k = 0; k < gridRes; ++k)
 			{
 				glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
-				//glm::vec3 seedPos(glm::vec3(-1.f + (2.f / (gridRes-1)) * glm::vec3(i, j, k)));
 				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
 				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
 				std::reverse(rev.begin(), rev.end());
@@ -436,10 +421,8 @@ void HairySlice::buildStreamTubes()
 	m_rsHalo.vertCount = inds.size();
 }
 
-void HairySlice::buildStreamCones()
+void HairySlice::buildStreamCones(float coneEnlargementFactor)
 {
-	float coneEnlargementFactor = 5.f;
-
 	// For each streamline segment
 	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
 	// the u & v axes are unit vectors scaled to the radius of the tube
@@ -484,7 +467,7 @@ void HairySlice::buildStreamCones()
 
 		assert(ribOrientations.size() == sl.size());
 
-		// Make the shaft of the streamtube
+		// Make the shaft of the streamcone
 		for (size_t i = 0; i < ribOrientations.size(); ++i)
 		{
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
@@ -498,8 +481,7 @@ void HairySlice::buildStreamCones()
 			{
 				PrimVert pvTube;
 				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * ratioAlongLine * coneEnlargementFactor, 1.f));
-				pvTube.n = glm::normalize(pvTube.p - sl[i]);
-				//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
+				pvTube.n = i == 0 ? glm::normalize(glm::vec3(xform * glm::vec4(circleVerts[j], 1.f)) - sl[i]) : glm::normalize(pvTube.p - sl[i]);
 				pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 				pvTube.t = glm::vec2(j / (circleVerts.size() - 1), i);
 
@@ -605,6 +587,95 @@ void HairySlice::buildStreamCones()
 	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
 
 	m_rs.vertCount = inds.size();
+}
+
+void HairySlice::buildStreamlets()
+{
+	float coneEnlargementFactor = 5.f;
+
+	// For each streamline segment
+	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
+	// the u & v axes are unit vectors scaled to the radius of the tube
+	// except for the first and last, each circular 'rib' will be on the uv-plane of the averaged coordinate frames between the two connected segments
+
+	// make unit circle for 'rib' that will be moved along streamline
+	int numCircleVerts = m_uiNumTubeSegments + 1;
+	std::vector<glm::vec3> circleVerts;
+	for (int i = 0; i < numCircleVerts; ++i)
+	{
+		float angle = ((float)i / (float)(numCircleVerts - 1)) * glm::two_pi<float>();
+		circleVerts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
+	}
+
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
+	std::vector<PrimVert> verts;
+	std::vector<GLuint> inds;
+	for (auto &sl : m_vvvec3RawStreamlines)
+	{
+		if (sl.size() < 2)
+			continue;
+			   
+		for (size_t i = 0; i < sl.size() - 1; ++i)
+		{
+			glm::vec3 segmentMidpoint(sl[i] + (sl[i + 1] - sl[i]) * 0.5f);
+
+
+		}
+	}
+
+	if (!m_glVBO)
+	{
+		glCreateBuffers(1, &m_glVBO);
+		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+	if (!m_glEBO)
+	{
+		glCreateBuffers(1, &m_glEBO);
+		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+
+	if (!m_glVAO)
+	{
+		glGenVertexArrays(1, &m_glVAO);
+		glBindVertexArray(this->m_glVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+		glBindVertexArray(0);
+
+		m_rs.VAO = m_glVAO;
+		m_rs.glPrimitiveType = GL_TRIANGLES;
+		m_rs.shaderName = m_vstrShaderNames[m_iCurrentShader];
+		m_rs.indexType = GL_UNSIGNED_INT;
+		m_rs.diffuseColor = glm::vec4(1.f);
+		m_rs.specularColor = glm::vec4(0.f);
+		m_rs.specularExponent = 32.f;
+		m_rs.hasTransparency = false;
+	}
+
+	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(PrimVert), verts.data());
+	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
+
+	m_rs.vertCount = inds.size();
+
 }
 
 glm::quat HairySlice::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)

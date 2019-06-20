@@ -6,8 +6,8 @@ using namespace std::chrono_literals;
 
 CosmoVolume::CosmoVolume(std::string cosmoDataDir)
 	: DataVolume(
-		glm::vec3(0.f, 0.f, -0.f),
-		glm::quat(),//glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+		glm::vec3(0.f, 0.f, 0.f),
+		glm::quat(),
 		glm::vec3(0.2f))
 	, m_msLoopTime(35s)
 {

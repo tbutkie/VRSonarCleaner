@@ -58,10 +58,10 @@ void CosmoStudyTrialDesktopScene::init()
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
 	glm::vec3 COP = cam->pos;
-	glm::vec3 COPOffset = glm::vec3(1.f, 0.f, 0.f) * 0.067f * 0.5f;
+	glm::vec3 COPOffset = glm::vec3(0.f); //glm::vec3(1.f, 0.f, 0.f) * 0.067f * 0.5f;
 
 	// Update eye positions using current head position
-	glm::vec3 leftEyePos = COP;// -COPOffset;
+	glm::vec3 leftEyePos = COP - COPOffset;
 	glm::vec3 rightEyePos = COP + COPOffset;
 
 	glm::vec3 g_vec3ScreenPos(0.f, 0.f, 0.f);
