@@ -45,11 +45,14 @@ private:
 	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
 
 private:
+	void setupParameters();
+	void setupViews();
 	void buildScalarPlane();
 
 	float m_fOscAmpDeg;
 	float m_fOscTime;
 
+	float m_fScreenDiagonalInches;
 
 	struct StudyParam {
 		std::string desc;

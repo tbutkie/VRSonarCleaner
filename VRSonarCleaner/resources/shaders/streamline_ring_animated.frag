@@ -76,34 +76,28 @@ void main()
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
 	vec4 surfaceDiffColor = diffColor;
+	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
 	float intPart;
 	float ratioAlongSegment = modf(timeRatio, intPart);
-	float beginSegmentStripe =  ratioAlongSegment - bandSize;
+	float beginSegmentStripe = ratioAlongSegment - bandSize;
 	float endSegmentStripe = ratioAlongSegment;
 
-	if (beginSegmentStripe < 0.f)
-	{
-		beginSegmentStripe += 1.f;		
+	float beginSegmentStripeWrap = beginSegmentStripe + 1.f;
 
-		if (modf(v2TexCoords.y, intPart) > beginSegmentStripe || modf(v2TexCoords.y, intPart) < endSegmentStripe)
-			surfaceDiffColor.rgb *= bandColor;
-		else
-			surfaceDiffColor.rgb *= vec3(1.f);
-	}
-	else
+	if ((beginSegmentStripe < 0.f && (modf(v2TexCoords.y, intPart) > beginSegmentStripeWrap || modf(v2TexCoords.y, intPart) < endSegmentStripe)) ||
+		(modf(v2TexCoords.y, intPart) > beginSegmentStripe && modf(v2TexCoords.y, intPart) < endSegmentStripe))
 	{
-		if (modf(v2TexCoords.y, intPart) > beginSegmentStripe && modf(v2TexCoords.y, intPart) < endSegmentStripe)
-			surfaceDiffColor.rgb *= bandColor;
-		else
-			surfaceDiffColor.rgb *= vec3(1.f);
+		surfaceDiffColor.rgb *= bandColor;
 	}
 
 	//surfaceDiffColor.a *= ratioAlongSegment;
 	//surfaceDiffColor.rgb *= mix(vec3(0.5f), vec3(1.f), ratioAlongSegment);
 	
+	// this is for endcaps, which are specially coded to have an 0.5f tex coord x val
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
+		//surfaceDiffColor = v4Color * diffColor;
 		surfaceDiffColor = diffColor;
 
 	if (surfaceDiffColor.a == 0.f)

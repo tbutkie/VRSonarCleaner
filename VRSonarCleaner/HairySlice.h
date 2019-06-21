@@ -4,16 +4,8 @@
 
 class HairySlice
 {
-public:
-	enum SEEDTYPE {
-		STREAMLET_ANIMATED,
-		STREAMLET_STATIC,
-		STREAMTUBE_STATIC,
-		STREAMTUBE_ANIMATED,
-		STREAMTUBE_HALO,
-		STREAMCONE
-	};
-
+	friend class CosmoStudyTrialDesktopScene;
+	
 public:
 	HairySlice(CosmoVolume* cosmoVolume);
 	~HairySlice();
@@ -28,17 +20,19 @@ public:
 	void prevShader();
 	std::string getShaderName();
 
+	void nextGeomStyle();
+	void prevGeomStyle();
+	std::string getGeomStyle();
+	
 private:
 	bool m_bProbeActive;
 
 	bool m_bShowHalos;
-	bool m_bShowStreamtubes;
+	bool m_bShowGeometry;
 	bool m_bCuttingPlaneJitter;
 	bool m_bCuttingPlaneSet;
 
 	CosmoVolume* m_pCosmoVolume;
-
-	SEEDTYPE m_eSeedType;
 
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
 	std::vector<glm::vec3> m_vvec3StreamlineSeedsDomain;
@@ -74,14 +68,20 @@ private:
 
 	std::vector<std::string> m_vstrShaderNames;
 	int m_iCurrentShader;
+	
+	std::vector<std::string> m_vstrGeomStyleNames;
+	int m_iCurrentGeomStyle;
 
 private:
 	void reseed();
 	void sampleCuttingPlane();
 	void sampleVolume(unsigned int gridRes = 10u);
+	void rebuildGeometry();
 	void buildStreamTubes();
 	void buildStreamCones(float coneEnlargementFactor = 5.f);
 	void buildStreamlets();
+
+	void destroyGeometry();
 
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };

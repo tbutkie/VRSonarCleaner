@@ -4,18 +4,17 @@ using namespace std::chrono_literals;
 
 HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	: m_pCosmoVolume(cosmoVolume)
-	, m_eSeedType(STREAMTUBE_STATIC)
 	, m_glVBO(0)
 	, m_glEBO(0)
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
 	, m_bShowHalos(true)
-	, m_bShowStreamtubes(false)
+	, m_bShowGeometry(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
-	, m_fCuttingPlaneWidth(0.5f)
-	, m_fCuttingPlaneHeight(0.5f)
+	, m_fCuttingPlaneWidth(1.f)
+	, m_fCuttingPlaneHeight(1.f)
 	, m_uiCuttingPlaneGridRes(30u)
 	, m_fTubeRadius(0.005f)
 	, m_uiNumTubeSegments(16u)
@@ -26,6 +25,23 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
 	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
+	, m_vstrShaderNames({
+		"streamline",
+		"streamline_gradient_animated",
+		"streamline_gradient_static",
+		"streamline_ring_animated",
+		"streamline_ring_static"
+		})
+	, m_iCurrentShader(4)
+	, m_vstrGeomStyleNames({
+		"STREAMLET_ANIMATED",
+		"STREAMLET_STATIC",
+		"STREAMTUBE_STATIC",
+		"STREAMTUBE_ANIMATED",
+		"STREAMTUBE_HALO" ,
+		"STREAMCONE"
+		})
+	, m_iCurrentGeomStyle(5)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
@@ -35,32 +51,14 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_gradient_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_gradient_static.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_animated", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_animated.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
-
-	m_vstrShaderNames = { 
-		"streamline",
-		"streamline_gradient_animated",
-		"streamline_gradient_static",
-		"streamline_ring_animated",
-		"streamline_ring_static"
-	};
-
-	m_iCurrentShader = 0;
-
-	sampleVolume();
-	buildStreamTubes();
+	
+	set();
 }
 
 
 HairySlice::~HairySlice()
 {
-	for (auto &buff : { m_glVBO, m_glHaloVBO, m_glEBO })
-		if (buff)
-			glDeleteBuffers(1, &buff);
-	
-	for (auto &vertarr : { m_glVAO, m_glHaloVAO })
-		if (vertarr)
-			glDeleteVertexArrays(1, &vertarr);
-	
+	destroyGeometry();
 }
 
 void HairySlice::update()
@@ -72,11 +70,11 @@ void HairySlice::draw()
 {
 	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
-	if (m_bShowStreamtubes)
+	if (m_bShowGeometry)
 	{
 		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 
-		if (m_bShowHalos)
+		if (m_bShowHalos || m_iCurrentGeomStyle == 4)
 			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
 	}
 
@@ -97,14 +95,10 @@ void HairySlice::draw()
 void HairySlice::set()
 {	
 	m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
-	m_fCuttingPlaneWidth = 0.2f;
-	m_fCuttingPlaneHeight = 0.2f;
 	m_bCuttingPlaneSet = true;
-	m_bCuttingPlaneJitter = true;
-	m_bShowHalos = false;
 	reseed();
 	sampleCuttingPlane();
-	buildStreamCones();
+	rebuildGeometry();
 }
 
 void HairySlice::nextShader()
@@ -128,6 +122,26 @@ std::string HairySlice::getShaderName()
 	return m_vstrShaderNames[m_iCurrentShader];
 }
 
+void HairySlice::nextGeomStyle()
+{
+	if (++m_iCurrentGeomStyle == m_vstrGeomStyleNames.size())
+		m_iCurrentGeomStyle = 0;
+
+	m_rs.shaderName = m_vstrGeomStyleNames[m_iCurrentGeomStyle];
+}
+
+void HairySlice::prevGeomStyle()
+{
+	if (--m_iCurrentGeomStyle < 0)
+		m_iCurrentGeomStyle = m_vstrGeomStyleNames.size() - 1;
+
+	m_rs.shaderName = m_vstrGeomStyleNames[m_iCurrentGeomStyle];
+}
+
+std::string HairySlice::getGeomStyle()
+{
+	return m_vstrGeomStyleNames[m_iCurrentGeomStyle];
+}
 
 void HairySlice::reseed()
 {
@@ -197,6 +211,29 @@ void HairySlice::sampleVolume(unsigned int gridRes)
 
 				m_vvec3StreamlineSeedsDomain.push_back(seedPos);
 			}
+}
+
+void HairySlice::rebuildGeometry()
+{
+	destroyGeometry();
+
+	switch (m_iCurrentGeomStyle)
+	{
+	case 0:
+	case 1:
+		//buildStreamlets();
+		break;
+	case 2:
+	case 3:
+	case 4:
+		buildStreamTubes();
+		break;
+	case 5:
+		buildStreamCones();
+		break;
+	default:
+		break;
+	}
 }
 
 void HairySlice::buildStreamTubes()
@@ -335,26 +372,26 @@ void HairySlice::buildStreamTubes()
 		}
 	}
 
-	if (!m_glVBO)
+	//if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
 		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
-	if (!m_glHaloVBO)
+	//if (!m_glHaloVBO)
 	{
 		glCreateBuffers(1, &m_glHaloVBO);
 		glNamedBufferStorage(m_glHaloVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
-	if (!m_glEBO)
+	//if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
 		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 
-	if (!m_glVAO)
+	//if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
 		glBindVertexArray(this->m_glVAO);
@@ -383,7 +420,7 @@ void HairySlice::buildStreamTubes()
 		m_rs.hasTransparency = false;
 	}
 
-	if (!m_glHaloVAO)
+	//if (!m_glHaloVAO)
 	{
 		glGenVertexArrays(1, &m_glHaloVAO);
 		glBindVertexArray(this->m_glHaloVAO);
@@ -541,20 +578,20 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 		}
 	}
 
-	if (!m_glVBO)
+	//if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
 		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
-	if (!m_glEBO)
+	//if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
 		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 
-	if (!m_glVAO)
+	//if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
 		glBindVertexArray(this->m_glVAO);
@@ -629,20 +666,20 @@ void HairySlice::buildStreamlets()
 		}
 	}
 
-	if (!m_glVBO)
+	//if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
 		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
-	if (!m_glEBO)
+	//if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
 		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 
-	if (!m_glVAO)
+	//if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
 		glBindVertexArray(this->m_glVAO);
@@ -677,6 +714,18 @@ void HairySlice::buildStreamlets()
 	m_rs.vertCount = inds.size();
 
 }
+
+void HairySlice::destroyGeometry()
+{
+	for (auto &buff : { m_glVBO, m_glHaloVBO, m_glEBO })
+		if (buff)
+			glDeleteBuffers(1, &buff);
+
+	for (auto &vertarr : { m_glVAO, m_glHaloVAO })
+		if (vertarr)
+			glDeleteVertexArrays(1, &vertarr);
+}
+
 
 glm::quat HairySlice::getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up)
 {

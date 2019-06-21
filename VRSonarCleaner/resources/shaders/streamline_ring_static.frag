@@ -75,7 +75,8 @@ void main()
 
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
-	vec4 surfaceDiffColor = v4Color * diffColor;
+	vec4 surfaceDiffColor = diffColor;
+	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
 	float intPart;
@@ -86,12 +87,10 @@ void main()
 
 	if (modf(v2TexCoords.y, intPart) > beginSegmentStripe && modf(v2TexCoords.y, intPart) < endSegmentStripe)
 		surfaceDiffColor.rgb *= bandColor;
-	else
-		surfaceDiffColor.rgb *= vec3(1.f);
-
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
-		surfaceDiffColor = v4Color * diffColor;
+		//surfaceDiffColor = v4Color * diffColor;
+		surfaceDiffColor = diffColor;
 
 	if (surfaceDiffColor.a == 0.f)
 	    discard;
