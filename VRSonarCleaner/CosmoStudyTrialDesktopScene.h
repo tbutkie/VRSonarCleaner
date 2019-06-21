@@ -39,6 +39,7 @@ private:
 	
 	Renderer::RendererSubmission m_rsPlane;
 
+	bool m_bShowCosmoBBox;
 	bool m_bShowPlane;
 
 	std::vector<glm::vec3> m_vvec3Zeros;
@@ -48,6 +49,7 @@ private:
 	void setupParameters();
 	void setupViews();
 	void buildScalarPlane();
+
 
 	float m_fOscAmpDeg;
 	float m_fOscTime;

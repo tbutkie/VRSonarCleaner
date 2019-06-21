@@ -9,6 +9,7 @@
 CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	: m_pCosmoVolume(NULL)
 	, m_pHairySlice(NULL)
+	, m_bShowCosmoBBox(true)
 	, m_bShowPlane(false)
 	, m_pEditParam(NULL)
 	, m_fOscAmpDeg(10.f)
@@ -332,6 +333,16 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
+			if (ev.key.keysym.sym == SDLK_UP)
+			{
+				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 1.1f);
+			}
+
+			if (ev.key.keysym.sym == SDLK_DOWN)
+			{
+				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 0.9f);
+			}
+
 			if (ev.key.keysym.sym == SDLK_b)
 			{
 				Renderer::getInstance().toggleSkybox();
@@ -347,6 +358,11 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 			{
 				m_pHairySlice->m_bCuttingPlaneJitter = !m_pHairySlice->m_bCuttingPlaneJitter;
 				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_pHairySlice->m_bCuttingPlaneJitter));
+			}
+
+			if (ev.key.keysym.sym == SDLK_l)
+			{
+				m_bShowCosmoBBox = !m_bShowCosmoBBox;
 			}
 
 			if (ev.key.keysym.sym == SDLK_p)
@@ -399,7 +415,8 @@ void CosmoStudyTrialDesktopScene::update()
 void CosmoStudyTrialDesktopScene::draw()
 {
 	//m_pCosmoVolume->drawVolumeBacking(glm::inverse(glm::lookAt(Renderer::getInstance().getCamera()->pos, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f))), 1.f);
-	m_pCosmoVolume->drawBBox(0.f);
+	if (m_bShowCosmoBBox)
+		m_pCosmoVolume->drawBBox(0.f);
 		
 	if (m_pEditParam)
 	{

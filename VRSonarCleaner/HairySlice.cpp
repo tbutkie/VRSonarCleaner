@@ -13,8 +13,8 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_bShowGeometry(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
-	, m_fCuttingPlaneWidth(1.f)
-	, m_fCuttingPlaneHeight(1.f)
+	, m_fCuttingPlaneWidth(0.25f)
+	, m_fCuttingPlaneHeight(0.25f)
 	, m_uiCuttingPlaneGridRes(30u)
 	, m_fTubeRadius(0.005f)
 	, m_uiNumTubeSegments(16u)
@@ -96,7 +96,7 @@ void HairySlice::draw()
 
 void HairySlice::set()
 {	
-	m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
+	m_mat4PlacedFrameWorldPose = glm::mat4();//m_pCosmoVolume->getTransformVolume();
 	m_bCuttingPlaneSet = true;
 	sampleCuttingPlane();
 	rebuildGeometry();
