@@ -11,16 +11,19 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glHaloVAO(0)
 	, m_bShowHalos(false)
 	, m_bShowGeometry(true)
+	, m_bOscillate(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
-	, m_fCuttingPlaneWidth(0.25f)
-	, m_fCuttingPlaneHeight(0.25f)
-	, m_uiCuttingPlaneGridRes(30u)
-	, m_fTubeRadius(0.005f)
+	, m_fCuttingPlaneWidth(0.3f)
+	, m_fCuttingPlaneHeight(0.3f)
+	, m_uiCuttingPlaneGridRes(20u)
+	, m_fTubeRadius(0.0025f)
+	, m_fOscAmpDeg(20.f)
+	, m_fOscTime(2.5f)
 	, m_uiNumTubeSegments(16u)
-	, m_fRK4StepSize(1.f)
+	, m_fRK4StepSize(0.5f)
 	, m_fRK4StopVelocity(0.f)
-	, m_uiRK4MaxPropagation_OneWay(10u)
+	, m_uiRK4MaxPropagation_OneWay(20u)
 	, m_fHaloRadiusFactor(2.f)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
@@ -64,7 +67,23 @@ HairySlice::~HairySlice()
 
 void HairySlice::update()
 {
+	float oscTimeMS = m_fOscTime * 1000.f;
 
+	float ratio = glm::mod(Renderer::getInstance().getElapsedMilliseconds(), oscTimeMS) / oscTimeMS;
+
+	float amount = glm::sin(glm::two_pi<float>() * ratio);
+
+	float rotNow = amount * (m_fOscAmpDeg / 2.f);
+
+	//if (m_bOscillate)
+	//{
+	//	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 1.f, 0.f)));
+	//	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
+	//}
+	//else
+	//{
+	//	m_pCosmoVolume->setOrientation(m_pCosmoVolume->getOriginalOrientation());
+	//}
 }
 
 void HairySlice::draw()
@@ -82,10 +101,10 @@ void HairySlice::draw()
 
 	if (m_bCuttingPlaneSet)
 	{
-		glm::vec3 x0y0 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x0y0, 1.f);
-		glm::vec3 x0y1 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x0y1, 1.f);
-		glm::vec3 x1y0 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x1y0, 1.f);
-		glm::vec3 x1y1 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x1y1, 1.f);
+		glm::vec3 x0y0 = glm::vec4(m_vec3PlacedFrame_x0y0, 1.f);
+		glm::vec3 x0y1 = glm::vec4(m_vec3PlacedFrame_x0y1, 1.f);
+		glm::vec3 x1y0 = glm::vec4(m_vec3PlacedFrame_x1y0, 1.f);
+		glm::vec3 x1y1 = glm::vec4(m_vec3PlacedFrame_x1y1, 1.f);
 
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
@@ -167,21 +186,23 @@ void HairySlice::reseed()
 		}
 	}
 
-	m_vec3PlacedFrame_x0y0 = (xDir * -0.5f * m_fCuttingPlaneWidth - yDir * -0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrame_x0y1 = (xDir * -0.5f * m_fCuttingPlaneWidth - yDir *  0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrame_x1y0 = (xDir *  0.5f * m_fCuttingPlaneWidth - yDir * -0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrame_x1y1 = (xDir *  0.5f * m_fCuttingPlaneWidth - yDir *  0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrame_x0y0 = (xDir * m_fCuttingPlaneWidth * -0.5f - yDir * m_fCuttingPlaneHeight * -0.5f);
+	m_vec3PlacedFrame_x0y1 = (xDir * m_fCuttingPlaneWidth * -0.5f - yDir * m_fCuttingPlaneHeight *  0.5f);
+	m_vec3PlacedFrame_x1y0 = (xDir * m_fCuttingPlaneWidth *  0.5f - yDir * m_fCuttingPlaneHeight * -0.5f);
+	m_vec3PlacedFrame_x1y1 = (xDir * m_fCuttingPlaneWidth *  0.5f - yDir * m_fCuttingPlaneHeight *  0.5f);
 }
 
 void HairySlice::sampleCuttingPlane()
 {
+	glm::vec3 dimratio = m_pCosmoVolume->getOriginalDimensions() / m_pCosmoVolume->getDimensions();
+
 	m_vvvec3RawStreamlines.clear();
 
 	for (auto &seed : m_vvec3StreamlineSeeds)
 	{
 		glm::dvec3 domainSeed = m_pCosmoVolume->convertToRawDomainCoords(m_mat4PlacedFrameWorldPose * glm::vec4(seed, 1.f));
-		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainSeed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainSeed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainSeed, dimratio.x * m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainSeed, dimratio.x * m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
 		std::reverse(rev.begin(), rev.end());
 		rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
@@ -457,6 +478,7 @@ void HairySlice::buildStreamTubes()
 
 void HairySlice::buildStreamCones(float coneEnlargementFactor)
 {
+	glm::vec3 dimratio =  m_pCosmoVolume->getOriginalDimensions() / m_pCosmoVolume->getDimensions();
 	// For each streamline segment
 	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
 	// the u & v axes are unit vectors scaled to the radius of the tube
@@ -514,7 +536,7 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
 				PrimVert pvTube;
-				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * ratioAlongLine * coneEnlargementFactor, 1.f));
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * ratioAlongLine * coneEnlargementFactor * dimratio, 1.f));
 				pvTube.n = i == 0 ? glm::normalize(glm::vec3(xform * glm::vec4(circleVerts[j], 1.f)) - sl[i]) : glm::normalize(pvTube.p - sl[i]);
 				pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 				pvTube.t = glm::vec2(j / (circleVerts.size() - 1), i);
@@ -563,7 +585,7 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 		{
 			GLuint thisVert = verts.size();
 
-			pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * coneEnlargementFactor, 1.f));
+			pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * coneEnlargementFactor * dimratio, 1.f));
 			verts.push_back(pvTube);
 			
 			if (i > 0)

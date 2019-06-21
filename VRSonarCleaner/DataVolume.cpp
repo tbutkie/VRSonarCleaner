@@ -58,6 +58,9 @@ glm::vec4 DataVolume::getFrameColor()
 
 glm::dvec3 DataVolume::convertToRawDomainCoords(glm::vec3 worldPos)
 {
+	if (m_bDirty)
+		updateTransforms();
+
 	if (m_vpDatasets.size() == 0u)
 		return glm::dvec3();
 	else

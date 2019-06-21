@@ -2,7 +2,9 @@
 #include "BehaviorManager.h"
 #include "LightingSystem.h"
 #include <gtc/quaternion.hpp>
+#include <gtc/random.hpp>
 #include "utilities.h"
+#include "DataLogger.h"
 #include <random>
 
 
@@ -11,9 +13,8 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 	, m_pHairySlice(NULL)
 	, m_bShowCosmoBBox(true)
 	, m_bShowPlane(false)
+	, m_bRandomSliceRequested(false)
 	, m_pEditParam(NULL)
-	, m_fOscAmpDeg(10.f)
-	, m_fOscTime(2.5f)
 	, m_fScreenDiagonalInches(29.7f)
 {
 }
@@ -21,6 +22,7 @@ CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
 
 CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
 {
+	DataLogger::getInstance().closeLog();
 }
 
 void CosmoStudyTrialDesktopScene::init()
@@ -28,7 +30,7 @@ void CosmoStudyTrialDesktopScene::init()
 
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 	Renderer::getInstance().toggleSkybox();
-	Renderer::getInstance().setClearColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
+	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
 
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
@@ -43,6 +45,11 @@ void CosmoStudyTrialDesktopScene::init()
 	setupViews();
 	setupParameters();
 	buildScalarPlane();
+
+	//DataLogger::getInstance().setLogDirectory("/");
+	//DataLogger::getInstance().openLog("views");
+	//DataLogger::getInstance().setID("view");
+	//DataLogger::getInstance().start();
 }
 
 void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
@@ -180,12 +187,12 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 				if (m_pEditParam->desc.compare("Osc. Amplitude") == 0)
 				{
-					m_fOscAmpDeg = std::stof(m_pEditParam->buf);
+					m_pHairySlice->m_fOscAmpDeg = std::stof(m_pEditParam->buf);
 				}
 
 				if (m_pEditParam->desc.compare("Osc. Period") == 0)
 				{
-					m_fOscTime = std::stof(m_pEditParam->buf);
+					m_pHairySlice->m_fOscTime = std::stof(m_pEditParam->buf);
 				}
 
 				if (m_pEditParam->desc.compare("Display Diag (inches)") == 0)
@@ -281,45 +288,45 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_EQUALS)
+			if (ev.key.keysym.sym == SDLK_PAGEUP)
 			{
 				m_pHairySlice->nextGeomStyle();
 				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
 			}
 
-			if (ev.key.keysym.sym == SDLK_MINUS)
+			if (ev.key.keysym.sym == SDLK_PAGEDOWN)
 			{
 				m_pHairySlice->prevGeomStyle();
 				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
 			}
 
-			if (ev.key.keysym.sym == SDLK_KP_PLUS)
+			if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
 			{
 				m_pHairySlice->nextShader();
 				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
 			}
 
-			if (ev.key.keysym.sym == SDLK_KP_MINUS)
+			if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
 			{
 				m_pHairySlice->prevShader();
 				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
 			}
 
-			if (ev.key.keysym.sym == SDLK_KP_1)
+			if (ev.key.keysym.sym == SDLK_KP_DIVIDE)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
 					return p.desc.compare("Osc. Amplitude") == 0;
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_KP_2)
+			if (ev.key.keysym.sym == SDLK_KP_MULTIPLY)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
 					return p.desc.compare("Osc. Period") == 0;
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_KP_3)
+			if (ev.key.keysym.sym == SDLK_KP_PERIOD)
 			{
 				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
 					return p.desc.compare("Display Diag (inches)") == 0;
@@ -333,14 +340,71 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_UP)
+			if (ev.key.keysym.sym == SDLK_KP_PLUS)
 			{
 				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 1.1f);
 			}
 
-			if (ev.key.keysym.sym == SDLK_DOWN)
+			if (ev.key.keysym.sym == SDLK_KP_MINUS)
 			{
 				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 0.9f);
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_2)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_8)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_4)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
+			}
+
+			if (ev.key.keysym.sym == SDLK_KP_6)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
+			}
+
+			if (ev.key.keysym.sym == SDLK_UP)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
+			}
+
+			if (ev.key.keysym.sym == SDLK_DOWN)
+			{
+				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
+			}
+			
+			if (ev.key.keysym.sym == SDLK_KP_ENTER)
+			{
+				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getOriginalDimensions() * 4.f);
+				m_pCosmoVolume->setPosition(glm::linearRand(-(m_pCosmoVolume->getOriginalDimensions() / 2.f), (m_pCosmoVolume->getOriginalDimensions() / 2.f)));
+
+				glm::vec3 w = glm::ballRand(1.f);
+				glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
+				glm::vec3 v = glm::normalize(glm::cross(w, u));
+
+				m_pCosmoVolume->setOrientation(glm::mat3(u, v, w));
+
+				m_pHairySlice->set();
+			}
+
+			if (ev.key.keysym.sym == SDLK_INSERT)
+			{
+				std::stringstream ss;
+				ss << m_pCosmoVolume->getPosition().x << "," << m_pCosmoVolume->getPosition().y << "," << m_pCosmoVolume->getPosition().z << "," << m_pCosmoVolume->getDimensions().x;
+				DataLogger::getInstance().logMessage(ss.str());
 			}
 
 			if (ev.key.keysym.sym == SDLK_b)
@@ -363,6 +427,11 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 			if (ev.key.keysym.sym == SDLK_l)
 			{
 				m_bShowCosmoBBox = !m_bShowCosmoBBox;
+			}
+
+			if (ev.key.keysym.sym == SDLK_o)
+			{
+				m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
 			}
 
 			if (ev.key.keysym.sym == SDLK_p)
@@ -393,18 +462,13 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 void CosmoStudyTrialDesktopScene::update()
 {
+	if (m_bRandomSliceRequested)
+	{
+
+		m_bRandomSliceRequested = false;
+	}
+
 	m_pCosmoVolume->update();
-
-	float oscTimeMS = m_fOscTime * 1000.f;
-
-	float ratio = glm::mod(Renderer::getInstance().getElapsedMilliseconds(), oscTimeMS) / oscTimeMS;
-
-	float amount = glm::sin(glm::two_pi<float>() * ratio);
-
-	float rotNow = amount * (m_fOscAmpDeg / 2.f);
-
-	glm::mat3 trans = glm::toMat3(m_pCosmoVolume->getOriginalOrientation()) * glm::mat3(glm::rotate(glm::mat4(), glm::radians(rotNow), glm::vec3(0.f, 1.f, 0.f)));
-	m_pCosmoVolume->setOrientation(glm::quat_cast(trans));
 
 	LightingSystem::Light* l = LightingSystem::getInstance().getLight(0);
 	l->direction = glm::inverse(Renderer::getInstance().getLeftEyeInfo()->view) * glm::normalize(glm::vec4(-1.f, -1.f, -1.f, 0.f));
@@ -456,10 +520,10 @@ void CosmoStudyTrialDesktopScene::setupParameters()
 	m_vParams.push_back({ "Min Velocity Color" , utils::color::rgb2str(m_pHairySlice->m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_pHairySlice->m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	m_vParams.push_back({ "Halo Radius Factor" , std::to_string(m_pHairySlice->m_fHaloRadiusFactor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_pHairySlice->m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
-	
-	m_vParams.push_back({ "Osc. Amplitude" , std::to_string(m_fOscAmpDeg), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Osc. Period" , std::to_string(m_fOscTime), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_pHairySlice->m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });	
+	m_vParams.push_back({ "Osc. Amplitude" , std::to_string(m_pHairySlice->m_fOscAmpDeg), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Osc. Period" , std::to_string(m_pHairySlice->m_fOscTime), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+
 	m_vParams.push_back({ "Display Diag (inches)" , std::to_string(m_fScreenDiagonalInches), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }

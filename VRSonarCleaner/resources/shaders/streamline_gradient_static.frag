@@ -69,16 +69,18 @@ void main()
 {
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
-	vec4 surfaceDiffColor = v4Color * diffColor;
+	vec4 surfaceDiffColor = diffColor;
+	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
 	float intPart;
 	float ratioAlongSegment = modf(v2TexCoords.y, intPart);
 	
-	surfaceDiffColor.rgb *= mix(vec3(0.5f), vec3(1.f), ratioAlongSegment);
+	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongSegment);
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
-		surfaceDiffColor = v4Color * diffColor;
+		//surfaceDiffColor = v4Color * diffColor;
+		surfaceDiffColor = diffColor;
 
 	if (surfaceDiffColor.a == 0.f)
 	    discard;

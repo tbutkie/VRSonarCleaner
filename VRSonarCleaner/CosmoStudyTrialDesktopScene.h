@@ -41,6 +41,7 @@ private:
 
 	bool m_bShowCosmoBBox;
 	bool m_bShowPlane;
+	bool m_bRandomSliceRequested;
 
 	std::vector<glm::vec3> m_vvec3Zeros;
 	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
@@ -49,11 +50,7 @@ private:
 	void setupParameters();
 	void setupViews();
 	void buildScalarPlane();
-
-
-	float m_fOscAmpDeg;
-	float m_fOscTime;
-
+	
 	float m_fScreenDiagonalInches;
 
 	struct StudyParam {

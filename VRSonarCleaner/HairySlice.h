@@ -29,6 +29,7 @@ private:
 
 	bool m_bShowHalos;
 	bool m_bShowGeometry;
+	bool m_bOscillate;
 	bool m_bCuttingPlaneJitter;
 	bool m_bCuttingPlaneSet;
 
@@ -51,6 +52,9 @@ private:
 	unsigned int m_uiCuttingPlaneGridRes, m_uiNumTubeSegments;
 	float m_fCuttingPlaneWidth, m_fCuttingPlaneHeight;
 	float m_fTubeRadius;
+	
+	float m_fOscAmpDeg;
+	float m_fOscTime;
 
 	glm::vec3 m_vec3PlacedFrame_x0y0;
 	glm::vec3 m_vec3PlacedFrame_x0y1;

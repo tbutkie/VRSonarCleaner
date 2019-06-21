@@ -53,7 +53,7 @@ void DataLogger::setID(std::string id)
 void DataLogger::logMessage(std::string message)
 {
 	if (m_bLogging)
-		m_fsLog << m_strID << '\t' << message << "\n";
+		m_fsLog << m_strID << ',' << message << "\n";
 }
 
 std::string DataLogger::getTimeSinceLogStartString()
@@ -84,6 +84,7 @@ std::string DataLogger::getTimeSinceLogStartString()
 
 DataLogger::DataLogger() : m_bLogging(false)
 {
+	m_LogDirectory = current_path();
 }
 
 
