@@ -9,7 +9,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
-	, m_bShowHalos(true)
+	, m_bShowHalos(false)
 	, m_bShowGeometry(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
@@ -52,6 +52,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_ring_animated", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_animated.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
 	
+	reseed();
 	set();
 }
 
@@ -68,10 +69,11 @@ void HairySlice::update()
 
 void HairySlice::draw()
 {
-	m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
 	if (m_bShowGeometry)
 	{
+		m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
+
 		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 
 		if (m_bShowHalos || m_iCurrentGeomStyle == 4)
@@ -80,10 +82,10 @@ void HairySlice::draw()
 
 	if (m_bCuttingPlaneSet)
 	{
-		glm::vec3 x0y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y0);
-		glm::vec3 x0y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x0y1);
-		glm::vec3 x1y0 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y0);
-		glm::vec3 x1y1 = m_pCosmoVolume->convertToWorldCoords(m_vec3PlacedFrameDomain_x1y1);
+		glm::vec3 x0y0 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x0y0, 1.f);
+		glm::vec3 x0y1 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x0y1, 1.f);
+		glm::vec3 x1y0 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x1y0, 1.f);
+		glm::vec3 x1y1 = m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3PlacedFrame_x1y1, 1.f);
 
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y0, x0y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
@@ -96,7 +98,6 @@ void HairySlice::set()
 {	
 	m_mat4PlacedFrameWorldPose = m_pCosmoVolume->getTransformVolume();
 	m_bCuttingPlaneSet = true;
-	reseed();
 	sampleCuttingPlane();
 	rebuildGeometry();
 }
@@ -126,16 +127,12 @@ void HairySlice::nextGeomStyle()
 {
 	if (++m_iCurrentGeomStyle == m_vstrGeomStyleNames.size())
 		m_iCurrentGeomStyle = 0;
-
-	m_rs.shaderName = m_vstrGeomStyleNames[m_iCurrentGeomStyle];
 }
 
 void HairySlice::prevGeomStyle()
 {
 	if (--m_iCurrentGeomStyle < 0)
 		m_iCurrentGeomStyle = m_vstrGeomStyleNames.size() - 1;
-
-	m_rs.shaderName = m_vstrGeomStyleNames[m_iCurrentGeomStyle];
 }
 
 std::string HairySlice::getGeomStyle()
@@ -145,11 +142,11 @@ std::string HairySlice::getGeomStyle()
 
 void HairySlice::reseed()
 {
-	m_vvec3StreamlineSeedsDomain.clear();
-	
-	glm::mat4 planeXform = m_bCuttingPlaneSet ? m_mat4PlacedFrameWorldPose : m_pCosmoVolume->getTransformVolume();
-	glm::vec3 planeCtrPos = planeXform[3];
+	m_vvec3StreamlineSeeds.clear();
 
+	glm::vec3 xDir(1.f, 0.f, 0.f);
+	glm::vec3 yDir(0.f, 1.f, 0.f);
+	
 	float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
 	float maxJitterY = 0.25f * (m_fCuttingPlaneHeight / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
 
@@ -160,31 +157,31 @@ void HairySlice::reseed()
 		for (int j = 0; j < m_uiCuttingPlaneGridRes; ++j)
 		{
 			float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
-			glm::vec3 pos = planeCtrPos + glm::vec3(planeXform[0]) * ratioWidth * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * ratioHeight * m_fCuttingPlaneHeight;
+
+			glm::vec3 pos = xDir * ratioWidth * m_fCuttingPlaneWidth - yDir * ratioHeight * m_fCuttingPlaneHeight;
 
 			if (m_bCuttingPlaneJitter)
-				pos += m_Distribution(m_RNG) * glm::vec3(planeXform[0]) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(planeXform[1]) * maxJitterY;
-
-			glm::dvec3 domainPos = m_pCosmoVolume->convertToRawDomainCoords(pos);
-
-			m_vvec3StreamlineSeedsDomain.push_back(domainPos);
+				pos += m_Distribution(m_RNG) * glm::vec3(1.f, 0.f, 0.f) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(0.f, 1.f, 0.f) * maxJitterY;
+			
+			m_vvec3StreamlineSeeds.push_back(pos);
 		}
 	}
 
-	m_vec3PlacedFrameDomain_x0y0 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * -0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrameDomain_x0y1 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) * -0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) *  0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrameDomain_x1y0 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) *  0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) * -0.5f * m_fCuttingPlaneHeight);
-	m_vec3PlacedFrameDomain_x1y1 = m_pCosmoVolume->convertToRawDomainCoords(planeCtrPos + glm::vec3(planeXform[0]) *  0.5f * m_fCuttingPlaneWidth - glm::vec3(planeXform[1]) *  0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrame_x0y0 = (xDir * -0.5f * m_fCuttingPlaneWidth - yDir * -0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrame_x0y1 = (xDir * -0.5f * m_fCuttingPlaneWidth - yDir *  0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrame_x1y0 = (xDir *  0.5f * m_fCuttingPlaneWidth - yDir * -0.5f * m_fCuttingPlaneHeight);
+	m_vec3PlacedFrame_x1y1 = (xDir *  0.5f * m_fCuttingPlaneWidth - yDir *  0.5f * m_fCuttingPlaneHeight);
 }
 
 void HairySlice::sampleCuttingPlane()
 {
 	m_vvvec3RawStreamlines.clear();
 
-	for (auto &seed : m_vvec3StreamlineSeedsDomain)
+	for (auto &seed : m_vvec3StreamlineSeeds)
 	{
-		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
+		glm::dvec3 domainSeed = m_pCosmoVolume->convertToRawDomainCoords(m_mat4PlacedFrameWorldPose * glm::vec4(seed, 1.f));
+		std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(domainSeed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
+		std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(domainSeed, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
 		std::reverse(rev.begin(), rev.end());
 		rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
@@ -195,7 +192,7 @@ void HairySlice::sampleCuttingPlane()
 void HairySlice::sampleVolume(unsigned int gridRes)
 {
 	m_vvvec3RawStreamlines.clear();
-	m_vvec3StreamlineSeedsDomain.clear();
+	m_vvec3StreamlineSeeds.clear();
 
 	for (int i = 0; i < gridRes; ++i)
 		for (int j = 0; j < gridRes; ++j)
@@ -209,7 +206,7 @@ void HairySlice::sampleVolume(unsigned int gridRes)
 
 				m_vvvec3RawStreamlines.push_back(rev);
 
-				m_vvec3StreamlineSeedsDomain.push_back(seedPos);
+				m_vvec3StreamlineSeeds.push_back(seedPos);
 			}
 }
 

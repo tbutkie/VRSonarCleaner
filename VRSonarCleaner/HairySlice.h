@@ -35,7 +35,7 @@ private:
 	CosmoVolume* m_pCosmoVolume;
 
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
-	std::vector<glm::vec3> m_vvec3StreamlineSeedsDomain;
+	std::vector<glm::vec3> m_vvec3StreamlineSeeds;
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
@@ -52,10 +52,10 @@ private:
 	float m_fCuttingPlaneWidth, m_fCuttingPlaneHeight;
 	float m_fTubeRadius;
 
-	glm::vec3 m_vec3PlacedFrameDomain_x0y0;
-	glm::vec3 m_vec3PlacedFrameDomain_x0y1;
-	glm::vec3 m_vec3PlacedFrameDomain_x1y0;
-	glm::vec3 m_vec3PlacedFrameDomain_x1y1;
+	glm::vec3 m_vec3PlacedFrame_x0y0;
+	glm::vec3 m_vec3PlacedFrame_x0y1;
+	glm::vec3 m_vec3PlacedFrame_x1y0;
+	glm::vec3 m_vec3PlacedFrame_x1y1;
 	glm::mat4 m_mat4PlacedFrameWorldPose;
 
 	glm::vec3 m_vec3ActiveFrameWorld_x0y0;

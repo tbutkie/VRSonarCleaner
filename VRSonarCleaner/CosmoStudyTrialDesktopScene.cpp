@@ -190,23 +190,14 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				if (m_pEditParam->desc.compare("Display Diag (inches)") == 0)
 				{
 					m_fScreenDiagonalInches = std::stof(m_pEditParam->buf);
+					setupViews();
 				}
 
 				if (m_pEditParam->desc.compare("Clear Color") == 0)
 				{
 					Renderer::getInstance().setClearColor(utils::color::str2rgb(m_pEditParam->buf));
 				}
-
-				//if (m_bCuttingPlaneSet)
-				//	sampleCuttingPlane(cuttingPlaneReseed);
-				//else if (m_pTDM->getSecondaryController() && !m_pTDM->getSecondaryController()->isTouchpadClicked())
-				//	sampleVolume();
-
-				//if (cuttingPlaneReseed)
-				//	sampleCuttingPlane(cuttingPlaneReseed);
-				//
-				//buildStreamTubes();
-
+				
 				m_pEditParam = NULL;
 			}
 		}
@@ -289,7 +280,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_PLUS)
+			if (ev.key.keysym.sym == SDLK_EQUALS)
 			{
 				m_pHairySlice->nextGeomStyle();
 				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
@@ -366,8 +357,8 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 			if (ev.key.keysym.sym == SDLK_r)
 			{
-				//m_pHairySlice->reseed();
-				//Renderer::getInstance().showMessage("Slice reseeded " + std::to_string(m_pHairySlice->m_bShowStreamtubes));
+				m_pHairySlice->reseed();
+				Renderer::getInstance().showMessage("Hairy Slice reseeded");
 			}
 
 			if (ev.key.keysym.sym == SDLK_s)
@@ -409,9 +400,7 @@ void CosmoStudyTrialDesktopScene::draw()
 {
 	//m_pCosmoVolume->drawVolumeBacking(glm::inverse(glm::lookAt(Renderer::getInstance().getCamera()->pos, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f))), 1.f);
 	m_pCosmoVolume->drawBBox(0.f);
-
-	glm::vec3 dimratio = m_pCosmoVolume->getDimensions() / m_pCosmoVolume->getOriginalDimensions();
-	
+		
 	if (m_pEditParam)
 	{
 		Renderer::getInstance().drawUIText(

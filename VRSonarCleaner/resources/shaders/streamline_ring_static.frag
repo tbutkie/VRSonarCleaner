@@ -69,13 +69,14 @@ void main()
 {
 	float rate = 0.5f; // seconds per segment
 	float bandSize = 0.5f;
-	vec3 bandColor = vec3(0.f);
+	vec3 overrideColor = vec3(0.65f);
+	vec3 bandColor = vec3(0.35f);
 	float loopCount;
 	float timeRatio = modf(fGlobalTime / rate, loopCount);
 
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
-	vec4 surfaceDiffColor = diffColor;
+	vec4 surfaceDiffColor = vec4(overrideColor, 1.f); //diffColor;
 	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
@@ -90,7 +91,7 @@ void main()
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
 		//surfaceDiffColor = v4Color * diffColor;
-		surfaceDiffColor = diffColor;
+		surfaceDiffColor.rgb = overrideColor; //diffColor;
 
 	if (surfaceDiffColor.a == 0.f)
 	    discard;

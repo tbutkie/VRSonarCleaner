@@ -8,7 +8,7 @@ CosmoVolume::CosmoVolume(std::string cosmoDataDir)
 	: DataVolume(
 		glm::vec3(0.f, 0.f, 0.f),
 		glm::quat(),
-		glm::vec3(0.2f))
+		glm::vec3(0.3f))
 	, m_msLoopTime(35s)
 {
 	m_pCosmoGrid = new CosmoGrid(cosmoDataDir.c_str());

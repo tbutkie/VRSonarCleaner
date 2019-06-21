@@ -227,35 +227,10 @@ bool Engine::handleInput()
 				{
 					bRet = true;
 				}
-
-				if (sdlEvent.key.keysym.sym == SDLK_j)
-				{
-				}
-				
-				if (sdlEvent.key.keysym.sym == SDLK_f)
-				{
-					//using namespace std::experimental::filesystem::v1;
-					//auto herePath = current_path();
-					//std::cout << "Current directory: " << herePath << std::endl;
-					//for (directory_iterator it(herePath); it != directory_iterator(); ++it)
-					//	if (is_regular_file(*it))
-					//		std::cout << (*it) << std::endl;
-				}
-
 				
 				if (sdlEvent.key.keysym.sym == SDLK_c)
 				{
 					std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
-				}
-				
-				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_w)
-				{
-					Renderer::getInstance().toggleWireframe();
-				}
-				
-				if (!(sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
-				{
-					m_bShowDesktopFrustum = !m_bShowDesktopFrustum;
 				}
 
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
