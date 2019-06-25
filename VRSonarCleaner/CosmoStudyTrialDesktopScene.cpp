@@ -149,13 +149,13 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				
 				if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
 				{
-					m_pHairySlice->m_fCuttingPlaneWidth = std::stof(m_pEditParam->buf);
+					m_pHairySlice->m_vec2CuttingPlaneSize.x = std::stof(m_pEditParam->buf);
 					cuttingPlaneReseed = true;
 				}
 				
 				if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
 				{
-					m_pHairySlice->m_fCuttingPlaneHeight = std::stof(m_pEditParam->buf);
+					m_pHairySlice->m_vec2CuttingPlaneSize.y = std::stof(m_pEditParam->buf);
 					cuttingPlaneReseed = true;
 				}
 				
@@ -288,13 +288,13 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				}));
 			}
 
-			if (ev.key.keysym.sym == SDLK_PAGEUP)
+			if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
 			{
 				m_pHairySlice->nextGeomStyle();
 				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
 			}
 
-			if (ev.key.keysym.sym == SDLK_PAGEDOWN)
+			if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
 			{
 				m_pHairySlice->prevGeomStyle();
 				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
@@ -514,8 +514,8 @@ void CosmoStudyTrialDesktopScene::setupParameters()
 	m_vParams.push_back({ "RK4 Max Steps" , std::to_string(m_pHairySlice->m_uiRK4MaxPropagation_OneWay), STUDYPARAM_NUMERIC });
 	m_vParams.push_back({ "RK4 End Velocity" , std::to_string(m_pHairySlice->m_fRK4StopVelocity), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Cutting Plane Seeding Resolution" , std::to_string(m_pHairySlice->m_uiCuttingPlaneGridRes), STUDYPARAM_NUMERIC });
-	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_pHairySlice->m_fCuttingPlaneWidth), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
-	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_pHairySlice->m_fCuttingPlaneHeight), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Cutting Plane Width" , std::to_string(m_pHairySlice->m_vec2CuttingPlaneSize.x), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "Cutting Plane Height" , std::to_string(m_pHairySlice->m_vec2CuttingPlaneSize.y), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Streamtube Radius" , std::to_string(m_pHairySlice->m_fTubeRadius), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Min Velocity Color" , utils::color::rgb2str(m_pHairySlice->m_vec4VelColorMin), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 	m_vParams.push_back({ "Max Velocity Color" , utils::color::rgb2str(m_pHairySlice->m_vec4VelColorMax), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });

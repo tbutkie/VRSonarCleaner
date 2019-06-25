@@ -203,6 +203,7 @@ public:
 	void toggleWireframe();
 
 	bool addShader(std::string shaderName, std::vector<std::string> shaderSources, bool lighting = false);
+	GLuint* getShader(std::string name);
 
 	GLTexture* getTexture(std::string texName);
 	bool addTexture(GLTexture* tex);

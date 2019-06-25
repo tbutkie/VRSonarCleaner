@@ -25,6 +25,8 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 	};
 
 
+uniform float nStreamLineSegments;
+
 in vec3 v3Normal;
 in vec3 v3FragPos;
 in vec4 v4Color;
@@ -74,9 +76,14 @@ void main()
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
 	float intPart;
-	float ratioAlongSegment = modf(v2TexCoords.y, intPart);
+	float ratioAlongSegment =  modf(v2TexCoords.y, intPart);
+	float ratioAlongStreamline = v2TexCoords.y / nStreamLineSegments;
+
+	//float gradientsPerStreamline = 5.f;
+	float gradientsPerStreamline = nStreamLineSegments;
+	float ratioAlongGradient = modf(v2TexCoords.y / (nStreamLineSegments / gradientsPerStreamline), intPart);
 	
-	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongSegment);
+	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongGradient);
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
 		//surfaceDiffColor = v4Color * diffColor;

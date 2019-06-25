@@ -14,8 +14,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_bOscillate(true)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
-	, m_fCuttingPlaneWidth(0.3f)
-	, m_fCuttingPlaneHeight(0.3f)
+	, m_vec2CuttingPlaneSize(0.3f, 0.3f)
 	, m_uiCuttingPlaneGridRes(20u)
 	, m_fTubeRadius(0.0025f)
 	, m_fOscAmpDeg(20.f)
@@ -84,6 +83,13 @@ void HairySlice::update()
 	//{
 	//	m_pCosmoVolume->setOrientation(m_pCosmoVolume->getOriginalOrientation());
 	//}
+
+	GLuint* shader = Renderer::getInstance().getShader("streamline_gradient_static");
+	if (shader)
+	{
+		glUseProgram(*shader);		
+		glUniform1f(glGetUniformLocation(*shader, "nStreamLineSegments"), (m_uiRK4MaxPropagation_OneWay * 2.f));
+	}
 }
 
 void HairySlice::draw()
@@ -97,6 +103,11 @@ void HairySlice::draw()
 
 		if (m_bShowHalos || m_iCurrentGeomStyle == 4)
 			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	}
+
+	for (auto &seed : m_vvec3StreamlineSeeds)
+	{
+		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 	}
 
 	if (m_bCuttingPlaneSet)
@@ -165,9 +176,12 @@ void HairySlice::reseed()
 
 	glm::vec3 xDir(1.f, 0.f, 0.f);
 	glm::vec3 yDir(0.f, 1.f, 0.f);
+
+	float xCellSize = m_vec2CuttingPlaneSize.x / static_cast<float>(m_uiCuttingPlaneGridRes);
+	float yCellSize = m_vec2CuttingPlaneSize.y / static_cast<float>(m_uiCuttingPlaneGridRes);
 	
-	float maxJitterX = 0.25f * (m_fCuttingPlaneWidth / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
-	float maxJitterY = 0.25f * (m_fCuttingPlaneHeight / static_cast<float>(m_uiCuttingPlaneGridRes - 1));
+	float maxJitterX = 0.25f * xCellSize;
+	float maxJitterY = 0.25f * yCellSize;
 
 	for (int i = 0; i < m_uiCuttingPlaneGridRes; ++i)
 	{
@@ -177,19 +191,19 @@ void HairySlice::reseed()
 		{
 			float ratioHeight = m_uiCuttingPlaneGridRes == 1 ? 0.f : (float)j / (m_uiCuttingPlaneGridRes - 1) - 0.5f;
 
-			glm::vec3 pos = xDir * ratioWidth * m_fCuttingPlaneWidth - yDir * ratioHeight * m_fCuttingPlaneHeight;
+			glm::vec3 pos = xDir * ratioWidth * (m_vec2CuttingPlaneSize.x - xCellSize) - yDir * ratioHeight * (m_vec2CuttingPlaneSize.y - yCellSize);
 
 			if (m_bCuttingPlaneJitter)
-				pos += m_Distribution(m_RNG) * glm::vec3(1.f, 0.f, 0.f) * maxJitterX + m_Distribution(m_RNG) * glm::vec3(0.f, 1.f, 0.f) * maxJitterY;
+				pos += m_Distribution(m_RNG) * xDir * maxJitterX + m_Distribution(m_RNG) * yDir * maxJitterY;
 			
 			m_vvec3StreamlineSeeds.push_back(pos);
 		}
 	}
 
-	m_vec3PlacedFrame_x0y0 = (xDir * m_fCuttingPlaneWidth * -0.5f - yDir * m_fCuttingPlaneHeight * -0.5f);
-	m_vec3PlacedFrame_x0y1 = (xDir * m_fCuttingPlaneWidth * -0.5f - yDir * m_fCuttingPlaneHeight *  0.5f);
-	m_vec3PlacedFrame_x1y0 = (xDir * m_fCuttingPlaneWidth *  0.5f - yDir * m_fCuttingPlaneHeight * -0.5f);
-	m_vec3PlacedFrame_x1y1 = (xDir * m_fCuttingPlaneWidth *  0.5f - yDir * m_fCuttingPlaneHeight *  0.5f);
+	m_vec3PlacedFrame_x0y0 = (xDir * m_vec2CuttingPlaneSize.x * -0.5f - yDir * m_vec2CuttingPlaneSize.y * -0.5f);
+	m_vec3PlacedFrame_x0y1 = (xDir * m_vec2CuttingPlaneSize.x * -0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
+	m_vec3PlacedFrame_x1y0 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y * -0.5f);
+	m_vec3PlacedFrame_x1y1 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
 }
 
 void HairySlice::sampleCuttingPlane()

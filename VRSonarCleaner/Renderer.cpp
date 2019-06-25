@@ -671,6 +671,11 @@ bool Renderer::addShader(std::string shaderName, std::vector<std::string> shader
 	return false;
 }
 
+GLuint * Renderer::getShader(std::string name)
+{
+	return m_mapShaders[name];
+}
+
 void Renderer::setupTextures()
 {
 	GLubyte white[4] = { 0xFF, 0xFF, 0xFF, 0xFF };

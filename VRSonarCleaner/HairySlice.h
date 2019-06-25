@@ -50,7 +50,7 @@ private:
 	float m_fHaloRadiusFactor;
 
 	unsigned int m_uiCuttingPlaneGridRes, m_uiNumTubeSegments;
-	float m_fCuttingPlaneWidth, m_fCuttingPlaneHeight;
+	glm::vec2 m_vec2CuttingPlaneSize;
 	float m_fTubeRadius;
 	
 	float m_fOscAmpDeg;
