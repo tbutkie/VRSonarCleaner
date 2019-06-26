@@ -24,6 +24,7 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 		float fGlobalTime;
 	};
 
+uniform float nStreamLineSegments;
 
 in vec3 v3Normal;
 in vec3 v3FragPos;

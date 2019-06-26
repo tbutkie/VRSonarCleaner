@@ -40,8 +40,9 @@ private:
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
+	GLuint m_glReticuleVBO, m_glReticuleEBO, m_glReticuleVAO;
 
-	Renderer::RendererSubmission m_rs, m_rsHalo;
+	Renderer::RendererSubmission m_rs, m_rsHalo, m_rsReticule;
 	
 	std::mt19937 m_RNG; // Mersenne Twister
 	std::uniform_real_distribution<float> m_Distribution;
@@ -55,6 +56,8 @@ private:
 	
 	float m_fOscAmpDeg;
 	float m_fOscTime;
+
+	glm::vec3 m_vec3Reticule;
 
 	glm::vec3 m_vec3PlacedFrame_x0y0;
 	glm::vec3 m_vec3PlacedFrame_x0y1;
@@ -78,12 +81,14 @@ private:
 
 private:
 	void reseed();
+	glm::vec3 randomPointOnPlane();
 	void sampleCuttingPlane();
 	void sampleVolume(unsigned int gridRes = 10u);
 	void rebuildGeometry();
 	void buildStreamTubes();
 	void buildStreamCones(float coneEnlargementFactor = 5.f);
 	void buildStreamlets();
+	void buildReticule();
 
 	void destroyGeometry();
 

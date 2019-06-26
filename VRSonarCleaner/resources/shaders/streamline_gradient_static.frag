@@ -24,7 +24,6 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 		float fGlobalTime;
 	};
 
-
 uniform float nStreamLineSegments;
 
 in vec3 v3Normal;
@@ -79,8 +78,8 @@ void main()
 	float ratioAlongSegment =  modf(v2TexCoords.y, intPart);
 	float ratioAlongStreamline = v2TexCoords.y / nStreamLineSegments;
 
-	//float gradientsPerStreamline = 5.f;
-	float gradientsPerStreamline = nStreamLineSegments;
+	float gradientsPerStreamline = 5.f;
+	//float gradientsPerStreamline = nStreamLineSegments;
 	float ratioAlongGradient = modf(v2TexCoords.y / (nStreamLineSegments / gradientsPerStreamline), intPart);
 	
 	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongGradient);

@@ -24,6 +24,7 @@ layout(std140, binding = SCENE_UNIFORM_BUFFER_LOCATION)
 		float fGlobalTime;
 	};
 
+uniform float nStreamLineSegments;
 
 in vec3 v3Normal;
 in vec3 v3FragPos;
@@ -70,6 +71,7 @@ void main()
 	float rate = 0.5f; // seconds per segment
 	float loopCount;
 	float timeRatio = modf(fGlobalTime / rate, loopCount);
+	//float timeRatio = 0.f;
 
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
@@ -77,16 +79,20 @@ void main()
 	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
+	//float intPart;
+	//float ratioAlongSegment = modf(v2TexCoords.y - timeRatio + 1.f, intPart);
+	
 	float intPart;
-	float ratioAlongSegment = modf(v2TexCoords.y - timeRatio + 1.f, intPart);
+	float ratioAlongSegment =  modf(v2TexCoords.y - timeRatio + 1.f, intPart);
+	float ratioAlongStreamline = (v2TexCoords.y - timeRatio + 1.f) / nStreamLineSegments;
 
-	//if (intPart == 1.f)
-	//    surfaceDiffColor.rgb = vec3(0.f);
-	//else
-	//    surfaceDiffColor.rgb = vec3(1.f);
-
+	float gradientsPerStreamline = 5.f;
+	//float gradientsPerStreamline = nStreamLineSegments;
+	float gradientSize = nStreamLineSegments / gradientsPerStreamline;
+	float ratioAlongGradient = modf((v2TexCoords.y - timeRatio * gradientSize + gradientSize) / gradientSize, intPart);
+	
 	//surfaceDiffColor.a *= ratioAlongSegment;
-	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongSegment);
+	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongGradient);
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
 		//surfaceDiffColor = v4Color * diffColor;

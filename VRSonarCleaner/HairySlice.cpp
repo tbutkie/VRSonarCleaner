@@ -54,6 +54,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_ring_animated", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_animated.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
 	
+	buildReticule();
 	reseed();
 	set();
 }
@@ -84,11 +85,14 @@ void HairySlice::update()
 	//	m_pCosmoVolume->setOrientation(m_pCosmoVolume->getOriginalOrientation());
 	//}
 
-	GLuint* shader = Renderer::getInstance().getShader("streamline_gradient_static");
-	if (shader)
+	for (auto &shader : m_vstrShaderNames)
 	{
-		glUseProgram(*shader);		
-		glUniform1f(glGetUniformLocation(*shader, "nStreamLineSegments"), (m_uiRK4MaxPropagation_OneWay * 2.f));
+		GLuint* shaderHandle = Renderer::getInstance().getShader(shader);
+		if (shaderHandle)
+		{
+			glUseProgram(*shaderHandle);
+			glUniform1f(glGetUniformLocation(*shaderHandle, "nStreamLineSegments"), (m_uiRK4MaxPropagation_OneWay * 2.f));
+		}
 	}
 }
 
@@ -103,6 +107,16 @@ void HairySlice::draw()
 
 		if (m_bShowHalos || m_iCurrentGeomStyle == 4)
 			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
+	}
+
+	// Reticule
+	{
+		float spinRate = 2.f;
+		float rotAngle = 360.f * glm::mod(Renderer::getInstance().getElapsedSeconds(), spinRate) / spinRate;
+		m_rsReticule.modelToWorldTransform = glm::translate(glm::mat4(), m_vec3Reticule) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.025f));
+		Renderer::getInstance().addToDynamicRenderQueue(m_rsReticule);
+
+		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 0.25f));
 	}
 
 	for (auto &seed : m_vvec3StreamlineSeeds)
@@ -130,6 +144,7 @@ void HairySlice::set()
 	m_bCuttingPlaneSet = true;
 	sampleCuttingPlane();
 	rebuildGeometry();
+	m_vec3Reticule = randomPointOnPlane();
 }
 
 void HairySlice::nextShader()
@@ -204,6 +219,16 @@ void HairySlice::reseed()
 	m_vec3PlacedFrame_x0y1 = (xDir * m_vec2CuttingPlaneSize.x * -0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
 	m_vec3PlacedFrame_x1y0 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y * -0.5f);
 	m_vec3PlacedFrame_x1y1 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
+}
+
+glm::vec3 HairySlice::randomPointOnPlane()
+{
+	glm::vec3 xDir(1.f, 0.f, 0.f);
+	glm::vec3 yDir(0.f, 1.f, 0.f);
+
+	glm::vec2 maxJitter = m_vec2CuttingPlaneSize * (1.f / 3.f);
+
+	return m_Distribution(m_RNG) * xDir * maxJitter.x + m_Distribution(m_RNG) * yDir * maxJitter.y;
 }
 
 void HairySlice::sampleCuttingPlane()
@@ -746,6 +771,119 @@ void HairySlice::buildStreamlets()
 
 	m_rs.vertCount = inds.size();
 
+}
+
+void HairySlice::buildReticule()
+{
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec3 n; // normal
+		glm::vec4 c; // color
+		glm::vec2 t; // texture coord
+	};
+
+	std::vector<PrimVert> verts;
+	std::vector<GLuint> inds;
+
+	PrimVert tV; // temp Vertex
+
+// top triangle
+	tV.p = glm::vec3(0.25f, 1.f, 0.f);
+	tV.c = glm::vec4(1.f);
+	tV.n = glm::vec3(0.f, 0.f, 1.f);
+	tV.t = glm::vec2(0.f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(-0.25f, 1.f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(0.f, 0.1f, 0.f);
+	verts.push_back(tV);
+
+	// left triangle
+	tV.p = glm::vec3(-1.f, 0.25f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(-1.f, -0.25f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(-0.1f, 0.f, 0.f);
+	verts.push_back(tV);
+
+	// bottom triangle
+	tV.p = glm::vec3(-0.25f, -1.f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(0.25f, -1.f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(0.f, -0.1f, 0.f);
+	verts.push_back(tV);
+
+	// right triangle
+	tV.p = glm::vec3(1.f, -0.25f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(1.f, 0.25f, 0.f);
+	verts.push_back(tV);
+
+	tV.p = glm::vec3(0.1f, 0.f, 0.f);
+	verts.push_back(tV);
+
+
+	int nFaces = 4;
+	GLsizei offset = 0;
+	for (int i = 0; i < nFaces; ++i)
+	{
+		inds.push_back(offset);
+		inds.push_back(offset + 1);
+		inds.push_back(offset + 2);
+
+		offset += 3;
+	}
+
+	//if (!m_glReticuleVBO)
+	{
+		glCreateBuffers(1, &m_glReticuleVBO);
+		glNamedBufferStorage(m_glReticuleVBO, verts.size() * sizeof(PrimVert), verts.data(), 0);
+	}
+
+	//if (!m_glReticuleEBO)
+	{
+		glCreateBuffers(1, &m_glReticuleEBO);
+		glNamedBufferStorage(m_glReticuleEBO, inds.size() * sizeof(GLuint), inds.data(), 0);
+	}
+
+
+	//if (!m_glReticuleVAO)
+	{
+		glGenVertexArrays(1, &m_glReticuleVAO);
+		glBindVertexArray(this->m_glReticuleVAO);
+		// Load data into vertex buffers
+		glBindBuffer(GL_ARRAY_BUFFER, this->m_glReticuleVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glReticuleEBO);
+
+		// Set the vertex attribute pointers
+		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+		glBindVertexArray(0);
+
+		m_rsReticule.VAO = m_glReticuleVAO;
+		m_rsReticule.glPrimitiveType = GL_TRIANGLES;
+		m_rsReticule.shaderName = "flat";
+		m_rsReticule.indexType = GL_UNSIGNED_INT;
+		m_rsReticule.diffuseColor = glm::vec4(1.f, 0.f, 0.f, 0.25f);
+		m_rsReticule.specularColor = glm::vec4(0.f);
+		m_rsReticule.specularExponent = 32.f;
+		m_rsReticule.hasTransparency = true;
+		m_rsReticule.vertCount = inds.size();
+	}
 }
 
 void HairySlice::destroyGeometry()
