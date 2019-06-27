@@ -50,6 +50,7 @@ private:
 	glm::vec4 m_vec4HaloColor, m_vec4VelColorMin, m_vec4VelColorMax;
 	float m_fHaloRadiusFactor;
 
+	glm::quat m_qPlaneOrientation;
 	unsigned int m_uiCuttingPlaneGridRes, m_uiNumTubeSegments;
 	glm::vec2 m_vec2CuttingPlaneSize;
 	float m_fTubeRadius;
@@ -87,7 +88,7 @@ private:
 	void sampleVolume(unsigned int gridRes = 10u);
 	void rebuildGeometry();
 	void buildStreamTubes();
-	void buildStreamCones(float coneEnlargementFactor = 5.f);
+	void buildStreamCones(float coneEnlargementFactor = 1.f);
 	void buildStreamlets();
 	void buildReticule();
 
