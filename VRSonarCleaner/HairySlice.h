@@ -58,6 +58,7 @@ private:
 	float m_fOscTime;
 
 	glm::vec3 m_vec3Reticule;
+	glm::vec3 m_vec3FlowAtReticule;
 
 	glm::vec3 m_vec3PlacedFrame_x0y0;
 	glm::vec3 m_vec3PlacedFrame_x0y1;

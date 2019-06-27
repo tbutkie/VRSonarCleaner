@@ -119,6 +119,15 @@ void HairySlice::draw()
 		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 0.25f));
 	}
 
+	// Target vector
+	{
+		float extendRate = 2.f;
+		float maxExtend = 0.05f;
+		float minExtend = 0.005f;
+		float extend = glm::mix(minExtend, maxExtend, glm::mod(Renderer::getInstance().getElapsedSeconds(), extendRate) / extendRate);
+		Renderer::getInstance().drawPointerLit(m_vec3Reticule, m_vec3Reticule + glm::normalize(m_vec3FlowAtReticule) * extend, 0.0025f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
+	}
+
 	for (auto &seed : m_vvec3StreamlineSeeds)
 	{
 		Renderer::getInstance().drawPrimitive("icosphere", glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
@@ -145,6 +154,7 @@ void HairySlice::set()
 	sampleCuttingPlane();
 	rebuildGeometry();
 	m_vec3Reticule = randomPointOnPlane();
+	m_vec3FlowAtReticule = m_pCosmoVolume->getFlowWorldCoords(m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3Reticule, 1.f));
 }
 
 void HairySlice::nextShader()
