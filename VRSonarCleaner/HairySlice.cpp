@@ -357,7 +357,7 @@ void HairySlice::buildStreamTubes()
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
 			xform[3] = glm::vec4(sl[i], 1.f);
 
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(sl[i]));
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(sl[i])));
 
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
@@ -407,7 +407,7 @@ void HairySlice::buildStreamTubes()
 			// center vertex
 			pvTube.p = q == frontCap ? sl.front() : sl.back();
 
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pvTube.p));
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pvTube.p)));
 			//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
 			pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 
@@ -580,7 +580,7 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 			glm::mat4 xform(glm::toMat3(ribOrientations[i]));
 			xform[3] = glm::vec4(sl[i], 1.f);
 
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(sl[i]));
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(sl[i])));
 
 			float ratioAlongLine = static_cast<float>(i) / (ribOrientations.size() - 1u);
 
@@ -623,7 +623,7 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 		// center vertex
 		pvTube.p = sl.back();
 
-		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(pvTube.p));
+		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pvTube.p)));
 		//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
 		pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 
