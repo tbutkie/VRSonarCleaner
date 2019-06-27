@@ -69,9 +69,9 @@ vec3 phong(Light light, vec3 surfDiffCol, vec3 surfSpecCol, vec3 normal, vec3 fr
 void main()
 {
 	float rate = 0.5f; // seconds per segment
-	float loopCount;
-	float timeRatio = modf(fGlobalTime / rate, loopCount);
-	//float timeRatio = 0.f;
+
+	float gradientsPerStreamline = 5.f;
+	//float gradientsPerStreamline = nStreamLineSegments;
 
     vec3 norm = normalize(v3Normal);
     vec3 fragToViewDir = normalize(-v3FragPos);
@@ -79,19 +79,12 @@ void main()
 	//surfaceDiffColor *= v4Color;
 	//surfaceDiffColor *= texture(diffuseTex, v2TexCoords);
 
-	//float intPart;
-	//float ratioAlongSegment = modf(v2TexCoords.y - timeRatio + 1.f, intPart);
-	
-	float intPart;
-	float ratioAlongSegment =  modf(v2TexCoords.y - timeRatio + 1.f, intPart);
-	float ratioAlongStreamline = (v2TexCoords.y - timeRatio + 1.f) / nStreamLineSegments;
+	float timeRatio = mod(fGlobalTime, rate) / rate;
+	//float timeRatio = 0.f;
 
-	float gradientsPerStreamline = 5.f;
-	//float gradientsPerStreamline = nStreamLineSegments;
 	float gradientSize = nStreamLineSegments / gradientsPerStreamline;
-	float ratioAlongGradient = modf((v2TexCoords.y - timeRatio * gradientSize + gradientSize) / gradientSize, intPart);
+	float ratioAlongGradient = mod((v2TexCoords.y - timeRatio * gradientSize + gradientSize), gradientSize) / gradientSize;
 	
-	//surfaceDiffColor.a *= ratioAlongSegment;
 	surfaceDiffColor.rgb *= mix(vec3(0.25f), vec3(1.f), ratioAlongGradient);
 	
 	if (v2TexCoords.x > 0.49999f && v2TexCoords.x < 0.50001)
