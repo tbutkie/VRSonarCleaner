@@ -391,7 +391,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getOriginalDimensions() * 4.f);
 				m_pCosmoVolume->setPosition(glm::linearRand(-(m_pCosmoVolume->getOriginalDimensions() / 2.f), (m_pCosmoVolume->getOriginalDimensions() / 2.f)));
 
-				glm::vec3 w = glm::ballRand(1.f);
+				glm::vec3 w = glm::normalize(glm::sphericalRand(1.f));
 				glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
 				glm::vec3 v = glm::normalize(glm::cross(w, u));
 
