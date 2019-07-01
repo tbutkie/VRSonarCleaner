@@ -547,5 +547,11 @@
     <None Include="resources\shaders\streamline_gradient_static.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\grid.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\grid.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

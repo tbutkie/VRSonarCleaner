@@ -11,7 +11,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glHaloVAO(0)
 	, m_bShowHalos(false)
 	, m_bShowGeometry(true)
-	, m_bOscillate(true)
+	, m_bOscillate(false)
 	, m_bCuttingPlaneJitter(true)
 	, m_bCuttingPlaneSet(false)
 	, m_vec2CuttingPlaneSize(0.3f, 0.3f)
@@ -53,6 +53,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_gradient_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_gradient_static.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_animated", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_animated.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
+	Renderer::getInstance().addShader("grid", { "resources/shaders/grid.vert", "resources/shaders/grid.frag" }, true);
 	
 	buildReticule();
 	reseed();
@@ -112,7 +113,7 @@ void HairySlice::draw()
 	{
 		float spinRate = 2.f;
 		float rotAngle = 360.f * glm::mod(Renderer::getInstance().getElapsedSeconds(), spinRate) / spinRate;
-		m_rsReticule.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.025f));
+		m_rsReticule.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule + glm::vec3(0.f, 0.f, 1.f) * 0.0001f) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.05f));
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsReticule);
 
 		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 0.25f));
@@ -143,6 +144,24 @@ void HairySlice::draw()
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x0y1, x1y1, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y1, x1y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
+	}
+
+	{
+		Renderer::RendererSubmission rs;
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "grid";
+		rs.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::scale(glm::mat4(), glm::vec3(m_vec2CuttingPlaneSize, 1.f));
+		rs.VAO = Renderer::getInstance().getPrimitiveVAO();		
+		rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quaddouble");
+		rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quaddouble");
+		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quaddouble");
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.hasTransparency = true;
+
+		m_rsReticule.transparencySortPosition = glm::vec4(0.f, 0.f, 100.f, 1.f);
+		rs.transparencySortPosition = glm::vec4(0.f, 0.f, -100.f, 1.f);
+
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
 }
 
@@ -277,6 +296,9 @@ void HairySlice::sampleVolume(unsigned int gridRes)
 				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
 
 				m_vvvec3RawStreamlines.push_back(rev);
+
+				for (auto &vert : rev)
+					vert = m_pCosmoVolume->getTransformRawDomainToVolume() * glm::vec4(vert, 1.f);
 
 				m_vvec3StreamlineSeeds.push_back(seedPos);
 			}

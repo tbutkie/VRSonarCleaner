@@ -313,6 +313,8 @@
     <None Include="resources\shaders\desktopwindow.vert" />
     <None Include="resources\shaders\flat.frag" />
     <None Include="resources\shaders\flat.vert" />
+    <None Include="resources\shaders\grid.frag" />
+    <None Include="resources\shaders\grid.vert" />
     <None Include="resources\shaders\instanced.frag" />
     <None Include="resources\shaders\instanced.vert" />
     <None Include="resources\shaders\lighting.frag" />
