@@ -204,8 +204,6 @@ bool Engine::handleInput()
 
 	while (SDL_PollEvent(&sdlEvent) != 0)
 	{
-
-
 		if (sdlEvent.type == SDL_KEYDOWN && sdlEvent.key.keysym.mod & KMOD_CTRL)
 		{
 			if (sdlEvent.key.keysym.sym == SDLK_0)
@@ -213,7 +211,6 @@ bool Engine::handleInput()
 			if (sdlEvent.key.keysym.sym == SDLK_1)
 				Renderer::getInstance().setWindowToDisplay(1);
 		}
-
 		
 		{
 			if (sdlEvent.type == SDL_QUIT)
@@ -227,20 +224,12 @@ bool Engine::handleInput()
 				{
 					bRet = true;
 				}
-				
-				if (sdlEvent.key.keysym.sym == SDLK_c)
-				{
-					std::cout << DataLogger::getInstance().getTimeSinceLogStartString() << "\n";
-				}
 
 				if ((sdlEvent.key.keysym.mod & KMOD_LCTRL) && sdlEvent.key.keysym.sym == SDLK_f)
 				{
 					m_bShowDiagnostics = !m_bShowDiagnostics;
 				}
 			}
-
-
-			
 		}
 
 		m_pCurrentScene->processSDLEvent(sdlEvent);
