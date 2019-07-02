@@ -412,21 +412,46 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				Renderer::getInstance().toggleSkybox();
 			}
 
+			if (ev.key.keysym.sym == SDLK_c)
+			{
+				m_bShowPlane = !m_bShowPlane;
+				Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
+			}
+
+			if (ev.key.keysym.sym == SDLK_f)
+			{
+				m_pHairySlice->m_bShowFrame = !m_pHairySlice->m_bShowFrame;
+				Renderer::getInstance().showMessage("Frame visibility set to " + std::to_string(m_pHairySlice->m_bShowFrame));
+			}
+
+			if (ev.key.keysym.sym == SDLK_g)
+			{
+				m_pHairySlice->m_bShowGeometry = !m_pHairySlice->m_bShowGeometry;
+				Renderer::getInstance().showMessage("Geometry visibility set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
+			}
+
 			if (ev.key.keysym.sym == SDLK_h)
 			{
 				m_pHairySlice->m_bShowHalos = !m_pHairySlice->m_bShowHalos;
-				Renderer::getInstance().showMessage("Illustrative Haloing set to " + std::to_string(m_pHairySlice->m_bShowHalos));
+				Renderer::getInstance().showMessage("Haloing set to " + std::to_string(m_pHairySlice->m_bShowHalos));
 			}
 
 			if (ev.key.keysym.sym == SDLK_j)
 			{
-				m_pHairySlice->m_bCuttingPlaneJitter = !m_pHairySlice->m_bCuttingPlaneJitter;
-				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_pHairySlice->m_bCuttingPlaneJitter));
+				m_pHairySlice->m_bJitterSeeds = !m_pHairySlice->m_bJitterSeeds;
+				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_pHairySlice->m_bJitterSeeds));
 			}
 
 			if (ev.key.keysym.sym == SDLK_l)
 			{
 				m_bShowCosmoBBox = !m_bShowCosmoBBox;
+				Renderer::getInstance().showMessage("Dataset bbox visibility set to " + std::to_string(m_bShowCosmoBBox));
+			}
+
+			if (ev.key.keysym.sym == SDLK_m)
+			{
+				m_pHairySlice->m_bSpinReticule = !m_pHairySlice->m_bSpinReticule;
+				Renderer::getInstance().showMessage("Reticule spin set to " + std::to_string(m_pHairySlice->m_bSpinReticule));
 			}
 
 			if (ev.key.keysym.sym == SDLK_o)
@@ -436,23 +461,35 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 
 			if (ev.key.keysym.sym == SDLK_p)
 			{
-				m_bShowPlane = !m_bShowPlane;
-				Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
+				m_pHairySlice->m_bShowGrid = !m_pHairySlice->m_bShowGrid;
+				Renderer::getInstance().showMessage("Grid visibility set to " + std::to_string(m_pHairySlice->m_bShowGrid));
 			}
 
 			if (ev.key.keysym.sym == SDLK_r)
 			{
-				m_pHairySlice->reseed();
-				Renderer::getInstance().showMessage("Hairy Slice reseeded");
+				m_pHairySlice->m_bShowReticule = !m_pHairySlice->m_bShowReticule;
+				Renderer::getInstance().showMessage("Target reticule visibility set to " + std::to_string(m_pHairySlice->m_bShowReticule));
 			}
 
 			if (ev.key.keysym.sym == SDLK_s)
 			{
-				m_pHairySlice->m_bShowGeometry = !m_pHairySlice->m_bShowGeometry;
-				Renderer::getInstance().showMessage("Streamtubes set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
+				m_pHairySlice->m_bShowSeeds = !m_pHairySlice->m_bShowSeeds;
+				Renderer::getInstance().showMessage("Seed visibility set to " + std::to_string(m_pHairySlice->m_bShowSeeds));
+			}
+
+			if (ev.key.keysym.sym == SDLK_t)
+			{
+				m_pHairySlice->m_bShowTarget = !m_pHairySlice->m_bShowTarget;
+				Renderer::getInstance().showMessage("Target visibility set to " + std::to_string(m_pHairySlice->m_bShowTarget));
+			}
+
+			if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
+			{
+				m_pHairySlice->reseed();
+				Renderer::getInstance().showMessage("Hairy Slice reseeded");
 			}
 			
-			if (ev.key.keysym.sym == SDLK_RETURN)
+			if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
 			{
 				m_pHairySlice->set();
 			}

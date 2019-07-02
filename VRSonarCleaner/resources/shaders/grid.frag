@@ -15,7 +15,7 @@ float grid(vec2 st, float res)
 void main()
 {
 	float gridRes = 20.f;
-	float thickness = 0.90f; // as a percent of the grid cell size
+	float thickness = 0.85f; // as a percent of the grid cell size
 
 	float xGrid = mod(v2TexCoords.x, 1.f / gridRes) / ( 1.f / gridRes);
 	float yGrid = mod(v2TexCoords.y, 1.f / gridRes) / ( 1.f / gridRes);

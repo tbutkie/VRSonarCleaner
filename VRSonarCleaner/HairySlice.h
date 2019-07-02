@@ -29,9 +29,15 @@ private:
 
 	bool m_bShowHalos;
 	bool m_bShowGeometry;
+	bool m_bShowSeeds;
+	bool m_bShowFrame;
+	bool m_bShowGrid;
+	bool m_bShowReticule;
+	bool m_bShowTarget;
+
+	bool m_bSpinReticule;
 	bool m_bOscillate;
-	bool m_bCuttingPlaneJitter;
-	bool m_bCuttingPlaneSet;
+	bool m_bJitterSeeds;
 
 	CosmoVolume* m_pCosmoVolume;
 
@@ -83,6 +89,7 @@ private:
 
 private:
 	void reseed();
+	glm::vec3 randomSeedOnPlane();
 	glm::vec3 randomPointOnPlane();
 	void sampleCuttingPlane();
 	void sampleVolume(unsigned int gridRes = 10u);

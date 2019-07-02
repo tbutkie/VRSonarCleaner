@@ -230,6 +230,7 @@ bool Renderer::init(bool stereoRender, bool stereoContext)
 	setupText();
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
+	glEnable(GL_MULTISAMPLE);
 
 	createDesktopView();
 
@@ -753,7 +754,6 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 
 	glClearColor(m_vec4ClearColor.r, m_vec4ClearColor.g, m_vec4ClearColor.b, m_vec4ClearColor.a); // nice background color, but not black
 	//glClearColor(0.33, 0.39, 0.49, 1.0); //VTT4D background
-	glEnable(GL_MULTISAMPLE);
 
 	// Render to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->m_nRenderFramebufferId);
@@ -814,8 +814,6 @@ void Renderer::renderFrame(SceneViewInfo *sceneView3DInfo, FramebufferDesc *fram
 		glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
-	glDisable(GL_MULTISAMPLE);
-
 	// Blit Framebuffer to resolve framebuffer
 	glBlitNamedFramebuffer(
 		frameBuffer->m_nRenderFramebufferId,
@@ -838,9 +836,7 @@ void Renderer::renderUI(SceneViewInfo * sceneViewUIInfo, FramebufferDesc * frame
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, m4ViewProjection), sizeof(FrameUniforms::m4ViewProjection), glm::value_ptr(vpMat));
 
 	glViewport(0, 0, sceneViewUIInfo->m_nRenderWidth, sceneViewUIInfo->m_nRenderHeight);
-
-	glEnable(GL_MULTISAMPLE);
-
+	
 	// Render to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer->m_nRenderFramebufferId);
 	glDisable(GL_DEPTH_TEST);
@@ -850,8 +846,6 @@ void Renderer::renderUI(SceneViewInfo * sceneViewUIInfo, FramebufferDesc * frame
 	glUseProgram(0);
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glDisable(GL_MULTISAMPLE);
 
 	// Blit Framebuffer to resolve framebuffer
 	glBlitNamedFramebuffer(
@@ -1025,7 +1019,7 @@ void Renderer::render()
 			srcX0 = 0;
 			srcX1 = m_sviMonoInfo->m_nRenderWidth;
 
-			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviMonoInfo->m_nRenderWidth / 2;;
+			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviMonoInfo->m_nRenderWidth / 2;
 			dstX1 = dstX0 + m_sviMonoInfo->m_nRenderWidth;
 		}
 
@@ -1041,7 +1035,7 @@ void Renderer::render()
 			srcY0 = 0;
 			srcY1 = m_sviMonoInfo->m_nRenderHeight;
 
-			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviMonoInfo->m_nRenderHeight / 2;;
+			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviMonoInfo->m_nRenderHeight / 2;
 			dstY1 = dstY0 + m_sviMonoInfo->m_nRenderHeight;
 		}
 

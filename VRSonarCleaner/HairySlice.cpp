@@ -1,4 +1,5 @@
 #include "HairySlice.h"
+#include "utilities.h"
 
 using namespace std::chrono_literals;
 
@@ -11,9 +12,14 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glHaloVAO(0)
 	, m_bShowHalos(false)
 	, m_bShowGeometry(true)
+	, m_bShowSeeds(false)
+	, m_bShowFrame(true)
+	, m_bShowGrid(true)
+	, m_bShowReticule(true)
+	, m_bShowTarget(false)
+	, m_bSpinReticule(true)
 	, m_bOscillate(false)
-	, m_bCuttingPlaneJitter(true)
-	, m_bCuttingPlaneSet(false)
+	, m_bJitterSeeds(true)
 	, m_vec2CuttingPlaneSize(0.3f, 0.3f)
 	, m_uiCuttingPlaneGridRes(20u)
 	, m_fTubeRadius(0.003125f)
@@ -22,7 +28,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_uiNumTubeSegments(16u)
 	, m_fRK4StepSize(0.5f)
 	, m_fRK4StopVelocity(0.f)
-	, m_uiRK4MaxPropagation_OneWay(20u)
+	, m_uiRK4MaxPropagation_OneWay(10u)
 	, m_fHaloRadiusFactor(2.f)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
@@ -110,16 +116,18 @@ void HairySlice::draw()
 	}
 
 	// Reticule
+	if (m_bShowReticule)
 	{
 		float spinRate = 2.f;
-		float rotAngle = 360.f * glm::mod(Renderer::getInstance().getElapsedSeconds(), spinRate) / spinRate;
+		float rotAngle = m_bSpinReticule ? 360.f * glm::mod(Renderer::getInstance().getElapsedSeconds(), spinRate) / spinRate : 0.f;
 		m_rsReticule.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule + glm::vec3(0.f, 0.f, 1.f) * 0.0001f) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.05f));
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsReticule);
 
-		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 0.25f));
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 	}
 
 	// Target vector
+	if (m_bShowTarget)
 	{
 		float extendRate = 2.f;
 		float maxExtend = 0.05f;
@@ -128,12 +136,11 @@ void HairySlice::draw()
 		Renderer::getInstance().drawPointerLit(glm::mat3_cast(m_qPlaneOrientation) * m_vec3Reticule, glm::mat3_cast(m_qPlaneOrientation) * (m_vec3Reticule + glm::normalize(m_vec3FlowAtReticule) * extend), 0.0025f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
 	}
 
-	for (auto &seed : m_vvec3StreamlineSeeds)
-	{
-		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
-	}
+	if (m_bShowSeeds)
+		for (auto &seed : m_vvec3StreamlineSeeds)
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 
-	if (m_bCuttingPlaneSet)
+	if (m_bShowFrame)
 	{
 		glm::vec3 x0y0 = glm::mat4_cast(m_qPlaneOrientation) * glm::vec4(m_vec3PlacedFrame_x0y0, 1.f);
 		glm::vec3 x0y1 = glm::mat4_cast(m_qPlaneOrientation) * glm::vec4(m_vec3PlacedFrame_x0y1, 1.f);
@@ -146,6 +153,8 @@ void HairySlice::draw()
 		Renderer::getInstance().drawDirectedPrimitive("cylinder", x1y0, x0y0, 0.001f, glm::vec4(0.7f, 0.7f, 0.7f, 1.f));
 	}
 
+	// Semitransparent grid
+	if (m_bShowGrid)
 	{
 		Renderer::RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
@@ -167,11 +176,10 @@ void HairySlice::draw()
 
 void HairySlice::set()
 {	
-	m_mat4PlacedFrameWorldPose = glm::mat4();//m_pCosmoVolume->getTransformVolume();
-	m_bCuttingPlaneSet = true;
+	m_mat4PlacedFrameWorldPose = glm::mat4();
 	sampleCuttingPlane();
 	rebuildGeometry();
-	m_vec3Reticule = randomPointOnPlane();
+	m_vec3Reticule = randomSeedOnPlane();
 	m_vec3FlowAtReticule = m_pCosmoVolume->getFlowWorldCoords(m_mat4PlacedFrameWorldPose * glm::vec4(m_vec3Reticule, 1.f));
 }
 
@@ -236,7 +244,7 @@ void HairySlice::reseed()
 
 			glm::vec3 pos = xDir * ratioWidth * (m_vec2CuttingPlaneSize.x - xCellSize) - yDir * ratioHeight * (m_vec2CuttingPlaneSize.y - yCellSize);
 
-			if (m_bCuttingPlaneJitter)
+			if (m_bJitterSeeds)
 				pos += m_Distribution(m_RNG) * xDir * maxJitterX + m_Distribution(m_RNG) * yDir * maxJitterY;
 			
 			m_vvec3StreamlineSeeds.push_back(pos);
@@ -247,6 +255,20 @@ void HairySlice::reseed()
 	m_vec3PlacedFrame_x0y1 = (xDir * m_vec2CuttingPlaneSize.x * -0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
 	m_vec3PlacedFrame_x1y0 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y * -0.5f);
 	m_vec3PlacedFrame_x1y1 = (xDir * m_vec2CuttingPlaneSize.x *  0.5f - yDir * m_vec2CuttingPlaneSize.y *  0.5f);
+}
+
+glm::vec3 HairySlice::randomSeedOnPlane()
+{
+	glm::vec2 minExtents = -m_vec2CuttingPlaneSize * (1.f / 3.f);
+	glm::vec2 maxExtents = m_vec2CuttingPlaneSize * (1.f / 3.f);
+
+	glm::vec3 ret;
+
+	do {
+		ret = *(utils::select_randomly(m_vvec3StreamlineSeeds.begin(), m_vvec3StreamlineSeeds.end()));
+	} while (ret.x < minExtents.x || ret.x > maxExtents.x || ret.y < minExtents.y || ret.y > maxExtents.y);
+
+	return ret;
 }
 
 glm::vec3 HairySlice::randomPointOnPlane()
@@ -466,19 +488,19 @@ void HairySlice::buildStreamTubes()
 	//if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
-		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	//if (!m_glHaloVBO)
 	{
 		glCreateBuffers(1, &m_glHaloVBO);
-		glNamedBufferStorage(m_glHaloVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glHaloVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	//if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 
@@ -675,13 +697,13 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 	//if (!m_glVBO)
 	{
 		glCreateBuffers(1, &m_glVBO);
-		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 	//if (!m_glEBO)
 	{
 		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
 	}
 
 
