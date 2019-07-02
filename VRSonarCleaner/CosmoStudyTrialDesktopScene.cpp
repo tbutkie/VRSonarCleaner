@@ -590,6 +590,8 @@ void CosmoStudyTrialDesktopScene::setupViews()
 	float width_m = winSize.x * sizer;
 	float height_m = winSize.y * sizer;
 
+	Renderer::getInstance().setStereoRenderSize(winSize);
+
 	Renderer::SceneViewInfo* sviLE = Renderer::getInstance().getLeftEyeInfo();
 	Renderer::SceneViewInfo* sviRE = Renderer::getInstance().getRightEyeInfo();
 	sviLE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
