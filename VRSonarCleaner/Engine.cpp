@@ -7,7 +7,7 @@
 #include "SonarScene.h"
 #include "StudyTrialScene.h"
 #include "CosmoStudyTrialScene.h"
-#include "CosmoStudyTrialDesktopScene.h"
+#include "HairySlicesStudyScene.h"
 #include "MotionCompensationScene.h"
 #include "FishTankScene.h"
 #include "FishTankSonarScene.h"
@@ -115,7 +115,7 @@ bool Engine::init()
 	);
 
 	//m_pCurrentScene = new FlowScene(m_pTDM);	
-	m_pCurrentScene = new CosmoStudyTrialDesktopScene();
+	m_pCurrentScene = new HairySlicesStudyScene(m_fDisplayDiagonalInches);
 	//m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
 
 	m_pCurrentScene->init();

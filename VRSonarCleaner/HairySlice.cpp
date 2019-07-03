@@ -42,14 +42,11 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 		})
 	, m_iCurrentShader(4)
 	, m_vstrGeomStyleNames({
-		"STREAMLET_ANIMATED",
-		"STREAMLET_STATIC",
-		"STREAMTUBE_STATIC",
-		"STREAMTUBE_ANIMATED",
-		"STREAMTUBE_HALO" ,
-		"STREAMCONE"
+		"STREAMLET",
+		"TUBE",
+		"CONE"
 		})
-	, m_iCurrentGeomStyle(5)
+	, m_iCurrentGeomStyle(2)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);
@@ -204,21 +201,53 @@ std::string HairySlice::getShaderName()
 	return m_vstrShaderNames[m_iCurrentShader];
 }
 
+bool HairySlice::setShader(std::string shaderName)
+{
+	auto it = std::find(m_vstrShaderNames.begin(), m_vstrShaderNames.end(), shaderName);
+
+	if (it != m_vstrShaderNames.end())
+	{
+		m_iCurrentShader = it - m_vstrShaderNames.begin();
+		m_rs.shaderName = *it;
+		return true;
+	}
+
+	return false;
+}
+
 void HairySlice::nextGeomStyle()
 {
 	if (++m_iCurrentGeomStyle == m_vstrGeomStyleNames.size())
 		m_iCurrentGeomStyle = 0;
+	
+	rebuildGeometry();
 }
 
 void HairySlice::prevGeomStyle()
 {
 	if (--m_iCurrentGeomStyle < 0)
 		m_iCurrentGeomStyle = m_vstrGeomStyleNames.size() - 1;
+
+	rebuildGeometry();
 }
 
 std::string HairySlice::getGeomStyle()
 {
 	return m_vstrGeomStyleNames[m_iCurrentGeomStyle];
+}
+
+bool HairySlice::setGeomStyle(std::string geomType)
+{
+	auto it = std::find(m_vstrGeomStyleNames.begin(), m_vstrGeomStyleNames.end(), geomType);
+
+	if (it != m_vstrGeomStyleNames.end())
+	{
+		m_iCurrentGeomStyle = it - m_vstrGeomStyleNames.begin();
+		rebuildGeometry();
+		return true;
+	}
+
+	return false;
 }
 
 void HairySlice::reseed()
@@ -333,23 +362,20 @@ void HairySlice::rebuildGeometry()
 	switch (m_iCurrentGeomStyle)
 	{
 	case 0:
+		buildStreamTubes(m_fTubeRadius / 5.f);
+		break;
 	case 1:
-		//buildStreamlets();
+		buildStreamTubes(m_fTubeRadius);
 		break;
 	case 2:
-	case 3:
-	case 4:
-		buildStreamTubes();
-		break;
-	case 5:
-		buildStreamCones();
+		buildStreamCones(m_fTubeRadius);
 		break;
 	default:
 		break;
 	}
 }
 
-void HairySlice::buildStreamTubes()
+void HairySlice::buildStreamTubes(float radius)
 {
 	// For each streamline segment
 	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
@@ -406,7 +432,7 @@ void HairySlice::buildStreamTubes()
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
 				PrimVert pvTube, pvHalo;
-				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius, 1.f));
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius, 1.f));
 				pvTube.n = glm::normalize(pvTube.p - sl[i]);
 				//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
 				pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
@@ -418,7 +444,7 @@ void HairySlice::buildStreamTubes()
 
 				pvHalo = pvTube;
 
-				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * m_fHaloRadiusFactor, 1.f));
+				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius * m_fHaloRadiusFactor, 1.f));
 				pvHalo.c = glm::vec4(1.f);
 				haloverts.push_back(pvHalo);
 
@@ -469,10 +495,10 @@ void HairySlice::buildStreamTubes()
 			{
 				GLuint thisVert = verts.size();
 
-				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius, 1.f));
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius, 1.f));
 				verts.push_back(pvTube);
 
-				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * m_fHaloRadiusFactor, 1.f));
+				pvHalo.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius * m_fHaloRadiusFactor, 1.f));
 				haloverts.push_back(pvHalo);
 
 				if (i > 0)
@@ -571,7 +597,7 @@ void HairySlice::buildStreamTubes()
 	m_rsHalo.vertCount = inds.size();
 }
 
-void HairySlice::buildStreamCones(float coneEnlargementFactor)
+void HairySlice::buildStreamCones(float radius)
 {
 	glm::vec3 dimratio =  m_pCosmoVolume->getOriginalDimensions() / m_pCosmoVolume->getDimensions();
 	// For each streamline segment
@@ -631,8 +657,8 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
 				PrimVert pvTube;
-				//pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * ratioAlongLine * coneEnlargementFactor * dimratio, 1.f));
-				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * m_fTubeRadius * ratioAlongLine * coneEnlargementFactor, 1.f)); //keeps constant world-space width
+				//pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius * ratioAlongLine * dimratio, 1.f));
+				pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[j] * radius * ratioAlongLine, 1.f)); //keeps constant world-space width
 				pvTube.n = i == 0 ? glm::normalize(glm::vec3(xform * glm::vec4(circleVerts[j], 1.f)) - sl[i]) : glm::normalize(pvTube.p - sl[i]);
 				pvTube.c = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 				pvTube.t = glm::vec2(j / (circleVerts.size() - 1), i);
@@ -681,8 +707,8 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 		{
 			GLuint thisVert = verts.size();
 
-			//pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * coneEnlargementFactor * dimratio, 1.f));
-			pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * m_fTubeRadius * coneEnlargementFactor, 1.f));
+			//pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius * dimratio, 1.f));
+			pvTube.p = glm::vec3(xform * glm::vec4(circleVerts[i] * radius, 1.f));
 			verts.push_back(pvTube);
 			
 			if (i > 0)
@@ -740,95 +766,6 @@ void HairySlice::buildStreamCones(float coneEnlargementFactor)
 	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
 
 	m_rs.vertCount = inds.size();
-}
-
-void HairySlice::buildStreamlets()
-{
-	float coneEnlargementFactor = 5.f;
-
-	// For each streamline segment
-	// construct local coordinate frame matrix using orthogonal axes u, v, w; where the w axis is the segment (Point_[n+1] - Point_n) itself
-	// the u & v axes are unit vectors scaled to the radius of the tube
-	// except for the first and last, each circular 'rib' will be on the uv-plane of the averaged coordinate frames between the two connected segments
-
-	// make unit circle for 'rib' that will be moved along streamline
-	int numCircleVerts = m_uiNumTubeSegments + 1;
-	std::vector<glm::vec3> circleVerts;
-	for (int i = 0; i < numCircleVerts; ++i)
-	{
-		float angle = ((float)i / (float)(numCircleVerts - 1)) * glm::two_pi<float>();
-		circleVerts.push_back(glm::vec3(sin(angle), cos(angle), 0.f));
-	}
-
-	struct PrimVert {
-		glm::vec3 p; // point
-		glm::vec3 n; // normal
-		glm::vec4 c; // color
-		glm::vec2 t; // texture coord
-	};
-
-	std::vector<PrimVert> verts;
-	std::vector<GLuint> inds;
-	for (auto &sl : m_vvvec3RawStreamlines)
-	{
-		if (sl.size() < 2)
-			continue;
-			   
-		for (size_t i = 0; i < sl.size() - 1; ++i)
-		{
-			glm::vec3 segmentMidpoint(sl[i] + (sl[i + 1] - sl[i]) * 0.5f);
-
-
-		}
-	}
-
-	//if (!m_glVBO)
-	{
-		glCreateBuffers(1, &m_glVBO);
-		glNamedBufferStorage(m_glVBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (103 * numCircleVerts + 2) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
-	}
-
-	//if (!m_glEBO)
-	{
-		glCreateBuffers(1, &m_glEBO);
-		glNamedBufferStorage(m_glEBO, m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * m_uiCuttingPlaneGridRes * (100 * 6 + 2 * 3) * m_uiNumTubeSegments * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
-	}
-
-
-	//if (!m_glVAO)
-	{
-		glGenVertexArrays(1, &m_glVAO);
-		glBindVertexArray(this->m_glVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
-
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
-		glBindVertexArray(0);
-
-		m_rs.VAO = m_glVAO;
-		m_rs.glPrimitiveType = GL_TRIANGLES;
-		m_rs.shaderName = m_vstrShaderNames[m_iCurrentShader];
-		m_rs.indexType = GL_UNSIGNED_INT;
-		m_rs.diffuseColor = glm::vec4(1.f);
-		m_rs.specularColor = glm::vec4(0.f);
-		m_rs.specularExponent = 32.f;
-		m_rs.hasTransparency = false;
-	}
-
-	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(PrimVert), verts.data());
-	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
-
-	m_rs.vertCount = inds.size();
-
 }
 
 void HairySlice::buildReticule()

@@ -17,12 +17,19 @@
 #define STUDYPARAM_RGB		1 << 5
 #define STUDYPARAM_RGBA		1 << 6
 
-class CosmoStudyTrialDesktopScene :
+class HairySlicesStudyScene :
 	public Scene
 {
+	struct StudyCondition {
+		std::string geometry; // CONE, TUBE, STREAMLET
+		std::string texture; // STATIC, ANIMATED
+		bool stereo;
+		bool motion;
+	};
+
 public:
-	CosmoStudyTrialDesktopScene();
-	~CosmoStudyTrialDesktopScene();
+	HairySlicesStudyScene(float displayDiagonalInches);
+	~HairySlicesStudyScene();
 
 	void init();
 
@@ -41,17 +48,17 @@ private:
 
 	bool m_bShowCosmoBBox;
 	bool m_bShowPlane;
-	bool m_bRandomSliceRequested;
+	bool m_bStudyActive;
 
-	std::vector<glm::vec3> m_vvec3Zeros;
-	std::vector<std::vector<glm::vec3>> m_vvvec3ZeroLines;
-
-private:
-	void setupParameters();
-	void setupViews();
-	void buildScalarPlane();
-	
 	float m_fScreenDiagonalInches;
+	float m_fEyeSeparationMeters;
+
+	bool m_bStereo;
+
+	int m_nReplicatesPerCondition;
+	int m_nCurrentReplicate;
+
+	std::string m_strParticipantName;
 
 	struct StudyParam {
 		std::string desc;
@@ -61,5 +68,18 @@ private:
 
 	std::vector<StudyParam> m_vParams;
 	StudyParam* m_pEditParam;
+
+	std::vector<StudyCondition> m_vStudyConditions;
+
+private:
+	void setupParameters();
+	void setupViews();
+	void buildScalarPlane();
+	
+	void makeStudyConditions();
+	void loadStudyCondition();
+	void startStudy();
+
+	void randomData();
 };
 

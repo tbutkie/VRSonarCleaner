@@ -246,9 +246,6 @@
     <ClCompile Include="CosmoGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CosmoStudyTrialDesktopScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
     <ClCompile Include="FishTankScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
@@ -257,6 +254,9 @@
     </ClCompile>
     <ClCompile Include="HairySlice.cpp">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
+    <ClCompile Include="HairySlicesStudyScene.cpp">
+      <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -464,9 +464,6 @@
     <ClInclude Include="CosmoGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CosmoStudyTrialDesktopScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
     <ClInclude Include="FishTankScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
@@ -475,6 +472,9 @@
     </ClInclude>
     <ClInclude Include="HairySlice.h">
       <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClInclude>
+    <ClInclude Include="HairySlicesStudyScene.h">
+      <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

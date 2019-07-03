@@ -1,4 +1,4 @@
-#include "CosmoStudyTrialDesktopScene.h"
+#include "HairySlicesStudyScene.h"
 #include "BehaviorManager.h"
 #include "LightingSystem.h"
 #include <gtc/quaternion.hpp>
@@ -8,24 +8,28 @@
 #include <random>
 
 
-CosmoStudyTrialDesktopScene::CosmoStudyTrialDesktopScene()
+HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches)
 	: m_pCosmoVolume(NULL)
 	, m_pHairySlice(NULL)
 	, m_bShowCosmoBBox(true)
 	, m_bShowPlane(false)
-	, m_bRandomSliceRequested(false)
+	, m_bStudyActive(false)
 	, m_pEditParam(NULL)
-	, m_fScreenDiagonalInches(29.7f)
+	, m_fScreenDiagonalInches(displayDiagonalInches)
+	, m_fEyeSeparationMeters(0.067)
+	, m_bStereo(false)
+	, m_nReplicatesPerCondition(10)
+	, m_nCurrentReplicate(0)
 {
 }
 
 
-CosmoStudyTrialDesktopScene::~CosmoStudyTrialDesktopScene()
+HairySlicesStudyScene::~HairySlicesStudyScene()
 {
 	DataLogger::getInstance().closeLog();
 }
 
-void CosmoStudyTrialDesktopScene::init()
+void HairySlicesStudyScene::init()
 {
 
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
@@ -45,14 +49,9 @@ void CosmoStudyTrialDesktopScene::init()
 	setupViews();
 	setupParameters();
 	buildScalarPlane();
-
-	//DataLogger::getInstance().setLogDirectory("/");
-	//DataLogger::getInstance().openLog("views");
-	//DataLogger::getInstance().setID("view");
-	//DataLogger::getInstance().start();
 }
 
-void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
+void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 {
 	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
 	{
@@ -388,15 +387,7 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 			
 			if (ev.key.keysym.sym == SDLK_KP_ENTER)
 			{
-				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getOriginalDimensions() * 4.f);
-				m_pCosmoVolume->setPosition(glm::linearRand(-(m_pCosmoVolume->getOriginalDimensions() / 2.f), (m_pCosmoVolume->getOriginalDimensions() / 2.f)));
-
-				glm::vec3 w = glm::normalize(glm::sphericalRand(1.f));
-				glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
-				glm::vec3 v = glm::normalize(glm::cross(w, u));
-
-				m_pCosmoVolume->setOrientation(glm::mat3(u, v, w));
-
+				randomData();
 				m_pHairySlice->set();
 			}
 
@@ -471,10 +462,17 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 				Renderer::getInstance().showMessage("Target reticule visibility set to " + std::to_string(m_pHairySlice->m_bShowReticule));
 			}
 
-			if (ev.key.keysym.sym == SDLK_s)
+			if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
 			{
 				m_pHairySlice->m_bShowSeeds = !m_pHairySlice->m_bShowSeeds;
 				Renderer::getInstance().showMessage("Seed visibility set to " + std::to_string(m_pHairySlice->m_bShowSeeds));
+			}
+
+			if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
+			{
+				m_bStereo = !m_bStereo;
+				setupViews();
+				Renderer::getInstance().showMessage("Stereo set to " + std::to_string(m_bStereo));
 			}
 
 			if (ev.key.keysym.sym == SDLK_t)
@@ -497,14 +495,8 @@ void CosmoStudyTrialDesktopScene::processSDLEvent(SDL_Event & ev)
 	}
 }
 
-void CosmoStudyTrialDesktopScene::update()
+void HairySlicesStudyScene::update()
 {
-	if (m_bRandomSliceRequested)
-	{
-
-		m_bRandomSliceRequested = false;
-	}
-
 	m_pCosmoVolume->update();
 
 	LightingSystem::Light* l = LightingSystem::getInstance().getLight(0);
@@ -513,7 +505,7 @@ void CosmoStudyTrialDesktopScene::update()
 	m_pHairySlice->update();
 }
 
-void CosmoStudyTrialDesktopScene::draw()
+void HairySlicesStudyScene::draw()
 {
 	//m_pCosmoVolume->drawVolumeBacking(glm::inverse(glm::lookAt(Renderer::getInstance().getCamera()->pos, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f))), 1.f);
 	if (m_bShowCosmoBBox)
@@ -543,7 +535,7 @@ void CosmoStudyTrialDesktopScene::draw()
 }
 
 
-void CosmoStudyTrialDesktopScene::setupParameters()
+void HairySlicesStudyScene::setupParameters()
 {
 	m_vParams.clear();
 
@@ -565,7 +557,7 @@ void CosmoStudyTrialDesktopScene::setupParameters()
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
 }
 
-void CosmoStudyTrialDesktopScene::setupViews()
+void HairySlicesStudyScene::setupViews()
 {
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 	cam->pos = glm::vec3(0.f, 0.f, 0.57f);
@@ -573,9 +565,9 @@ void CosmoStudyTrialDesktopScene::setupViews()
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
 	glm::vec3 COP = cam->pos;
-	glm::vec3 COPOffset = glm::vec3(0.f); //glm::vec3(1.f, 0.f, 0.f) * 0.067f * 0.5f;
+	glm::vec3 COPOffset = m_bStereo ? glm::vec3(1.f, 0.f, 0.f) * m_fEyeSeparationMeters * 0.5f : glm::vec3(0.f);
 
-										  // Update eye positions using current head position
+	// Update eye positions using current head position
 	glm::vec3 leftEyePos = COP - COPOffset;
 	glm::vec3 rightEyePos = COP + COPOffset;
 
@@ -607,7 +599,7 @@ void CosmoStudyTrialDesktopScene::setupViews()
 	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 }
 
-void CosmoStudyTrialDesktopScene::buildScalarPlane()
+void HairySlicesStudyScene::buildScalarPlane()
 {
 	CosmoGrid* cgrid = static_cast<CosmoGrid*>(m_pCosmoVolume->getDatasets()[0]);
 
@@ -623,4 +615,69 @@ void CosmoStudyTrialDesktopScene::buildScalarPlane()
 	m_rsPlane.diffuseTexName = "vectorfield";
 	m_rsPlane.specularTexName = "vectorfieldattributes";
 	m_rsPlane.hasTransparency = true;
+}
+
+void HairySlicesStudyScene::makeStudyConditions()
+{
+	for (auto &geom : { "CONE", "TUBE", "STREAMLET" })
+	{
+		for (auto &tex : { "STATIC", "ANIMATED" })
+		{
+			if (geom == "CONE" && tex == "ANIMATED")
+				continue;
+
+			for (auto &motion : { true, false })
+			{
+				for (auto &stereo : { true, false })
+				{
+					m_vStudyConditions.push_back(StudyCondition({ geom, tex, stereo, motion }));
+				}
+			}
+		}
+	}
+	 
+	std::shuffle(m_vStudyConditions.begin(), m_vStudyConditions.end(), m_pHairySlice->m_RNG);
+}
+
+void HairySlicesStudyScene::loadStudyCondition()
+{
+	if (!m_vStudyConditions.empty())
+	{
+		auto thisCond = m_vStudyConditions.back();
+		
+		m_pHairySlice->setGeomStyle(thisCond.geometry);
+
+		if (thisCond.geometry.compare("CONE") == 0)
+			m_pHairySlice->setShader("streamline_ring_static");
+		else if (thisCond.texture.compare("STATIC") == 0)
+			m_pHairySlice->setShader("streamline_gradient_static");
+		else
+			m_pHairySlice->setShader("streamline_ring_animated");
+
+		m_pHairySlice->m_bOscillate = thisCond.motion;
+
+		m_bStereo = thisCond.stereo;
+		setupViews();
+	}
+}
+
+void HairySlicesStudyScene::startStudy()
+{
+	DataLogger::getInstance().setLogDirectory("/");
+	DataLogger::getInstance().setID(m_strParticipantName);
+	DataLogger::getInstance().openLog(m_strParticipantName);
+	DataLogger::getInstance().setHeader("trial,ipd,geometry,texture,motion,stereo,target.x,target.y,target.z,probe.x,probe.y,probe.z");
+	DataLogger::getInstance().start();
+}
+
+void HairySlicesStudyScene::randomData()
+{
+	m_pCosmoVolume->setDimensions(m_pCosmoVolume->getOriginalDimensions() * 4.f);
+	m_pCosmoVolume->setPosition(glm::linearRand(-(m_pCosmoVolume->getOriginalDimensions() / 2.f), (m_pCosmoVolume->getOriginalDimensions() / 2.f)));
+
+	glm::vec3 w = glm::normalize(glm::sphericalRand(1.f));
+	glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
+	glm::vec3 v = glm::normalize(glm::cross(w, u));
+
+	m_pCosmoVolume->setOrientation(glm::mat3(u, v, w));
 }

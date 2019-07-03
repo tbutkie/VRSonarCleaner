@@ -4,7 +4,7 @@
 
 class HairySlice
 {
-	friend class CosmoStudyTrialDesktopScene;
+	friend class HairySlicesStudyScene;
 	
 public:
 	HairySlice(CosmoVolume* cosmoVolume);
@@ -19,10 +19,12 @@ public:
 	void nextShader();
 	void prevShader();
 	std::string getShaderName();
+	bool setShader(std::string shaderName);
 
 	void nextGeomStyle();
 	void prevGeomStyle();
 	std::string getGeomStyle();
+	bool setGeomStyle(std::string geomType);
 	
 private:
 	bool m_bProbeActive;
@@ -94,9 +96,8 @@ private:
 	void sampleCuttingPlane();
 	void sampleVolume(unsigned int gridRes = 10u);
 	void rebuildGeometry();
-	void buildStreamTubes();
-	void buildStreamCones(float coneEnlargementFactor = 1.f);
-	void buildStreamlets();
+	void buildStreamTubes(float radius);
+	void buildStreamCones(float radius);
 	void buildReticule();
 
 	void destroyGeometry();
