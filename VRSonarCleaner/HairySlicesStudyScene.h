@@ -51,13 +51,16 @@ private:
 
 	bool m_bShowCosmoBBox;
 	bool m_bShowPlane;
+	bool m_bShowProbe;
 	bool m_bStudyActive;
+	bool m_bStudyComplete;
 
 	float m_fScreenDiagonalInches;
 	float m_fEyeSeparationMeters;
 
 	bool m_bStereo;
 
+	int m_nCurrentTrial;
 	int m_nReplicatesPerCondition;
 	int m_nCurrentReplicate;
 
@@ -76,6 +79,7 @@ private:
 	StudyParam* m_pEditParam;
 
 	std::vector<StudyCondition> m_vStudyConditions;
+	StudyCondition* m_pCurrentCondition;
 
 private:
 	void setupParameters();
@@ -83,8 +87,10 @@ private:
 	void buildScalarPlane();
 	
 	void makeStudyConditions();
-	void loadStudyCondition();
 	void startStudy();
+	void loadStudyCondition();
+
+	void recordResponse();
 
 	void randomData();
 };

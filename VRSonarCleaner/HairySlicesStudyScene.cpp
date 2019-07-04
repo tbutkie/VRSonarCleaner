@@ -14,14 +14,18 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	, m_pHairySlice(NULL)
 	, m_bShowCosmoBBox(true)
 	, m_bShowPlane(false)
+	, m_bShowProbe(false)
 	, m_bStudyActive(false)
+	, m_bStudyComplete(false)
 	, m_pEditParam(NULL)
 	, m_fScreenDiagonalInches(displayDiagonalInches)
 	, m_fEyeSeparationMeters(0.067)
 	, m_bStereo(false)
-	, m_nReplicatesPerCondition(10)
+	, m_nCurrentTrial(0)
+	, m_nReplicatesPerCondition(2)
 	, m_nCurrentReplicate(0)
 	, m_strParticipantName("noname")
+	, m_pCurrentCondition(NULL)
 {
 }
 
@@ -55,456 +59,538 @@ void HairySlicesStudyScene::init()
 
 void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 {
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
+	if (m_bStudyActive)
 	{
-		if (m_pEditParam)
+		if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
 		{
-			if (ev.key.keysym.sym == SDLK_BACKSPACE && m_pEditParam->buf.length() > 0)
-				m_pEditParam->buf.pop_back();
-
-			if (m_pEditParam->format & STUDYPARAM_NUMERIC)
+			if (ev.key.keysym.sym == SDLK_SPACE)
 			{
-				if (ev.key.keysym.sym >= SDLK_0 && ev.key.keysym.sym <= SDLK_9)
-					m_pEditParam->buf += std::to_string(ev.key.keysym.sym - SDLK_0);
-			}
+				recordResponse();
 
-			if (m_pEditParam->format & STUDYPARAM_ALPHA)
-			{
-				if (ev.key.keysym.sym >= SDLK_a && ev.key.keysym.sym <= SDLK_z)
-					m_pEditParam->buf += SDL_GetKeyName(ev.key.keysym.sym);
-			}
+				if (++m_nCurrentReplicate == m_nReplicatesPerCondition)
+				{
+					m_nCurrentReplicate = 0;
 
-			if (m_pEditParam->format & STUDYPARAM_POSNEG)
-			{
-				if (ev.key.keysym.sym == SDLK_MINUS)
-				{
-					if (m_pEditParam->buf[0] == '-')
-						m_pEditParam->buf.erase(0, 1);
-					else
-						m_pEditParam->buf.insert(0, 1, '-');
-				}
-			}
+					m_pCurrentCondition = NULL;
+					m_vStudyConditions.pop_back();
 
-			if (m_pEditParam->format & STUDYPARAM_DECIMAL)
-			{
-				if (ev.key.keysym.sym == SDLK_PERIOD)
-				{
-					auto decimalCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), '.');
+					loadStudyCondition();
 
-					if (decimalCount == 0 ||
-						((m_pEditParam->format & STUDYPARAM_IP) && decimalCount < 3) || 
-						((m_pEditParam->format & STUDYPARAM_RGB) && decimalCount < 3) ||
-						((m_pEditParam->format & STUDYPARAM_RGBA) && decimalCount < 4))
-						m_pEditParam->buf += ".";
-				}
-			}
+					if (!m_pCurrentCondition)
+					{
+						m_bStudyActive = false;
+						m_bStudyComplete = true;
 
-			if (m_pEditParam->format & STUDYPARAM_RGB)
-			{
-				if (ev.key.keysym.sym == SDLK_COMMA)
-				{
-					auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
+						DataLogger::getInstance().closeLog();
 
-					if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGB) && commaCount < 2))
-						m_pEditParam->buf += ",";
-				}
-			}
-
-			if (m_pEditParam->format & STUDYPARAM_RGBA)
-			{
-				if (ev.key.keysym.sym == SDLK_COMMA)
-				{
-					auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
-
-					if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGBA) && commaCount < 3))
-						m_pEditParam->buf += ",";
-				}
-			}
-
-
-			if (ev.key.keysym.sym == SDLK_RETURN && m_pEditParam->buf.length() > 0)
-			{
-				Renderer::getInstance().showMessage(m_pEditParam->desc + " set to " + m_pEditParam->buf);
-				bool cuttingPlaneReseed = false;
-
-				if (m_pEditParam->desc.compare("RK4 Step Size") == 0)
-				{
-					m_pHairySlice->m_fRK4StepSize = std::stof(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("RK4 Max Steps") == 0)
-				{
-					m_pHairySlice->m_uiRK4MaxPropagation_OneWay = std::stoi(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("RK4 End Velocity") == 0)
-				{
-					m_pHairySlice->m_fRK4StopVelocity = std::stof(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("Cutting Plane Seeding Resolution") == 0)
-				{
-					m_pHairySlice->m_uiCuttingPlaneGridRes = std::stoi(m_pEditParam->buf);
-					cuttingPlaneReseed = true;
-				}
-				
-				if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
-				{
-					m_pHairySlice->m_vec2CuttingPlaneSize.x = std::stof(m_pEditParam->buf);
-					cuttingPlaneReseed = true;
-				}
-				
-				if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
-				{
-					m_pHairySlice->m_vec2CuttingPlaneSize.y = std::stof(m_pEditParam->buf);
-					cuttingPlaneReseed = true;
-				}
-				
-				if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
-				{
-					m_pHairySlice->m_fTubeRadius = std::stof(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
-				{
-					m_pHairySlice->m_vec4VelColorMin = utils::color::str2rgb(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
-				{
-					m_pHairySlice->m_vec4VelColorMax = utils::color::str2rgb(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
-				{
-					m_pHairySlice->m_fHaloRadiusFactor = std::stof(m_pEditParam->buf);
-				}
-				
-				if (m_pEditParam->desc.compare("Halo Color") == 0)
-				{
-					m_pHairySlice->m_vec4HaloColor = utils::color::str2rgb(m_pEditParam->buf);
-					m_pHairySlice->m_rsHalo.diffuseColor = m_pHairySlice->m_vec4HaloColor;
+						m_pHairySlice->m_bShowGeometry = false;
+						m_pHairySlice->m_bShowFrame = false;
+						m_pHairySlice->m_bShowGrid = false;
+						m_pHairySlice->m_bShowReticule = false;
+					}
 				}
 
-				if (m_pEditParam->desc.compare("Osc. Amplitude") == 0)
-				{
-					m_pHairySlice->m_fOscAmpDeg = std::stof(m_pEditParam->buf);
-				}
+				m_nCurrentTrial++;
 
-				if (m_pEditParam->desc.compare("Osc. Period") == 0)
-				{
-					m_pHairySlice->m_fOscTime = std::stof(m_pEditParam->buf);
-				}
-
-				if (m_pEditParam->desc.compare("Display Diag (inches)") == 0)
-				{
-					m_fScreenDiagonalInches = std::stof(m_pEditParam->buf);
-					setupViews();
-				}
-
-				if (m_pEditParam->desc.compare("Clear Color") == 0)
-				{
-					Renderer::getInstance().setClearColor(utils::color::str2rgb(m_pEditParam->buf));
-				}
-				
-				m_pEditParam = NULL;
-			}
-		}
-		else
-		{
-			if (ev.key.keysym.sym == SDLK_F1)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 Step Size") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F2)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 Max Steps") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F3)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("RK4 End Velocity") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F4)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Seeding Resolution") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F5)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Width") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F6)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Cutting Plane Height") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F7)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Streamtube Radius") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F8)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Min Velocity Color") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F9)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Max Velocity Color") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F10)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Halo Radius Factor") == 0;
-				}));
-			}
-			
-			if (ev.key.keysym.sym == SDLK_F11)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Halo Color") == 0;
-				}));
-			}
-
-			if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
-			{
-				m_pHairySlice->nextGeomStyle();
-				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
-			}
-
-			if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
-			{
-				m_pHairySlice->prevGeomStyle();
-				Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
-			}
-
-			if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
-			{
-				m_pHairySlice->nextShader();
-				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
-			}
-
-			if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
-			{
-				m_pHairySlice->prevShader();
-				Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_DIVIDE)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Osc. Amplitude") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_MULTIPLY)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Osc. Period") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_PERIOD)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Display Diag (inches)") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_BACKSPACE)
-			{
-				m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
-					return p.desc.compare("Clear Color") == 0;
-				}));
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_PLUS)
-			{
-				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 1.1f);
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_MINUS)
-			{
-				m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 0.9f);
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_2)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_8)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_4)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
-			}
-
-			if (ev.key.keysym.sym == SDLK_KP_6)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
-			}
-
-			if (ev.key.keysym.sym == SDLK_UP)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
-			}
-
-			if (ev.key.keysym.sym == SDLK_DOWN)
-			{
-				float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
-				m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
-			}
-			
-			if (ev.key.keysym.sym == SDLK_KP_ENTER)
-			{
+				m_pHairySlice->reseed();
 				randomData();
 				m_pHairySlice->set();
 			}
-
-			//if (ev.key.keysym.sym == SDLK_INSERT)
-			//{
-			//	std::stringstream ss;
-			//	ss << m_pCosmoVolume->getPosition().x << "," << m_pCosmoVolume->getPosition().y << "," << m_pCosmoVolume->getPosition().z << "," << m_pCosmoVolume->getDimensions().x;
-			//	DataLogger::getInstance().logMessage(ss.str());
-			//}
-
-			if (ev.key.keysym.sym == SDLK_HOME)
+		}
+	}
+	else
+	{
+		if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
+		{
+			if (m_pEditParam)
 			{
-				if (m_pTDM && m_pTDM->getTracker())
+				if (ev.key.keysym.sym == SDLK_BACKSPACE && m_pEditParam->buf.length() > 0)
+					m_pEditParam->buf.pop_back();
+
+				if (m_pEditParam->format & STUDYPARAM_NUMERIC)
 				{
-					// build coord frame using y axis of tracker for z axis of coordinate frame to match screen
-					glm::vec3 w = glm::normalize(-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
-					glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
-					glm::vec3 v = glm::normalize(glm::cross(w, u));
-					glm::mat3 temp(u, v, w);
-					m_mat4TrackingToScreen = glm::inverse(temp);
+					if (ev.key.keysym.sym >= SDLK_0 && ev.key.keysym.sym <= SDLK_9)
+						m_pEditParam->buf += std::to_string(ev.key.keysym.sym - SDLK_0);
+				}
+
+				if (m_pEditParam->format & STUDYPARAM_ALPHA)
+				{
+					if (ev.key.keysym.sym >= SDLK_a && ev.key.keysym.sym <= SDLK_z)
+						m_pEditParam->buf += SDL_GetKeyName(ev.key.keysym.sym);
+				}
+
+				if (m_pEditParam->format & STUDYPARAM_POSNEG)
+				{
+					if (ev.key.keysym.sym == SDLK_MINUS)
+					{
+						if (m_pEditParam->buf[0] == '-')
+							m_pEditParam->buf.erase(0, 1);
+						else
+							m_pEditParam->buf.insert(0, 1, '-');
+					}
+				}
+
+				if (m_pEditParam->format & STUDYPARAM_DECIMAL)
+				{
+					if (ev.key.keysym.sym == SDLK_PERIOD)
+					{
+						auto decimalCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), '.');
+
+						if (decimalCount == 0 ||
+							((m_pEditParam->format & STUDYPARAM_IP) && decimalCount < 3) ||
+							((m_pEditParam->format & STUDYPARAM_RGB) && decimalCount < 3) ||
+							((m_pEditParam->format & STUDYPARAM_RGBA) && decimalCount < 4))
+							m_pEditParam->buf += ".";
+					}
+				}
+
+				if (m_pEditParam->format & STUDYPARAM_RGB)
+				{
+					if (ev.key.keysym.sym == SDLK_COMMA)
+					{
+						auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
+
+						if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGB) && commaCount < 2))
+							m_pEditParam->buf += ",";
+					}
+				}
+
+				if (m_pEditParam->format & STUDYPARAM_RGBA)
+				{
+					if (ev.key.keysym.sym == SDLK_COMMA)
+					{
+						auto commaCount = std::count(m_pEditParam->buf.begin(), m_pEditParam->buf.end(), ',');
+
+						if (commaCount == 0 || ((m_pEditParam->format & STUDYPARAM_RGBA) && commaCount < 3))
+							m_pEditParam->buf += ",";
+					}
+				}
+
+
+				if (ev.key.keysym.sym == SDLK_RETURN && m_pEditParam->buf.length() > 0)
+				{
+					Renderer::getInstance().showMessage(m_pEditParam->desc + " set to " + m_pEditParam->buf);
+					bool cuttingPlaneReseed = false;
+
+					if (m_pEditParam->desc.compare("RK4 Step Size") == 0)
+					{
+						m_pHairySlice->m_fRK4StepSize = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("RK4 Max Steps") == 0)
+					{
+						m_pHairySlice->m_uiRK4MaxPropagation_OneWay = std::stoi(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("RK4 End Velocity") == 0)
+					{
+						m_pHairySlice->m_fRK4StopVelocity = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Cutting Plane Seeding Resolution") == 0)
+					{
+						m_pHairySlice->m_uiCuttingPlaneGridRes = std::stoi(m_pEditParam->buf);
+						cuttingPlaneReseed = true;
+					}
+
+					if (m_pEditParam->desc.compare("Cutting Plane Width") == 0)
+					{
+						m_pHairySlice->m_vec2CuttingPlaneSize.x = std::stof(m_pEditParam->buf);
+						cuttingPlaneReseed = true;
+					}
+
+					if (m_pEditParam->desc.compare("Cutting Plane Height") == 0)
+					{
+						m_pHairySlice->m_vec2CuttingPlaneSize.y = std::stof(m_pEditParam->buf);
+						cuttingPlaneReseed = true;
+					}
+
+					if (m_pEditParam->desc.compare("Streamtube Radius") == 0)
+					{
+						m_pHairySlice->m_fTubeRadius = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Min Velocity Color") == 0)
+					{
+						m_pHairySlice->m_vec4VelColorMin = utils::color::str2rgb(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Max Velocity Color") == 0)
+					{
+						m_pHairySlice->m_vec4VelColorMax = utils::color::str2rgb(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Halo Radius Factor") == 0)
+					{
+						m_pHairySlice->m_fHaloRadiusFactor = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Halo Color") == 0)
+					{
+						m_pHairySlice->m_vec4HaloColor = utils::color::str2rgb(m_pEditParam->buf);
+						m_pHairySlice->m_rsHalo.diffuseColor = m_pHairySlice->m_vec4HaloColor;
+					}
+
+					if (m_pEditParam->desc.compare("Osc. Amplitude") == 0)
+					{
+						m_pHairySlice->m_fOscAmpDeg = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Osc. Period") == 0)
+					{
+						m_pHairySlice->m_fOscTime = std::stof(m_pEditParam->buf);
+					}
+
+					if (m_pEditParam->desc.compare("Display Diag (inches)") == 0)
+					{
+						m_fScreenDiagonalInches = std::stof(m_pEditParam->buf);
+						setupViews();
+					}
+
+					if (m_pEditParam->desc.compare("Clear Color") == 0)
+					{
+						Renderer::getInstance().setClearColor(utils::color::str2rgb(m_pEditParam->buf));
+					}
+
+					if (m_pEditParam->desc.compare("Name") == 0)
+					{
+						m_strParticipantName = m_pEditParam->buf;
+					}
+
+					if (m_pEditParam->desc.compare("IPD") == 0)
+					{
+						m_fEyeSeparationMeters = std::stof(m_pEditParam->buf);
+					}
+
+					m_pEditParam = NULL;
 				}
 			}
+			else
+			{
+				if (ev.key.keysym.sym == SDLK_F1)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("RK4 Step Size") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_b)
-			{
-				Renderer::getInstance().toggleSkybox();
-			}
+				if (ev.key.keysym.sym == SDLK_F2)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("RK4 Max Steps") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_c)
-			{
-				m_bShowPlane = !m_bShowPlane;
-				Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
-			}
+				if (ev.key.keysym.sym == SDLK_F3)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("RK4 End Velocity") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_f)
-			{
-				m_pHairySlice->m_bShowFrame = !m_pHairySlice->m_bShowFrame;
-				Renderer::getInstance().showMessage("Frame visibility set to " + std::to_string(m_pHairySlice->m_bShowFrame));
-			}
+				if (ev.key.keysym.sym == SDLK_F4)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Cutting Plane Seeding Resolution") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_g)
-			{
-				m_pHairySlice->m_bShowGeometry = !m_pHairySlice->m_bShowGeometry;
-				Renderer::getInstance().showMessage("Geometry visibility set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
-			}
+				if (ev.key.keysym.sym == SDLK_F5)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Cutting Plane Width") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_h)
-			{
-				m_pHairySlice->m_bShowHalos = !m_pHairySlice->m_bShowHalos;
-				Renderer::getInstance().showMessage("Haloing set to " + std::to_string(m_pHairySlice->m_bShowHalos));
-			}
+				if (ev.key.keysym.sym == SDLK_F6)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Cutting Plane Height") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_j)
-			{
-				m_pHairySlice->m_bJitterSeeds = !m_pHairySlice->m_bJitterSeeds;
-				Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_pHairySlice->m_bJitterSeeds));
-			}
+				if (ev.key.keysym.sym == SDLK_F7)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Streamtube Radius") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_l)
-			{
-				m_bShowCosmoBBox = !m_bShowCosmoBBox;
-				Renderer::getInstance().showMessage("Dataset bbox visibility set to " + std::to_string(m_bShowCosmoBBox));
-			}
+				if (ev.key.keysym.sym == SDLK_F8)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Min Velocity Color") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_m)
-			{
-				m_pHairySlice->m_bSpinReticule = !m_pHairySlice->m_bSpinReticule;
-				Renderer::getInstance().showMessage("Reticule spin set to " + std::to_string(m_pHairySlice->m_bSpinReticule));
-			}
+				if (ev.key.keysym.sym == SDLK_F9)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Max Velocity Color") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_o)
-			{
-				m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
-			}
+				if (ev.key.keysym.sym == SDLK_F10)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Halo Radius Factor") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_p)
-			{
-				m_pHairySlice->m_bShowGrid = !m_pHairySlice->m_bShowGrid;
-				Renderer::getInstance().showMessage("Grid visibility set to " + std::to_string(m_pHairySlice->m_bShowGrid));
-			}
+				if (ev.key.keysym.sym == SDLK_F11)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Halo Color") == 0;
+					}));
+				}
 
-			if (ev.key.keysym.sym == SDLK_r)
-			{
-				m_pHairySlice->m_bShowReticule = !m_pHairySlice->m_bShowReticule;
-				Renderer::getInstance().showMessage("Target reticule visibility set to " + std::to_string(m_pHairySlice->m_bShowReticule));
-			}
+				if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
+				{
+					m_pHairySlice->nextGeomStyle();
+					Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
+				}
 
-			if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
-			{
-				m_pHairySlice->m_bShowSeeds = !m_pHairySlice->m_bShowSeeds;
-				Renderer::getInstance().showMessage("Seed visibility set to " + std::to_string(m_pHairySlice->m_bShowSeeds));
-			}
+				if (!(ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
+				{
+					m_pHairySlice->prevGeomStyle();
+					Renderer::getInstance().showMessage("Hairy Slice geometry set to " + m_pHairySlice->getGeomStyle());
+				}
 
-			if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
-			{
-				m_bStereo = !m_bStereo;
-				setupViews();
-				Renderer::getInstance().showMessage("Stereo set to " + std::to_string(m_bStereo));
-			}
+				if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEUP)
+				{
+					m_pHairySlice->nextShader();
+					Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
+				}
 
-			if (ev.key.keysym.sym == SDLK_t)
-			{
-				m_pHairySlice->m_bShowTarget = !m_pHairySlice->m_bShowTarget;
-				Renderer::getInstance().showMessage("Target visibility set to " + std::to_string(m_pHairySlice->m_bShowTarget));
-			}
+				if ((ev.key.keysym.mod & KMOD_LSHIFT) && ev.key.keysym.sym == SDLK_PAGEDOWN)
+				{
+					m_pHairySlice->prevShader();
+					Renderer::getInstance().showMessage("Hairy Slice shader set to " + m_pHairySlice->getShaderName());
+				}
 
-			if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
-			{
-				m_pHairySlice->reseed();
-				Renderer::getInstance().showMessage("Hairy Slice reseeded");
-			}
-			
-			if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
-			{
-				m_pHairySlice->set();
+				if (ev.key.keysym.sym == SDLK_KP_DIVIDE)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Osc. Amplitude") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_MULTIPLY)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Osc. Period") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_PERIOD)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Display Diag (inches)") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_BACKSPACE)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Clear Color") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_PLUS)
+				{
+					m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 1.1f);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_MINUS)
+				{
+					m_pCosmoVolume->setDimensions(m_pCosmoVolume->getDimensions() * 0.9f);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_2)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_8)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 1.f, 0.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_4)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_6)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(1.f, 0.f, 0.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_UP)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_DOWN)
+				{
+					float dimratio = m_pCosmoVolume->getOriginalDimensions().x / m_pCosmoVolume->getDimensions().x;
+					m_pCosmoVolume->setPosition(m_pCosmoVolume->getPosition() - glm::vec3(0.f, 0.f, 1.f) * 0.01f * dimratio);
+				}
+
+				if (ev.key.keysym.sym == SDLK_KP_ENTER)
+				{
+					randomData();
+					m_pHairySlice->set();
+				}
+
+				//if (ev.key.keysym.sym == SDLK_INSERT)
+				//{
+				//	std::stringstream ss;
+				//	ss << m_pCosmoVolume->getPosition().x << "," << m_pCosmoVolume->getPosition().y << "," << m_pCosmoVolume->getPosition().z << "," << m_pCosmoVolume->getDimensions().x;
+				//	DataLogger::getInstance().logMessage(ss.str());
+				//}
+
+				if (ev.key.keysym.sym == SDLK_HOME)
+				{
+					if (m_pTDM && m_pTDM->getTracker())
+					{
+						// build coord frame using y axis of tracker for z axis of coordinate frame to match screen
+						glm::vec3 w = glm::normalize(-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
+						glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
+						glm::vec3 v = glm::normalize(glm::cross(w, u));
+						glm::mat3 temp(u, v, w);
+						m_mat4TrackingToScreen = glm::inverse(temp);
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_b)
+				{
+					Renderer::getInstance().toggleSkybox();
+				}
+
+				if (ev.key.keysym.sym == SDLK_c)
+				{
+					m_bShowPlane = !m_bShowPlane;
+					Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
+				}
+
+				if (ev.key.keysym.sym == SDLK_f)
+				{
+					m_pHairySlice->m_bShowFrame = !m_pHairySlice->m_bShowFrame;
+					Renderer::getInstance().showMessage("Frame visibility set to " + std::to_string(m_pHairySlice->m_bShowFrame));
+				}
+
+				if (ev.key.keysym.sym == SDLK_g)
+				{
+					m_pHairySlice->m_bShowGeometry = !m_pHairySlice->m_bShowGeometry;
+					Renderer::getInstance().showMessage("Geometry visibility set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
+				}
+
+				if (ev.key.keysym.sym == SDLK_h)
+				{
+					m_pHairySlice->m_bShowHalos = !m_pHairySlice->m_bShowHalos;
+					Renderer::getInstance().showMessage("Haloing set to " + std::to_string(m_pHairySlice->m_bShowHalos));
+				}
+
+				if (ev.key.keysym.sym == SDLK_i)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("IPD") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_j)
+				{
+					m_pHairySlice->m_bJitterSeeds = !m_pHairySlice->m_bJitterSeeds;
+					Renderer::getInstance().showMessage("Seed Jittering set to " + std::to_string(m_pHairySlice->m_bJitterSeeds));
+				}
+
+				if (ev.key.keysym.sym == SDLK_l)
+				{
+					m_bShowCosmoBBox = !m_bShowCosmoBBox;
+					Renderer::getInstance().showMessage("Dataset bbox visibility set to " + std::to_string(m_bShowCosmoBBox));
+				}
+
+				if (ev.key.keysym.sym == SDLK_m)
+				{
+					m_pHairySlice->m_bSpinReticule = !m_pHairySlice->m_bSpinReticule;
+					Renderer::getInstance().showMessage("Reticule spin set to " + std::to_string(m_pHairySlice->m_bSpinReticule));
+				}
+
+				if (ev.key.keysym.sym == SDLK_n)
+				{
+					m_pEditParam = &(*std::find_if(m_vParams.begin(), m_vParams.end(), [](StudyParam p) {
+						return p.desc.compare("Name") == 0;
+					}));
+				}
+
+				if (ev.key.keysym.sym == SDLK_o)
+				{
+					m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
+				}
+
+				if (ev.key.keysym.sym == SDLK_p)
+				{
+					m_pHairySlice->m_bShowGrid = !m_pHairySlice->m_bShowGrid;
+					Renderer::getInstance().showMessage("Grid visibility set to " + std::to_string(m_pHairySlice->m_bShowGrid));
+				}
+
+				if (ev.key.keysym.sym == SDLK_r)
+				{
+					m_pHairySlice->m_bShowReticule = !m_pHairySlice->m_bShowReticule;
+					Renderer::getInstance().showMessage("Target reticule visibility set to " + std::to_string(m_pHairySlice->m_bShowReticule));
+				}
+
+				if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
+				{
+					m_pHairySlice->m_bShowSeeds = !m_pHairySlice->m_bShowSeeds;
+					Renderer::getInstance().showMessage("Seed visibility set to " + std::to_string(m_pHairySlice->m_bShowSeeds));
+				}
+
+				if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
+				{
+					m_bStereo = !m_bStereo;
+					setupViews();
+					Renderer::getInstance().showMessage("Stereo set to " + std::to_string(m_bStereo));
+				}
+
+				if (ev.key.keysym.sym == SDLK_t)
+				{
+					m_pHairySlice->m_bShowTarget = !m_pHairySlice->m_bShowTarget;
+					Renderer::getInstance().showMessage("Target visibility set to " + std::to_string(m_pHairySlice->m_bShowTarget));
+				}
+
+				if (ev.key.keysym.sym == SDLK_v)
+				{
+					m_bShowProbe = !m_bShowProbe;
+					Renderer::getInstance().showMessage("Probe visibility set to " + std::to_string(m_bShowProbe));
+				}
+
+				if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
+				{
+					m_pHairySlice->reseed();
+					Renderer::getInstance().showMessage("Hairy Slice reseeded");
+				}
+
+				if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
+				{
+					m_pHairySlice->set();
+				}
+
+				if ((ev.key.keysym.mod & KMOD_LCTRL || ev.key.keysym.mod & KMOD_RCTRL) && ev.key.keysym.sym == SDLK_SPACE)
+				{
+					if (m_strParticipantName.compare("noname") == 0)
+						Renderer::getInstance().showMessage("Please set participant name using (n) before starting study!");
+					else
+					{
+						startStudy();
+					}
+				}
 			}
 		}
 	}
@@ -543,13 +629,27 @@ void HairySlicesStudyScene::draw()
 		);
 	}
 
+	if (m_bStudyComplete)
+	{
+		Renderer::getInstance().drawUIText(
+			"COMPLETE",
+			glm::vec4(1.f),
+			glm::vec3(glm::vec2(Renderer::getInstance().getUIRenderSize()) * 0.5f, 0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().x / 2.f,
+			Renderer::WIDTH,
+			Renderer::CENTER,
+			Renderer::CENTER_MIDDLE
+		);
+	}
 	
 	m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
 
 	if (m_bShowPlane)
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
 
-	Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.2f, 0.005f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
+	if (m_bShowProbe)
+		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
 
 	m_pHairySlice->draw();
 }
@@ -572,6 +672,9 @@ void HairySlicesStudyScene::setupParameters()
 	m_vParams.push_back({ "Halo Color" , utils::color::rgb2str(m_pHairySlice->m_vec4HaloColor), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });	
 	m_vParams.push_back({ "Osc. Amplitude" , std::to_string(m_pHairySlice->m_fOscAmpDeg), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Osc. Period" , std::to_string(m_pHairySlice->m_fOscTime), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+
+	m_vParams.push_back({ "Name" , m_strParticipantName, STUDYPARAM_ALPHA | STUDYPARAM_NUMERIC });
+	m_vParams.push_back({ "IPD" , std::to_string(m_fEyeSeparationMeters), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 
 	m_vParams.push_back({ "Display Diag (inches)" , std::to_string(m_fScreenDiagonalInches), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
@@ -659,35 +762,88 @@ void HairySlicesStudyScene::makeStudyConditions()
 	std::shuffle(m_vStudyConditions.begin(), m_vStudyConditions.end(), m_pHairySlice->m_RNG);
 }
 
-void HairySlicesStudyScene::loadStudyCondition()
-{
-	if (!m_vStudyConditions.empty())
-	{
-		auto thisCond = m_vStudyConditions.back();
-		
-		m_pHairySlice->setGeomStyle(thisCond.geometry);
-
-		if (thisCond.geometry.compare("CONE") == 0)
-			m_pHairySlice->setShader("streamline_ring_static");
-		else if (thisCond.texture.compare("STATIC") == 0)
-			m_pHairySlice->setShader("streamline_gradient_static");
-		else
-			m_pHairySlice->setShader("streamline_ring_animated");
-
-		m_pHairySlice->m_bOscillate = thisCond.motion;
-
-		m_bStereo = thisCond.stereo;
-		setupViews();
-	}
-}
-
 void HairySlicesStudyScene::startStudy()
 {
 	DataLogger::getInstance().setLogDirectory("/");
 	DataLogger::getInstance().setID(m_strParticipantName);
 	DataLogger::getInstance().openLog(m_strParticipantName);
-	DataLogger::getInstance().setHeader("trial,ipd,geometry,texture,motion,stereo,target.x,target.y,target.z,probe.x,probe.y,probe.z");
+	DataLogger::getInstance().setHeader("trial,ipd,geometry,texture,motion,stereo,target.pos.x,target.pos.y,target.pos.z,target.dir.x,target.dir.y,target.dir.z,target.magnitude,probe.x,probe.y,probe.z");
 	DataLogger::getInstance().start();
+
+	m_bShowCosmoBBox = false;
+	m_bShowPlane = false;
+	m_bShowProbe = false;
+	m_pHairySlice->m_bJitterSeeds = true;
+	m_pHairySlice->m_bShowFrame = true;
+	m_pHairySlice->m_bShowGeometry = true;
+	m_pHairySlice->m_bShowGrid = true;
+	m_pHairySlice->m_bShowHalos = false;
+	m_pHairySlice->m_bShowReticule = true;
+	m_pHairySlice->m_bSpinReticule = true;
+	m_pHairySlice->m_bShowSeeds = false;
+	m_pHairySlice->m_bShowTarget = false;
+
+	makeStudyConditions();
+
+	m_pCurrentCondition = &m_vStudyConditions.back();
+
+	m_nCurrentTrial = 0;
+
+	m_nCurrentReplicate = 0;
+
+	m_pHairySlice->reseed();
+	randomData();
+	m_pHairySlice->set();
+
+	m_bStudyActive = true;
+}
+
+void HairySlicesStudyScene::loadStudyCondition()
+{
+	if (!m_vStudyConditions.empty())
+	{
+		m_pCurrentCondition = &m_vStudyConditions.back();
+		
+		m_pHairySlice->setGeomStyle(m_pCurrentCondition->geometry);
+
+		if (m_pCurrentCondition->geometry.compare("CONE") == 0)
+			m_pHairySlice->setShader("streamline_ring_static");
+		else if (m_pCurrentCondition->texture.compare("STATIC") == 0)
+			m_pHairySlice->setShader("streamline_gradient_static");
+		else
+			m_pHairySlice->setShader("streamline_gradient_animated");
+
+		m_pHairySlice->m_bOscillate = m_pCurrentCondition->motion;
+
+		m_bStereo = m_pCurrentCondition->stereo;
+		setupViews();
+	}
+}
+
+void HairySlicesStudyScene::recordResponse()
+{
+	glm::vec3 flowNorm = glm::normalize(m_pHairySlice->m_vec3FlowAtReticule);
+
+	std::stringstream ss;
+
+	ss << m_nCurrentTrial << ",";
+	ss << m_fEyeSeparationMeters << ",";
+	ss << m_pCurrentCondition->geometry << ",";
+	ss << m_pCurrentCondition->texture << ",";
+	ss << m_pCurrentCondition->motion << ",";
+	ss << m_pCurrentCondition->stereo << ",";
+	ss << m_pHairySlice->m_vec3Reticule.x << ",";
+	ss << m_pHairySlice->m_vec3Reticule.y << ",";
+	ss << m_pHairySlice->m_vec3Reticule.z << ",";
+	ss << flowNorm.x << ",";
+	ss << flowNorm.y << ",";
+	ss << flowNorm.z << ",";
+	ss << glm::length(m_pHairySlice->m_vec3FlowAtReticule) << ",";
+	ss << m_vec3ProbeDirection.x << ",";
+	ss << m_vec3ProbeDirection.y << ",";
+	ss << m_vec3ProbeDirection.z;
+
+	DataLogger::getInstance().logMessage(ss.str());
 }
 
 void HairySlicesStudyScene::randomData()

@@ -115,7 +115,7 @@ void HairySlice::draw()
 	// Reticule
 	if (m_bShowReticule)
 	{
-		float spinRate = 2.f;
+		float spinRate = 5.f;
 		float rotAngle = m_bSpinReticule ? 360.f * glm::mod(Renderer::getInstance().getElapsedSeconds(), spinRate) / spinRate : 0.f;
 		m_rsReticule.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule + glm::vec3(0.f, 0.f, 1.f) * 0.0001f) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.05f));
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsReticule);
@@ -362,10 +362,10 @@ void HairySlice::rebuildGeometry()
 	switch (m_iCurrentGeomStyle)
 	{
 	case 0:
-		buildStreamTubes(m_fTubeRadius / 5.f);
+		buildStreamTubes(m_fTubeRadius * 0.2f);
 		break;
 	case 1:
-		buildStreamTubes(m_fTubeRadius);
+		buildStreamTubes(m_fTubeRadius * 0.75f);
 		break;
 	case 2:
 		buildStreamCones(m_fTubeRadius);
