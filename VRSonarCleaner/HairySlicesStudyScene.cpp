@@ -8,8 +8,9 @@
 #include <random>
 
 
-HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches)
-	: m_pCosmoVolume(NULL)
+HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, TrackedDeviceManager* pTDM)
+	: m_pTDM(pTDM)
+	, m_pCosmoVolume(NULL)
 	, m_pHairySlice(NULL)
 	, m_bShowCosmoBBox(true)
 	, m_bShowPlane(false)
@@ -20,6 +21,7 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches)
 	, m_bStereo(false)
 	, m_nReplicatesPerCondition(10)
 	, m_nCurrentReplicate(0)
+	, m_strParticipantName("noname")
 {
 }
 
@@ -391,11 +393,24 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 				m_pHairySlice->set();
 			}
 
-			if (ev.key.keysym.sym == SDLK_INSERT)
+			//if (ev.key.keysym.sym == SDLK_INSERT)
+			//{
+			//	std::stringstream ss;
+			//	ss << m_pCosmoVolume->getPosition().x << "," << m_pCosmoVolume->getPosition().y << "," << m_pCosmoVolume->getPosition().z << "," << m_pCosmoVolume->getDimensions().x;
+			//	DataLogger::getInstance().logMessage(ss.str());
+			//}
+
+			if (ev.key.keysym.sym == SDLK_HOME)
 			{
-				std::stringstream ss;
-				ss << m_pCosmoVolume->getPosition().x << "," << m_pCosmoVolume->getPosition().y << "," << m_pCosmoVolume->getPosition().z << "," << m_pCosmoVolume->getDimensions().x;
-				DataLogger::getInstance().logMessage(ss.str());
+				if (m_pTDM && m_pTDM->getTracker())
+				{
+					// build coord frame using y axis of tracker for z axis of coordinate frame to match screen
+					glm::vec3 w = glm::normalize(-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
+					glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
+					glm::vec3 v = glm::normalize(glm::cross(w, u));
+					glm::mat3 temp(u, v, w);
+					m_mat4TrackingToScreen = glm::inverse(temp);
+				}
 			}
 
 			if (ev.key.keysym.sym == SDLK_b)
@@ -503,6 +518,9 @@ void HairySlicesStudyScene::update()
 	l->direction = glm::inverse(Renderer::getInstance().getLeftEyeInfo()->view) * glm::normalize(glm::vec4(-1.f, -1.f, -1.f, 0.f));
 
 	m_pHairySlice->update();
+
+	if (m_pTDM && m_pTDM->getTracker())
+		m_vec3ProbeDirection = m_mat4TrackingToScreen * (-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
 }
 
 void HairySlicesStudyScene::draw()
@@ -530,6 +548,8 @@ void HairySlicesStudyScene::draw()
 
 	if (m_bShowPlane)
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
+
+	Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.2f, 0.005f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
 
 	m_pHairySlice->draw();
 }

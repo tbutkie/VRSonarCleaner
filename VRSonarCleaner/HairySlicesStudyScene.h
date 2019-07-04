@@ -6,6 +6,7 @@
 #include "DataLogger.h"
 #include "Renderer.h"
 #include "HairySlice.h"
+#include "TrackedDeviceManager.h"
 #include <random>
 #include <chrono>
 
@@ -28,7 +29,7 @@ class HairySlicesStudyScene :
 	};
 
 public:
-	HairySlicesStudyScene(float displayDiagonalInches);
+	HairySlicesStudyScene(float displayDiagonalInches, TrackedDeviceManager* pTDM);
 	~HairySlicesStudyScene();
 
 	void init();
@@ -40,6 +41,8 @@ public:
 	void draw();
 
 private:
+	TrackedDeviceManager* m_pTDM;
+
 	CosmoVolume* m_pCosmoVolume;
 
 	HairySlice* m_pHairySlice;
@@ -59,6 +62,9 @@ private:
 	int m_nCurrentReplicate;
 
 	std::string m_strParticipantName;
+
+	glm::mat4 m_mat4TrackingToScreen;
+	glm::vec3 m_vec3ProbeDirection;
 
 	struct StudyParam {
 		std::string desc;
