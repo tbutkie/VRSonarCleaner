@@ -37,6 +37,7 @@ HairySlicesStudyScene::~HairySlicesStudyScene()
 
 void HairySlicesStudyScene::init()
 {
+	srand(time(0)); // set random seed for std::random_shuffle()
 
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 	Renderer::getInstance().toggleSkybox();
