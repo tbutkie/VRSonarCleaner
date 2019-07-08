@@ -785,7 +785,7 @@ void HairySlicesStudyScene::startStudy()
 
 	makeStudyConditions();
 
-	m_pCurrentCondition = &m_vStudyConditions.back();
+	loadStudyCondition();
 
 	m_nCurrentTrial = 0;
 
