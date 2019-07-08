@@ -22,7 +22,7 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	, m_fEyeSeparationMeters(0.067)
 	, m_bStereo(false)
 	, m_nCurrentTrial(0)
-	, m_nReplicatesPerCondition(2)
+	, m_nReplicatesPerCondition(15)
 	, m_nCurrentReplicate(0)
 	, m_strParticipantName("noname")
 	, m_pCurrentCondition(NULL)
@@ -606,7 +606,10 @@ void HairySlicesStudyScene::update()
 	m_pHairySlice->update();
 
 	if (m_pTDM && m_pTDM->getTracker())
+	{
+		m_pTDM->getTracker()->hideRenderModel();
 		m_vec3ProbeDirection = m_mat4TrackingToScreen * (-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
+	}
 }
 
 void HairySlicesStudyScene::draw()
@@ -759,7 +762,7 @@ void HairySlicesStudyScene::makeStudyConditions()
 		}
 	}
 	 
-	std::shuffle(m_vStudyConditions.begin(), m_vStudyConditions.end(), m_pHairySlice->m_RNG);
+	std::random_shuffle(m_vStudyConditions.begin(), m_vStudyConditions.end());
 }
 
 void HairySlicesStudyScene::startStudy()
