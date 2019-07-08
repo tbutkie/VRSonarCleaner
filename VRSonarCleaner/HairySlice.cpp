@@ -120,7 +120,7 @@ void HairySlice::draw()
 		m_rsReticule.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule + glm::vec3(0.f, 0.f, 1.f) * 0.0001f) * glm::rotate(glm::mat4(), glm::radians(rotAngle), glm::vec3(0.f, 0.f, 1.f)) * glm::scale(glm::mat4(), glm::vec3(0.05f));
 		Renderer::getInstance().addToDynamicRenderQueue(m_rsReticule);
 
-		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
+		//Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), m_vec3Reticule) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 	}
 
 	// Target vector
