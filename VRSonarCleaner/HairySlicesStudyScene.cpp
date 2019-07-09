@@ -16,16 +16,20 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	, m_bShowPlane(false)
 	, m_bShowProbe(false)
 	, m_bStudyActive(false)
+	, m_bTraining(false)
+	, m_bPaused(false)
 	, m_bStudyComplete(false)
+	, m_bCalibrated(false)
 	, m_pEditParam(NULL)
 	, m_fScreenDiagonalInches(displayDiagonalInches)
-	, m_fEyeSeparationMeters(0.067)
+	, m_fEyeSeparationCentimeters(0.f)
 	, m_bStereo(false)
 	, m_nCurrentTrial(0)
 	, m_nReplicatesPerCondition(15)
 	, m_nCurrentReplicate(0)
 	, m_strParticipantName("noname")
 	, m_pCurrentCondition(NULL)
+	, m_vec3ProbeDirection(0.f, 0.f, 1.f)
 {
 }
 
@@ -62,40 +66,113 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 {
 	if (m_bStudyActive)
 	{
+		if (m_bPaused)
+		{
+			if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
+			{
+				if (ev.key.keysym.sym == SDLK_RETURN)
+				{
+					endBreak();
+				}
+			}
+		}
+		else // study active
+		{
+			if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
+			{
+				if (ev.key.keysym.sym == SDLK_SPACE)
+				{
+					recordResponse();
+
+					if (++m_nCurrentReplicate == m_nReplicatesPerCondition)
+					{
+						m_nCurrentReplicate = 0;
+
+						m_pCurrentCondition = NULL;
+						m_vStudyConditions.pop_back();
+
+						startBreak();
+					}
+
+					m_nCurrentTrial++;
+
+					m_pHairySlice->reseed();
+					randomData();
+					m_pHairySlice->set();
+				}
+			}
+		}
+	}
+	else if (m_bTraining)
+	{
 		if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
 		{
-			if (ev.key.keysym.sym == SDLK_SPACE)
+			if (ev.key.keysym.sym == SDLK_1)
 			{
-				recordResponse();
+				m_pHairySlice->setGeomStyle("STREAMLET");
+				m_pHairySlice->setShader("streamline_gradient_static");
+			}
 
-				if (++m_nCurrentReplicate == m_nReplicatesPerCondition)
-				{
-					m_nCurrentReplicate = 0;
+			if (ev.key.keysym.sym == SDLK_2)
+			{
+				m_pHairySlice->setGeomStyle("STREAMLET");
+				m_pHairySlice->setShader("streamline_gradient_animated");
+			}
 
-					m_pCurrentCondition = NULL;
-					m_vStudyConditions.pop_back();
+			if (ev.key.keysym.sym == SDLK_3)
+			{
+				m_pHairySlice->setGeomStyle("CONE");
+				m_pHairySlice->setShader("streamline_ring_static");
+			}
 
-					loadStudyCondition();
+			if (ev.key.keysym.sym == SDLK_4)
+			{
+				m_pHairySlice->setGeomStyle("TUBE");
+				m_pHairySlice->setShader("streamline_gradient_static");
+			}
 
-					if (!m_pCurrentCondition)
-					{
-						m_bStudyActive = false;
-						m_bStudyComplete = true;
+			if (ev.key.keysym.sym == SDLK_5)
+			{
+				m_pHairySlice->setGeomStyle("TUBE");
+				m_pHairySlice->setShader("streamline_gradient_animated");
+			}
 
-						DataLogger::getInstance().closeLog();
+			if (ev.key.keysym.sym == SDLK_m)
+			{
+				m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
+			}
 
-						m_pHairySlice->m_bShowGeometry = false;
-						m_pHairySlice->m_bShowFrame = false;
-						m_pHairySlice->m_bShowGrid = false;
-						m_pHairySlice->m_bShowReticule = false;
-					}
-				}
+			if (ev.key.keysym.sym == SDLK_s)
+			{
+				m_bStereo = !m_bStereo;
+				setupViews();
+			}
 
-				m_nCurrentTrial++;
+			if (ev.key.keysym.sym == SDLK_g)
+			{
+				m_pHairySlice->m_bShowGrid = !m_pHairySlice->m_bShowGrid;
+			}
 
+			if (ev.key.keysym.sym == SDLK_t)
+			{
+				m_pHairySlice->m_bShowTarget = !m_pHairySlice->m_bShowTarget;
+			}
+
+			if (ev.key.keysym.sym == SDLK_p)
+			{
+				m_bShowProbe = !m_bShowProbe;
+			}
+
+			if (!(ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
+			{
 				m_pHairySlice->reseed();
 				randomData();
 				m_pHairySlice->set();
+			}
+
+			if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
+			{
+				startStudy();
 			}
 		}
 	}
@@ -260,7 +337,7 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 					if (m_pEditParam->desc.compare("IPD") == 0)
 					{
-						m_fEyeSeparationMeters = std::stof(m_pEditParam->buf);
+						m_fEyeSeparationCentimeters = std::stof(m_pEditParam->buf);
 					}
 
 					m_pEditParam = NULL;
@@ -466,6 +543,8 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 						glm::vec3 v = glm::normalize(glm::cross(w, u));
 						glm::mat3 temp(u, v, w);
 						m_mat4TrackingToScreen = glm::inverse(temp);
+
+						m_bCalibrated = true;
 					}
 				}
 
@@ -547,13 +626,13 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					Renderer::getInstance().showMessage("Target reticule visibility set to " + std::to_string(m_pHairySlice->m_bShowReticule));
 				}
 
-				if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
+				if (!(ev.key.keysym.mod & KMOD_SHIFT) && ev.key.keysym.sym == SDLK_s)
 				{
 					m_pHairySlice->m_bShowSeeds = !m_pHairySlice->m_bShowSeeds;
 					Renderer::getInstance().showMessage("Seed visibility set to " + std::to_string(m_pHairySlice->m_bShowSeeds));
 				}
 
-				if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_s)
+				if ((ev.key.keysym.mod & KMOD_SHIFT) && ev.key.keysym.sym == SDLK_s)
 				{
 					m_bStereo = !m_bStereo;
 					setupViews();
@@ -572,25 +651,27 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					Renderer::getInstance().showMessage("Probe visibility set to " + std::to_string(m_bShowProbe));
 				}
 
-				if ((ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
+				if ((ev.key.keysym.mod & KMOD_SHIFT) && ev.key.keysym.sym == SDLK_RETURN)
 				{
 					m_pHairySlice->reseed();
 					Renderer::getInstance().showMessage("Hairy Slice reseeded");
 				}
 
-				if (!(ev.key.keysym.mod & KMOD_LSHIFT || ev.key.keysym.mod & KMOD_RSHIFT) && ev.key.keysym.sym == SDLK_RETURN)
+				if (!(ev.key.keysym.mod & KMOD_SHIFT) && ev.key.keysym.sym == SDLK_RETURN)
 				{
 					m_pHairySlice->set();
 				}
 
-				if ((ev.key.keysym.mod & KMOD_LCTRL || ev.key.keysym.mod & KMOD_RCTRL) && ev.key.keysym.sym == SDLK_SPACE)
+				if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
 				{
 					if (m_strParticipantName.compare("noname") == 0)
-						Renderer::getInstance().showMessage("Please set participant name using (n) before starting study!");
+						Renderer::getInstance().showMessage("Please set participant name using (n) before starting training!");
+					else if (m_fEyeSeparationCentimeters == 0.f)
+						Renderer::getInstance().showMessage("Please measure and set participant IPD using (i) before starting training!");
+					else if (!m_bCalibrated && m_pTDM)
+						Renderer::getInstance().showMessage("Please make sure the tracking probe is calibrated to the monitor!");
 					else
-					{
-						startStudy();
-					}
+						startTraining();
 				}
 			}
 		}
@@ -630,6 +711,107 @@ void HairySlicesStudyScene::draw()
 			Renderer::HEIGHT,
 			Renderer::LEFT,
 			Renderer::BOTTOM_LEFT
+		);
+	}
+
+	if (m_bTraining)
+	{
+		std::stringstream ss;
+		ss << "Geometry: " << m_pHairySlice->getGeomStyle() << std::endl;
+		ss << "Texture: " << ( m_pHairySlice->getShaderName().find("static") != std::string::npos ? "Static" : "Animated" )<< std::endl;
+		ss << "Stereo 3D: " << (m_bStereo ? "On" : "Off") << std::endl;
+		ss << "Motion: " << (m_pHairySlice->m_bOscillate ? "On" : "Off");
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(1.f),
+			glm::vec3(0.f, Renderer::getInstance().getUIRenderSize().y, 0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().y / 5.f,
+			Renderer::HEIGHT,
+			Renderer::LEFT,
+			Renderer::TOP_LEFT
+		);
+
+		ss.str("");
+		ss.clear();
+
+		ss.precision(2);
+
+		float accuracy = glm::degrees(glm::acos(glm::dot(glm::normalize(m_pHairySlice->m_vec3FlowAtReticule), m_vec3ProbeDirection)));
+		bool flipped = accuracy > 90.f;
+		
+		ss << "Error: " << std::fixed << accuracy << "deg";
+
+		if (flipped)
+			ss << " (REVERSED)";
+
+		glm::vec3 accuracyTextColor;
+
+		if (accuracy < 10.f)
+			accuracyTextColor = glm::mix(glm::vec3(0.f, 1.f, 0.f), glm::vec3(1.f, 1.f, 0.f), glm::mod(accuracy, 10.f) / 10.f);
+		else if (accuracy < 20.f)
+			accuracyTextColor = glm::mix(glm::vec3(1.f, 1.f, 0.f), glm::vec3(1.f, 0.5f, 0.f), glm::mod(accuracy - 10.f, 10.f) / 10.f);
+		else if (accuracy < 50.f)
+			accuracyTextColor = glm::mix(glm::vec3(1.f, 0.5f, 0.f), glm::vec3(1.f, 0.f, 0.f), glm::mod(accuracy - 20.f, 30.f) / 30.f);
+		else if (accuracy < 90.f)
+			accuracyTextColor = glm::mix(glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.1f, 0.1f, 0.1f), glm::mod(accuracy - 50.f, 40.f) / 40.f);
+		else
+			accuracyTextColor = glm::vec3(0.1f, 0.1f, 0.1f);
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(accuracyTextColor, 1.f),
+			glm::vec3(0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().y / 10.f,
+			Renderer::HEIGHT,
+			Renderer::LEFT,
+			Renderer::BOTTOM_LEFT
+		);
+	}
+
+	if (m_bPaused)
+	{
+		float pulseRate = 5.f;
+		float ratio = glm::mod(Renderer::getInstance().getElapsedSeconds(), pulseRate) / pulseRate;
+		float easeAmount = glm::sin(glm::two_pi<float>() * ratio);
+
+		//Renderer::getInstance().setClearColor(glm::vec4(glm::mix(glm::vec3(0.4f, 0.4f, 0.6f), glm::vec3(0.6f, 0.6f, 0.4f), easeAmount), 1.f));
+
+		std::stringstream ss;
+
+		ss << "Please take a short break." << std::endl;
+		ss << "Press <ENTER> to resume.";
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(glm::mix(glm::vec3(0.6f, 0.6f, 0.4f), glm::vec3(0.4f, 0.4f, 0.6f), easeAmount), 1.f),
+			glm::vec3(glm::vec2(Renderer::getInstance().getUIRenderSize()) * 0.5f, 0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().x / 3.f,
+			Renderer::WIDTH,
+			Renderer::CENTER,
+			Renderer::CENTER_MIDDLE
+		);
+
+		float progress = (m_nCurrentTrial) / (20.f * m_nReplicatesPerCondition);
+
+		ss.str("");
+		ss.clear();
+		ss.precision(1);
+
+		ss << std::fixed << progress * 100.f << "% COMPLETE";
+
+		Renderer::getInstance().drawUIText(
+			ss.str(),
+			glm::vec4(glm::mix(glm::vec3(1.f), glm::vec3(0.2f, 0.9f, 0.2f), progress), easeAmount),
+			glm::vec3(Renderer::getInstance().getUIRenderSize().x * 0.5f, 0.f, 0.f),
+			glm::quat(),
+			Renderer::getInstance().getUIRenderSize().x / 3.f,
+			Renderer::WIDTH,
+			Renderer::CENTER,
+			Renderer::CENTER_BOTTOM
 		);
 	}
 
@@ -678,7 +860,7 @@ void HairySlicesStudyScene::setupParameters()
 	m_vParams.push_back({ "Osc. Period" , std::to_string(m_pHairySlice->m_fOscTime), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 
 	m_vParams.push_back({ "Name" , m_strParticipantName, STUDYPARAM_ALPHA | STUDYPARAM_NUMERIC });
-	m_vParams.push_back({ "IPD" , std::to_string(m_fEyeSeparationMeters), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
+	m_vParams.push_back({ "IPD" , std::to_string(m_fEyeSeparationCentimeters), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 
 	m_vParams.push_back({ "Display Diag (inches)" , std::to_string(m_fScreenDiagonalInches), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL });
 	m_vParams.push_back({ "Clear Color" , utils::color::rgb2str(Renderer::getInstance().getClearColor()), STUDYPARAM_NUMERIC | STUDYPARAM_DECIMAL | STUDYPARAM_RGBA });
@@ -691,8 +873,10 @@ void HairySlicesStudyScene::setupViews()
 	cam->lookat = glm::vec3(0.f);
 	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
+	float eyeSeparationMeters = m_fEyeSeparationCentimeters / 100.f;
+
 	glm::vec3 COP = cam->pos;
-	glm::vec3 COPOffset = m_bStereo ? glm::vec3(1.f, 0.f, 0.f) * m_fEyeSeparationMeters * 0.5f : glm::vec3(0.f);
+	glm::vec3 COPOffset = m_bStereo ? glm::vec3(1.f, 0.f, 0.f) * eyeSeparationMeters * 0.5f : glm::vec3(0.f);
 
 	// Update eye positions using current head position
 	glm::vec3 leftEyePos = COP - COPOffset;
@@ -744,6 +928,28 @@ void HairySlicesStudyScene::buildScalarPlane()
 	m_rsPlane.hasTransparency = true;
 }
 
+void HairySlicesStudyScene::startTraining()
+{
+	m_bTraining = true;
+
+	m_bShowCosmoBBox = false;
+	m_bShowPlane = false;
+	m_bShowProbe = false;
+	m_pHairySlice->m_bJitterSeeds = true;
+	m_pHairySlice->m_bShowFrame = true;
+	m_pHairySlice->m_bShowGeometry = true;
+	m_pHairySlice->m_bShowGrid = true;
+	m_pHairySlice->m_bShowHalos = false;
+	m_pHairySlice->m_bShowReticule = true;
+	m_pHairySlice->m_bSpinReticule = true;
+	m_pHairySlice->m_bShowSeeds = false;
+	m_pHairySlice->m_bShowTarget = false;
+
+	m_pHairySlice->reseed();
+	randomData();
+	m_pHairySlice->set();
+}
+
 void HairySlicesStudyScene::makeStudyConditions()
 {
 	for (auto &geom : { "CONE", "TUBE", "STREAMLET" })
@@ -768,11 +974,15 @@ void HairySlicesStudyScene::makeStudyConditions()
 
 void HairySlicesStudyScene::startStudy()
 {
+	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
+
 	DataLogger::getInstance().setLogDirectory("/");
 	DataLogger::getInstance().setID(m_strParticipantName);
 	DataLogger::getInstance().openLog(m_strParticipantName);
 	DataLogger::getInstance().setHeader("trial,ipd,geometry,texture,motion,stereo,target.pos.x,target.pos.y,target.pos.z,target.dir.x,target.dir.y,target.dir.z,target.magnitude,probe.x,probe.y,probe.z");
 	DataLogger::getInstance().start();
+
+	m_bTraining = false;
 
 	m_bShowCosmoBBox = false;
 	m_bShowPlane = false;
@@ -824,6 +1034,42 @@ void HairySlicesStudyScene::loadStudyCondition()
 	}
 }
 
+void HairySlicesStudyScene::startBreak()
+{
+	m_pHairySlice->m_bShowGeometry = false;
+	m_pHairySlice->m_bShowFrame = false;
+	m_pHairySlice->m_bShowGrid = false;
+	m_pHairySlice->m_bShowReticule = false;
+
+	loadStudyCondition();
+
+	if (!m_pCurrentCondition)
+	{
+		m_bStudyActive = false;
+		m_bStudyComplete = true;
+
+		DataLogger::getInstance().closeLog();
+	}
+	else
+	{
+		m_bPaused = true;
+		Renderer::getInstance().setClearColor(glm::vec4(0.6f, 0.6f, 0.6f, 1.f));
+	}
+}
+
+void HairySlicesStudyScene::endBreak()
+{
+	m_bPaused = false;
+
+	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
+
+	m_pHairySlice->m_bShowGeometry = true;
+	m_pHairySlice->m_bShowFrame = true;
+	m_pHairySlice->m_bShowGrid = true;
+	m_pHairySlice->m_bShowReticule = true;
+	
+}
+
 void HairySlicesStudyScene::recordResponse()
 {
 	glm::vec3 flowNorm = glm::normalize(m_pHairySlice->m_vec3FlowAtReticule);
@@ -831,7 +1077,7 @@ void HairySlicesStudyScene::recordResponse()
 	std::stringstream ss;
 
 	ss << m_nCurrentTrial << ",";
-	ss << m_fEyeSeparationMeters << ",";
+	ss << m_fEyeSeparationCentimeters << ",";
 	ss << m_pCurrentCondition->geometry << ",";
 	ss << m_pCurrentCondition->texture << ",";
 	ss << m_pCurrentCondition->motion << ",";

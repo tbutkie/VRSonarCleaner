@@ -53,10 +53,14 @@ private:
 	bool m_bShowPlane;
 	bool m_bShowProbe;
 	bool m_bStudyActive;
+	bool m_bTraining;
+	bool m_bPaused;
 	bool m_bStudyComplete;
 
+	bool m_bCalibrated;
+
 	float m_fScreenDiagonalInches;
-	float m_fEyeSeparationMeters;
+	float m_fEyeSeparationCentimeters;
 
 	bool m_bStereo;
 
@@ -85,10 +89,15 @@ private:
 	void setupParameters();
 	void setupViews();
 	void buildScalarPlane();
-	
+
+	void startTraining();
+
 	void makeStudyConditions();
 	void startStudy();
 	void loadStudyCondition();
+
+	void startBreak();
+	void endBreak();
 
 	void recordResponse();
 
