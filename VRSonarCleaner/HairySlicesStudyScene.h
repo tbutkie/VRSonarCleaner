@@ -102,5 +102,7 @@ private:
 	void recordResponse();
 
 	void randomData();
+
+	bool calibrateTracker();
 };
 

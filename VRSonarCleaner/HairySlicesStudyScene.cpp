@@ -162,6 +162,14 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 			{
 				m_bShowProbe = !m_bShowProbe;
 			}
+			
+			if (ev.key.keysym.sym == SDLK_HOME)
+			{
+				if (calibrateTracker())
+					Renderer::getInstance().showMessage("Tracker calibration success!");
+				else
+					Renderer::getInstance().showMessage("ERROR: Tracker calibration FAILED!");
+			}
 
 			if (!(ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
 			{
@@ -535,17 +543,10 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 				if (ev.key.keysym.sym == SDLK_HOME)
 				{
-					if (m_pTDM && m_pTDM->getTracker())
-					{
-						// build coord frame using y axis of tracker for z axis of coordinate frame to match screen
-						glm::vec3 w = glm::normalize(-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
-						glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
-						glm::vec3 v = glm::normalize(glm::cross(w, u));
-						glm::mat3 temp(u, v, w);
-						m_mat4TrackingToScreen = glm::inverse(temp);
-
-						m_bCalibrated = true;
-					}
+					if (calibrateTracker())
+						Renderer::getInstance().showMessage("Tracker calibration success!");
+					else
+						Renderer::getInstance().showMessage("ERROR: Tracker calibration FAILED!");
 				}
 
 				if (ev.key.keysym.sym == SDLK_b)
@@ -1106,4 +1107,23 @@ void HairySlicesStudyScene::randomData()
 	glm::vec3 v = glm::normalize(glm::cross(w, u));
 
 	m_pCosmoVolume->setOrientation(glm::mat3(u, v, w));
+}
+
+bool HairySlicesStudyScene::calibrateTracker()
+{
+	m_bCalibrated = false;
+
+	if (m_pTDM && m_pTDM->getTracker())
+	{
+		// build coord frame using y axis of tracker for z axis of coordinate frame to match screen
+		glm::vec3 w = glm::normalize(-m_pTDM->getTracker()->getDeviceToWorldTransform()[1]);
+		glm::vec3 u = glm::normalize(glm::cross(glm::vec3(0.f, 1.f, 0.f), w));
+		glm::vec3 v = glm::normalize(glm::cross(w, u));
+		glm::mat3 temp(u, v, w);
+		m_mat4TrackingToScreen = glm::inverse(temp);
+
+		m_bCalibrated = true;
+	}
+
+	return m_bCalibrated;
 }
