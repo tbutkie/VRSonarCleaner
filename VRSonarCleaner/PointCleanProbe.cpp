@@ -59,7 +59,7 @@ void PointCleanProbe::draw()
 	glm::mat4 scl = glm::scale(glm::mat4(), glm::vec3(m_fProbeRadius));
 	glm::mat4 rot;
 
-	glm::vec4 diffCol = glm::mix(glm::vec4(0.125f, 0.125f, 0.125f, 1.f), glm::vec4(0.502f, 0.125f, 0.125f, 1.f), m_pController->getTriggerPullAmount());
+	glm::vec4 diffCol = glm::mix(glm::vec4(0.825f, 0.825f, 0.825f, 1.f), glm::vec4(0.702f, 0.125f, 0.125f, 1.f), m_pController->getTriggerPullAmount());
 	glm::vec4 specColor = m_bProbeActive ? glm::vec4(0.f, 0.f, 1.f, 1.f) : glm::vec4(1.f);
 	float specExp = 130.f;
 

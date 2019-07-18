@@ -1,6 +1,7 @@
 #include "FishTankSonarScene.h"
 #include "BehaviorManager.h"
 #include "GrabObjectBehavior.h"
+#include "ScaleDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
 #include <gtc/quaternion.hpp>
 #include "utilities.h"
@@ -10,6 +11,9 @@
 FishTankSonarScene::FishTankSonarScene(TrackedDeviceManager* pTDM, float screenDiagInches)
 	: m_pTDM(pTDM)
 	, m_bHeadTracking(false)
+	, m_bStereo(true)
+	, m_bEditMode(false)
+	, m_fEyeSeparationCentimeters(6.2f)
 	, m_pTableVolume(NULL)
 	, m_vec3COPOffsetTrackerSpace(0.00420141f, -0.0414f, 0.0778124f)
 	, m_bInitialColorRefresh(false)
@@ -36,32 +40,8 @@ void FishTankSonarScene::init()
 	calcWorldToScreen();
 
 	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
-	
-	Renderer::Camera* cam = Renderer::getInstance().getCamera();
-	cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;// +glm::normalize(glm::cross(m_vec3ScreenNormal, m_vec3ScreenUp)) * 0.1f + m_vec3ScreenUp * 0.2f;
-	cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-	cam->up = glm::vec3(0.f, 1.f, 0.f);
 
-	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
-
-	float sizer = m_fScreenDiagonalMeters / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
-
-	m_vec2ScreenSizeMeters.x = winSize.x * sizer;
-	m_vec2ScreenSizeMeters.y = winSize.y * sizer;
-
-	Renderer::SceneViewInfo* sviMono = Renderer::getInstance().getMonoInfo();
-
-	sviMono->nearClip = 0.01f;
-	sviMono->farClip = 10.f;
-	sviMono->m_nRenderWidth = winSize.x;
-	sviMono->m_nRenderHeight = winSize.y;
-	sviMono->view = glm::lookAt(
-		glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->pos, 1.f)),
-		glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->lookat, 1.f)),
-		glm::vec3(m_mat4WorldToScreen * glm::vec4(cam->up, 0.f))
-	);
-	sviMono->projection = utils::getViewingFrustum(m_mat4WorldToScreen * glm::vec4(cam->pos, 1.f), m_vec3ScreenCenter, m_vec3ScreenNormal, m_vec3ScreenUp, m_vec2ScreenSizeMeters);
-	sviMono->viewport = glm::ivec4(0, 0, sviMono->m_nRenderWidth, sviMono->m_nRenderHeight);
+	setupViews();
 
 	m_pTableVolume = new DataVolume(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (0.39f / 2.f), m_mat4ScreenToWorld, glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
 	m_pTableVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
@@ -101,11 +81,32 @@ void FishTankSonarScene::processSDLEvent(SDL_Event & ev)
 {
 	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
 	{		
-		if (ev.key.keysym.sym == SDLK_h)
+		if (m_bEditMode && ev.key.keysym.sym == SDLK_h)
 		{
 			m_bHeadTracking = !m_bHeadTracking;
 			Renderer::getInstance().showMessage("Head tracking set to " + std::to_string(m_bHeadTracking));
-		}		
+		}
+
+		if (ev.key.keysym.sym == SDLK_r)
+		{
+			m_pTableVolume->setPosition(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f));
+			m_pTableVolume->setOrientation(m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+			m_pTableVolume->setDimensions(glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
+
+			for (auto &cloud : m_vpClouds)
+				cloud->resetAllMarks();			
+		}
+
+		if (m_bEditMode && ev.key.keysym.sym == SDLK_s)
+		{
+			m_bStereo = !m_bStereo;
+		}
+
+		if (ev.key.keysym.sym == SDLK_HOME)
+		{
+			m_bEditMode = !m_bEditMode;
+			Renderer::getInstance().showMessage("Edit mode set to " + std::to_string(m_bEditMode));
+		}
 	}
 }
 
@@ -117,7 +118,7 @@ void FishTankSonarScene::update()
 	{
 		m_pTDM->getPrimaryController()->hideRenderModel();
 
-		if (m_pTDM->getPrimaryController()->justPressedTouchpad())
+		if (m_bEditMode && m_pTDM->getPrimaryController()->justPressedTouchpad())
 		{
 			glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
 			glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter - m_pTDM->getPrimaryController()->c_vec4HoleNormal));
@@ -132,6 +133,14 @@ void FishTankSonarScene::update()
 
 			m_pTableVolume->setPosition(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f));
 			m_pTableVolume->setOrientation(m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+			m_pTableVolume->setDimensions(glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
+		}
+
+		if (!BehaviorManager::getInstance().getBehavior("pointclean"))
+		{
+			auto pcp = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume);		
+			BehaviorManager::getInstance().addBehavior("pointclean", pcp);
+			pcp->activateDemoMode();
 		}
 	}
 
@@ -145,6 +154,9 @@ void FishTankSonarScene::update()
 			glm::vec4 eyeCenterTrackerSpace = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * ctrTrans[3];
 			std::cout << "Tracker to Center of Projection Offset: (" << m_mat4TrackerToEyeCenterOffset[3].x << ", " << m_mat4TrackerToEyeCenterOffset[3].y << ", " << m_mat4TrackerToEyeCenterOffset[3].z << ")" << std::endl;
 		}
+
+		if (!BehaviorManager::getInstance().getBehavior("grab"))
+			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
 	}
 	
 	if (m_pTDM->getTracker())
@@ -158,23 +170,13 @@ void FishTankSonarScene::update()
 		}
 	}
 
-	Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
+	if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
+	{
+		if (!BehaviorManager::getInstance().getBehavior("scale"))
+			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+	}
 
-	svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
-
-	svi->projection = utils::getViewingFrustum(
-		m_mat4WorldToScreen * glm::vec4(cam->pos, 1.f),
-		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenCenter, 1.f),
-		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenNormal, 0.f),
-		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenUp, 0.f),
-		m_vec2ScreenSizeMeters
-	);
-
-	if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("pointclean"))
-		BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume));
-
-	if (!BehaviorManager::getInstance().getBehavior("grab"))
-		BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
+	setupViews();
 
 	for (auto &cloud : m_vpClouds)
 		cloud->update();
@@ -312,4 +314,54 @@ void FishTankSonarScene::refreshColorScale(ColorScaler * colorScaler, std::vecto
 	// apply new color scale
 	for (auto &cloud : clouds)
 		cloud->resetAllMarks();
+}
+
+void FishTankSonarScene::setupViews()
+{
+	Renderer::Camera* cam = Renderer::getInstance().getCamera();
+	cam->up = glm::vec3(0.f, 1.f, 0.f);
+
+	float eyeSeparationMeters = m_fEyeSeparationCentimeters / 100.f;
+
+	glm::vec3 COP = cam->pos;
+	glm::vec3 COPOffset = m_bStereo ? glm::vec3(1.f, 0.f, 0.f) * eyeSeparationMeters * 0.5f : glm::vec3(0.f);
+
+	// Update eye positions using current head position
+	glm::vec3 leftEyePos = COP - COPOffset;
+	glm::vec3 leftEyeLook = leftEyePos - glm::dot(leftEyePos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+	glm::vec3 rightEyePos = COP + COPOffset;
+	glm::vec3 rightEyeLook = rightEyePos - glm::dot(rightEyeLook - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+	
+	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
+
+	float sizer = m_fScreenDiagonalMeters / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+	
+	m_vec2ScreenSizeMeters.x = winSize.x * sizer;
+	m_vec2ScreenSizeMeters.y = winSize.y * sizer;
+
+	Renderer::getInstance().setStereoRenderSize(winSize);
+
+	Renderer::SceneViewInfo* sviLE = Renderer::getInstance().getLeftEyeInfo();
+	sviLE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
+	sviLE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
+	sviLE->view = glm::lookAt(leftEyePos, leftEyeLook, cam->up);
+	sviLE->projection = utils::getViewingFrustum(
+		m_mat4WorldToScreen * glm::vec4(leftEyePos, 1.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenCenter, 1.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenNormal, 0.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenUp, 0.f),
+		m_vec2ScreenSizeMeters);
+	sviLE->viewport = glm::ivec4(0, 0, sviLE->m_nRenderWidth, sviLE->m_nRenderHeight);
+
+	Renderer::SceneViewInfo* sviRE = Renderer::getInstance().getRightEyeInfo();
+	sviRE->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
+	sviRE->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
+	sviRE->view = glm::lookAt(rightEyePos, rightEyeLook, cam->up);
+	sviRE->projection = utils::getViewingFrustum(
+		m_mat4WorldToScreen * glm::vec4(rightEyePos, 1.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenCenter, 1.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenNormal, 0.f),
+		m_mat4WorldToScreen * glm::vec4(m_vec3ScreenUp, 0.f),
+		m_vec2ScreenSizeMeters);
+	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 }

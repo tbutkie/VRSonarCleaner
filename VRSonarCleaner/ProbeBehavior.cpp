@@ -20,7 +20,7 @@ ProbeBehavior::ProbeBehavior(ViveController* pController, DataVolume* dataVolume
 	, m_fProbeRadius(0.005f)
 	, m_fProbeRadiusMin(0.005f)
 	, m_fProbeRadiusMax(0.25f)
-	, m_vec4ProbeColorDiff(glm::vec4(0.125f, 0.125f, 0.125f, 1.f))
+	, m_vec4ProbeColorDiff(glm::vec4(0.825f, 0.825f, 0.825f, 1.f))
 	, m_vec4ProbeColorSpec(glm::vec4(1.f))
 	, m_fProbeColorSpecExp(32.f)
 	, m_vec4ProbeActivateColorDiff(m_vec4ProbeColorDiff)
@@ -68,8 +68,8 @@ void ProbeBehavior::enable()
 
 void ProbeBehavior::activateDemoMode()
 {
-	m_fProbeOffset = m_fProbeOffsetMin = m_fProbeOffsetMax = 0.1f;
-	m_fProbeRadius = m_fProbeRadiusMin = m_fProbeRadiusMax = 0.05f;
+	m_fProbeOffset = m_fProbeOffsetMin = m_fProbeOffsetMax = 0.25f;
+	m_fProbeRadius = m_fProbeRadiusMin = m_fProbeRadiusMax = 0.01f;
 }
 
 void ProbeBehavior::deactivateDemoMode()

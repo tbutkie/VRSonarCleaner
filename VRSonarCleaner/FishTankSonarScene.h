@@ -43,7 +43,10 @@ private:
 
 	glm::mat4 m_mat4TrackerToEyeCenterOffset;
 
+	bool m_bEditMode;
 	bool m_bHeadTracking;
+	bool m_bStereo;
+	float m_fEyeSeparationCentimeters;
 
 	DataVolume *m_pTableVolume;
 
@@ -56,4 +59,5 @@ private:
 private:
 	void calcWorldToScreen();
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
+	void setupViews();
 };
