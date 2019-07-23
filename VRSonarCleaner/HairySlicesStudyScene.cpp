@@ -43,6 +43,9 @@ void HairySlicesStudyScene::init()
 {
 	srand(time(0)); // set random seed for std::random_shuffle()
 
+	// Hide cursor on screen
+	SDL_ShowCursor(0);
+
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 	Renderer::getInstance().toggleSkybox();
 	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));

@@ -56,7 +56,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_gradient_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_gradient_static.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_animated", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_animated.frag" }, true);
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
-	Renderer::getInstance().addShader("grid", { "resources/shaders/grid.vert", "resources/shaders/grid.frag" }, true);
+	Renderer::getInstance().addShader("grid", { "resources/shaders/grid.vert", "resources/shaders/grid.frag" } );
 	
 	buildReticule();
 	reseed();
@@ -533,20 +533,20 @@ void HairySlice::buildStreamTubes(float radius)
 	//if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
-		glBindVertexArray(this->m_glVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+		glBindVertexArray(m_glVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rs.VAO = m_glVAO;
@@ -562,20 +562,20 @@ void HairySlice::buildStreamTubes(float radius)
 	//if (!m_glHaloVAO)
 	{
 		glGenVertexArrays(1, &m_glHaloVAO);
-		glBindVertexArray(this->m_glHaloVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glHaloVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+		glBindVertexArray(m_glHaloVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER,m_glHaloVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
 
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rsHalo.VAO = m_glHaloVAO;
@@ -736,20 +736,21 @@ void HairySlice::buildStreamCones(float radius)
 	//if (!m_glVAO)
 	{
 		glGenVertexArrays(1, &m_glVAO);
-		glBindVertexArray(this->m_glVAO);
-		// Load data into vertex buffers
-		glBindBuffer(GL_ARRAY_BUFFER, this->m_glVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
 
-		// Set the vertex attribute pointers
-		glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
-		glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
-		glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
-		glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
-		glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
-		glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
-		glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
-		glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
+		glBindVertexArray(m_glVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(NORMAL_ATTRIB_LOCATION);
+			glVertexAttribPointer(NORMAL_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, n));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+			glEnableVertexAttribArray(TEXCOORD_ATTRIB_LOCATION);
+			glVertexAttribPointer(TEXCOORD_ATTRIB_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, t));
 		glBindVertexArray(0);
 
 		m_rs.VAO = m_glVAO;

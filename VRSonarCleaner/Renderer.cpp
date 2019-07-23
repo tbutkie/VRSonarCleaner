@@ -946,7 +946,7 @@ void Renderer::processRenderQueue(std::vector<RendererSubmission> &renderQueue)
 			glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_BINDING);
 			glBindTextureUnit(SPECULAR_TEXTURE_BINDING, m_mapTextures[i.specularTexName]->getTexture());
 
-			if (i.specularExponent > 0.f)
+			if (i.specularExponent > 0.f && i.shaderName.compare("flat"))
 				glUniform1f(MATERIAL_SHININESS_UNIFORM_LOCATION, i.specularExponent);
 
 			glFrontFace(i.vertWindingOrder);
