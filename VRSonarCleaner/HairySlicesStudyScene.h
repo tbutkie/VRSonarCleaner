@@ -46,14 +46,13 @@ private:
 	CosmoVolume* m_pCosmoVolume;
 
 	HairySlice* m_pHairySlice;
-	
-	Renderer::RendererSubmission m_rsPlane;
 
 	bool m_bShowCosmoBBox;
-	bool m_bShowPlane;
 	bool m_bShowProbe;
 	bool m_bStudyActive;
 	bool m_bTraining;
+	bool m_bShowCondition;
+	bool m_bShowError;
 	bool m_bPaused;
 	bool m_bStudyComplete;
 
@@ -88,7 +87,6 @@ private:
 private:
 	void setupParameters();
 	void setupViews();
-	void buildScalarPlane();
 
 	void startTraining();
 

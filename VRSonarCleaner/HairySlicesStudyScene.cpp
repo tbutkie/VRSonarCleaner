@@ -13,10 +13,11 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	, m_pCosmoVolume(NULL)
 	, m_pHairySlice(NULL)
 	, m_bShowCosmoBBox(true)
-	, m_bShowPlane(false)
 	, m_bShowProbe(false)
 	, m_bStudyActive(false)
 	, m_bTraining(false)
+	, m_bShowCondition(false)
+	, m_bShowError(false)
 	, m_bPaused(false)
 	, m_bStudyComplete(false)
 	, m_bCalibrated(false)
@@ -43,6 +44,8 @@ void HairySlicesStudyScene::init()
 {
 	srand(time(0)); // set random seed for std::random_shuffle()
 
+	SDL_ShowCursor(0);
+
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 	Renderer::getInstance().toggleSkybox();
 	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
@@ -59,7 +62,6 @@ void HairySlicesStudyScene::init()
 	
 	setupViews();
 	setupParameters();
-	buildScalarPlane();
 }
 
 void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
@@ -180,7 +182,10 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 			if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
 			{
-				startStudy();
+				if (!m_bCalibrated && m_pTDM)
+					Renderer::getInstance().showMessage("Please make sure the tracking probe is calibrated to the monitor!");
+				else
+					startStudy();
 			}
 		}
 	}
@@ -554,16 +559,20 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					Renderer::getInstance().toggleSkybox();
 				}
 
-				if (ev.key.keysym.sym == SDLK_c)
-				{
-					m_bShowPlane = !m_bShowPlane;
-					Renderer::getInstance().showMessage("Scalar plane set to " + std::to_string(m_bShowPlane));
-				}
-
 				if (ev.key.keysym.sym == SDLK_f)
 				{
 					m_pHairySlice->m_bShowFrame = !m_pHairySlice->m_bShowFrame;
 					Renderer::getInstance().showMessage("Frame visibility set to " + std::to_string(m_pHairySlice->m_bShowFrame));
+				}
+
+				if (ev.key.keysym.sym == SDLK_e)
+				{
+					m_bShowError = !m_bShowError;
+				}
+
+				if (ev.key.keysym.sym == SDLK_c)
+				{
+					m_bShowCondition = !m_bShowCondition;
 				}
 
 				if (ev.key.keysym.sym == SDLK_g)
@@ -669,9 +678,7 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 						Renderer::getInstance().showMessage("Please set participant name using (n) before starting training!");
 					else if (m_fEyeSeparationCentimeters == 0.f)
 						Renderer::getInstance().showMessage("Please measure and set participant IPD using (i) before starting training!");
-					else if (!m_bCalibrated && m_pTDM)
-						Renderer::getInstance().showMessage("Please make sure the tracking probe is calibrated to the monitor!");
-					else
+					else 
 						startTraining();
 				}
 			}
@@ -717,59 +724,66 @@ void HairySlicesStudyScene::draw()
 
 	if (m_bTraining)
 	{
-		std::stringstream ss;
-		ss << "Geometry: " << m_pHairySlice->getGeomStyle() << std::endl;
-		ss << "Texture: " << ( m_pHairySlice->getShaderName().find("static") != std::string::npos ? "Static" : "Animated" )<< std::endl;
-		ss << "Stereo 3D: " << (m_bStereo ? "On" : "Off") << std::endl;
-		ss << "Motion: " << (m_pHairySlice->m_bOscillate ? "On" : "Off");
 
-		Renderer::getInstance().drawUIText(
-			ss.str(),
-			glm::vec4(1.f),
-			glm::vec3(0.f, Renderer::getInstance().getUIRenderSize().y, 0.f),
-			glm::quat(),
-			Renderer::getInstance().getUIRenderSize().y / 5.f,
-			Renderer::HEIGHT,
-			Renderer::LEFT,
-			Renderer::TOP_LEFT
-		);
+		if (m_bShowCondition)
+		{
+			std::stringstream ss;
 
-		ss.str("");
-		ss.clear();
+			ss << "Geometry: " << m_pHairySlice->getGeomStyle() << std::endl;
+			ss << "Texture: " << (m_pHairySlice->getShaderName().find("static") != std::string::npos ? "Static" : "Animated") << std::endl;
+			ss << "Stereo 3D: " << (m_bStereo ? "On" : "Off") << std::endl;
+			ss << "Motion: " << (m_pHairySlice->m_bOscillate ? "On" : "Off");
 
-		ss.precision(2);
+			Renderer::getInstance().drawUIText(
+				ss.str(),
+				glm::vec4(1.f),
+				glm::vec3(0.f, Renderer::getInstance().getUIRenderSize().y, 0.f),
+				glm::quat(),
+				Renderer::getInstance().getUIRenderSize().y / 5.f,
+				Renderer::HEIGHT,
+				Renderer::LEFT,
+				Renderer::TOP_LEFT
+			);
+		}
 
-		float accuracy = glm::degrees(glm::acos(glm::dot(glm::normalize(m_pHairySlice->m_vec3FlowAtReticule), m_vec3ProbeDirection)));
-		bool flipped = accuracy > 90.f;
-		
-		ss << "Error: " << std::fixed << accuracy << "deg";
+		if (m_bShowError)
+		{
+			std::stringstream ss;
 
-		if (flipped)
-			ss << " (REVERSED)";
+			ss.precision(2);
 
-		glm::vec3 accuracyTextColor;
+			float accuracy = glm::degrees(glm::acos(glm::dot(glm::normalize(m_pHairySlice->m_vec3FlowAtReticule), m_vec3ProbeDirection)));
+			bool flipped = accuracy > 90.f;
 
-		if (accuracy < 10.f)
-			accuracyTextColor = glm::mix(glm::vec3(0.f, 1.f, 0.f), glm::vec3(1.f, 1.f, 0.f), glm::mod(accuracy, 10.f) / 10.f);
-		else if (accuracy < 20.f)
-			accuracyTextColor = glm::mix(glm::vec3(1.f, 1.f, 0.f), glm::vec3(1.f, 0.5f, 0.f), glm::mod(accuracy - 10.f, 10.f) / 10.f);
-		else if (accuracy < 50.f)
-			accuracyTextColor = glm::mix(glm::vec3(1.f, 0.5f, 0.f), glm::vec3(1.f, 0.f, 0.f), glm::mod(accuracy - 20.f, 30.f) / 30.f);
-		else if (accuracy < 90.f)
-			accuracyTextColor = glm::mix(glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.1f, 0.1f, 0.1f), glm::mod(accuracy - 50.f, 40.f) / 40.f);
-		else
-			accuracyTextColor = glm::vec3(0.1f, 0.1f, 0.1f);
+			ss << "Error: " << std::fixed << accuracy << "deg";
 
-		Renderer::getInstance().drawUIText(
-			ss.str(),
-			glm::vec4(accuracyTextColor, 1.f),
-			glm::vec3(0.f),
-			glm::quat(),
-			Renderer::getInstance().getUIRenderSize().y / 10.f,
-			Renderer::HEIGHT,
-			Renderer::LEFT,
-			Renderer::BOTTOM_LEFT
-		);
+			if (flipped)
+				ss << " (REVERSED)";
+
+			glm::vec3 accuracyTextColor;
+
+			if (accuracy < 10.f)
+				accuracyTextColor = glm::mix(glm::vec3(0.f, 1.f, 0.f), glm::vec3(1.f, 1.f, 0.f), glm::mod(accuracy, 10.f) / 10.f);
+			else if (accuracy < 20.f)
+				accuracyTextColor = glm::mix(glm::vec3(1.f, 1.f, 0.f), glm::vec3(1.f, 0.5f, 0.f), glm::mod(accuracy - 10.f, 10.f) / 10.f);
+			else if (accuracy < 50.f)
+				accuracyTextColor = glm::mix(glm::vec3(1.f, 0.5f, 0.f), glm::vec3(1.f, 0.f, 0.f), glm::mod(accuracy - 20.f, 30.f) / 30.f);
+			else if (accuracy < 90.f)
+				accuracyTextColor = glm::mix(glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.1f, 0.1f, 0.1f), glm::mod(accuracy - 50.f, 40.f) / 40.f);
+			else
+				accuracyTextColor = glm::vec3(0.1f, 0.1f, 0.1f);
+
+			Renderer::getInstance().drawUIText(
+				ss.str(),
+				glm::vec4(accuracyTextColor, 1.f),
+				glm::vec3(0.f),
+				glm::quat(),
+				Renderer::getInstance().getUIRenderSize().y / 10.f,
+				Renderer::HEIGHT,
+				Renderer::LEFT,
+				Renderer::BOTTOM_LEFT
+			);
+		}
 	}
 
 	if (m_bPaused)
@@ -829,11 +843,6 @@ void HairySlicesStudyScene::draw()
 			Renderer::CENTER_MIDDLE
 		);
 	}
-	
-	m_rsPlane.modelToWorldTransform = m_pCosmoVolume->getTransformRawDomainToVolume();
-
-	if (m_bShowPlane)
-		Renderer::getInstance().addToDynamicRenderQueue(m_rsPlane);
 
 	if (m_bShowProbe)
 		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
@@ -911,31 +920,14 @@ void HairySlicesStudyScene::setupViews()
 	sviRE->viewport = glm::ivec4(0, 0, sviRE->m_nRenderWidth, sviRE->m_nRenderHeight);
 }
 
-void HairySlicesStudyScene::buildScalarPlane()
-{
-	CosmoGrid* cgrid = static_cast<CosmoGrid*>(m_pCosmoVolume->getDatasets()[0]);
-
-	m_rsPlane.VAO = Renderer::getInstance().getPrimitiveVAO();;
-	m_rsPlane.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quaddouble");
-	m_rsPlane.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quaddouble");
-	m_rsPlane.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quaddouble");
-	m_rsPlane.glPrimitiveType = GL_TRIANGLES;
-	m_rsPlane.shaderName = "cosmo";
-	m_rsPlane.indexType = GL_UNSIGNED_SHORT;
-	m_rsPlane.diffuseColor = glm::vec4(cgrid->getMaxVelocity(), cgrid->getMaxDensity(), cgrid->getMaxH2IIDensity(), cgrid->getMaxTemperature());
-	m_rsPlane.specularColor = glm::vec4(cgrid->getMinVelocity(), cgrid->getMinDensity(), cgrid->getMinH2IIDensity(), cgrid->getMinTemperature());
-	m_rsPlane.diffuseTexName = "vectorfield";
-	m_rsPlane.specularTexName = "vectorfieldattributes";
-	m_rsPlane.hasTransparency = true;
-}
-
 void HairySlicesStudyScene::startTraining()
 {
 	m_bTraining = true;
 
 	m_bShowCosmoBBox = false;
-	m_bShowPlane = false;
 	m_bShowProbe = false;
+	m_bShowCondition = false;
+	m_bShowError = false;
 	m_pHairySlice->m_bJitterSeeds = true;
 	m_pHairySlice->m_bShowFrame = true;
 	m_pHairySlice->m_bShowGeometry = true;
@@ -986,8 +978,9 @@ void HairySlicesStudyScene::startStudy()
 	m_bTraining = false;
 
 	m_bShowCosmoBBox = false;
-	m_bShowPlane = false;
 	m_bShowProbe = false;
+	m_bShowCondition = false;
+	m_bShowError = false;
 	m_pHairySlice->m_bJitterSeeds = true;
 	m_pHairySlice->m_bShowFrame = true;
 	m_pHairySlice->m_bShowGeometry = true;

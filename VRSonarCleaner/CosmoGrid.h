@@ -25,21 +25,6 @@ class CosmoGrid : public Dataset
 		float getMaxVelocity();
 		float getAvgVelocity();
 
-		float getDensityAt(glm::vec3 pos);
-		float getMinDensity();
-		float getMaxDensity();
-		float getAvgDensity();
-
-		float getH2IIDensityAt(glm::vec3 pos);
-		float getMinH2IIDensity();
-		float getMaxH2IIDensity();
-		float getAvgH2IIDensity();
-
-		float getTemperstureAt(glm::vec3 pos);
-		float getMinTemperature();
-		float getMaxTemperature();
-		float getAvgTemperature();
-
 		bool contains(glm::vec3 pos);
 
 		//bbox access:
@@ -62,7 +47,6 @@ class CosmoGrid : public Dataset
 		
 public:
 		void setPointUVWValue(int x, int y, int z, float u, float v, float w);
-		void setPointValue(int x, int y, int z, float **arr, float val);
 		int gridIndex(int xInd, int yInd, int zInd);
 		float trilinear(float** arr, glm::vec3 pos);
 
@@ -81,15 +65,6 @@ public:
 		float* m_arrfWValues;
 		float* m_arrfVelocityValues;	
 		float m_fMinVelocity, m_fMaxVelocity, m_fAvgVelocity;
-		float* m_arrfDensityValues;
-		float m_fMinDensity, m_fMaxDensity, m_fAvgDensity;
-		float* m_arrfH2IIDensityValues;
-		float m_fMinH2IIDensity, m_fMaxH2IIDensity, m_fAvgH2IIDensity;
-		float* m_arrfTemperatureValues;
-		float m_fMinTemperature, m_fMaxTemperature, m_fAvgTemperature;
-
-		GLuint m_glVectorTex;
-		GLuint m_glAttribTex;
 
 		char m_strName[512];
 };
