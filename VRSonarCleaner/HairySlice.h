@@ -1,6 +1,7 @@
 #pragma once
 #include "CosmoVolume.h"
 #include <random>
+#include <queue>
 
 class HairySlice
 {
@@ -41,10 +42,19 @@ private:
 	bool m_bOscillate;
 	bool m_bJitterSeeds;
 
+	float m_fLastUpdate;
+
 	CosmoVolume* m_pCosmoVolume;
 
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
 	std::vector<glm::vec3> m_vvec3StreamlineSeeds;
+
+	unsigned int m_nParticleCount;
+	float m_fParticleLifetime;
+	float m_fParticleDeathTime;
+	float* m_arrfParticleLives;
+	std::deque<std::pair<int, float>> m_qpDyingParticles;
+	std::queue<int> m_qiDeadParticles;
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
@@ -94,8 +104,8 @@ private:
 	glm::vec3 randomSeedOnPlane();
 	glm::vec3 randomPointOnPlane();
 	void sampleCuttingPlane();
-	void sampleVolume(unsigned int gridRes = 10u);
 	void rebuildGeometry();
+	void buildStreamLines();
 	void buildStreamTubes(float radius);
 	void buildStreamCones(float radius);
 	void buildReticule();

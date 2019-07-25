@@ -5,6 +5,7 @@ using namespace std::chrono_literals;
 
 HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	: m_pCosmoVolume(cosmoVolume)
+	, m_fLastUpdate(Renderer::getInstance().getElapsedSeconds())
 	, m_glVBO(0)
 	, m_glEBO(0)
 	, m_glVAO(0)
@@ -30,6 +31,10 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_fRK4StopVelocity(0.f)
 	, m_uiRK4MaxPropagation_OneWay(10u)
 	, m_fHaloRadiusFactor(2.f)
+	, m_arrfParticleLives(NULL)
+	, m_nParticleCount(0)
+	, m_fParticleLifetime(2.f)
+	, m_fParticleDeathTime(0.5f)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
 	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
@@ -44,7 +49,8 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_vstrGeomStyleNames({
 		"STREAMLET",
 		"TUBE",
-		"CONE"
+		"CONE",
+		"LINE"
 		})
 	, m_iCurrentGeomStyle(2)
 {
@@ -58,6 +64,8 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	Renderer::getInstance().addShader("streamline_ring_static", { "resources/shaders/streamline.vert", "resources/shaders/streamline_ring_static.frag" }, true);
 	Renderer::getInstance().addShader("grid", { "resources/shaders/grid.vert", "resources/shaders/grid.frag" }, true);
 	
+	glLineWidth(2.f);
+
 	buildReticule();
 	reseed();
 	set();
@@ -71,6 +79,11 @@ HairySlice::~HairySlice()
 
 void HairySlice::update()
 {
+	float tick = Renderer::getInstance().getElapsedSeconds();
+	float elapsedTime = tick - m_fLastUpdate;
+	m_fLastUpdate = tick;
+
+
 	float oscTimeMS = m_fOscTime * 1000.f;
 
 	float ratio = glm::mod(Renderer::getInstance().getElapsedMilliseconds(), oscTimeMS) / oscTimeMS;
@@ -96,6 +109,46 @@ void HairySlice::update()
 			glUseProgram(*shaderHandle);
 			glUniform1f(glGetUniformLocation(*shaderHandle, "nStreamLineSegments"), (m_uiRK4MaxPropagation_OneWay * 2.f));
 		}
+	}
+
+	// Deal with particles
+	{
+		// Take care of dying particles which are now dead
+		{
+			for (auto &p : m_qpDyingParticles)
+				p.second -= elapsedTime;
+
+			while (!m_qpDyingParticles.empty() && m_qpDyingParticles.front().second < 0.f)
+			{
+				m_qiDeadParticles.push(m_qpDyingParticles.front().first);
+				m_qpDyingParticles.pop_front();
+			}
+		}
+
+		// Tick all living particles
+		for (int i = 0; i < m_nParticleCount; ++i)
+		{
+			float* p = &m_arrfParticleLives[i];
+
+			if (*p < 0.f)
+				continue;
+
+			*p -= elapsedTime;
+
+			if (*p < 0.f)
+			{
+				*p = -1.f;
+				m_qpDyingParticles.push_back(std::make_pair(i, m_fParticleDeathTime));
+			}
+		}
+
+
+		while (!m_qiDeadParticles.empty())
+		{
+			m_arrfParticleLives[m_qiDeadParticles.front()] = m_fParticleLifetime;
+			m_qiDeadParticles.pop();
+		}
+
 	}
 }
 
@@ -164,10 +217,41 @@ void HairySlice::draw()
 		rs.indexType = GL_UNSIGNED_SHORT;
 		rs.hasTransparency = true;
 
-		m_rsReticule.transparencySortPosition = glm::vec4(0.f, 0.f, 100.f, 1.f);
+		m_rsReticule.transparencySortPosition = glm::vec4(0.f, 0.f, 50.f, 1.f);
 		rs.transparencySortPosition = glm::vec4(0.f, 0.f, -100.f, 1.f);
+		//m_rs.transparencySortPosition = glm::vec4(0.f, 0.f, 100.f, 1.f);
 
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
+	}
+
+	// Particles
+	{
+		for (int i = 0; i < m_nParticleCount; ++i)
+		{
+			if (m_arrfParticleLives[i] < 0.f)
+				continue;
+
+			float ratio = 1.f - m_arrfParticleLives[i] / m_fParticleLifetime;
+
+			auto sl = m_vvvec3RawStreamlines[i];
+
+			int segmentEndIndex = floor(ratio * sl.size());
+
+			float leftover = (ratio * sl.size()) - static_cast<float>(segmentEndIndex);
+
+			glm::vec3 segmentDir = sl[segmentEndIndex] - sl[segmentEndIndex - 1];
+
+			glm::vec3 pos = sl[segmentEndIndex - 1] + segmentDir * leftover;
+
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::vec4(1.f));
+		}
+
+		for (auto &p : m_qpDyingParticles)
+		{
+			glm::vec3 pos = m_vvvec3RawStreamlines[p.first].back();
+			float ratio = p.second / m_fParticleDeathTime;
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f) * ratio), glm::vec4(1.f));
+		}
 	}
 }
 
@@ -328,31 +412,30 @@ void HairySlice::sampleCuttingPlane()
 			vert = m_pCosmoVolume->getTransformRawDomainToVolume() * glm::vec4(vert, 1.f);
 
 		m_vvvec3RawStreamlines.push_back(rev);
-	}	
-}
+	}
+	
+	// reset particle seeds
+	{
+		if (m_arrfParticleLives)
+		{
+			delete m_arrfParticleLives;
+			m_arrfParticleLives = NULL;
+		}
 
-void HairySlice::sampleVolume(unsigned int gridRes)
-{
-	m_vvvec3RawStreamlines.clear();
-	m_vvec3StreamlineSeeds.clear();
+		m_nParticleCount = m_vvvec3RawStreamlines.size();
+		auto bufSize = sizeof(float) * m_nParticleCount;
 
-	for (int i = 0; i < gridRes; ++i)
-		for (int j = 0; j < gridRes; ++j)
-			for (int k = 0; k < gridRes; ++k)
-			{
-				glm::vec3 seedPos((1.f / (gridRes + 1)) + glm::vec3(i, j, k) * (1.f / (gridRes + 1)));
-				std::vector<glm::vec3> fwd = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity);
-				std::vector<glm::vec3> rev = m_pCosmoVolume->getStreamline(seedPos, m_fRK4StepSize, m_uiRK4MaxPropagation_OneWay, m_fRK4StopVelocity, true);
-				std::reverse(rev.begin(), rev.end());
-				rev.insert(rev.end(), fwd.begin() + 1, fwd.end());
+		m_arrfParticleLives = (float*)malloc(bufSize);
 
-				m_vvvec3RawStreamlines.push_back(rev);
+		m_qpDyingParticles = std::deque<std::pair<int, float>>();
+		m_qiDeadParticles = std::queue<int>();
 
-				for (auto &vert : rev)
-					vert = m_pCosmoVolume->getTransformRawDomainToVolume() * glm::vec4(vert, 1.f);
-
-				m_vvec3StreamlineSeeds.push_back(seedPos);
-			}
+		for (int i = 0; i < m_vvec3StreamlineSeeds.size(); ++i)
+		{
+			m_arrfParticleLives[i] = -1.f;
+			m_qiDeadParticles.push(i);
+		}
+	}
 }
 
 void HairySlice::rebuildGeometry()
@@ -370,9 +453,86 @@ void HairySlice::rebuildGeometry()
 	case 2:
 		buildStreamCones(m_fTubeRadius);
 		break;
+	case 3:
+		buildStreamLines();
+		break;
 	default:
 		break;
 	}
+}
+
+void HairySlice::buildStreamLines()
+{
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec4 c; // color
+	};
+
+	std::vector<PrimVert> verts;
+	std::vector<GLuint> inds;
+	int currentInd = 0;
+	for (auto &sl : m_vvvec3RawStreamlines)
+	{
+		size_t slSize = sl.size();
+
+		if (slSize < 2)
+			continue;
+
+		currentInd = verts.size();
+
+		for (int i = 0; i < slSize - 1; ++i)
+		{
+			float ratio = i / static_cast<float>(slSize - 1);
+			verts.push_back({ sl[i] , glm::vec4(glm::mix(glm::vec3(0.4f), glm::vec3(1.f), ratio), 1.f) });
+			inds.push_back(currentInd++);
+			inds.push_back(currentInd);
+		}
+
+		verts.push_back({ sl[slSize - 1] , glm::vec4(1.f, 1.f, 1.f, 1.f) });
+	}	   
+
+	//if (!m_glVBO)
+	{
+		glCreateBuffers(1, &m_glVBO);
+		glNamedBufferStorage(m_glVBO, verts.size() * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+	//if (!m_glEBO)
+	{
+		glCreateBuffers(1, &m_glEBO);
+		glNamedBufferStorage(m_glEBO, inds.size() * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+	}
+
+
+	//if (!m_glVAO)
+	{
+		glGenVertexArrays(1, &m_glVAO);
+		glBindVertexArray(m_glVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, m_glVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glEBO);
+
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glBindVertexArray(0);
+
+		m_rs.VAO = m_glVAO;
+		m_rs.glPrimitiveType = GL_LINES;
+		m_rs.shaderName = "flat";
+		m_rs.indexType = GL_UNSIGNED_INT;
+		m_rs.diffuseColor = glm::vec4(1.f);
+		m_rs.specularColor = glm::vec4(0.f);
+		m_rs.specularExponent = 32.f;
+		m_rs.hasTransparency = false;
+	}
+
+	glNamedBufferSubData(m_glVBO, 0, verts.size() * sizeof(PrimVert), verts.data());
+	glNamedBufferSubData(m_glEBO, 0, inds.size() * sizeof(GLuint), inds.data());
+
+	m_rs.vertCount = inds.size();
 }
 
 void HairySlice::buildStreamTubes(float radius)

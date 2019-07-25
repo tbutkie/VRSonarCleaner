@@ -48,8 +48,8 @@ void HairySlicesStudyScene::init()
 
 	Renderer::getInstance().addShader("cosmo", { "resources/shaders/cosmo.vert", "resources/shaders/cosmo.frag" });
 	Renderer::getInstance().toggleSkybox();
-	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
-
+	Renderer::getInstance().setClearColor(glm::vec4(utils::color::hsv2rgb(240.f, 0.333f, 0.3), 1.f));
+	
 	m_pCosmoVolume = new CosmoVolume("resources/data/bin");
 
 	m_pCosmoVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));

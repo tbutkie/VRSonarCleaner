@@ -24,9 +24,9 @@ void main()
 	//	(yGrid <= 0.5f - thickness / 2.f || yGrid >= 0.5f + thickness / 2.f ))
 	//	discard;
 
-	outputColor = vec4(1.f, 1.f, 0.f, 0.25f);
+	outputColor = vec4(0.7f, 0.7f, 0.f, 0.25f);
 
 	if ((xGrid <= 0.5f - thickness / 2.f || xGrid >= 0.5f + thickness / 2.f) ||
 		(yGrid <= 0.5f - thickness / 2.f || yGrid >= 0.5f + thickness / 2.f ))
-		outputColor = vec4(0.f, 1.f, 1.f, 0.f);	  
+		discard;	  
 }
