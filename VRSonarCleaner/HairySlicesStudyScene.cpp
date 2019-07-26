@@ -672,6 +672,12 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					m_pHairySlice->set();
 				}
 
+				if (!(ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
+				{
+					randomData();
+					m_pHairySlice->set();
+				}
+
 				if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
 				{
 					if (m_strParticipantName.compare("noname") == 0)

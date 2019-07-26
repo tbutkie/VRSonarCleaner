@@ -34,6 +34,7 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_arrfParticleLives(NULL)
 	, m_nParticleCount(0)
 	, m_fParticleLifetime(2.f)
+	, m_fParticleBirthTime(0.5f)
 	, m_fParticleDeathTime(0.5f)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
@@ -125,6 +126,18 @@ void HairySlice::update()
 			}
 		}
 
+		// Take care of particles being birthed
+		{
+			for (auto &p : m_qpBirthingParticles)
+				p.second -= elapsedTime;
+
+			while (!m_qpBirthingParticles.empty() && m_qpBirthingParticles.front().second < 0.f)
+			{
+				m_arrfParticleLives[m_qpBirthingParticles.front().first] = m_fParticleLifetime;
+				m_qpBirthingParticles.pop_front();
+			}
+		}
+
 		// Tick all living particles
 		for (int i = 0; i < m_nParticleCount; ++i)
 		{
@@ -142,10 +155,10 @@ void HairySlice::update()
 			}
 		}
 
-
+		// Take care of dead particles
 		while (!m_qiDeadParticles.empty())
 		{
-			m_arrfParticleLives[m_qiDeadParticles.front()] = m_fParticleLifetime;
+			m_qpBirthingParticles.push_back(std::make_pair(m_qiDeadParticles.front(), m_fParticleBirthTime));
 			m_qiDeadParticles.pop();
 		}
 
@@ -231,26 +244,45 @@ void HairySlice::draw()
 			if (m_arrfParticleLives[i] < 0.f)
 				continue;
 
-			float ratio = 1.f - m_arrfParticleLives[i] / m_fParticleLifetime;
+			float ratio = glm::clamp(1.f - m_arrfParticleLives[i] / m_fParticleLifetime, 0.f, 1.f);
 
 			auto sl = m_vvvec3RawStreamlines[i];
 
-			int segmentEndIndex = floor(ratio * sl.size());
+			float indexPoint = ratio * (sl.size() - 1);
+			int segmentEndIndex = ceil(indexPoint);
 
-			float leftover = (ratio * sl.size()) - static_cast<float>(segmentEndIndex);
+			float leftover = indexPoint - static_cast<float>(static_cast<int>(indexPoint));
+
+			if (segmentEndIndex >= sl.size())
+				segmentEndIndex = sl.size() - 1;
 
 			glm::vec3 segmentDir = sl[segmentEndIndex] - sl[segmentEndIndex - 1];
 
 			glm::vec3 pos = sl[segmentEndIndex - 1] + segmentDir * leftover;
 
-			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::vec4(1.f));
+
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+
+
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel));
+		}
+
+		for (auto &p : m_qpBirthingParticles)
+		{
+			glm::vec3 pos = m_vvvec3RawStreamlines[p.first].front();
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+			glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
+			float ratio = glm::clamp(1.f - p.second / m_fParticleBirthTime, 0.f, 1.f);
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::vec4(glm::vec3(color), ratio));
 		}
 
 		for (auto &p : m_qpDyingParticles)
 		{
 			glm::vec3 pos = m_vvvec3RawStreamlines[p.first].back();
+			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+			glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 			float ratio = p.second / m_fParticleDeathTime;
-			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f) * ratio), glm::vec4(1.f));
+			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f) * ratio), color);
 		}
 	}
 }
@@ -423,17 +455,27 @@ void HairySlice::sampleCuttingPlane()
 		}
 
 		m_nParticleCount = m_vvvec3RawStreamlines.size();
-		auto bufSize = sizeof(float) * m_nParticleCount;
+		size_t bufSize = sizeof(float) * m_nParticleCount;
 
 		m_arrfParticleLives = (float*)malloc(bufSize);
 
+		m_qpBirthingParticles = std::deque<std::pair<int, float>>();
 		m_qpDyingParticles = std::deque<std::pair<int, float>>();
 		m_qiDeadParticles = std::queue<int>();
 
-		for (int i = 0; i < m_vvec3StreamlineSeeds.size(); ++i)
+		auto dist = std::uniform_real_distribution<float>(0.f, m_fParticleLifetime + m_fParticleDeathTime + m_fParticleBirthTime);
+
+		for (int i = 0; i < m_nParticleCount; ++i)
 		{
-			m_arrfParticleLives[i] = -1.f;
-			m_qiDeadParticles.push(i);
+			if (true)
+			{
+				m_arrfParticleLives[i] = dist(m_RNG);
+			}
+			else
+			{
+				m_arrfParticleLives[i] = -1.f;
+				m_qiDeadParticles.push(i);
+			}
 		}
 	}
 }

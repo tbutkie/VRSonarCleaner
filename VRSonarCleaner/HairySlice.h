@@ -51,8 +51,10 @@ private:
 
 	unsigned int m_nParticleCount;
 	float m_fParticleLifetime;
+	float m_fParticleBirthTime;
 	float m_fParticleDeathTime;
 	float* m_arrfParticleLives;
+	std::deque<std::pair<int, float>> m_qpBirthingParticles;
 	std::deque<std::pair<int, float>> m_qpDyingParticles;
 	std::queue<int> m_qiDeadParticles;
 
