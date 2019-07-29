@@ -11,6 +11,9 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_glVAO(0)
 	, m_glHaloVBO(0)
 	, m_glHaloVAO(0)
+	, m_glParticleVBO(0)
+	, m_glParticleEBO(0)
+	, m_glParticleVAO(0)
 	, m_bShowHalos(false)
 	, m_bShowGeometry(true)
 	, m_bShowSeeds(false)
@@ -113,61 +116,11 @@ void HairySlice::update()
 	}
 
 	// Deal with particles
-	{
-		// Take care of dying particles which are now dead
-		{
-			for (auto &p : m_qpDyingParticles)
-				p.second -= elapsedTime;
-
-			while (!m_qpDyingParticles.empty() && m_qpDyingParticles.front().second < 0.f)
-			{
-				m_qiDeadParticles.push(m_qpDyingParticles.front().first);
-				m_qpDyingParticles.pop_front();
-			}
-		}
-
-		// Take care of particles being birthed
-		{
-			for (auto &p : m_qpBirthingParticles)
-				p.second -= elapsedTime;
-
-			while (!m_qpBirthingParticles.empty() && m_qpBirthingParticles.front().second < 0.f)
-			{
-				m_arrfParticleLives[m_qpBirthingParticles.front().first] = m_fParticleLifetime;
-				m_qpBirthingParticles.pop_front();
-			}
-		}
-
-		// Tick all living particles
-		for (int i = 0; i < m_nParticleCount; ++i)
-		{
-			float* p = &m_arrfParticleLives[i];
-
-			if (*p < 0.f)
-				continue;
-
-			*p -= elapsedTime;
-
-			if (*p < 0.f)
-			{
-				*p = -1.f;
-				m_qpDyingParticles.push_back(std::make_pair(i, m_fParticleDeathTime));
-			}
-		}
-
-		// Take care of dead particles
-		while (!m_qiDeadParticles.empty())
-		{
-			m_qpBirthingParticles.push_back(std::make_pair(m_qiDeadParticles.front(), m_fParticleBirthTime));
-			m_qiDeadParticles.pop();
-		}
-
-	}
+	updateParticles(elapsedTime);
 }
 
 void HairySlice::draw()
 {
-
 	if (m_bShowGeometry)
 	{
 		m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation);// m_pCosmoVolume->getTransformRawDomainToVolume();
@@ -237,54 +190,11 @@ void HairySlice::draw()
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
 
+	m_rsParticle.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation);
+	Renderer::getInstance().addToDynamicRenderQueue(m_rsParticle);
+
 	// Particles
-	{
-		for (int i = 0; i < m_nParticleCount; ++i)
-		{
-			if (m_arrfParticleLives[i] < 0.f)
-				continue;
-
-			float ratio = glm::clamp(1.f - m_arrfParticleLives[i] / m_fParticleLifetime, 0.f, 1.f);
-
-			auto sl = m_vvvec3RawStreamlines[i];
-
-			float indexPoint = ratio * (sl.size() - 1);
-			int segmentEndIndex = ceil(indexPoint);
-
-			float leftover = indexPoint - static_cast<float>(static_cast<int>(indexPoint));
-
-			if (segmentEndIndex >= sl.size())
-				segmentEndIndex = sl.size() - 1;
-
-			glm::vec3 segmentDir = sl[segmentEndIndex] - sl[segmentEndIndex - 1];
-
-			glm::vec3 pos = sl[segmentEndIndex - 1] + segmentDir * leftover;
-
-
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-
-
-			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel));
-		}
-
-		for (auto &p : m_qpBirthingParticles)
-		{
-			glm::vec3 pos = m_vvvec3RawStreamlines[p.first].front();
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-			glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
-			float ratio = glm::clamp(1.f - p.second / m_fParticleBirthTime, 0.f, 1.f);
-			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f)), glm::vec4(glm::vec3(color), ratio));
-		}
-
-		for (auto &p : m_qpDyingParticles)
-		{
-			glm::vec3 pos = m_vvvec3RawStreamlines[p.first].back();
-			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-			glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
-			float ratio = p.second / m_fParticleDeathTime;
-			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(0.00075f) * ratio), color);
-		}
-	}
+	//drawParticleHeads(0.001f);
 }
 
 void HairySlice::set()
@@ -447,37 +357,7 @@ void HairySlice::sampleCuttingPlane()
 	}
 	
 	// reset particle seeds
-	{
-		if (m_arrfParticleLives)
-		{
-			delete m_arrfParticleLives;
-			m_arrfParticleLives = NULL;
-		}
-
-		m_nParticleCount = m_vvvec3RawStreamlines.size();
-		size_t bufSize = sizeof(float) * m_nParticleCount;
-
-		m_arrfParticleLives = (float*)malloc(bufSize);
-
-		m_qpBirthingParticles = std::deque<std::pair<int, float>>();
-		m_qpDyingParticles = std::deque<std::pair<int, float>>();
-		m_qiDeadParticles = std::queue<int>();
-
-		auto dist = std::uniform_real_distribution<float>(0.f, m_fParticleLifetime + m_fParticleDeathTime + m_fParticleBirthTime);
-
-		for (int i = 0; i < m_nParticleCount; ++i)
-		{
-			if (true)
-			{
-				m_arrfParticleLives[i] = dist(m_RNG);
-			}
-			else
-			{
-				m_arrfParticleLives[i] = -1.f;
-				m_qiDeadParticles.push(i);
-			}
-		}
-	}
+	initParticles();
 }
 
 void HairySlice::rebuildGeometry()
@@ -1092,6 +972,270 @@ void HairySlice::destroyGeometry()
 	for (auto &vertarr : { m_glVAO, m_glHaloVAO })
 		if (vertarr)
 			glDeleteVertexArrays(1, &vertarr);
+}
+
+void HairySlice::initParticles()
+{
+	if (m_arrfParticleLives)
+	{
+		delete m_arrfParticleLives;
+		m_arrfParticleLives = NULL;
+	}
+
+	m_nParticleCount = m_vvvec3RawStreamlines.size();
+	size_t bufSize = sizeof(float) * m_nParticleCount;
+
+	m_arrfParticleLives = (float*)malloc(bufSize);
+
+	m_qpBirthingParticles = std::deque<std::pair<int, float>>();
+	m_qpDyingParticles = std::deque<std::pair<int, float>>();
+	m_qiDeadParticles = std::queue<int>();
+
+	auto dist = std::uniform_real_distribution<float>(0.f, m_fParticleLifetime + m_fParticleDeathTime);
+
+	for (int i = 0; i < m_nParticleCount; ++i)
+	{
+		if (true)
+		{
+			m_arrfParticleLives[i] = dist(m_RNG);
+		}
+		else
+		{
+			m_arrfParticleLives[i] = -1.f;
+			m_qiDeadParticles.push(i);
+		}
+	}
+
+
+
+	struct PrimVert {
+		glm::vec3 p; // point
+		glm::vec4 c; // color
+	};
+
+	if (!m_glParticleVBO)
+	{
+		glCreateBuffers(1, &m_glParticleVBO);
+	}
+
+	if (!m_glParticleEBO)
+	{
+		glCreateBuffers(1, &m_glParticleEBO);
+	}
+
+	glNamedBufferStorage(m_glParticleVBO, 50000 * (m_uiRK4MaxPropagation_OneWay * 2 + 1) * sizeof(PrimVert), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_glParticleEBO, 50000 * (m_uiRK4MaxPropagation_OneWay * 2 + 1) * 2 * sizeof(GLuint), NULL, GL_DYNAMIC_STORAGE_BIT);
+
+	if (!m_glParticleVAO)
+	{
+		glGenVertexArrays(1, &m_glParticleVAO);
+		glBindVertexArray(m_glParticleVAO);
+			// Load data into vertex buffers
+			glBindBuffer(GL_ARRAY_BUFFER, m_glParticleVBO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glParticleEBO);
+
+			// Set the vertex attribute pointers
+			glEnableVertexAttribArray(POSITION_ATTRIB_LOCATION);
+			glVertexAttribPointer(POSITION_ATTRIB_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, p));
+			glEnableVertexAttribArray(COLOR_ATTRIB_LOCATION);
+			glVertexAttribPointer(COLOR_ATTRIB_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(PrimVert), (GLvoid*)offsetof(PrimVert, c));
+		glBindVertexArray(0);
+
+		m_rsParticle.VAO = m_glParticleVAO;
+		m_rsParticle.glPrimitiveType = GL_LINES;
+		m_rsParticle.shaderName = "flat";
+		m_rsParticle.indexType = GL_UNSIGNED_INT;
+		m_rsParticle.diffuseColor = glm::vec4(1.f);
+		m_rsParticle.hasTransparency = true;
+	}
+}
+
+void HairySlice::updateParticles(float elapsedTime)
+{
+	if (elapsedTime > 1.f / 60.f)
+		elapsedTime = 1.f / 60.f;
+
+	// Take care of dying particles which are now dead
+	{
+		for (auto &p : m_qpDyingParticles)
+			p.second -= elapsedTime;
+
+		while (!m_qpDyingParticles.empty() && m_qpDyingParticles.front().second < 0.f)
+		{
+			m_qiDeadParticles.push(m_qpDyingParticles.front().first);
+			m_qpDyingParticles.pop_front();
+		}
+	}
+
+	// Take care of particles being birthed
+	{
+		for (auto &p : m_qpBirthingParticles)
+			p.second -= elapsedTime;
+
+		while (!m_qpBirthingParticles.empty() && m_qpBirthingParticles.front().second < 0.f)
+		{
+			m_arrfParticleLives[m_qpBirthingParticles.front().first] = m_fParticleLifetime;
+			m_qpBirthingParticles.pop_front();
+		}
+	}
+
+	// Tick all living particles
+	for (int i = 0; i < m_nParticleCount; ++i)
+	{
+		float* p = &m_arrfParticleLives[i];
+
+		if (*p < 0.f)
+			continue;
+
+		*p -= elapsedTime;
+
+		if (*p < 0.f)
+		{
+			*p = -1.f;
+			m_qpDyingParticles.push_back(std::make_pair(i, m_fParticleDeathTime));
+		}
+	}
+
+	// Take care of dead particles
+	while (!m_qiDeadParticles.empty())
+	{
+		m_qpBirthingParticles.push_back(std::make_pair(m_qiDeadParticles.front(), m_fParticleBirthTime));
+		m_qiDeadParticles.pop();
+	}
+
+	// Tails
+	buildParticleTails(0.5f);
+}
+
+void HairySlice::drawParticleHeads(float radius)
+{
+	for (int i = 0; i < m_nParticleCount; ++i)
+	{
+		if (m_arrfParticleLives[i] < 0.f)
+			continue;
+
+		float ratio = glm::clamp(1.f - m_arrfParticleLives[i] / m_fParticleLifetime, 0.f, 1.f);
+
+		auto sl = m_vvvec3RawStreamlines[i];
+
+		float indexPoint = ratio * (sl.size() - 1);
+		int segmentBeginIndex = floor(indexPoint);
+
+		float leftover = indexPoint - static_cast<float>(segmentBeginIndex);
+
+		glm::vec3 segmentDir = sl[segmentBeginIndex + 1] - sl[segmentBeginIndex];
+
+		glm::vec3 pos = sl[segmentBeginIndex] + segmentDir * leftover;
+
+		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel));
+	}
+
+	for (auto &p : m_qpBirthingParticles)
+	{
+		glm::vec3 pos = m_vvvec3RawStreamlines[p.first].front();
+		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+		glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
+		float ratio = glm::clamp(1.f - p.second / m_fParticleBirthTime, 0.f, 1.f);
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), glm::vec4(glm::vec3(color), ratio));
+	}
+
+	for (auto &p : m_qpDyingParticles)
+	{
+		glm::vec3 pos = m_vvvec3RawStreamlines[p.first].back();
+		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
+		glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
+		float ratio = p.second / m_fParticleDeathTime;
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qPlaneOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius) * ratio), color);
+	}
+}
+
+void HairySlice::buildParticleTails(float length)
+{
+	struct PrimVert {
+		glm::vec3 pos;
+		glm::vec4 color;
+	};
+
+	std::vector<PrimVert> verts;
+	std::vector<GLuint> inds;
+
+	for (int i = 0; i < m_nParticleCount; ++i)
+	{
+		if (m_arrfParticleLives[i] < 0.f)
+			continue;
+
+		float ratio = glm::clamp(1.f - m_arrfParticleLives[i] / m_fParticleLifetime, 0.f, 1.f);
+
+		auto sl = m_vvvec3RawStreamlines[i];
+
+		auto nSegments = sl.size() - 1;
+
+		float indexPoint = ratio * nSegments;
+		float endIndexPoint = (ratio - length) * nSegments;
+
+		int segmentBeginIndex = floor(indexPoint);
+
+		float leftover = indexPoint - static_cast<float>(segmentBeginIndex);
+
+		glm::vec3 segmentDir = sl[segmentBeginIndex + 1] - sl[segmentBeginIndex];
+
+		glm::vec3 headPos = sl[segmentBeginIndex] + segmentDir * leftover;
+
+
+		float segmentSize = 1.f / nSegments;
+
+
+		int segmentEndIndex = ceil(endIndexPoint);
+		float rightover = static_cast<float>(segmentEndIndex) - endIndexPoint;
+		glm::vec3 endPos = sl[segmentEndIndex] + (sl[segmentEndIndex - 1] - sl[segmentEndIndex]) * rightover;
+
+		float color = 0.f;
+		float totalSize = length * nSegments;
+
+		if (endIndexPoint < 0.f)
+		{
+			segmentEndIndex = 0;
+			rightover = 0.f;
+			endPos = sl[0];
+		}
+		else
+		{
+			inds.push_back(verts.size());
+			verts.push_back({ endPos, glm::vec4(color) });
+
+			color += rightover * segmentSize / length;
+
+			inds.push_back(verts.size());
+			verts.push_back({ sl[segmentEndIndex], glm::vec4(color) });
+
+		}
+
+		for (int j = segmentEndIndex; j < segmentBeginIndex; ++j)
+		{
+			inds.push_back(verts.size());
+			verts.push_back({ sl[j], glm::vec4(color) });
+
+			color += segmentSize / length;
+
+			inds.push_back(verts.size());
+			verts.push_back({ sl[j + 1], glm::vec4(color) });
+		}
+
+		inds.push_back(verts.size());
+		verts.push_back({ sl[segmentBeginIndex], glm::vec4(color) });
+
+		color += leftover * segmentSize / length;
+
+		inds.push_back(verts.size());
+		verts.push_back({ headPos, glm::vec4(color) });
+	}
+
+	glNamedBufferSubData(m_glParticleVBO, 0, verts.size() * sizeof(PrimVert), verts.data());
+	glNamedBufferSubData(m_glParticleEBO, 0, inds.size() * sizeof(GLuint), inds.data());
+
+	m_rsParticle.vertCount = inds.size();
 }
 
 

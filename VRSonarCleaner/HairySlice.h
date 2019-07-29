@@ -49,6 +49,8 @@ private:
 	std::vector<std::vector<glm::vec3>> m_vvvec3RawStreamlines;
 	std::vector<glm::vec3> m_vvec3StreamlineSeeds;
 
+	GLuint m_glParticleVBO, m_glParticleEBO, m_glParticleVAO;
+	Renderer::RendererSubmission m_rsParticle;
 	unsigned int m_nParticleCount;
 	float m_fParticleLifetime;
 	float m_fParticleBirthTime;
@@ -113,6 +115,11 @@ private:
 	void buildReticule();
 
 	void destroyGeometry();
+
+	void initParticles();
+	void updateParticles(float elapsedTime);
+	void drawParticleHeads(float radius);
+	void buildParticleTails(float length);
 
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };
