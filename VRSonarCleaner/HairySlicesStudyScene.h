@@ -22,7 +22,7 @@ class HairySlicesStudyScene :
 	public Scene
 {
 	struct StudyCondition {
-		std::string geometry; // CONE, TUBE, STREAMLET
+		std::string geometry; // CONE, TUBE, LINE
 		std::string texture; // STATIC, ANIMATED
 		bool stereo;
 		bool motion;

@@ -861,7 +861,24 @@ void HairySlicesStudyScene::draw()
 	}
 
 	if (m_bShowProbe)
-		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
+	{
+		float accuracy = glm::degrees(glm::acos(glm::dot(glm::normalize(m_pHairySlice->m_vec3FlowAtReticule), m_vec3ProbeDirection)));
+
+		glm::vec3 accuracyColor;
+
+		if (accuracy < 10.f)
+			accuracyColor = glm::mix(glm::vec3(0.f, 1.f, 0.f), glm::vec3(1.f, 1.f, 0.f), glm::mod(accuracy, 10.f) / 10.f);
+		else if (accuracy < 20.f)
+			accuracyColor = glm::mix(glm::vec3(1.f, 1.f, 0.f), glm::vec3(1.f, 0.5f, 0.f), glm::mod(accuracy - 10.f, 10.f) / 10.f);
+		else if (accuracy < 50.f)
+			accuracyColor = glm::mix(glm::vec3(1.f, 0.5f, 0.f), glm::vec3(1.f, 0.f, 0.f), glm::mod(accuracy - 20.f, 30.f) / 30.f);
+		else if (accuracy < 90.f)
+			accuracyColor = glm::mix(glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.1f, 0.1f, 0.1f), glm::mod(accuracy - 50.f, 40.f) / 40.f);
+		else
+			accuracyColor = glm::vec3(0.1f, 0.1f, 0.1f);
+
+		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(accuracyColor, 1.f), glm::vec4(accuracyColor, 1.f));
+	}
 
 	m_pHairySlice->draw();
 }
