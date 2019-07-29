@@ -20,7 +20,8 @@ public:
 	enum SONAR_FILETYPE {
 		CARIS,
 		XYZF,
-		QIMERA
+		QIMERA,
+		LIDAR
 	};
 
 	public:
@@ -109,6 +110,7 @@ public:
 
 		bool loadCARISTxt();
 		bool loadQimeraTxt();
+		bool loadLIDARTxt();
 		bool loadStudyCSV();
 
 		glm::vec3 getDefaultPointColor(unsigned int index);

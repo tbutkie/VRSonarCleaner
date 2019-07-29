@@ -53,20 +53,39 @@ void FishTankSonarScene::init()
 
 	using namespace std::experimental::filesystem::v1;
 
-	path dataset("davidson_seamount");
-
-	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-
-	auto acceptsPath = path(basePath).append(path("accept"));
-
-	for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+	if (false)
 	{
-		if (is_regular_file(*it))
+		path dataset("davidson_seamount");
+
+		auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+
+		auto acceptsPath = path(basePath).append(path("accept"));
+
+		for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
 		{
-			if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+			if (is_regular_file(*it))
 			{
-				SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-				m_vpClouds.push_back(tmp);
+				if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+				{
+					SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+					m_vpClouds.push_back(tmp);
+				}
+			}
+		}
+	}
+	else
+	{
+		auto basePath = current_path().append(path("resources/data/lidar"));
+
+		for (directory_iterator it(basePath); it != directory_iterator(); ++it)
+		{
+			if (is_regular_file(*it))
+			{
+				if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+				{
+					SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::LIDAR);
+					m_vpClouds.push_back(tmp);
+				}
 			}
 		}
 	}

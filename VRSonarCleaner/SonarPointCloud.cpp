@@ -39,6 +39,9 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	case SonarPointCloud::QIMERA:
 		m_Future = std::async(std::launch::async, &SonarPointCloud::loadQimeraTxt, this);
 		break;
+	case SonarPointCloud::LIDAR:
+		m_Future = std::async(std::launch::async, &SonarPointCloud::loadLIDARTxt, this);
+		break;
 	default:
 		break;
 	}
@@ -276,6 +279,89 @@ bool SonarPointCloud::loadQimeraTxt()
 		{
 			float conf = rejectedDataset ? 1.f : 0.f;
 			setUncertaintyPoint(index++, x, y, depth, conf, conf);
+			averageDepth += depth;
+			assert(depth < 0.);
+		}
+		averageDepth /= m_nPoints;
+
+		printf("Loaded %d points\n", index);
+
+		printf("Original Min/Maxes:\n");
+		printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+		printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+		printf("Depth Min: %f Max: %f\n", getZMin(), getZMax());
+		printf("Depth Avg: %f\n", averageDepth);
+
+		fclose(file);
+
+		adjustPoints();
+
+		setRefreshNeeded();
+	}
+
+	return true;
+}
+
+bool SonarPointCloud::loadLIDARTxt()
+{
+	printf("Loading LIDAR Point Cloud from %s\n", getName().c_str());
+	
+	FILE *file;
+	file = fopen(getName().c_str(), "r");
+	if (file == NULL)
+	{
+		printf("ERROR reading file in %s\n", __FUNCTION__);
+	}
+	else
+	{
+		//count points
+		//skip the first linesToSkip lines
+		int skipped = 0;
+		int tries = 0;
+		char tempChar;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+		printf("Skipped %d characters\n", skipped);
+
+		//now count lines of points
+		double x, y, depth, tmp;
+		unsigned int numPointsInFile = 0u;
+		while (fscanf(file, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", &x, &y, &depth, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp) != EOF)  //while another valid entry to load
+			numPointsInFile++;
+
+		initPoints(numPointsInFile);
+		printf("found %d lines of points\n", numPointsInFile);
+
+		//rewind
+		rewind(file);
+		//skip the first linesToSkip lines
+		skipped = 0;
+		tries = 0;
+		while (skipped < 1 && tries < 5000) ///1=lines to skip
+		{
+			tries++;
+			tempChar = 'a';
+			while (tempChar != '\n')
+			{
+				tempChar = fgetc(file);
+			}
+			skipped++;
+		}
+
+		//now load lines of points
+		GLuint index = 0u;
+		double averageDepth = 0.0;
+		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+		{
+			setUncertaintyPoint(index++, x, y, depth, 0.f, 0.f);
 			averageDepth += depth;
 			assert(depth < 0.);
 		}
