@@ -28,7 +28,7 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	, m_nCurrentTrial(0)
 	, m_nReplicatesPerCondition(15)
 	, m_nCurrentReplicate(0)
-	, m_strParticipantName("noname")
+	, m_strParticipantName("")
 	, m_pCurrentCondition(NULL)
 	, m_vec3ProbeDirection(0.f, 0.f, 1.f)
 {
@@ -111,14 +111,14 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 		{
 			if (ev.key.keysym.sym == SDLK_1)
 			{
-				m_pHairySlice->setGeomStyle("STREAMLET");
-				m_pHairySlice->setShader("streamline_gradient_static");
+				m_pHairySlice->setGeomStyle("STREAKLET");
+				m_pHairySlice->setShader("flat");
 			}
 
 			if (ev.key.keysym.sym == SDLK_2)
 			{
-				m_pHairySlice->setGeomStyle("STREAMLET");
-				m_pHairySlice->setShader("streamline_gradient_animated");
+				m_pHairySlice->setGeomStyle("LINE");
+				m_pHairySlice->setShader("flat");
 			}
 
 			if (ev.key.keysym.sym == SDLK_3)
@@ -680,7 +680,7 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 				if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_SPACE)
 				{
-					if (m_strParticipantName.compare("noname") == 0)
+					if (m_strParticipantName.compare("") == 0)
 						Renderer::getInstance().showMessage("Please set participant name using (n) before starting training!");
 					else if (m_fEyeSeparationCentimeters == 0.f)
 						Renderer::getInstance().showMessage("Please measure and set participant IPD using (i) before starting training!");
@@ -951,7 +951,7 @@ void HairySlicesStudyScene::startTraining()
 
 void HairySlicesStudyScene::makeStudyConditions()
 {
-	for (auto &geom : { "CONE", "TUBE", "STREAMLET" })
+	for (auto &geom : { "CONE", "TUBE", "LINE" })
 	{
 		for (auto &tex : { "STATIC", "ANIMATED" })
 		{
@@ -973,7 +973,7 @@ void HairySlicesStudyScene::makeStudyConditions()
 
 void HairySlicesStudyScene::startStudy()
 {
-	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
+	Renderer::getInstance().setClearColor(glm::vec4(utils::color::hsv2rgb(240.f, 0.333f, 0.3), 1.f));
 
 	DataLogger::getInstance().setLogDirectory("/");
 	DataLogger::getInstance().setID(m_strParticipantName);
@@ -1018,10 +1018,29 @@ void HairySlicesStudyScene::loadStudyCondition()
 	{
 		m_pCurrentCondition = &m_vStudyConditions.back();
 		
-		m_pHairySlice->setGeomStyle(m_pCurrentCondition->geometry);
+		if (m_pCurrentCondition->geometry.compare("LINE") == 0)
+		{
+			m_pHairySlice->m_uiCuttingPlaneGridRes = 40u;
+			m_pHairySlice->reseed();
+
+			if (m_pCurrentCondition->texture.compare("STATIC") == 0)
+				m_pHairySlice->setGeomStyle(m_pCurrentCondition->geometry);
+			else
+				m_pHairySlice->setGeomStyle("STREAKLET");
+
+		}
+		else
+		{
+			m_pHairySlice->m_uiCuttingPlaneGridRes = 20u;
+			m_pHairySlice->reseed();
+
+			m_pHairySlice->setGeomStyle(m_pCurrentCondition->geometry);
+		}
 
 		if (m_pCurrentCondition->geometry.compare("CONE") == 0)
 			m_pHairySlice->setShader("streamline_ring_static");
+		else if (m_pCurrentCondition->geometry.compare("LINE") == 0)
+			m_pHairySlice->setShader("flat");
 		else if (m_pCurrentCondition->texture.compare("STATIC") == 0)
 			m_pHairySlice->setShader("streamline_gradient_static");
 		else
@@ -1061,7 +1080,7 @@ void HairySlicesStudyScene::endBreak()
 {
 	m_bPaused = false;
 
-	Renderer::getInstance().setClearColor(glm::vec4(0.4f, 0.4f, 0.6f, 1.f));
+	Renderer::getInstance().setClearColor(glm::vec4(utils::color::hsv2rgb(240.f, 0.333f, 0.3), 1.f));
 
 	m_pHairySlice->m_bShowGeometry = true;
 	m_pHairySlice->m_bShowFrame = true;

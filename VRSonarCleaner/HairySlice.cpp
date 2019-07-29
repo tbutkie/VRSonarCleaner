@@ -34,11 +34,14 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 	, m_fRK4StopVelocity(0.f)
 	, m_uiRK4MaxPropagation_OneWay(10u)
 	, m_fHaloRadiusFactor(2.f)
+	, m_fParticleTail(0.5f)
 	, m_arrfParticleLives(NULL)
 	, m_nParticleCount(0)
-	, m_fParticleLifetime(2.f)
-	, m_fParticleBirthTime(0.5f)
+	, m_fParticleLifetime(1.f)
+	, m_fParticleBirthTime(0.f)
 	, m_fParticleDeathTime(0.5f)
+	, m_vec4ParticleHeadColor(1.f)
+	, m_vec4ParticleTailColor(0.3f, 0.3f, 0.3f, 0.f)
 	, m_vec4HaloColor(glm::vec4(0.f, 0.f, 0.f, 1.f))
 	, m_vec4VelColorMin(glm::vec4(0.f, 0.f, 0.5f, 1.f))
 	, m_vec4VelColorMax(glm::vec4(1.f, 1.f, 0.f, 1.f))
@@ -51,10 +54,10 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 		})
 	, m_iCurrentShader(4)
 	, m_vstrGeomStyleNames({
-		"STREAMLET",
+		"STREAKLET",
+		"LINE",
 		"TUBE",
-		"CONE",
-		"LINE"
+		"CONE"
 		})
 	, m_iCurrentGeomStyle(2)
 {
@@ -123,9 +126,9 @@ void HairySlice::draw()
 {
 	if (m_bShowGeometry)
 	{
-		m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation);// m_pCosmoVolume->getTransformRawDomainToVolume();
+		m_rs.modelToWorldTransform = m_rsHalo.modelToWorldTransform = m_rsParticle.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation);// m_pCosmoVolume->getTransformRawDomainToVolume();
 
-		Renderer::getInstance().addToDynamicRenderQueue(m_rs);
+		Renderer::getInstance().addToDynamicRenderQueue(m_iCurrentGeomStyle == 0 ? m_rsParticle : m_rs);
 
 		if (m_bShowHalos || m_iCurrentGeomStyle == 4)
 			Renderer::getInstance().addToDynamicRenderQueue(m_rsHalo);
@@ -189,9 +192,6 @@ void HairySlice::draw()
 
 		Renderer::getInstance().addToDynamicRenderQueue(rs);
 	}
-
-	m_rsParticle.modelToWorldTransform = glm::mat4_cast(m_qPlaneOrientation);
-	Renderer::getInstance().addToDynamicRenderQueue(m_rsParticle);
 
 	// Particles
 	//drawParticleHeads(0.001f);
@@ -367,16 +367,16 @@ void HairySlice::rebuildGeometry()
 	switch (m_iCurrentGeomStyle)
 	{
 	case 0:
-		buildStreamTubes(m_fTubeRadius * 0.2f);
+		//buildStreamTubes(m_fTubeRadius * 0.2f);		
 		break;
 	case 1:
-		buildStreamTubes(m_fTubeRadius * 0.75f);
+		buildStreamLines();
 		break;
 	case 2:
-		buildStreamCones(m_fTubeRadius);
+		buildStreamTubes(m_fTubeRadius * 0.75f);
 		break;
 	case 3:
-		buildStreamLines();
+		buildStreamCones(m_fTubeRadius);
 		break;
 	default:
 		break;
@@ -405,12 +405,12 @@ void HairySlice::buildStreamLines()
 		for (int i = 0; i < slSize - 1; ++i)
 		{
 			float ratio = i / static_cast<float>(slSize - 1);
-			verts.push_back({ sl[i] , glm::vec4(glm::mix(glm::vec3(0.4f), glm::vec3(1.f), ratio), 1.f) });
+			verts.push_back({ sl[i] , glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, ratio) });
 			inds.push_back(currentInd++);
 			inds.push_back(currentInd);
 		}
 
-		verts.push_back({ sl[slSize - 1] , glm::vec4(1.f, 1.f, 1.f, 1.f) });
+		verts.push_back({ sl[slSize - 1] , m_vec4ParticleHeadColor });
 	}	   
 
 	//if (!m_glVBO)
@@ -447,7 +447,7 @@ void HairySlice::buildStreamLines()
 		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f);
 		m_rs.specularColor = glm::vec4(0.f);
-		m_rs.specularExponent = 32.f;
+		m_rs.specularExponent = 0.f;
 		m_rs.hasTransparency = false;
 	}
 
@@ -636,8 +636,8 @@ void HairySlice::buildStreamTubes(float radius)
 		m_rs.shaderName = m_vstrShaderNames[m_iCurrentShader];
 		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f);
-		m_rs.specularColor = glm::vec4(0.f);
-		m_rs.specularExponent = 32.f;
+		m_rs.specularColor = glm::vec4(0.7f);
+		m_rs.specularExponent = 12.f;
 		m_rs.hasTransparency = false;
 	}
 
@@ -734,7 +734,8 @@ void HairySlice::buildStreamCones(float radius)
 
 			float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(sl[i])));
 
-			float ratioAlongLine = static_cast<float>(i) / (ribOrientations.size() - 1u);
+			//float ratioAlongLine = static_cast<float>(i) / (ribOrientations.size() - 1u);
+			float ratioAlongLine = 1.f - static_cast<float>(i) / (ribOrientations.size() - 1u);
 
 			for (int j = 0; j < circleVerts.size(); ++j)
 			{
@@ -763,7 +764,8 @@ void HairySlice::buildStreamCones(float radius)
 		}
 
 		// Make the endcap
-		glm::quat endCap = glm::rotate(ribOrientations.back(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+		//glm::quat endCap = glm::rotate(ribOrientations.back(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+		glm::quat endCap = ribOrientations.front();
 
 		PrimVert pvTube;
 		pvTube.n = glm::vec3(glm::rotate(endCap, glm::vec3(0.f, 0.f, -1.f)));
@@ -773,7 +775,8 @@ void HairySlice::buildStreamCones(float radius)
 		int baseVert = verts.size();
 
 		// center vertex
-		pvTube.p = sl.back();
+		//pvTube.p = sl.back();
+		pvTube.p = sl.front();
 
 		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pvTube.p)));
 		//pv.c = glm::vec4(vel, 0.f, 1.f - vel, 1.f);
@@ -839,8 +842,8 @@ void HairySlice::buildStreamCones(float radius)
 		m_rs.shaderName = m_vstrShaderNames[m_iCurrentShader];
 		m_rs.indexType = GL_UNSIGNED_INT;
 		m_rs.diffuseColor = glm::vec4(1.f);
-		m_rs.specularColor = glm::vec4(0.f);
-		m_rs.specularExponent = 32.f;
+		m_rs.specularColor = glm::vec4(0.7f);
+		m_rs.specularExponent = 12.f;
 		m_rs.hasTransparency = false;
 	}
 
@@ -1046,7 +1049,7 @@ void HairySlice::initParticles()
 		m_rsParticle.shaderName = "flat";
 		m_rsParticle.indexType = GL_UNSIGNED_INT;
 		m_rsParticle.diffuseColor = glm::vec4(1.f);
-		m_rsParticle.hasTransparency = true;
+		m_rsParticle.hasTransparency = false;
 	}
 }
 
@@ -1092,7 +1095,7 @@ void HairySlice::updateParticles(float elapsedTime)
 		if (*p < 0.f)
 		{
 			*p = -1.f;
-			m_qpDyingParticles.push_back(std::make_pair(i, m_fParticleDeathTime));
+			m_qpDyingParticles.push_back(std::make_pair(i, m_fParticleTail * m_fParticleLifetime));
 		}
 	}
 
@@ -1104,7 +1107,7 @@ void HairySlice::updateParticles(float elapsedTime)
 	}
 
 	// Tails
-	buildParticleTails(0.5f);
+	buildParticleTails();
 }
 
 void HairySlice::drawParticleHeads(float radius)
@@ -1151,7 +1154,7 @@ void HairySlice::drawParticleHeads(float radius)
 	}
 }
 
-void HairySlice::buildParticleTails(float length)
+void HairySlice::buildParticleTails()
 {
 	struct PrimVert {
 		glm::vec3 pos;
@@ -1173,63 +1176,116 @@ void HairySlice::buildParticleTails(float length)
 		auto nSegments = sl.size() - 1;
 
 		float indexPoint = ratio * nSegments;
-		float endIndexPoint = (ratio - length) * nSegments;
+		float endIndexPoint = (ratio - m_fParticleTail) * nSegments;
 
 		int segmentBeginIndex = floor(indexPoint);
 
-		float leftover = indexPoint - static_cast<float>(segmentBeginIndex);
+		float headLeftover = indexPoint - static_cast<float>(segmentBeginIndex);
 
 		glm::vec3 segmentDir = sl[segmentBeginIndex + 1] - sl[segmentBeginIndex];
 
-		glm::vec3 headPos = sl[segmentBeginIndex] + segmentDir * leftover;
+		glm::vec3 headPos = sl[segmentBeginIndex] + segmentDir * headLeftover;
 
 
 		float segmentSize = 1.f / nSegments;
 
 
 		int segmentEndIndex = ceil(endIndexPoint);
-		float rightover = static_cast<float>(segmentEndIndex) - endIndexPoint;
-		glm::vec3 endPos = sl[segmentEndIndex] + (sl[segmentEndIndex - 1] - sl[segmentEndIndex]) * rightover;
+		if (segmentEndIndex < 0)
+			segmentEndIndex = 0;
 
-		float color = 0.f;
-		float totalSize = length * nSegments;
+		float tailLeftover = static_cast<float>(segmentEndIndex) - endIndexPoint;
+		glm::vec3 tailPos = sl[segmentEndIndex] + (sl[segmentEndIndex - 1] - sl[segmentEndIndex]) * tailLeftover;
+
+		float colorMix = 0.f;
+		float totalSize = m_fParticleTail * nSegments;
 
 		if (endIndexPoint < 0.f)
 		{
 			segmentEndIndex = 0;
-			rightover = 0.f;
-			endPos = sl[0];
+			tailLeftover = 0.f;
+			tailPos = sl[0];
 		}
 		else
 		{
 			inds.push_back(verts.size());
-			verts.push_back({ endPos, glm::vec4(color) });
+			verts.push_back({ tailPos, glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
 
-			color += rightover * segmentSize / length;
+			colorMix += tailLeftover * segmentSize / m_fParticleTail;
 
 			inds.push_back(verts.size());
-			verts.push_back({ sl[segmentEndIndex], glm::vec4(color) });
+			verts.push_back({ sl[segmentEndIndex], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
 
 		}
 
 		for (int j = segmentEndIndex; j < segmentBeginIndex; ++j)
 		{
 			inds.push_back(verts.size());
-			verts.push_back({ sl[j], glm::vec4(color) });
+			verts.push_back({ sl[j], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
 
-			color += segmentSize / length;
+			colorMix += segmentSize / m_fParticleTail;
 
 			inds.push_back(verts.size());
-			verts.push_back({ sl[j + 1], glm::vec4(color) });
+			verts.push_back({ sl[j + 1], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
 		}
 
 		inds.push_back(verts.size());
-		verts.push_back({ sl[segmentBeginIndex], glm::vec4(color) });
+		verts.push_back({ sl[segmentBeginIndex], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
 
-		color += leftover * segmentSize / length;
+		colorMix += headLeftover * segmentSize / m_fParticleTail;
 
 		inds.push_back(verts.size());
-		verts.push_back({ headPos, glm::vec4(color) });
+		verts.push_back({ headPos, glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
+	}
+
+	for (auto &p : m_qpDyingParticles)
+	{
+		auto sl = m_vvvec3RawStreamlines[p.first];
+
+		float totalTailTime = m_fParticleTail * m_fParticleLifetime;
+
+		float ratio = p.second / totalTailTime;
+
+		float totalTailSize = (sl.size() - 1) * m_fParticleTail;
+
+		float tailRemaining = ratio * totalTailSize;
+
+		int tailIndex = ceil((sl.size() - 1) - tailRemaining);
+
+		float tailLeftover = tailRemaining - static_cast<float>((sl.size() - 1) - tailIndex);
+
+		glm::vec3 tailPos = sl[tailIndex] + (sl[tailIndex - 1] - sl[tailIndex]) * tailLeftover;
+
+		float colorMix = 0.f;
+		float segmentSize = (1.f / (sl.size() - 1));
+
+		if (tailRemaining < 0.f)
+		{
+			tailIndex = 0;
+			tailLeftover = 0.f;
+			tailPos = sl[0];
+		}
+		else
+		{
+			inds.push_back(verts.size());
+			verts.push_back({ tailPos, glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
+
+			colorMix += tailLeftover * segmentSize / m_fParticleTail;
+
+			inds.push_back(verts.size());
+			verts.push_back({ sl[tailIndex], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
+		}
+			   
+		for (int j = tailIndex; j < sl.size() - 1; ++j)
+		{
+			inds.push_back(verts.size());
+			verts.push_back({ sl[j], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
+
+			colorMix += segmentSize / m_fParticleTail;
+
+			inds.push_back(verts.size());
+			verts.push_back({ sl[j + 1], glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, colorMix) });
+		}
 	}
 
 	glNamedBufferSubData(m_glParticleVBO, 0, verts.size() * sizeof(PrimVert), verts.data());

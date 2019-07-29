@@ -32,6 +32,7 @@ private:
 
 	bool m_bShowHalos;
 	bool m_bShowGeometry;
+	bool m_bShowParticles;
 	bool m_bShowSeeds;
 	bool m_bShowFrame;
 	bool m_bShowGrid;
@@ -52,6 +53,7 @@ private:
 	GLuint m_glParticleVBO, m_glParticleEBO, m_glParticleVAO;
 	Renderer::RendererSubmission m_rsParticle;
 	unsigned int m_nParticleCount;
+	float m_fParticleTail;
 	float m_fParticleLifetime;
 	float m_fParticleBirthTime;
 	float m_fParticleDeathTime;
@@ -59,6 +61,8 @@ private:
 	std::deque<std::pair<int, float>> m_qpBirthingParticles;
 	std::deque<std::pair<int, float>> m_qpDyingParticles;
 	std::queue<int> m_qiDeadParticles;
+	glm::vec4 m_vec4ParticleHeadColor;
+	glm::vec4 m_vec4ParticleTailColor;
 
 	GLuint m_glVBO, m_glEBO, m_glVAO;
 	GLuint m_glHaloVBO, m_glHaloVAO;
@@ -119,7 +123,7 @@ private:
 	void initParticles();
 	void updateParticles(float elapsedTime);
 	void drawParticleHeads(float radius);
-	void buildParticleTails(float length);
+	void buildParticleTails();
 
 	glm::quat getSegmentOrientationMatrixNormalized(glm::vec3 segmentDirection, glm::vec3 up = glm::vec3(0.f, 1.f, 0.f));
 };
