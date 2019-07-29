@@ -332,9 +332,9 @@ bool SonarPointCloud::loadLIDARTxt()
 		printf("Skipped %d characters\n", skipped);
 
 		//now count lines of points
-		double x, y, depth, tmp;
+		double x, y, height, tmp;
 		unsigned int numPointsInFile = 0u;
-		while (fscanf(file, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", &x, &y, &depth, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp) != EOF)  //while another valid entry to load
+		while (fscanf(file, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", &x, &y, &height, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp) != EOF)  //while another valid entry to load
 			numPointsInFile++;
 
 		initPoints(numPointsInFile);
@@ -358,22 +358,22 @@ bool SonarPointCloud::loadLIDARTxt()
 
 		//now load lines of points
 		GLuint index = 0u;
-		double averageDepth = 0.0;
-		while (fscanf(file, "%lf %lf %lf\n", &x, &y, &depth) != EOF)  //while another valid entry to load
+		double averageHeight = 0.0;
+		while (fscanf(file, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", &x, &y, &height, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp) != EOF)  //while another valid entry to load
 		{
-			setUncertaintyPoint(index++, x, y, depth, 0.f, 0.f);
-			averageDepth += depth;
+			setUncertaintyPoint(index++, x, y, -height, 0.f, 0.f);
+			averageHeight += height;
 			assert(depth < 0.);
 		}
-		averageDepth /= m_nPoints;
+		averageHeight /= m_nPoints;
 
 		printf("Loaded %d points\n", index);
 
 		printf("Original Min/Maxes:\n");
 		printf("X Min: %f Max: %f\n", getXMin(), getXMax());
 		printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
-		printf("Depth Min: %f Max: %f\n", getZMin(), getZMax());
-		printf("Depth Avg: %f\n", averageDepth);
+		printf("Height Min: %f Max: %f\n", getZMin(), getZMax());
+		printf("Height Avg: %f\n", averageHeight);
 
 		fclose(file);
 

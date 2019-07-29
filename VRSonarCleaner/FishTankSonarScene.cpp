@@ -121,6 +121,26 @@ void FishTankSonarScene::processSDLEvent(SDL_Event & ev)
 			m_bStereo = !m_bStereo;
 		}
 
+		if (!(ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_d)
+		{
+			auto pcp = static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("pointclean"));
+			if (pcp)
+			{
+				pcp->activateDemoMode();
+				Renderer::getInstance().showMessage("Demo mode activated.");
+			}
+		}
+
+		if ((ev.key.keysym.mod & KMOD_CTRL) && ev.key.keysym.sym == SDLK_d)
+		{
+			auto pcp = static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("pointclean"));
+			if (pcp)
+			{
+				pcp->deactivateDemoMode();
+				Renderer::getInstance().showMessage("Normal mode activated.");
+			}
+		}
+
 		if (ev.key.keysym.sym == SDLK_HOME)
 		{
 			m_bEditMode = !m_bEditMode;
@@ -159,7 +179,7 @@ void FishTankSonarScene::update()
 		{
 			auto pcp = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume);		
 			BehaviorManager::getInstance().addBehavior("pointclean", pcp);
-			pcp->activateDemoMode();
+			//pcp->activateDemoMode();
 		}
 	}
 
@@ -261,9 +281,14 @@ void FishTankSonarScene::draw()
 
 	if (m_pTableVolume->isVisible())
 	{
-		m_pTableVolume->drawVolumeBacking(m_mat4ScreenToWorld, 1.f);
+		glm::mat4 viewPos = glm::inverse(glm::lookAt(
+			Renderer::getInstance().getCamera()->pos,
+			m_vec3ScreenCenter,
+			m_vec3ScreenUp));
+
+		m_pTableVolume->drawVolumeBacking(viewPos, 1.f);
 		m_pTableVolume->drawBBox(0.f);
-		m_pTableVolume->drawAxes(1.f);
+		//m_pTableVolume->drawAxes(1.f);
 
 		Renderer::RendererSubmission rs;
 		rs.glPrimitiveType = GL_TRIANGLES;
@@ -285,9 +310,9 @@ void FishTankSonarScene::draw()
 				continue;
 			}
 
-			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
 			rs.modelToWorldTransform = m_pTableVolume->getTransformDataset(cloud);
-			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
+			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}
 	}

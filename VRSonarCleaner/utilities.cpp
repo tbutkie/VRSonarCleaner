@@ -72,7 +72,8 @@ namespace utils
 
 		float l, r, t, b, n, f;
 
-		n = glm::abs(dist - 0.25f); // half unit depth in front of screen
+		//n = glm::abs(dist - 0.25f); // half unit depth in front of screen
+		n = 0.01f;
 		f = dist + 2.f; // one unit depth into screen
 
 		// use similar triangles to scale to the near plane
