@@ -139,6 +139,16 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 				m_pHairySlice->setShader("streamline_gradient_animated");
 			}
 
+			if (ev.key.keysym.sym == SDLK_e)
+			{
+				m_bShowError = !m_bShowError;
+			}
+
+			if (ev.key.keysym.sym == SDLK_c)
+			{
+				m_bShowCondition = !m_bShowCondition;
+			}
+
 			if (ev.key.keysym.sym == SDLK_m)
 			{
 				m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
