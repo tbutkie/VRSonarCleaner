@@ -258,6 +258,9 @@
     <ClCompile Include="HairySlicesStudyScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="HairyVolume.cpp">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -475,6 +478,9 @@
     </ClInclude>
     <ClInclude Include="HairySlicesStudyScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="HairyVolume.h">
+      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

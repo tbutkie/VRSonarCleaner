@@ -12,6 +12,7 @@ HairySlicesStudyScene::HairySlicesStudyScene(float displayDiagonalInches, Tracke
 	: m_pTDM(pTDM)
 	, m_pCosmoVolume(NULL)
 	, m_pHairySlice(NULL)
+	, m_pHairyVolume(NULL)
 	, m_bShowCosmoBBox(true)
 	, m_bShowProbe(false)
 	, m_bStudyActive(false)
@@ -59,7 +60,12 @@ void HairySlicesStudyScene::init()
 		delete m_pHairySlice;
 
 	m_pHairySlice = new HairySlice(m_pCosmoVolume);
-	
+
+	if (m_pHairyVolume)
+		delete m_pHairyVolume;
+
+	m_pHairyVolume = new HairyVolume(m_pCosmoVolume);
+
 	setupViews();
 	setupParameters();
 }
@@ -711,6 +717,8 @@ void HairySlicesStudyScene::update()
 
 	m_pHairySlice->update();
 
+	m_pHairyVolume->update();
+
 	if (m_pTDM && m_pTDM->getTracker())
 	{
 		m_pTDM->getTracker()->hideRenderModel();
@@ -880,7 +888,9 @@ void HairySlicesStudyScene::draw()
 		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(accuracyColor, 1.f), glm::vec4(accuracyColor, 1.f));
 	}
 
-	m_pHairySlice->draw();
+	//m_pHairySlice->draw();
+
+	m_pHairyVolume->draw();
 }
 
 

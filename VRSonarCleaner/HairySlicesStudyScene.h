@@ -6,6 +6,7 @@
 #include "DataLogger.h"
 #include "Renderer.h"
 #include "HairySlice.h"
+#include "HairyVolume.h"
 #include "TrackedDeviceManager.h"
 #include <random>
 #include <chrono>
@@ -46,6 +47,7 @@ private:
 	CosmoVolume* m_pCosmoVolume;
 
 	HairySlice* m_pHairySlice;
+	HairyVolume* m_pHairyVolume;
 
 	bool m_bShowCosmoBBox;
 	bool m_bShowProbe;
