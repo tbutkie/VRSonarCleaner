@@ -153,66 +153,73 @@ void FishTankSonarScene::update()
 {
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();	
 
-	if (m_pTDM->getPrimaryController())
+	if (m_pTDM)
 	{
-		m_pTDM->getPrimaryController()->hideRenderModel();
-
-		if (m_bEditMode && m_pTDM->getPrimaryController()->justPressedTouchpad())
+		if (m_pTDM->getPrimaryController())
 		{
-			glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
-			glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter - m_pTDM->getPrimaryController()->c_vec4HoleNormal));
+			//m_pTDM->getPrimaryController()->hideRenderModel();
+			auto pose = m_pTDM->getPrimaryController()->getDeviceToWorldTransform();
+			Renderer::getInstance().drawPointerLit(pose[3], pose[3] + pose[0], 0.01f, glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f), glm::vec4(1.f, 0.f, 0.f, 1.f));
+			Renderer::getInstance().drawPointerLit(pose[3], pose[3] + pose[1], 0.01f, glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
+			Renderer::getInstance().drawPointerLit(pose[3], pose[3] + pose[2], 0.01f, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(0.f, 0.f, 1.f, 1.f));
 
-			m_vec3ScreenCenter = ctrTrans[3];
-			m_vec3ScreenNormal = glm::normalize(vecTrans[3] - ctrTrans[3]);
+			if (m_bEditMode && m_pTDM->getPrimaryController()->justPressedTouchpad())
+			{
+				glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
+				glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter - m_pTDM->getPrimaryController()->c_vec4HoleNormal));
 
-			calcWorldToScreen();
+				m_vec3ScreenCenter = ctrTrans[3];
+				m_vec3ScreenNormal = glm::normalize(vecTrans[3] - ctrTrans[3]);
 
-			cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;
-			cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+				calcWorldToScreen();
 
-			m_pTableVolume->setPosition(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f));
-			m_pTableVolume->setOrientation(m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-			m_pTableVolume->setDimensions(glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
+				cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;
+				cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+
+				m_pTableVolume->setPosition(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f));
+				m_pTableVolume->setOrientation(m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+				m_pTableVolume->setDimensions(glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
+			}
+
+			if (!BehaviorManager::getInstance().getBehavior("pointclean"))
+			{
+				auto pcp = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume);
+				BehaviorManager::getInstance().addBehavior("pointclean", pcp);
+				//pcp->activateDemoMode();
+			}
 		}
 
-		if (!BehaviorManager::getInstance().getBehavior("pointclean"))
+		if (m_pTDM->getSecondaryController())
 		{
-			auto pcp = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume);		
-			BehaviorManager::getInstance().addBehavior("pointclean", pcp);
-			//pcp->activateDemoMode();
-		}
-	}
+			m_pTDM->getSecondaryController()->hideRenderModel();
 
-	if (m_pTDM->getSecondaryController())
-	{
-		m_pTDM->getSecondaryController()->hideRenderModel();
+			if (m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getTracker())
+			{
+				glm::mat4 ctrTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getSecondaryController()->c_vec4HoleCenter));
+				glm::vec4 eyeCenterTrackerSpace = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * ctrTrans[3];
+				std::cout << "Tracker to Center of Projection Offset: (" << m_mat4TrackerToEyeCenterOffset[3].x << ", " << m_mat4TrackerToEyeCenterOffset[3].y << ", " << m_mat4TrackerToEyeCenterOffset[3].z << ")" << std::endl;
+			}
 
-		if (m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getTracker())
-		{
-			glm::mat4 ctrTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getSecondaryController()->c_vec4HoleCenter));
-			glm::vec4 eyeCenterTrackerSpace = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * ctrTrans[3];
-			std::cout << "Tracker to Center of Projection Offset: (" << m_mat4TrackerToEyeCenterOffset[3].x << ", " << m_mat4TrackerToEyeCenterOffset[3].y << ", " << m_mat4TrackerToEyeCenterOffset[3].z << ")" << std::endl;
+			if (!BehaviorManager::getInstance().getBehavior("grab"))
+				BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
 		}
 
-		if (!BehaviorManager::getInstance().getBehavior("grab"))
-			BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
-	}
-	
-	if (m_pTDM->getTracker())
-	{
-		m_pTDM->getTracker()->hideRenderModel();
-
-		if (m_bHeadTracking)
+		if (m_pTDM->getTracker())
 		{
-			cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
-			cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-		}
-	}
+			m_pTDM->getTracker()->hideRenderModel();
 
-	if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
-	{
-		if (!BehaviorManager::getInstance().getBehavior("scale"))
-			BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+			if (m_bHeadTracking)
+			{
+				cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
+				cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+			}
+		}
+
+		if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
+		{
+			if (!BehaviorManager::getInstance().getBehavior("scale"))
+				BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
+		}
 	}
 
 	setupViews();
