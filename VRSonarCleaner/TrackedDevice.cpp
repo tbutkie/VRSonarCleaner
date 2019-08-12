@@ -174,7 +174,7 @@ vr::HmdMatrix34_t TrackedDevice::ConvertMatrix4ToSteamVRMatrix(const glm::mat4 &
 
 uint32_t TrackedDevice::getPropertyInt32(vr::TrackedDeviceProperty prop, vr::TrackedPropertyError * peError)
 {	
-	return m_pHMD->GetInt32TrackedDeviceProperty(m_unDeviceID, prop, peError);;
+	return m_pHMD->GetInt32TrackedDeviceProperty(m_unDeviceID, prop, peError);
 }
 
 //-----------------------------------------------------------------------------
