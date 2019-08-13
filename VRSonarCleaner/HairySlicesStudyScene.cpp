@@ -570,6 +570,24 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 						Renderer::getInstance().showMessage("ERROR: Tracker calibration FAILED!");
 				}
 
+				if (ev.key.keysym.sym == SDLK_1)
+				{
+					if (m_pHairyVolume)
+					{
+						m_pHairyVolume->setGeomStyle("STREAKLET");
+						m_pHairyVolume->setShader("flat");
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_2)
+				{
+					if (m_pHairyVolume)
+					{
+						m_pHairyVolume->setGeomStyle("CONE");
+						m_pHairyVolume->setShader("streamline_ring_static");
+					}
+				}
+
 				if (ev.key.keysym.sym == SDLK_b)
 				{
 					Renderer::getInstance().toggleSkybox();
@@ -591,10 +609,23 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					m_bShowCondition = !m_bShowCondition;
 				}
 
+				if (ev.key.keysym.sym == SDLK_d)
+				{
+					if (m_pHairyVolume)
+					{
+						delete m_pHairyVolume;
+						m_pHairyVolume = NULL;
+					}
+				}
+
 				if (ev.key.keysym.sym == SDLK_g)
 				{
 					m_pHairySlice->m_bShowGeometry = !m_pHairySlice->m_bShowGeometry;
-					Renderer::getInstance().showMessage("Geometry visibility set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
+
+					if (m_pHairyVolume)
+						m_pHairyVolume->m_bShowGeometry = m_pHairySlice->m_bShowGeometry;
+
+					//Renderer::getInstance().showMessage("Geometry visibility set to " + std::to_string(m_pHairySlice->m_bShowGeometry));
 				}
 
 				if (ev.key.keysym.sym == SDLK_h)
@@ -638,12 +669,18 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 				if (ev.key.keysym.sym == SDLK_o)
 				{
 					m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
-					m_pHairyVolume->m_bOscillate = !m_pHairyVolume->m_bOscillate;
+
+					if (m_pHairyVolume)
+						m_pHairyVolume->m_bOscillate = !m_pHairyVolume->m_bOscillate;
 				}
 
 				if (ev.key.keysym.sym == SDLK_p)
 				{
 					m_pHairySlice->m_bShowGrid = !m_pHairySlice->m_bShowGrid;
+
+					if (m_pHairyVolume)
+						m_pHairyVolume->m_bShowGrid = m_pHairySlice->m_bShowGrid;
+
 					Renderer::getInstance().showMessage("Grid visibility set to " + std::to_string(m_pHairySlice->m_bShowGrid));
 				}
 
@@ -718,7 +755,8 @@ void HairySlicesStudyScene::update()
 
 	m_pHairySlice->update();
 
-	m_pHairyVolume->update();
+	if (m_pHairyVolume)
+		m_pHairyVolume->update();
 
 	if (m_pTDM && m_pTDM->getTracker())
 	{
@@ -889,9 +927,11 @@ void HairySlicesStudyScene::draw()
 		Renderer::getInstance().drawPointerLit(glm::vec3(0.f), glm::normalize(m_vec3ProbeDirection) * 0.1f, 0.01f, glm::vec4(0.2f, 0.2f, 0.2f, 1.f), glm::vec4(accuracyColor, 1.f), glm::vec4(accuracyColor, 1.f));
 	}
 
-	//m_pHairySlice->draw();
 
-	m_pHairyVolume->draw();
+	if (m_pHairyVolume)
+	  m_pHairyVolume->draw();
+	else
+		m_pHairySlice->draw();
 }
 
 

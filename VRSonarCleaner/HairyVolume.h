@@ -32,6 +32,7 @@ private:
 
 	bool m_bShowGeometry;
 	bool m_bShowParticles;
+	bool m_bShowGrid;
 	bool m_bShowSeeds;
 
 	bool m_bOscillate;

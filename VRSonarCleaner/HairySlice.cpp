@@ -52,14 +52,14 @@ HairySlice::HairySlice(CosmoVolume* cosmoVolume)
 		"streamline_ring_animated",
 		"streamline_ring_static"
 		})
-	, m_iCurrentShader(4)
+	, m_iCurrentShader(0)
 	, m_vstrGeomStyleNames({
 		"STREAKLET",
 		"LINE",
 		"TUBE",
 		"CONE"
 		})
-	, m_iCurrentGeomStyle(2)
+	, m_iCurrentGeomStyle(0)
 {
 	m_RNG.seed(std::random_device()());
 	m_Distribution = std::uniform_real_distribution<float>(-1.f, 1.f);

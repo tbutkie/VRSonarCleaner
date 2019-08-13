@@ -13,6 +13,7 @@ HairyVolume::HairyVolume(CosmoVolume* cosmoVolume)
 	, m_glParticleEBO(0)
 	, m_glParticleVAO(0)
 	, m_bShowGeometry(true)
+	, m_bShowGrid(false)
 	, m_bShowSeeds(false)
 	, m_bOscillate(true)
 	, m_bJitterSeeds(true)
@@ -117,15 +118,34 @@ void HairyVolume::draw()
 	{
 		m_rs.modelToWorldTransform = m_rsParticle.modelToWorldTransform = glm::mat4_cast(m_qVolumeOrientation);// m_pCosmoVolume->getTransformRawDomainToVolume();
 
-		Renderer::getInstance().addToDynamicRenderQueue(m_iCurrentGeomStyle == 0 ? m_rsParticle : m_rs);
+		if (m_iCurrentGeomStyle == 0)
+		{
+			drawParticleHeads(0.001f);
+			Renderer::getInstance().addToDynamicRenderQueue(m_rsParticle);
+		}
+		else
+			Renderer::getInstance().addToDynamicRenderQueue(m_rs);
 	}
 
 	if (m_bShowSeeds)
 		for (auto &seed : m_vvec3StreamlineSeeds)
 			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
-	
-	// Particles
-	drawParticleHeads(0.001f);
+
+	if (m_bShowGrid)
+	{
+		Renderer::RendererSubmission rs;
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "grid";
+		rs.modelToWorldTransform = glm::mat4_cast(m_qVolumeOrientation) * glm::scale(glm::mat4(), glm::vec3(m_pCosmoVolume->getDimensions().x, m_pCosmoVolume->getDimensions().y, 1.f));
+		rs.VAO = Renderer::getInstance().getPrimitiveVAO();
+		rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quaddouble");
+		rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quaddouble");
+		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quaddouble");
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.hasTransparency = true;
+
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
+	}
 }
 
 void HairyVolume::set()
