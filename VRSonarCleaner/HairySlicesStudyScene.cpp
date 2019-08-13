@@ -572,6 +572,9 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 				if (ev.key.keysym.sym == SDLK_1)
 				{
+					m_pHairySlice->setGeomStyle("STREAKLET");
+					m_pHairySlice->setShader("flat");
+
 					if (m_pHairyVolume)
 					{
 						m_pHairyVolume->setGeomStyle("STREAKLET");
@@ -581,10 +584,49 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 
 				if (ev.key.keysym.sym == SDLK_2)
 				{
+					m_pHairySlice->setGeomStyle("LINE");
+					m_pHairySlice->setShader("flat");
+
+					if (m_pHairyVolume)
+					{
+						m_pHairyVolume->setGeomStyle("LINE");
+						m_pHairyVolume->setShader("flat");
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_3)
+				{
+					m_pHairySlice->setGeomStyle("CONE");
+					m_pHairySlice->setShader("streamline_ring_static");
+
 					if (m_pHairyVolume)
 					{
 						m_pHairyVolume->setGeomStyle("CONE");
 						m_pHairyVolume->setShader("streamline_ring_static");
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_4)
+				{
+					m_pHairySlice->setGeomStyle("TUBE");
+					m_pHairySlice->setShader("streamline_gradient_static");
+
+					if (m_pHairyVolume)
+					{
+						m_pHairyVolume->setGeomStyle("TUBE");
+						m_pHairyVolume->setShader("streamline_gradient_static");
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_5)
+				{
+					m_pHairySlice->setGeomStyle("TUBE");
+					m_pHairySlice->setShader("streamline_gradient_animated");
+
+					if (m_pHairyVolume)
+					{
+						m_pHairyVolume->setGeomStyle("TUBE");
+						m_pHairyVolume->setShader("streamline_gradient_animated");
 					}
 				}
 
@@ -615,6 +657,7 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 					{
 						delete m_pHairyVolume;
 						m_pHairyVolume = NULL;
+						m_pCosmoVolume->setOrientation(glm::quat());
 					}
 				}
 
