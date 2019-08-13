@@ -14,12 +14,12 @@ HairyVolume::HairyVolume(CosmoVolume* cosmoVolume)
 	, m_glParticleVAO(0)
 	, m_bShowGeometry(true)
 	, m_bShowSeeds(false)
-	, m_bOscillate(false)
+	, m_bOscillate(true)
 	, m_bJitterSeeds(true)
 	, m_fTubeRadius(0.003125f)
-	, m_fOscAmpDeg(20.f)
-	, m_fOscTime(2.5f)
-	, m_uiSamplingResolution(10u)
+	, m_fOscAmpDeg(360.f)
+	, m_fOscTime(20.f)
+	, m_uiSamplingResolution(15u)
 	, m_uiNumTubeSegments(16u)
 	, m_fRK4StepSize(0.5f)
 	, m_fRK4StopVelocity(0.f)
@@ -28,7 +28,7 @@ HairyVolume::HairyVolume(CosmoVolume* cosmoVolume)
 	, m_arrfParticleLives(NULL)
 	, m_nParticleCount(0)
 	, m_fParticleLifetime(1.f)
-	, m_fParticleBirthTime(0.f)
+	, m_fParticleBirthTime(0.1f)
 	, m_fParticleDeathTime(0.5f)
 	, m_vec4ParticleHeadColor(1.f)
 	, m_vec4ParticleTailColor(0.3f, 0.3f, 0.3f, 0.f)
@@ -95,6 +95,8 @@ void HairyVolume::update()
 		m_qVolumeOrientation = glm::quat();
 	}
 
+	m_pCosmoVolume->setOrientation(m_qVolumeOrientation);
+
 	for (auto &shader : m_vstrShaderNames)
 	{
 		GLuint* shaderHandle = Renderer::getInstance().getShader(shader);
@@ -123,7 +125,7 @@ void HairyVolume::draw()
 			Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), seed) * glm::scale(glm::mat4(), glm::vec3(0.001f)), glm::vec4(1.f, 0.f, 0.f, 1.f));
 	
 	// Particles
-	//drawParticleHeads(0.001f);
+	drawParticleHeads(0.001f);
 }
 
 void HairyVolume::set()
@@ -872,25 +874,25 @@ void HairyVolume::drawParticleHeads(float radius)
 		glm::vec3 pos = sl[segmentBeginIndex] + segmentDir * leftover;
 
 		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-
-		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel));
+		glm::vec4 color = m_vec4ParticleHeadColor;// glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), color);
 	}
 
 	for (auto &p : m_qpBirthingParticles)
 	{
 		glm::vec3 pos = m_vvvec3RawStreamlines[p.first].front();
 		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-		glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 		float ratio = glm::clamp(1.f - p.second / m_fParticleBirthTime, 0.f, 1.f);
-		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), glm::vec4(glm::vec3(color), ratio));
+		glm::vec4 color = glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, ratio);
+		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius)), color);
 	}
 
 	for (auto &p : m_qpDyingParticles)
 	{
 		glm::vec3 pos = m_vvvec3RawStreamlines[p.first].back();
 		float vel = sqrtf(m_pCosmoVolume->getRelativeVelocity(m_pCosmoVolume->convertToRawDomainCoords(pos)));
-		glm::vec4 color = glm::mix(m_vec4VelColorMin, m_vec4VelColorMax, vel);
 		float ratio = p.second / m_fParticleDeathTime;
+		glm::vec4 color = glm::mix(m_vec4ParticleTailColor, m_vec4ParticleHeadColor, ratio);
 		Renderer::getInstance().drawPrimitive("icosphere", glm::mat4_cast(m_qVolumeOrientation) * glm::translate(glm::mat4(), pos) * glm::scale(glm::mat4(), glm::vec3(radius) * ratio), color);
 	}
 }

@@ -5,7 +5,7 @@
 
 class HairyVolume
 {
-	friend class HairyVolumesStudyScene;
+	friend class HairySlicesStudyScene;
 	
 public:
 	HairyVolume(CosmoVolume* cosmoVolume);

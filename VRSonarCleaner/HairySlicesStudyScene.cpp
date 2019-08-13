@@ -638,6 +638,7 @@ void HairySlicesStudyScene::processSDLEvent(SDL_Event & ev)
 				if (ev.key.keysym.sym == SDLK_o)
 				{
 					m_pHairySlice->m_bOscillate = !m_pHairySlice->m_bOscillate;
+					m_pHairyVolume->m_bOscillate = !m_pHairyVolume->m_bOscillate;
 				}
 
 				if (ev.key.keysym.sym == SDLK_p)
