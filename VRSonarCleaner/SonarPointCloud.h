@@ -10,8 +10,6 @@
 #include "Dataset.h"
 #include "ColorScaler.h"
 
-#include <bag.h>
-
 #include <glm.hpp>
 
 class SonarPointCloud : public Dataset

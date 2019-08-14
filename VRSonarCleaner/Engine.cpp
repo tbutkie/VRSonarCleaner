@@ -3,16 +3,9 @@
 
 #include "BehaviorManager.h"
 #include "DataLogger.h"
-#include "FlowScene.h"
-#include "SonarScene.h"
-#include "StudyTrialScene.h"
-#include "CosmoStudyTrialScene.h"
-#include "HairySlicesStudyScene.h"
-#include "MotionCompensationScene.h"
 #include "FishTankScene.h"
 #include "FishTankSonarScene.h"
 
-#include "HolodeckBackground.h"
 #include "utilities.h"
 
 #include <fstream>
@@ -46,7 +39,7 @@ Engine::Engine(bool demo, bool vr, bool renderToHMD, bool stereoContext, int dis
 	, m_pHMD(NULL)
 	, m_pTDM(NULL)
 {
-};
+}
 
 
 //-----------------------------------------------------------------------------
@@ -114,8 +107,6 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	//m_pCurrentScene = new FlowScene(m_pTDM);	
-	//m_pCurrentScene = new HairySlicesStudyScene(m_fDisplayDiagonalInches, m_pTDM);
 	m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
 
 	m_pCurrentScene->init();

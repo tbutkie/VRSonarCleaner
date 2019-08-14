@@ -37,9 +37,6 @@
     <Filter Include="Interactions &amp; Behaviors\point">
       <UniqueIdentifier>{8d9c4c9c-2b57-4195-9955-030b7ec25c39}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Interactions &amp; Behaviors\flow">
-      <UniqueIdentifier>{f6399f2b-5859-4e29-88b7-58258f3182d1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Interactions &amp; Behaviors\study">
       <UniqueIdentifier>{47902574-bc59-450d-ad59-56a96a985500}</UniqueIdentifier>
     </Filter>
@@ -56,9 +53,6 @@
     </ClCompile>
     <ClCompile Include="..\shared\pathtools.cpp">
       <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="HolodeckBackground.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ViveController.cpp">
       <Filter>Source Files</Filter>
@@ -84,21 +78,6 @@
     <ClCompile Include="arcball.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlowGrid.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IllustrativeDyePole.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IllustrativeParticle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IllustrativeParticleEmitter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IllustrativeParticleSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="LightingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -106,9 +85,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FlowVolume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shaderset.cpp">
@@ -123,9 +99,6 @@
     <ClCompile Include="Dataset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SelectAreaBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="WelcomeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
@@ -134,12 +107,6 @@
     </ClCompile>
     <ClCompile Include="ProbeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\base</Filter>
-    </ClCompile>
-    <ClCompile Include="FlowProbe.cpp">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClCompile>
-    <ClCompile Include="AdvectionProbe.cpp">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClCompile>
     <ClCompile Include="PointCleanProbe.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
@@ -166,9 +133,6 @@
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClCompile>
     <ClCompile Include="StudyEditTutorial.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
-    <ClCompile Include="CurateStudyDataBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
     <ClCompile Include="RunStudyBehavior.cpp">
@@ -201,15 +165,6 @@
     <ClCompile Include="utilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlowFieldCurator.cpp">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClCompile>
-    <ClCompile Include="FlowScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="HairyFlowProbe.cpp">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClCompile>
     <ClCompile Include="DebugProbe.cpp">
       <Filter>Interactions &amp; Behaviors\debug</Filter>
     </ClCompile>
@@ -219,43 +174,13 @@
     <ClCompile Include="GrabObjectBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
-    <ClCompile Include="SonarScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="VectorFieldGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyTrialScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
     <ClCompile Include="PrimitivesFactory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MotionCompensationScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyTrialMotionCompensation.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
-    <ClCompile Include="CosmoStudyTrialScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="CosmoVolume.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CosmoGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FishTankScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
     <ClCompile Include="FishTankSonarScene.cpp">
-      <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="HairySlice.cpp">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClCompile>
-    <ClCompile Include="HairySlicesStudyScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>
@@ -265,9 +190,6 @@
     </ClInclude>
     <ClInclude Include="..\shared\pathtools.h">
       <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="HolodeckBackground.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ViveController.h">
       <Filter>Header Files</Filter>
@@ -293,21 +215,6 @@
     <ClInclude Include="arcball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FlowGrid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IllustrativeDyePole.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IllustrativeParticle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IllustrativeParticleEmitter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IllustrativeParticleSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ColorsAndSizes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -315,9 +222,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FlowVolume.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="shaderset.h">
@@ -335,9 +239,6 @@
     <ClInclude Include="Dataset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SelectAreaBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="WelcomeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
@@ -349,12 +250,6 @@
     </ClInclude>
     <ClInclude Include="BehaviorBase.h">
       <Filter>Interactions &amp; Behaviors\base</Filter>
-    </ClInclude>
-    <ClInclude Include="FlowProbe.h">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClInclude>
-    <ClInclude Include="AdvectionProbe.h">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
     <ClInclude Include="PointCleanProbe.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
@@ -381,9 +276,6 @@
       <Filter>Interactions &amp; Behaviors\point</Filter>
     </ClInclude>
     <ClInclude Include="StudyEditTutorial.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
-    <ClInclude Include="CurateStudyDataBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
     <ClInclude Include="RunStudyBehavior.h">
@@ -416,17 +308,8 @@
     <ClInclude Include="utilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FlowFieldCurator.h">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClInclude>
     <ClInclude Include="SceneBase.h">
       <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="FlowScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="HairyFlowProbe.h">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
     </ClInclude>
     <ClInclude Include="DebugProbe.h">
       <Filter>Interactions &amp; Behaviors\debug</Filter>
@@ -437,43 +320,13 @@
     <ClInclude Include="GrabObjectBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
-    <ClInclude Include="SonarScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="VectorFieldGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyTrialScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
     <ClInclude Include="PrimitivesFactory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MotionCompensationScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyTrialMotionCompensation.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
-    <ClInclude Include="CosmoStudyTrialScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="CosmoVolume.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CosmoGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FishTankScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
     <ClInclude Include="FishTankSonarScene.h">
-      <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="HairySlice.h">
-      <Filter>Interactions &amp; Behaviors\flow</Filter>
-    </ClInclude>
-    <ClInclude Include="HairySlicesStudyScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
   </ItemGroup>
