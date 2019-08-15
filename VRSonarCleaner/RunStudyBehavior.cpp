@@ -1,7 +1,7 @@
 #include "RunStudyBehavior.h"
 
-#include "StudyTrialStandingBehavior.h"
-#include "StudyTrialSittingBehavior.h"
+#include "StudyTrialFishtankBehavior.h"
+#include "StudyTrialHMDBehavior.h"
 #include "StudyTrialDesktopBehavior.h"
 
 #include <iostream>
@@ -11,8 +11,8 @@
 using namespace std::experimental::filesystem::v1;
 
 
-RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, bool sitting)
-	: m_eStudyType(sitting ? VR_SITTING : VR_STANDING)
+RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM)
+	: m_eStudyType(VR)
 	, m_pTDM(pTDM)
 	, m_bTrialsLoaded(false)
 {
@@ -76,11 +76,11 @@ void RunStudyBehavior::init()
 	for (auto const &ds : m_vStudyDatasets)
 		switch (m_eStudyType)
 		{
-		case RunStudyBehavior::VR_STANDING:
-			m_qTrials.push(new StudyTrialStandingBehavior(m_pTDM, ds.first.string(), ds.second));
+		case RunStudyBehavior::FISHTANK:
+			m_qTrials.push(new StudyTrialFishtankBehavior(m_pTDM, ds.first.string(), ds.second));
 			break;
-		case RunStudyBehavior::VR_SITTING:
-			m_qTrials.push(new StudyTrialSittingBehavior(m_pTDM, ds.first.string(), ds.second));
+		case RunStudyBehavior::VR:
+			m_qTrials.push(new StudyTrialHMDBehavior(m_pTDM, ds.first.string(), ds.second));
 			break;
 		case RunStudyBehavior::DESKTOP:
 			m_qTrials.push(new StudyTrialDesktopBehavior(ds.first.string(), ds.second));

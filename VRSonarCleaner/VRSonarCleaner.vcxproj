@@ -199,8 +199,8 @@
     <ClCompile Include="StudyEditTutorial.cpp" />
     <ClCompile Include="StudyIntroBehavior.cpp" />
     <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
-    <ClCompile Include="StudyTrialSittingBehavior.cpp" />
-    <ClCompile Include="StudyTrialStandingBehavior.cpp" />
+    <ClCompile Include="StudyTrialHMDBehavior.cpp" />
+    <ClCompile Include="StudyTrialFishtankBehavior.cpp" />
     <ClCompile Include="StudyTutorialBehavior.cpp" />
     <ClCompile Include="TaskCompleteBehavior.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
@@ -249,8 +249,8 @@
     <ClInclude Include="StudyEditTutorial.h" />
     <ClInclude Include="StudyIntroBehavior.h" />
     <ClInclude Include="StudyTrialDesktopBehavior.h" />
-    <ClInclude Include="StudyTrialSittingBehavior.h" />
-    <ClInclude Include="StudyTrialStandingBehavior.h" />
+    <ClInclude Include="StudyTrialHMDBehavior.h" />
+    <ClInclude Include="StudyTrialFishtankBehavior.h" />
     <ClInclude Include="StudyTutorialBehavior.h" />
     <ClInclude Include="TaskCompleteBehavior.h" />
     <ClInclude Include="TrackedDevice.h" />

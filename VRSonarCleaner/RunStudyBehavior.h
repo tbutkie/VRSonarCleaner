@@ -14,7 +14,7 @@ class RunStudyBehavior :
 	public InitializableBehavior
 {
 public:
-	RunStudyBehavior(TrackedDeviceManager* pTDM, bool sitting);
+	RunStudyBehavior(TrackedDeviceManager* pTDM);
 	RunStudyBehavior();
 	~RunStudyBehavior();
 
@@ -27,8 +27,8 @@ public:
 	void next();
 
 	enum STUDY_TYPE {
-		VR_STANDING,
-		VR_SITTING,
+		VR,
+		FISHTANK,
 		DESKTOP
 	};
 

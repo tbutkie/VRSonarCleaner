@@ -1,4 +1,4 @@
-#include "StudyTrialSittingBehavior.h"
+#include "StudyTrialFishtankBehavior.h"
 #include "BehaviorManager.h"
 #include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -11,7 +11,7 @@
 
 using namespace std::chrono;
 
-StudyTrialSittingBehavior::StudyTrialSittingBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
+StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
 	: m_pTDM(pTDM)
 	, m_strFileName(fileName)
 	, m_strCategory(category)
@@ -23,13 +23,7 @@ StudyTrialSittingBehavior::StudyTrialSittingBehavior(TrackedDeviceManager* pTDM,
 
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
 
-	glm::vec3 up(0.f, 1.f, 0.f);
-	glm::vec3 hmdForward = -m_pTDM->getHMDToWorldTransform()[2];
-	glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
-
-	glm::vec3 forward = glm::normalize(glm::cross(glm::normalize(glm::cross(up, hmdForward)), up));
-
-	m_pDataVolume = new DataVolume(hmdPos + forward * 1.5f, glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(1.f));
+	m_pDataVolume = new DataVolume(glm::vec3(0.f, 1.f, 0.f), glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(1.f));
 
 	m_pDataVolume->add(m_pPointCloud);
 
@@ -45,7 +39,7 @@ StudyTrialSittingBehavior::StudyTrialSittingBehavior(TrackedDeviceManager* pTDM,
 }
 
 
-StudyTrialSittingBehavior::~StudyTrialSittingBehavior()
+StudyTrialFishtankBehavior::~StudyTrialFishtankBehavior()
 {
 	if (m_pPointCloud)
 		delete m_pPointCloud;
@@ -57,11 +51,10 @@ StudyTrialSittingBehavior::~StudyTrialSittingBehavior()
 		delete m_pColorScaler;
 }
 
-void StudyTrialSittingBehavior::init()
+void StudyTrialFishtankBehavior::init()
 {
 	using namespace std::experimental::filesystem::v1;
-	std::cout << "Starting trial for " << path(m_strFileName).filename() << std::endl;
-
+	std::cout << "Starting trial: " << path(m_strFileName).filename() << std::endl;
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
@@ -73,7 +66,7 @@ void StudyTrialSittingBehavior::init()
 
 	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 	ss << "\t";
-	ss << "trial-type:\"seated\"";
+	ss << "trial-type:\"standing\"";
 	ss << ";";
 	ss << "file-name:\"" << path(m_strFileName).filename() << "\"";
 	ss << ";";
@@ -114,7 +107,7 @@ void StudyTrialSittingBehavior::init()
 	DataLogger::getInstance().logMessage(ss.str());
 }
 
-void StudyTrialSittingBehavior::update()
+void StudyTrialFishtankBehavior::update()
 {
 	m_pPointCloud->update();
 	m_pDataVolume->update();
@@ -153,7 +146,7 @@ void StudyTrialSittingBehavior::update()
 
 		ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 		ss << "\t";
-		ss << "trial-type:\"seated\"";
+		ss << "trial-type:\"standing\"";
 		ss << ";";
 		ss << "file-name:\"" << std::experimental::filesystem::v1::path(m_strFileName).filename() << "\"";
 		ss << ";";
@@ -200,7 +193,7 @@ void StudyTrialSittingBehavior::update()
 	}
 }
 
-void StudyTrialSittingBehavior::draw()
+void StudyTrialFishtankBehavior::draw()
 {
 	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
 	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);

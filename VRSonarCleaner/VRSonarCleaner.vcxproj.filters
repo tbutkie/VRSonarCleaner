@@ -144,14 +144,8 @@
     <ClCompile Include="SnellenTest.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
-    <ClCompile Include="StudyTrialStandingBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
     <ClCompile Include="DesktopCleanBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyTrialSittingBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
     <ClCompile Include="StudyTrialDesktopBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
@@ -182,6 +176,12 @@
     </ClCompile>
     <ClCompile Include="FishTankSonarScene.cpp">
       <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTrialHMDBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTrialFishtankBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -287,14 +287,8 @@
     <ClInclude Include="SnellenTest.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
-    <ClInclude Include="StudyTrialStandingBehavior.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
     <ClInclude Include="DesktopCleanBehavior.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyTrialSittingBehavior.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
     <ClInclude Include="StudyTrialDesktopBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
@@ -328,6 +322,12 @@
     </ClInclude>
     <ClInclude Include="FishTankSonarScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialHMDBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTrialFishtankBehavior.h">
+      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
