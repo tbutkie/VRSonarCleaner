@@ -26,6 +26,9 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
+	
+	// point cloud loading is async, but files are small so let them load so we can refresh the color scale
+	while (!m_pPointCloud->ready()) Sleep(10);
 
 	m_pDataVolume = new DataVolume(glm::vec3(0.f, 0.f, 0.f), glm::quat(), glm::vec3(0.3f));
 
@@ -38,6 +41,8 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 		m_pPointCloud->getMinPositionalTPU(),
 		m_pPointCloud->getMaxPositionalTPU()
 	);
+
+	m_pPointCloud->resetAllMarks();
 
 	m_tpLastUpdate = high_resolution_clock::now();
 }
@@ -296,8 +301,6 @@ void StudyTrialDesktopBehavior::draw()
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 	rs.instanced = true;
 	rs.specularExponent = 0.f;
-	//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
-	//rs.diffuseTexName = "resources/images/circle.png";
 
 	for (auto &cloud : m_pDataVolume->getDatasets())
 	{
