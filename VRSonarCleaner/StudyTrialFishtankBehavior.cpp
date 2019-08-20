@@ -107,6 +107,10 @@ void StudyTrialFishtankBehavior::init()
 	DataLogger::getInstance().logMessage(ss.str());
 }
 
+void StudyTrialFishtankBehavior::processEvent(SDL_Event & ev)
+{
+}
+
 void StudyTrialFishtankBehavior::update()
 {
 	m_pPointCloud->update();

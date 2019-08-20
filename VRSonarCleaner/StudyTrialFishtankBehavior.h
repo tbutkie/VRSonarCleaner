@@ -8,13 +8,15 @@
 #include <queue>
 
 class StudyTrialFishtankBehavior :
-	public InitializableBehavior
+	public InitializableEventBehavior
 {
 public:
 	StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
 	~StudyTrialFishtankBehavior();
 
 	void init();
+
+	void processEvent(SDL_Event &ev);
 
 	void update();
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL.h>
+
 class BehaviorBase
 {
 public:
@@ -24,6 +26,23 @@ public:
 	virtual ~InitializableBehavior() {}
 
 	virtual void init() = 0;
+
+	bool isInitialized() { return m_bInitialized; }
+
+protected:
+	bool m_bInitialized;
+};
+
+class InitializableEventBehavior
+	: public InitializableBehavior
+{
+public:
+	InitializableEventBehavior() : m_bInitialized(false) {}
+	virtual ~InitializableEventBehavior() {}
+
+	virtual void init() = 0;
+
+	virtual void processEvent(SDL_Event &ev) = 0;
 
 	bool isInitialized() { return m_bInitialized; }
 

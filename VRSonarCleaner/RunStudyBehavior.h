@@ -14,11 +14,18 @@ class RunStudyBehavior :
 	public InitializableBehavior
 {
 public:
-	RunStudyBehavior(TrackedDeviceManager* pTDM);
-	RunStudyBehavior();
+	enum EStudyType {
+		VR,
+		FISHTANK,
+		DESKTOP
+	};
+
+	RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode);
 	~RunStudyBehavior();
 
 	void init();
+
+	void processSDLEvent(SDL_Event &ev);
 
 	void update();
 
@@ -26,17 +33,11 @@ public:
 
 	void next();
 
-	enum STUDY_TYPE {
-		VR,
-		FISHTANK,
-		DESKTOP
-	};
-
 private:
-	STUDY_TYPE m_eStudyType;
+	EStudyType m_eStudyType;
 
 	std::vector<std::pair<std::experimental::filesystem::v1::path, std::string>> m_vStudyDatasets;
-	std::queue<InitializableBehavior*> m_qTrials;
+	std::queue<InitializableEventBehavior*> m_qTrials;
 
 	bool m_bTrialsLoaded;
 

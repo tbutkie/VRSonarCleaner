@@ -1,5 +1,7 @@
 #include "RunStudyBehavior.h"
 
+#include "BehaviorManager.h"
+
 #include "StudyTrialFishtankBehavior.h"
 #include "StudyTrialHMDBehavior.h"
 #include "StudyTrialDesktopBehavior.h"
@@ -11,16 +13,9 @@
 using namespace std::experimental::filesystem::v1;
 
 
-RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM)
-	: m_eStudyType(VR)
+RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode)
+	: m_eStudyType(mode)
 	, m_pTDM(pTDM)
-	, m_bTrialsLoaded(false)
-{
-}
-
-RunStudyBehavior::RunStudyBehavior()
-	: m_eStudyType(DESKTOP)
-	, m_pTDM(NULL)
 	, m_bTrialsLoaded(false)
 {
 }
@@ -92,6 +87,22 @@ void RunStudyBehavior::init()
 
 	m_bTrialsLoaded = true;
 	m_qTrials.front()->init();
+}
+
+void RunStudyBehavior::processSDLEvent(SDL_Event & ev)
+{
+	if (!m_bTrialsLoaded || m_qTrials.size() == 0u)
+		return;
+
+	if (ev.type == SDL_KEYDOWN)
+	{
+		if (ev.key.keysym.sym == SDLK_RETURN)
+		{
+			next();
+		}
+	}
+
+	m_qTrials.front()->processEvent(ev);
 }
 
 void RunStudyBehavior::update()

@@ -8,7 +8,7 @@
 #include <queue>
 
 class StudyTrialDesktopBehavior :
-	public InitializableBehavior
+	public InitializableEventBehavior
 {
 public:
 	StudyTrialDesktopBehavior(std::string fileName, std::string category);
@@ -16,11 +16,15 @@ public:
 
 	void init();
 
+	void processEvent(SDL_Event &ev);
+
 	void update();
 
 	void draw();
 
 	void finish();
+
+	void setupViews();
 
 private:
 	ColorScaler* m_pColorScaler;
@@ -29,6 +33,10 @@ private:
 
 	std::string m_strFileName;
 	std::string m_strCategory;
+
+	bool m_bLeftMouseDown;
+	bool m_bRightMouseDown;
+	bool m_bMiddleMouseDown;
 
 	unsigned int m_nPointsLeft;
 	unsigned int m_nPointsCleaned;

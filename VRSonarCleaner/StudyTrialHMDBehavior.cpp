@@ -114,6 +114,10 @@ void StudyTrialHMDBehavior::init()
 	DataLogger::getInstance().logMessage(ss.str());
 }
 
+void StudyTrialHMDBehavior::processEvent(SDL_Event &ev)
+{
+}
+
 void StudyTrialHMDBehavior::update()
 {
 	m_pPointCloud->update();

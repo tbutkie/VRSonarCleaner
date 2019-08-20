@@ -8,13 +8,15 @@
 #include <queue>
 
 class StudyTrialHMDBehavior :
-	public InitializableBehavior
+	public InitializableEventBehavior
 {
 public:
 	StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
 	~StudyTrialHMDBehavior();
 
 	void init();
+
+	void processEvent(SDL_Event &ev);
 
 	void update();
 

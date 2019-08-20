@@ -19,9 +19,9 @@ DesktopCleanBehavior::~DesktopCleanBehavior()
 void DesktopCleanBehavior::init()
 {
 	m_pArcball = new ArcBall(m_pDataVolume);
-	m_pArcball->setProjection(&Renderer::getInstance().getWindow3DViewInfo()->projection);
-	m_pArcball->setView(&Renderer::getInstance().getWindow3DViewInfo()->view);
-	m_pArcball->setViewport(&Renderer::getInstance().getWindow3DViewInfo()->viewport);
+	m_pArcball->setProjection(&Renderer::getInstance().getMonoInfo()->projection);
+	m_pArcball->setView(&Renderer::getInstance().getMonoInfo()->view);
+	m_pArcball->setViewport(&Renderer::getInstance().getMonoInfo()->viewport);
 	BehaviorManager::getInstance().addBehavior("arcball", m_pArcball);
 
 	m_pLasso = new LassoTool();
@@ -70,7 +70,7 @@ unsigned int DesktopCleanBehavior::checkPoints()
 		for (unsigned int i = 0u; i < cloud->getPointCount(); ++i)
 		{
 			glm::vec3 in = m_pDataVolume->convertToWorldCoords(cloud->getRawPointPosition(i));
-			glm::vec3 out = glm::project(in, Renderer::getInstance().getWindow3DViewInfo()->view, Renderer::getInstance().getWindow3DViewInfo()->projection, Renderer::getInstance().getWindow3DViewInfo()->viewport);
+			glm::vec3 out = glm::project(in, Renderer::getInstance().getMonoInfo()->view, Renderer::getInstance().getMonoInfo()->projection, Renderer::getInstance().getMonoInfo()->viewport);
 
 			if (out.z > 1.f)
 				continue;

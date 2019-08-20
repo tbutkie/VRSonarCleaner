@@ -3,8 +3,7 @@
 
 #include "BehaviorManager.h"
 #include "DataLogger.h"
-#include "FishTankScene.h"
-#include "FishTankSonarScene.h"
+#include "SonarStudyScene.h"
 
 #include "utilities.h"
 
@@ -107,7 +106,7 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
+	m_pCurrentScene = new SonarStudyScene(m_pTDM, m_fDisplayDiagonalInches);
 
 	m_pCurrentScene->init();
 
