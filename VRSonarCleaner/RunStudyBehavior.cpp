@@ -62,7 +62,7 @@ void RunStudyBehavior::init()
 		return;
 	}
 
-	DataLogger::getInstance().setLogDirectory("logs");
+	DataLogger::getInstance().setLogDirectory("logs/");
 	DataLogger::getInstance().openLog("study", true);
 	DataLogger::getInstance().start();
 

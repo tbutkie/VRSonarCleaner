@@ -39,12 +39,6 @@ void SonarStudyScene::init()
 	calcWorldToScreen();
 
 	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
-
-	//setupViews();
-
-	auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP);
-	BehaviorManager::getInstance().addBehavior("study", study);
-	study->init();
 }
 
 void SonarStudyScene::processSDLEvent(SDL_Event & ev)
@@ -66,6 +60,27 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 		{
 			m_bEditMode = !m_bEditMode;
 			Renderer::getInstance().showMessage("Edit mode set to " + std::to_string(m_bEditMode));
+		}
+
+		if (ev.key.keysym.sym == SDLK_d && !BehaviorManager::getInstance().getBehavior("study"))
+		{
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP);
+			BehaviorManager::getInstance().addBehavior("study", study);
+			study->init();
+		}
+
+		if (ev.key.keysym.sym == SDLK_v && !BehaviorManager::getInstance().getBehavior("study"))
+		{
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::VR);
+			BehaviorManager::getInstance().addBehavior("study", study);
+			study->init();
+		}
+
+		if (ev.key.keysym.sym == SDLK_f && !BehaviorManager::getInstance().getBehavior("study"))
+		{
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK);
+			BehaviorManager::getInstance().addBehavior("study", study);
+			study->init();
 		}
 	}
 
@@ -146,6 +161,14 @@ void SonarStudyScene::update()
 	//	cloud->update();
 	//
 	//m_pTableVolume->update();
+
+	if (m_pTDM && m_pTDM->getPrimaryController())
+	{
+		if (m_bEditMode)
+			m_pTDM->getPrimaryController()->showRenderModel();
+		else
+			m_pTDM->getPrimaryController()->showRenderModel();
+	}
 }
 
 void SonarStudyScene::draw()
