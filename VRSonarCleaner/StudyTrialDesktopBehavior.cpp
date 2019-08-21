@@ -120,6 +120,14 @@ void StudyTrialDesktopBehavior::processEvent(SDL_Event & ev)
 			if (desktopEdit)
 				desktopEdit->activate();
 		}
+
+		if (ev.key.keysym.sym == SDLK_r)
+		{
+			arcball->reset();
+			m_pDataVolume->resetPositionAndOrientation();
+			m_Camera->pos = glm::vec3(0.f, 0.f, 0.57f);
+			Renderer::getInstance().getMonoInfo()->view = glm::lookAt(m_Camera->pos, m_Camera->lookat, m_Camera->up);
+		}
 	}
 
 	// MOUSE
