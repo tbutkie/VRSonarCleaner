@@ -126,8 +126,26 @@ void RunStudyBehavior::update()
 
 void RunStudyBehavior::draw()
 {
-	if (m_bTrialsLoaded && m_qTrials.size() > 0u)
-		m_qTrials.front()->draw();
+	if (m_bTrialsLoaded)
+	{
+		if (m_qTrials.size() > 0u)
+		{
+			m_qTrials.front()->draw();
+		}
+		else
+		{
+			Renderer::getInstance().drawUIText(
+				"COMPLETE!",
+				glm::vec4(1.f),
+				glm::vec3(glm::vec2(Renderer::getInstance().getUIRenderSize()) * 0.5f, 0.f),
+				glm::quat(),
+				Renderer::getInstance().getUIRenderSize().x / 2.f,
+				Renderer::WIDTH,
+				Renderer::CENTER,
+				Renderer::CENTER_MIDDLE
+			);
+		}
+	}
 }
 
 void RunStudyBehavior::next()

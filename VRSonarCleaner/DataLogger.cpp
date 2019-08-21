@@ -36,7 +36,7 @@ void DataLogger::start()
 		m_tpLogStart = std::chrono::high_resolution_clock::now();
 	
 		if (m_strHeader != std::string())
-			m_fsLog << "id," << m_strHeader << "\n";
+			m_fsLog << m_strHeader << "\n";
 	}
 }
 
@@ -63,7 +63,7 @@ void DataLogger::setHeader(std::string header)
 void DataLogger::logMessage(std::string message)
 {
 	if (m_bLogging)
-		m_fsLog << m_strID << ',' << message << "\n";	
+		m_fsLog << message << "\n";	
 }
 
 std::string DataLogger::getTimeSinceLogStartString()

@@ -25,13 +25,22 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
+
+	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
+
+	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+
+	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
+
+
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
 	
 	// point cloud loading is async, but files are small so let them load so we can refresh the color scale
 	while (!m_pPointCloud->ready()) Sleep(10);
 
-	m_pDataVolume = new DataVolume(glm::vec3(0.f, 0.f, 0.f), glm::quat(), glm::vec3(0.3f));
-
+	m_pDataVolume = new DataVolume(glm::vec3(0.f, 0.f, -vec2ScreenSizeMeters.y * 0.5f), glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(vec2ScreenSizeMeters.y));
+	m_pDataVolume->setBackingColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
+	m_pDataVolume->setFrameColor(glm::vec4(0.f, 0.f, 0.7f, 1.f));
 	m_pDataVolume->add(m_pPointCloud);
 
 	m_pColorScaler->resetMinMaxForColorScale(m_pDataVolume->getMinDataBound().z, m_pDataVolume->getMaxDataBound().z);
@@ -288,7 +297,6 @@ void StudyTrialDesktopBehavior::update()
 
 void StudyTrialDesktopBehavior::draw()
 {
-	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
 	m_pDataVolume->drawVolumeBacking(glm::inverse(Renderer::getInstance().getMonoInfo()->view), 2.f);
 	m_pDataVolume->drawBBox(0.f);
 
@@ -431,7 +439,7 @@ void StudyTrialDesktopBehavior::setupViews()
 
 	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
 
-	Renderer::getInstance().setStereoRenderSize(winSize);
+	Renderer::getInstance().setMonoRenderSize(winSize);
 
 	Renderer::SceneViewInfo* svi = Renderer::getInstance().getMonoInfo();
 	svi->m_nRenderWidth = Renderer::getInstance().getUIRenderSize().x;
