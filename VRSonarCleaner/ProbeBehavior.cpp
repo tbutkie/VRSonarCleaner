@@ -180,13 +180,11 @@ void ProbeBehavior::update()
 
 		if (m_bVerticalSwipeMode)
 		{
-			m_fProbeOffset = measuredOffset.y;
-
 			float dy = measuredOffset.y;
 
 			float range = m_fProbeOffsetMax - m_fProbeOffsetMin;
 
-			m_fProbeOffset = m_fProbeInitialOffset + dy * range * 0.5f;
+			m_fProbeOffset = m_fProbeInitialOffset + dy * range * 0.1f;
 
 			if (m_fProbeOffset > m_fProbeOffsetMax)
 			{
@@ -208,7 +206,7 @@ void ProbeBehavior::update()
 
 			float range = m_fProbeRadiusMax - m_fProbeRadiusMin;
 
-			m_fProbeRadius = m_fProbeRadiusInitial + dx * range;
+			m_fProbeRadius = m_fProbeRadiusInitial + dx * range * 0.2f;
 
 			if (m_fProbeRadius > m_fProbeRadiusMax)
 			{

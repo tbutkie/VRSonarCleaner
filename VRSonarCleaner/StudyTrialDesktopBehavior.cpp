@@ -54,6 +54,13 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 	m_pPointCloud->resetAllMarks();
 
 	m_tpLastUpdate = high_resolution_clock::now();
+
+	GLuint* shaderHandle = Renderer::getInstance().getShader("instanced");
+	if (shaderHandle)
+	{
+		glUseProgram(*shaderHandle);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.0005f);
+	}
 }
 
 

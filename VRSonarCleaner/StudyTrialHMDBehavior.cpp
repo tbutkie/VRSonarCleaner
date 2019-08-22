@@ -21,17 +21,32 @@ StudyTrialHMDBehavior::StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::st
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
+
+	glm::ivec2 winSize = Renderer::getInstance().getPresentationWindowSize();
+
+	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
+
+	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
+
+
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
 
+	// point cloud loading is async, but files are small so let them load and refresh the color scale
+	while (!m_pPointCloud->ready()) Sleep(10);
+
 	glm::vec3 up(0.f, 1.f, 0.f);
-	glm::vec3 hmdForward = -m_pTDM->getHMDToWorldTransform()[2];
-	glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
+	glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+	glm::vec3 hmdForward = -hmdXform[2];
+	glm::vec3 hmdPos = hmdXform[3];
 
 	glm::vec3 forward = glm::normalize(glm::cross(glm::normalize(glm::cross(up, hmdForward)), up));
 
-	m_pDataVolume = new DataVolume(hmdPos + forward * 1.5f, glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(1.f));
+	m_pDataVolume = new DataVolume(hmdPos + forward * 0.57f, glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(vec2ScreenSizeMeters.y));
 
 	m_pDataVolume->add(m_pPointCloud);
+
+	m_pDataVolume->setBackingColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
+	m_pDataVolume->setFrameColor(glm::vec4(0.f, 0.f, 0.7f, 1.f));
 
 	m_pColorScaler->resetMinMaxForColorScale(m_pDataVolume->getMinDataBound().z, m_pDataVolume->getMaxDataBound().z);
 	m_pColorScaler->resetBiValueScaleMinMax(
@@ -41,7 +56,16 @@ StudyTrialHMDBehavior::StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::st
 		m_pPointCloud->getMaxPositionalTPU()
 	);
 
+	m_pPointCloud->resetAllMarks();
+
 	m_tpLastUpdate = high_resolution_clock::now();
+
+	GLuint* shaderHandle = Renderer::getInstance().getShader("instanced");
+	if (shaderHandle)
+	{
+		glUseProgram(*shaderHandle);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.001f);
+	}
 }
 
 
@@ -206,19 +230,31 @@ void StudyTrialHMDBehavior::update()
 
 void StudyTrialHMDBehavior::draw()
 {
-	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
 	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
 	m_pDataVolume->drawBBox(0.f);
 
 	Renderer::RendererSubmission rs;
-	rs.glPrimitiveType = GL_POINTS;
-	rs.shaderName = "flat";
-	rs.VAO = m_pPointCloud->getVAO();
-	rs.vertCount = m_pPointCloud->getPointCount();
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(m_pPointCloud);
+	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.shaderName = "instanced";
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
+	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
+	rs.instanced = true;
+	rs.specularExponent = 0.f;
 
-	Renderer::getInstance().addToDynamicRenderQueue(rs);
+	for (auto &cloud : m_pDataVolume->getDatasets())
+	{
+		if (!static_cast<SonarPointCloud*>(cloud)->ready())
+		{
+			continue;
+		}
+
+		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+		rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(cloud);
+		rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+		Renderer::getInstance().addToDynamicRenderQueue(rs);
+	}
 
 	if (!m_pTDM->getPrimaryController())
 		return;
