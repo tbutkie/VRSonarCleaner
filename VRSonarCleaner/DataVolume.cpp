@@ -26,7 +26,7 @@ DataVolume::~DataVolume()
 void DataVolume::add(Dataset * data)
 {
 	// Only add if not already in collection
-	if (std::find(m_vpDatasets.begin(), m_vpDatasets.end(), data) == m_vpDatasets.end())
+	if (m_vpDatasets.size() == 0u || std::find(m_vpDatasets.begin(), m_vpDatasets.end(), data) == m_vpDatasets.end())
 	{
 		m_vpDatasets.push_back(data);
 		m_bDirty = true;

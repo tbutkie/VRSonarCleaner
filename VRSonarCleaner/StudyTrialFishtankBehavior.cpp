@@ -11,11 +11,14 @@
 
 using namespace std::chrono;
 
-StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
+StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
 	, m_strFileName(fileName)
 	, m_strCategory(category)
 	, m_nPointsLeft(0u)
+	, m_pDataVolume(dataVolume)
+	, m_bInitialColorRefresh(false)
+	, m_pColorScaler(NULL)
 {
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -23,29 +26,23 @@ StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTD
 
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
 
-	m_pDataVolume = new DataVolume(glm::vec3(0.f, 1.f, 0.f), glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(1.f));
-
-	m_pDataVolume->add(m_pPointCloud);
-
-	m_pColorScaler->resetMinMaxForColorScale(m_pDataVolume->getMinDataBound().z, m_pDataVolume->getMaxDataBound().z);
-	m_pColorScaler->resetBiValueScaleMinMax(
-		m_pPointCloud->getMinDepthTPU(),
-		m_pPointCloud->getMaxDepthTPU(),
-		m_pPointCloud->getMinPositionalTPU(),
-		m_pPointCloud->getMaxPositionalTPU()
-	);
-
 	m_tpLastUpdate = high_resolution_clock::now();
+
+	GLuint* shaderHandle = Renderer::getInstance().getShader("instanced");
+	if (shaderHandle)
+	{
+		glUseProgram(*shaderHandle);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.0005f);
+	}
 }
 
 
 StudyTrialFishtankBehavior::~StudyTrialFishtankBehavior()
 {
+	m_pDataVolume->remove(m_pPointCloud);
+
 	if (m_pPointCloud)
 		delete m_pPointCloud;
-
-	if (m_pDataVolume)
-		delete m_pDataVolume;
 
 	if (m_pColorScaler)
 		delete m_pColorScaler;
@@ -53,14 +50,41 @@ StudyTrialFishtankBehavior::~StudyTrialFishtankBehavior()
 
 void StudyTrialFishtankBehavior::init()
 {
+	m_pDataVolume->resetPositionAndOrientation();
+	m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
+
+	while (!m_pPointCloud->ready())
+	{
+		Sleep(10);
+	}
+
+	m_pDataVolume->add(m_pPointCloud);
+
+	if (!m_bInitialColorRefresh)
+	{
+		float minDepthTPU = m_pPointCloud->getMinDepthTPU();
+		float maxDepthTPU = m_pPointCloud->getMaxDepthTPU();
+
+		float minPosTPU = m_pPointCloud->getMinPositionalTPU();
+		float maxPosTPU = m_pPointCloud->getMaxPositionalTPU();
+
+		m_pColorScaler->resetMinMaxForColorScale(m_pDataVolume->getMinDataBound().z, m_pDataVolume->getMaxDataBound().z);
+		m_pColorScaler->resetBiValueScaleMinMax(minDepthTPU, maxDepthTPU, minPosTPU, maxPosTPU);
+
+		// apply new color scale
+		m_pPointCloud->resetAllMarks();
+
+		m_bInitialColorRefresh = true;
+	}
+
 	using namespace std::experimental::filesystem::v1;
 	std::cout << "Starting trial: " << path(m_strFileName).filename() << std::endl;
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 
-	glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
-	glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+	glm::vec3 COPPos = Renderer::getInstance().getCamera()->pos;
+	glm::quat COPQuat = glm::quat();
 
 	std::stringstream ss;
 
@@ -78,9 +102,9 @@ void StudyTrialFishtankBehavior::init()
 	ss << ";";
 	ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
 	ss << ";";
-	ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+	ss << "hmd-pos:\"" << COPPos.x << "," << COPPos.y << "," << COPPos.z << "\"";
 	ss << ";";
-	ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+	ss << "hmd-quat:\"" << COPQuat.x << "," << COPQuat.y << "," << COPQuat.z << "," << COPQuat.w << "\"";
 
 	if (m_pTDM->getPrimaryController())
 	{
@@ -116,6 +140,12 @@ void StudyTrialFishtankBehavior::update()
 	m_pPointCloud->update();
 	m_pDataVolume->update();
 
+	if (m_pTDM && m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->justUnpressedMenu())
+	{
+		m_pDataVolume->resetPositionAndOrientation();
+		m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
+	}
+
 	unsigned int prevPointCount = m_nPointsLeft;
 	m_nPointsLeft = m_nCleanedGoodPoints = m_nPointsCleaned = 0u;
 
@@ -143,8 +173,8 @@ void StudyTrialFishtankBehavior::update()
 
 		m_bActive = false;
 
-		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
-		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
+		glm::vec3 COPPos = Renderer::getInstance().getCamera()->pos;
+		glm::quat COPQuat = glm::quat();
 
 		std::stringstream ss;
 
@@ -162,9 +192,9 @@ void StudyTrialFishtankBehavior::update()
 		ss << ";";
 		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
 		ss << ";";
-		ss << "hmd-pos:\"" << hmdPos.x << "," << hmdPos.y << "," << hmdPos.z << "\"";
+		ss << "hmd-pos:\"" << COPPos.x << "," << COPPos.y << "," << COPPos.z << "\"";
 		ss << ";";
-		ss << "hmd-quat:\"" << hmdQuat.x << "," << hmdQuat.y << "," << hmdQuat.z << "," << hmdQuat.w << "\"";
+		ss << "hmd-quat:\"" << COPQuat.x << "," << COPQuat.y << "," << COPQuat.z << "," << COPQuat.w << "\"";
 
 		if (m_pTDM->getPrimaryController())
 		{
@@ -199,19 +229,21 @@ void StudyTrialFishtankBehavior::update()
 
 void StudyTrialFishtankBehavior::draw()
 {
-	m_pDataVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
-	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
-	m_pDataVolume->drawBBox(0.f);
-
 	Renderer::RendererSubmission rs;
-	rs.glPrimitiveType = GL_POINTS;
-	rs.shaderName = "flat";
-	rs.VAO = m_pPointCloud->getVAO();
-	rs.vertCount = m_pPointCloud->getPointCount();
-	rs.indexType = GL_UNSIGNED_INT;
-	rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(m_pPointCloud);
+	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.shaderName = "instanced";
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
+	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
+	rs.instanced = true;
+	rs.specularExponent = 0.f;
 
+	rs.VAO = static_cast<SonarPointCloud*>(m_pPointCloud)->getVAO();
+	rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(m_pPointCloud);
+	rs.instanceCount = static_cast<SonarPointCloud*>(m_pPointCloud)->getPointCount();
 	Renderer::getInstance().addToDynamicRenderQueue(rs);
+	
 
 	if (!m_pTDM->getPrimaryController())
 		return;

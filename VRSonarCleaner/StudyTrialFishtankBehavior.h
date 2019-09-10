@@ -11,7 +11,7 @@ class StudyTrialFishtankBehavior :
 	public InitializableEventBehavior
 {
 public:
-	StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category);
+	StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category, DataVolume* dataVolume);
 	~StudyTrialFishtankBehavior();
 
 	void init();
@@ -27,6 +27,8 @@ private:
 	ColorScaler* m_pColorScaler;
 	SonarPointCloud* m_pPointCloud;
 	DataVolume* m_pDataVolume;
+
+	bool m_bInitialColorRefresh;
 
 	std::string m_strFileName;
 	std::string m_strCategory;

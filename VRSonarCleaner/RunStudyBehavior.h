@@ -2,6 +2,7 @@
 #include "BehaviorBase.h"
 #include "TrackedDeviceManager.h"
 #include "DataLogger.h"
+#include "DataVolume.h"
 #include "Renderer.h"
 
 #include <vector>
@@ -20,7 +21,7 @@ public:
 		DESKTOP
 	};
 
-	RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode);
+	RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode, DataVolume* fishtankVolume);
 	~RunStudyBehavior();
 
 	void init();
@@ -30,7 +31,7 @@ public:
 	void update();
 
 	void draw();
-
+	    
 	void next();
 
 private:
@@ -43,5 +44,8 @@ private:
 
 	// VR Vars
 	TrackedDeviceManager *m_pTDM;
+
+	// Fishtank Vars
+	DataVolume* m_pFishtankVolume;
 };
 

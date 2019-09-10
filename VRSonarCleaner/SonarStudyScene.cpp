@@ -18,7 +18,9 @@ SonarStudyScene::SonarStudyScene(TrackedDeviceManager* pTDM, float screenDiagInc
 	, m_fEyeSeparationCentimeters(6.2f)
 	, m_vec3COPOffsetTrackerSpace(0.00420141f, -0.0414f, 0.0778124f)
 	, m_bInitialColorRefresh(false)
+	, m_bFishtankInitialized(false)
 	, m_fScreenDiagonalMeters(screenDiagInches * 0.0254f)
+	, m_pFishtankVolume(NULL)
 {
 
 }
@@ -39,46 +41,89 @@ void SonarStudyScene::init()
 	calcWorldToScreen();
 
 	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
+
+	setupViews();
 }
 
 void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 {
-	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
-	{		
-		if (m_bEditMode && ev.key.keysym.sym == SDLK_h)
+	if (m_bEditMode)
+	{
+		if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0)
 		{
-			m_bHeadTracking = !m_bHeadTracking;
-			Renderer::getInstance().showMessage("Head tracking set to " + std::to_string(m_bHeadTracking));
-		}
+			if (ev.key.keysym.sym == SDLK_h)
+			{
+				m_bHeadTracking = !m_bHeadTracking;
+				Renderer::getInstance().showMessage("Head tracking set to " + std::to_string(m_bHeadTracking));
+			}
 
-		if (m_bEditMode && ev.key.keysym.sym == SDLK_s)
-		{
-			m_bStereo = !m_bStereo;
-		}
+			if (ev.key.keysym.sym == SDLK_s)
+			{
+				m_bStereo = !m_bStereo;
+			}
 
+			if (ev.key.keysym.sym == SDLK_SPACE)
+			{
+				glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
+				glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter - m_pTDM->getPrimaryController()->c_vec4HoleNormal));
+
+				m_vec3ScreenCenter = ctrTrans[3];
+				m_vec3ScreenNormal = glm::normalize(vecTrans[3] - ctrTrans[3]);
+
+				calcWorldToScreen();
+
+				Renderer::Camera* cam = Renderer::getInstance().getCamera();
+
+				cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;
+				cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+
+				if (m_pFishtankVolume)
+					delete m_pFishtankVolume;
+
+				m_pFishtankVolume = new DataVolume(
+					m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f),
+					m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
+					//glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y)
+					glm::vec3(m_vec2ScreenSizeMeters.y)
+				);
+
+				m_pFishtankVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
+
+				m_bFishtankInitialized = true;
+
+				Renderer::getInstance().showMessage("Fishtank Calibration Set", 1.f);
+			}
+		}
+	}
+
+	if (ev.type == SDL_KEYDOWN && ev.key.repeat == 0 && !BehaviorManager::getInstance().getBehavior("study"))
+	{
 		if (ev.key.keysym.sym == SDLK_HOME)
 		{
 			m_bEditMode = !m_bEditMode;
-			Renderer::getInstance().showMessage("Edit mode set to " + std::to_string(m_bEditMode));
+			std::stringstream ss;
+			ss << "Fishtank calibration mode " << m_bEditMode ? "ON" : "OFF";
+			Renderer::getInstance().showMessage(ss.str(), 1.f);
 		}
 
-		if (ev.key.keysym.sym == SDLK_d && !BehaviorManager::getInstance().getBehavior("study"))
+		if (ev.key.keysym.sym == SDLK_d)
 		{
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP);
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP, NULL);
 			BehaviorManager::getInstance().addBehavior("study", study);
 			study->init();
 		}
 
-		if (ev.key.keysym.sym == SDLK_v && !BehaviorManager::getInstance().getBehavior("study"))
+		if (ev.key.keysym.sym == SDLK_v)
 		{
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::VR);
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::VR, NULL);
 			BehaviorManager::getInstance().addBehavior("study", study);
 			study->init();
 		}
 
-		if (ev.key.keysym.sym == SDLK_f && !BehaviorManager::getInstance().getBehavior("study"))
+		if (ev.key.keysym.sym == SDLK_f)
 		{
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK);
+			m_bEditMode = false;
+			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
 			BehaviorManager::getInstance().addBehavior("study", study);
 			study->init();
 		}
@@ -91,76 +136,17 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 
 void SonarStudyScene::update()
 {
-	//Renderer::Camera* cam = Renderer::getInstance().getCamera();	
-	//
-	//if (m_pTDM->getPrimaryController())
-	//{
-	//	m_pTDM->getPrimaryController()->hideRenderModel();
-	//
-	//	if (m_bEditMode && m_pTDM->getPrimaryController()->justPressedTouchpad())
-	//	{
-	//		glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
-	//		glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter - m_pTDM->getPrimaryController()->c_vec4HoleNormal));
-	//
-	//		m_vec3ScreenCenter = ctrTrans[3];
-	//		m_vec3ScreenNormal = glm::normalize(vecTrans[3] - ctrTrans[3]);
-	//
-	//		calcWorldToScreen();
-	//
-	//		cam->pos = m_vec3ScreenCenter + m_vec3ScreenNormal * 0.57f;
-	//		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-	//
-	//		m_pTableVolume->setPosition(m_mat4ScreenToWorld[3] - m_mat4ScreenToWorld[2] * (m_vec2ScreenSizeMeters.x / 2.f));
-	//		m_pTableVolume->setOrientation(m_mat4ScreenToWorld * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
-	//		m_pTableVolume->setDimensions(glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y));
-	//	}
-	//
-	//	if (!BehaviorManager::getInstance().getBehavior("pointclean"))
-	//	{
-	//		auto pcp = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pTableVolume);		
-	//		BehaviorManager::getInstance().addBehavior("pointclean", pcp);
-	//		//pcp->activateDemoMode();
-	//	}
-	//}
-	//
-	//if (m_pTDM->getSecondaryController())
-	//{
-	//	m_pTDM->getSecondaryController()->hideRenderModel();
-	//
-	//	if (m_pTDM->getSecondaryController()->justPressedGrip() && m_pTDM->getTracker())
-	//	{
-	//		glm::mat4 ctrTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getSecondaryController()->c_vec4HoleCenter));
-	//		glm::vec4 eyeCenterTrackerSpace = glm::inverse(m_pTDM->getTracker()->getDeviceToWorldTransform()) * ctrTrans[3];
-	//		std::cout << "Tracker to Center of Projection Offset: (" << m_mat4TrackerToEyeCenterOffset[3].x << ", " << m_mat4TrackerToEyeCenterOffset[3].y << ", " << m_mat4TrackerToEyeCenterOffset[3].z << ")" << std::endl;
-	//	}
-	//
-	//	if (!BehaviorManager::getInstance().getBehavior("grab"))
-	//		BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pTableVolume));
-	//}
-	//
-	//if (m_pTDM->getTracker())
-	//{
-	//	m_pTDM->getTracker()->hideRenderModel();
-	//
-	//	if (m_bHeadTracking)
-	//	{
-	//		cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
-	//		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-	//	}
-	//}
-	//
-	//if (m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
-	//{
-	//	if (!BehaviorManager::getInstance().getBehavior("scale"))
-	//		BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pTableVolume));
-	//}
-	//
-	//setupViews();
-	//
-	//for (auto &cloud : m_vpClouds)
-	//	cloud->update();
-	//
-	//m_pTableVolume->update();
+	Renderer::Camera* cam = Renderer::getInstance().getCamera();
+
+	m_pTDM->getTracker()->hideRenderModel();
+
+	if (m_bHeadTracking && m_bFishtankInitialized)
+	{
+		cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
+		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+	}
+
+	setupViews();
 
 	if (m_pTDM && m_pTDM->getPrimaryController())
 	{
@@ -173,103 +159,16 @@ void SonarStudyScene::update()
 
 void SonarStudyScene::draw()
 {
-	//if (m_pTDM->getPrimaryController())
-	//{
-	//	glm::mat4 ctrTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter));
-	//	glm::mat4 vecTrans = m_pTDM->getPrimaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(m_pTDM->getPrimaryController()->c_vec4HoleCenter + m_pTDM->getPrimaryController()->c_vec4HoleNormal * 0.1f));
-	//	//Renderer::getInstance().drawPrimitive("icosphere", ctrTrans * glm::scale(glm::mat4(), glm::vec3(0.01f)), glm::vec4(1.f, 1.f, 0.f, 1.f));
-	//	Renderer::getInstance().drawPointerLit(ctrTrans[3], vecTrans[3], 0.01f, glm::vec4(1.f, 1.f, 0.f, 1.f), glm::vec4(1.f), glm::vec4(0.f, 1.f, 0.f, 1.f));
-	//}
+	if (m_bFishtankInitialized)
+	{
+		glm::mat4 viewPos = glm::inverse(glm::lookAt(
+			Renderer::getInstance().getCamera()->pos,
+			m_vec3ScreenCenter,
+			m_vec3ScreenUp));
 
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(-m_vec2ScreenSizeMeters.x / 2.f, 0.f, 0.f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(-m_vec2ScreenSizeMeters.x / 2.f, 0.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.f, 0.f, 0.8f, 1.f)
-	//);
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(m_vec2ScreenSizeMeters.x / 2.f, 0.f, 0.f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(m_vec2ScreenSizeMeters.x / 2.f, 0.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.8f, 0.f, 0.f, 1.f)
-	//);
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, -m_vec2ScreenSizeMeters.y / 2.f, 0.f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, -m_vec2ScreenSizeMeters.y / 2.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.f, 0.8f, 0.f, 1.f)
-	//);
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, m_vec2ScreenSizeMeters.y / 2.f, 0.f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, m_vec2ScreenSizeMeters.y / 2.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.8f, 0.f, 0.8f, 1.f)
-	//);
-	//
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(-m_vec2ScreenSizeMeters.x / 2.f, 0.f, -0.5f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(m_vec2ScreenSizeMeters.x / 2.f, 0.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.f, 0.8f, 0.8f, 1.f)
-	//);
-	//Renderer::getInstance().drawDirectedPrimitiveLit(
-	//	"cylinder",
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, -m_vec2ScreenSizeMeters.y / 2.f, -0.5f)))[3],
-	//	(m_mat4ScreenToWorld * glm::translate(glm::mat4(), glm::vec3(0.f, m_vec2ScreenSizeMeters.y / 2.f, -0.5f)))[3],
-	//	0.01f,
-	//	glm::vec4(0.8f, 0.8f, 0.f, 1.f)
-	//);
-
-	//bool unloadedData = false;
-	//
-	//if (m_pTableVolume->isVisible())
-	//{
-	//	glm::mat4 viewPos = glm::inverse(glm::lookAt(
-	//		Renderer::getInstance().getCamera()->pos,
-	//		m_vec3ScreenCenter,
-	//		m_vec3ScreenUp));
-	//
-	//	m_pTableVolume->drawVolumeBacking(viewPos, 1.f);
-	//	m_pTableVolume->drawBBox(0.f);
-	//	//m_pTableVolume->drawAxes(1.f);
-	//
-	//	Renderer::RendererSubmission rs;
-	//	rs.glPrimitiveType = GL_TRIANGLES;
-	//	rs.shaderName = "instanced";
-	//	rs.indexType = GL_UNSIGNED_SHORT;
-	//	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
-	//	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
-	//	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
-	//	rs.instanced = true;
-	//	rs.specularExponent = 0.f;
-	//	//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
-	//	//rs.diffuseTexName = "resources/images/circle.png";
-	//
-	//	for (auto &cloud : m_pTableVolume->getDatasets())
-	//	{
-	//		if (!static_cast<SonarPointCloud*>(cloud)->ready())
-	//		{
-	//			unloadedData = true;
-	//			continue;
-	//		}
-	//
-	//		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-	//		rs.modelToWorldTransform = m_pTableVolume->getTransformDataset(cloud);
-	//		rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
-	//		Renderer::getInstance().addToDynamicRenderQueue(rs);
-	//	}
-	//}
-	//
-	//if (!unloadedData && !m_bInitialColorRefresh)
-	//{
-	//	refreshColorScale(m_pColorScalerTPU, m_vpClouds);
-	//	m_bInitialColorRefresh = true;
-	//}
+		m_pFishtankVolume->drawVolumeBacking(viewPos, 2.f);
+		m_pFishtankVolume->drawBBox(0.f);
+	}
 }
 
 void SonarStudyScene::calcWorldToScreen()

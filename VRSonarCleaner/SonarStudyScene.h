@@ -28,6 +28,8 @@ public:
 private:
 	TrackedDeviceManager* m_pTDM;
 
+	DataVolume* m_pFishtankVolume;
+
 	glm::vec3 m_vec3COPOffsetTrackerSpace;
 
 	glm::vec3 m_vec3ScreenCenter;
@@ -49,6 +51,8 @@ private:
 	float m_fEyeSeparationCentimeters;
 
 	bool m_bInitialColorRefresh;
+
+	bool m_bFishtankInitialized;
 
 private:
 	void calcWorldToScreen();

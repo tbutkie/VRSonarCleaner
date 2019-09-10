@@ -13,10 +13,11 @@
 using namespace std::experimental::filesystem::v1;
 
 
-RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode)
+RunStudyBehavior::RunStudyBehavior(TrackedDeviceManager* pTDM, EStudyType mode, DataVolume* fishtankVolume)
 	: m_eStudyType(mode)
 	, m_pTDM(pTDM)
 	, m_bTrialsLoaded(false)
+	, m_pFishtankVolume(fishtankVolume)
 {
 }
 
@@ -72,7 +73,7 @@ void RunStudyBehavior::init()
 		switch (m_eStudyType)
 		{
 		case RunStudyBehavior::FISHTANK:
-			m_qTrials.push(new StudyTrialFishtankBehavior(m_pTDM, ds.first.string(), ds.second));
+			m_qTrials.push(new StudyTrialFishtankBehavior(m_pTDM, ds.first.string(), ds.second, m_pFishtankVolume));
 			break;
 		case RunStudyBehavior::VR:
 			m_qTrials.push(new StudyTrialHMDBehavior(m_pTDM, ds.first.string(), ds.second));
