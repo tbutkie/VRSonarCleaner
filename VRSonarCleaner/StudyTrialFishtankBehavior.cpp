@@ -228,8 +228,6 @@ void StudyTrialFishtankBehavior::update()
 
 void StudyTrialFishtankBehavior::draw()
 {
-	
-
 	if (!m_pTDM->getPrimaryController())
 		return;
 

@@ -10,6 +10,8 @@
 #include <random>
 #include <algorithm>
 
+#include <gtc/random.hpp>
+
 using namespace std::experimental::filesystem::v1;
 
 
@@ -151,6 +153,25 @@ void RunStudyBehavior::draw()
 				Renderer::CENTER,
 				Renderer::CENTER_MIDDLE
 			);
+
+			if (m_eStudyType == VR)
+			{
+				glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+				glm::vec3 hmdForward = -hmdXform[2];
+				glm::vec3 hmdUp = hmdXform[1];
+				glm::vec3 hmdPos = hmdXform[3];
+
+				Renderer::getInstance().drawText(
+					"COMPLETE!",
+					glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
+					glm::vec3(hmdPos + hmdForward * 1.f),
+					glm::quat(hmdXform),
+					0.2f,
+					Renderer::TextSizeDim::HEIGHT,
+					Renderer::TextAlignment::CENTER,
+					Renderer::TextAnchor::CENTER_MIDDLE
+				);
+			}
 		}
 	}
 }
@@ -161,4 +182,6 @@ void RunStudyBehavior::next()
 		static_cast<StudyTrialDesktopBehavior*>(m_qTrials.front())->finish();
 	else if (m_eStudyType == FISHTANK && m_qTrials.size() > 0u)
 		static_cast<StudyTrialFishtankBehavior*>(m_qTrials.front())->finish();
+	else if (m_eStudyType == VR && m_qTrials.size() > 0u)
+		static_cast<StudyTrialHMDBehavior*>(m_qTrials.front())->finish();
 }

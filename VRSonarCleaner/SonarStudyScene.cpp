@@ -154,14 +154,6 @@ void SonarStudyScene::update()
 
 		setupViews();
 	}
-
-	if (m_pTDM && m_pTDM->getPrimaryController())
-	{
-		if (m_bEditMode)
-			m_pTDM->getPrimaryController()->showRenderModel();
-		else
-			m_pTDM->getPrimaryController()->hideRenderModel();
-	}
 }
 
 void SonarStudyScene::draw()

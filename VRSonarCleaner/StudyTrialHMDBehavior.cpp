@@ -9,6 +9,8 @@
 #include <filesystem>
 #include <sstream>
 
+#include <gtc/random.hpp>
+
 using namespace std::chrono;
 
 StudyTrialHMDBehavior::StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category)
@@ -16,6 +18,7 @@ StudyTrialHMDBehavior::StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::st
 	, m_strFileName(fileName)
 	, m_strCategory(category)
 	, m_nPointsLeft(0u)
+	, m_bPointsCleaned(false)
 {
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -172,7 +175,7 @@ void StudyTrialHMDBehavior::update()
 		BehaviorManager::getInstance().removeBehavior("grab");
 		BehaviorManager::getInstance().removeBehavior("edit");
 
-		m_bActive = false;
+		m_bPointsCleaned = true;
 
 		glm::vec3 hmdPos = m_pTDM->getHMDToWorldTransform()[3];
 		glm::quat hmdQuat = glm::quat_cast(m_pTDM->getHMDToWorldTransform());
@@ -230,30 +233,62 @@ void StudyTrialHMDBehavior::update()
 
 void StudyTrialHMDBehavior::draw()
 {
-	m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
-	m_pDataVolume->drawBBox(0.f);
-
-	Renderer::RendererSubmission rs;
-	rs.glPrimitiveType = GL_TRIANGLES;
-	rs.shaderName = "instanced";
-	rs.indexType = GL_UNSIGNED_SHORT;
-	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
-	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
-	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
-	rs.instanced = true;
-	rs.specularExponent = 0.f;
-
-	for (auto &cloud : m_pDataVolume->getDatasets())
+	if (!m_bPointsCleaned)
 	{
-		if (!static_cast<SonarPointCloud*>(cloud)->ready())
-		{
-			continue;
-		}
+		m_pDataVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
+		m_pDataVolume->drawBBox(0.f);
 
-		rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
-		rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(cloud);
-		rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
-		Renderer::getInstance().addToDynamicRenderQueue(rs);
+		Renderer::RendererSubmission rs;
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "instanced";
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+		rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
+		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
+		rs.instanced = true;
+		rs.specularExponent = 0.f;
+
+		for (auto &cloud : m_pDataVolume->getDatasets())
+		{
+			if (!static_cast<SonarPointCloud*>(cloud)->ready())
+			{
+				continue;
+			}
+
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+			rs.modelToWorldTransform = m_pDataVolume->getTransformDataset(cloud);
+			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+			Renderer::getInstance().addToDynamicRenderQueue(rs);
+		}
+	}
+	else
+	{
+		glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+		glm::vec3 hmdForward = -hmdXform[2];
+		glm::vec3 hmdUp = hmdXform[1];
+		glm::vec3 hmdPos = hmdXform[3];
+
+		Renderer::getInstance().drawText(
+			"Trial Complete!",
+			glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
+			glm::vec3(hmdPos + hmdForward * 1.f + hmdUp * 0.01f),
+			glm::quat(hmdXform),
+			0.1f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_BOTTOM
+		);
+
+		Renderer::getInstance().drawText(
+			"Press both thumbpads\nto continue...",
+			glm::vec4(glm::vec3(0.7f), 1.f),
+			glm::vec3(hmdPos + hmdForward * 1.f + hmdUp * -0.01f),
+			glm::quat(hmdXform),
+			0.1f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_TOP
+		);
 	}
 
 	if (!m_pTDM->getPrimaryController())
@@ -348,4 +383,10 @@ void StudyTrialHMDBehavior::draw()
 		Renderer::TextAlignment::CENTER,
 		Renderer::TextAnchor::CENTER_LEFT
 	);
+}
+
+void StudyTrialHMDBehavior::finish()
+{
+	if (m_bPointsCleaned)
+		m_bActive = false;
 }

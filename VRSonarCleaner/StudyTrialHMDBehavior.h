@@ -22,6 +22,8 @@ public:
 
 	void draw();
 
+	void finish();
+
 private:
 	TrackedDeviceManager *m_pTDM;
 	ColorScaler* m_pColorScaler;
@@ -38,5 +40,7 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdate;
 
 	std::vector<std::pair<unsigned int, std::chrono::time_point<std::chrono::high_resolution_clock>>> m_vPointUpdateAnimations;
+
+	bool m_bPointsCleaned;
 };
 
