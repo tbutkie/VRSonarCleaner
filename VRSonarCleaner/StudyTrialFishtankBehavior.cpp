@@ -83,14 +83,15 @@ void StudyTrialFishtankBehavior::init()
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 
-	glm::vec3 COPPos = Renderer::getInstance().getCamera()->pos;
-	glm::quat COPQuat = glm::quat();
+	auto cam = Renderer::getInstance().getCamera();
+	glm::vec3 COPPos = cam->pos;
+	glm::quat COPQuat = glm::inverse(glm::lookAt(cam->pos, cam->lookat, cam->up));
 
 	std::stringstream ss;
 
 	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 	ss << "\t";
-	ss << "trial-type:\"standing\"";
+	ss << "trial-type:\"fishtank\"";
 	ss << ";";
 	ss << "file-name:\"" << path(m_strFileName).filename() << "\"";
 	ss << ";";
@@ -173,14 +174,15 @@ void StudyTrialFishtankBehavior::update()
 
 		m_bActive = false;
 
-		glm::vec3 COPPos = Renderer::getInstance().getCamera()->pos;
-		glm::quat COPQuat = glm::quat();
+		auto cam = Renderer::getInstance().getCamera();
+		glm::vec3 COPPos = cam->pos;
+		glm::quat COPQuat = glm::inverse(glm::lookAt(cam->pos, cam->lookat, cam->up));
 
 		std::stringstream ss;
 
 		ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 		ss << "\t";
-		ss << "trial-type:\"standing\"";
+		ss << "trial-type:\"fishtank\"";
 		ss << ";";
 		ss << "file-name:\"" << std::experimental::filesystem::v1::path(m_strFileName).filename() << "\"";
 		ss << ";";

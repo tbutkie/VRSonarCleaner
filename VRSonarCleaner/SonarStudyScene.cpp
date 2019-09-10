@@ -123,6 +123,8 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 		if (ev.key.keysym.sym == SDLK_f)
 		{
 			m_bEditMode = false;
+			SDL_ShowCursor(0);
+			m_pTDM->setWaitGetPoses(false);
 			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
 			BehaviorManager::getInstance().addBehavior("study", study);
 			study->init();

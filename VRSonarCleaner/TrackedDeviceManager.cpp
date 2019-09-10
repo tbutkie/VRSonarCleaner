@@ -24,6 +24,7 @@ TrackedDeviceManager::TrackedDeviceManager(vr::IVRSystem* pHMD)
 , m_fCursorOffsetAmount(0.1f)
 , m_fCursorOffsetAmountMin(0.1f)
 , m_fCursorOffsetAmountMax(1.5f)
+, m_bUseWaitGetPoses(true)
 {
 }
 
@@ -87,6 +88,11 @@ void TrackedDeviceManager::hideBaseStations(bool hidden)
 	for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
 		if (m_pHMD->IsTrackedDeviceConnected(nDevice) && m_rpTrackedDevices[nDevice]->getClassChar() == 'T')
 			m_rpTrackedDevices[nDevice]->m_bHidden = hidden;
+}
+
+void TrackedDeviceManager::setWaitGetPoses(bool yesno)
+{
+	m_bUseWaitGetPoses = yesno;
 }
 
 //-----------------------------------------------------------------------------
@@ -184,7 +190,10 @@ void TrackedDeviceManager::update()
 		return;
 
 	vr::TrackedDevicePose_t poses[vr::k_unMaxTrackedDeviceCount];
-	vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+	if (m_bUseWaitGetPoses)
+		vr::VRCompositor()->WaitGetPoses(poses, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+	else
+		vr::VRSystem()->GetDeviceToAbsoluteTrackingPose(vr::ETrackingUniverseOrigin::TrackingUniverseStanding, 0, poses, vr::k_unMaxTrackedDeviceCount);
 
 	m_iValidPoseCount = 0;
 	m_iTrackedControllerCount = 0;

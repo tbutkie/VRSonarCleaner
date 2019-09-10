@@ -97,7 +97,7 @@ void StudyTrialHMDBehavior::init()
 
 	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 	ss << "\t";
-	ss << "trial-type:\"seated\"";
+	ss << "trial-type:\"vr\"";
 	ss << ";";
 	ss << "file-name:\"" << path(m_strFileName).filename() << "\"";
 	ss << ";";
@@ -181,7 +181,7 @@ void StudyTrialHMDBehavior::update()
 
 		ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
 		ss << "\t";
-		ss << "trial-type:\"seated\"";
+		ss << "trial-type:\"vr\"";
 		ss << ";";
 		ss << "file-name:\"" << std::experimental::filesystem::v1::path(m_strFileName).filename() << "\"";
 		ss << ";";

@@ -27,6 +27,8 @@ public:
 
 	void hideBaseStations(bool hidden);
 
+	void setWaitGetPoses(bool yesno);
+
 	glm::mat4 getWorldToHMDTransform();
 	glm::mat4 getHMDToWorldTransform();
 	uint32_t getDeviceComponentID(uint32_t deviceID, std::string componentName);
@@ -78,5 +80,7 @@ private:
 	bool m_bCursorOffsetMode;
 	float m_fCursorOffsetModeInitialOffset;
 	float m_fCursorHoopAngle;
+
+	bool m_bUseWaitGetPoses;
 };
 
