@@ -308,7 +308,7 @@ void ProbeBehavior::drawProbe()
 			specExp = m_fProbeColorSpecExp;
 		}
 
-		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.001f, 0.001f, m_fProbeOffset));
+		glm::mat4 matCyl = m_pController->getDeviceToWorldTransform() * glm::rotate(glm::mat4(), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * glm::scale(glm::mat4(), glm::vec3(0.001f, 0.001f, m_fProbeOffset - m_fProbeRadius));
 
 		Renderer::getInstance().drawPrimitive("cylinder", matCyl, diffColor, specColor, specExp);
 	}
