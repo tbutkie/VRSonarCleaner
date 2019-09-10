@@ -1108,18 +1108,18 @@ SDL_Window * Renderer::createFullscreenWindow(int displayIndex, bool stereo)
 	if (win == NULL)
 		printf("%s - Window could not be created! SDL Error: %s\n", __FUNCTION__, SDL_GetError());
 
-	if (stereo)
-	{
-		SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
-		
-		SDL_GetDisplayMode(displayIndex, 0, &mode);
-		SDL_Log("SDL_GetDisplayMode(%i, %i, &mode):\t\t%i bpp\t%i x %i\t@%iHz",
-			displayIndex, 0, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate);
+	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+	SDL_GetDisplayMode(displayIndex, 0, &mode);
 
+	if (stereo || mode.refresh_rate > 120)
+	{
 		mode.refresh_rate = 120;
 
 		SDL_SetWindowDisplayMode(win, &mode);
 	}
+
+	SDL_Log("SDL_GetDisplayMode(%i, %i, &mode):\t\t%i bpp\t%i x %i\t@%iHz",
+		displayIndex, 0, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate);
 
 	return win;
 }

@@ -22,13 +22,13 @@ public:
 
 	void draw();
 
+	void finish();
+
 private:
 	TrackedDeviceManager *m_pTDM;
 	ColorScaler* m_pColorScaler;
 	SonarPointCloud* m_pPointCloud;
 	DataVolume* m_pDataVolume;
-
-	bool m_bInitialColorRefresh;
 
 	std::string m_strFileName;
 	std::string m_strCategory;
@@ -39,6 +39,6 @@ private:
 
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_tpLastUpdate;
 
-	std::vector<std::pair<unsigned int, std::chrono::time_point<std::chrono::high_resolution_clock>>> m_vPointUpdateAnimations;
+	bool m_bPointsCleaned;
 };
 

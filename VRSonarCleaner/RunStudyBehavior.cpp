@@ -111,6 +111,12 @@ void RunStudyBehavior::update()
 	if (!m_bTrialsLoaded || m_qTrials.size() == 0u)
 		return;
 
+	if (m_pTDM && m_pTDM->getPrimaryController() && m_pTDM->getSecondaryController())
+	{
+		if (m_pTDM->getPrimaryController()->isTouchpadClicked() && m_pTDM->getSecondaryController()->isTouchpadClicked())
+			next();
+	}
+
 	if (!m_qTrials.front()->isActive())
 	{
 		delete m_qTrials.front();
@@ -153,4 +159,6 @@ void RunStudyBehavior::next()
 {
 	if (m_eStudyType == DESKTOP && m_qTrials.size() > 0u)
 		static_cast<StudyTrialDesktopBehavior*>(m_qTrials.front())->finish();
+	else if (m_eStudyType == FISHTANK && m_qTrials.size() > 0u)
+		static_cast<StudyTrialFishtankBehavior*>(m_qTrials.front())->finish();
 }

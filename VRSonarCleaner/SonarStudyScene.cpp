@@ -42,7 +42,7 @@ void SonarStudyScene::init()
 
 	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
 
-	setupViews();
+	//setupViews();
 }
 
 void SonarStudyScene::processSDLEvent(SDL_Event & ev)
@@ -86,8 +86,8 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 					//glm::vec3(m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.x, m_vec2ScreenSizeMeters.y)
 					glm::vec3(m_vec2ScreenSizeMeters.y)
 				);
-
-				m_pFishtankVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
+				m_pFishtankVolume->setBackingColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
+				m_pFishtankVolume->setFrameColor(glm::vec4(0.f, 0.f, 0.7f, 1.f));
 
 				m_bFishtankInitialized = true;
 
@@ -125,6 +125,8 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 			m_bEditMode = false;
 			SDL_ShowCursor(0);
 			m_pTDM->setWaitGetPoses(false);
+			m_pTDM->getPrimaryController()->hideRenderModel();
+			m_pTDM->getSecondaryController()->hideRenderModel();
 			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
 			BehaviorManager::getInstance().addBehavior("study", study);
 			study->init();
@@ -140,22 +142,25 @@ void SonarStudyScene::update()
 {
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 
-	m_pTDM->getTracker()->hideRenderModel();
-
-	if (m_bHeadTracking && m_bFishtankInitialized)
+	if (m_pTDM && m_pTDM->getTracker())
 	{
-		cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
-		cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
-	}
+		m_pTDM->getTracker()->hideRenderModel();
 
-	setupViews();
+		if (m_bHeadTracking && m_bFishtankInitialized)
+		{
+			cam->pos = (m_pTDM->getTracker()->getDeviceToWorldTransform() * m_mat4TrackerToEyeCenterOffset)[3];
+			cam->lookat = cam->pos - glm::dot(cam->pos - m_vec3ScreenCenter, m_vec3ScreenNormal) * m_vec3ScreenNormal;
+		}
+
+		setupViews();
+	}
 
 	if (m_pTDM && m_pTDM->getPrimaryController())
 	{
 		if (m_bEditMode)
 			m_pTDM->getPrimaryController()->showRenderModel();
 		else
-			m_pTDM->getPrimaryController()->showRenderModel();
+			m_pTDM->getPrimaryController()->hideRenderModel();
 	}
 }
 
