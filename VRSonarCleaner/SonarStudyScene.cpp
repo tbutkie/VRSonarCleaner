@@ -45,7 +45,7 @@ void SonarStudyScene::init()
 
 	m_mat4TrackerToEyeCenterOffset = glm::translate(glm::mat4(), m_vec3COPOffsetTrackerSpace);
 
-	//setupViews();
+	setupViews();
 }
 
 void SonarStudyScene::processSDLEvent(SDL_Event & ev)
@@ -153,18 +153,24 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 				if (BehaviorManager::getInstance().getBehavior("tutorial"))
 					BehaviorManager::getInstance().removeBehavior("tutorial");
 
-
 				m_bEditMode = false;
 				SDL_ShowCursor(0);
 				m_pTDM->setWaitGetPoses(false);
 				m_pTDM->getPrimaryController()->hideRenderModel();
 				m_pTDM->getSecondaryController()->hideRenderModel();
+
 				auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
 				BehaviorManager::getInstance().addBehavior("study", study);
 				study->init();
 			}
 			else
 			{
+				m_bEditMode = false;
+				SDL_ShowCursor(0);
+				m_pTDM->setWaitGetPoses(false);
+				m_pTDM->getPrimaryController()->hideRenderModel();
+				m_pTDM->getSecondaryController()->hideRenderModel();
+
 				auto tut = new StudyTutorialFishtankBehavior(m_pTDM, m_pFishtankVolume);
 				BehaviorManager::getInstance().addBehavior("tutorial", tut);
 				tut->init();
@@ -212,7 +218,7 @@ void SonarStudyScene::draw()
 		m_pFishtankVolume->drawBBox(0.f);
 	}
 
-	if (m_pTDM && m_pTDM->getSecondaryController() && BehaviorManager::getInstance().getBehavior("study"))
+	if (m_pTDM && m_pTDM->getSecondaryController() && (BehaviorManager::getInstance().getBehavior("study") || BehaviorManager::getInstance().getBehavior("tutorial")))
 	{
 		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getSecondaryController()->getIndex(), m_pTDM->getSecondaryController()->getComponentID(vr::k_EButton_ApplicationMenu));
 		glm::mat4 menuButtonTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
