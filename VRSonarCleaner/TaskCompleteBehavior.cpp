@@ -31,7 +31,7 @@ void TaskCompleteBehavior::init()
 {
 	InfoBoxManager::getInstance().addInfoBox(
 		"Task Complete",
-		"taskcomplete.png",
+		"resources/images/taskcomplete.png",
 		0.25f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -0.1f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
@@ -39,7 +39,7 @@ void TaskCompleteBehavior::init()
 
 	InfoBoxManager::getInstance().addInfoBox(
 		"Activate Label (Primary)",
-		"activaterightlabel.png",
+		"resources/images/activaterightlabel.png",
 		0.075f,
 		glm::translate(glm::mat4(), glm::vec3(-0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,
@@ -47,7 +47,7 @@ void TaskCompleteBehavior::init()
 
 	InfoBoxManager::getInstance().addInfoBox(
 		"Activate Label (Secondary)",
-		"activateleftlabel.png",
+		"resources/images/activateleftlabel.png",
 		0.075f,
 		glm::translate(glm::mat4(), glm::vec3(0.05f, -0.03f, 0.05f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::SECONDARY_CONTROLLER,
@@ -55,7 +55,7 @@ void TaskCompleteBehavior::init()
 
 	InfoBoxManager::getInstance().addInfoBox(
 		"Reset Label",
-		"resetleftlabel.png",
+		"resources/images/resetleftlabel.png",
 		0.075f,
 		glm::translate(glm::mat4(), glm::vec3(0.052f, 0.008f, 0.052f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)),
 		InfoBoxManager::RELATIVE_TO::PRIMARY_CONTROLLER,

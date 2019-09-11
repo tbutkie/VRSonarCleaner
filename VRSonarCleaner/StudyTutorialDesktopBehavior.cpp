@@ -1,4 +1,4 @@
-#include "StudyTrialDesktopBehavior.h"
+#include "StudyTutorialDesktopBehavior.h"
 #include "BehaviorManager.h"
 #include "Renderer.h"
 #include "DataLogger.h"
@@ -12,10 +12,8 @@
 
 using namespace std::chrono;
 
-StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::string category)
-	: m_strFileName(fileName)
-	, m_strCategory(category)
-	, m_nPointsLeft(0u)
+StudyTutorialDesktopBehavior::StudyTutorialDesktopBehavior()
+	: m_nPointsLeft(0u)
 	, m_bPointsCleaned(false)
 	, m_bLeftMouseDown(false)
 	, m_bRightMouseDown(false)
@@ -31,9 +29,8 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 	float sizer = (29.7f * 0.0254f) / sqrt(winSize.x * winSize.x + winSize.y * winSize.y);
 
 	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
-
-
-	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
+	
+	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
 	
 	// point cloud loading is async, but files are small so let them load so we can refresh the color scale
 	while (!m_pPointCloud->ready()) Sleep(10);
@@ -59,12 +56,12 @@ StudyTrialDesktopBehavior::StudyTrialDesktopBehavior(std::string fileName, std::
 	if (shaderHandle)
 	{
 		glUseProgram(*shaderHandle);
-		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.001f);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.0005f);
 	}
 }
 
 
-StudyTrialDesktopBehavior::~StudyTrialDesktopBehavior()
+StudyTutorialDesktopBehavior::~StudyTutorialDesktopBehavior()
 {
 	if (m_pPointCloud)
 		delete m_pPointCloud;
@@ -76,41 +73,19 @@ StudyTrialDesktopBehavior::~StudyTrialDesktopBehavior()
 		delete m_pColorScaler;
 }
 
-void StudyTrialDesktopBehavior::init()
+void StudyTutorialDesktopBehavior::init()
 {
 	setupViews();
 
-	using namespace std::experimental::filesystem::v1;
-	std::cout << "Starting trial: " << path(m_strFileName).filename() << std::endl;
+	std::cout << "Starting tutorial..." << std::endl;
+
 	DesktopCleanBehavior *dcb = new DesktopCleanBehavior(m_pDataVolume);
 	BehaviorManager::getInstance().addBehavior("desktop_edit", dcb);
 	dcb->init();
-
-	std::stringstream ss;
-
-	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-	ss << "\t";
-	ss << "trial-type:\"desktop\"";
-	ss << ";";
-	ss << "file-name:\"" << path(m_strFileName).filename() << "\"";
-	ss << ";";
-	ss << "file-category:\"" << m_strCategory << "\"";
-	ss << ";";
-	ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
-	ss << ";";
-	ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
-	ss << ";";
-	ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
-	ss << ";";
-	ss << "cam-pos:\"" << Renderer::getInstance().getCamera()->pos.x << "," << Renderer::getInstance().getCamera()->pos.y << "," << Renderer::getInstance().getCamera()->pos.z << "\"";
-	ss << ";";
-	ss << "cam-lookat:\"" << Renderer::getInstance().getCamera()->lookat.x << "," << Renderer::getInstance().getCamera()->lookat.y << "," << Renderer::getInstance().getCamera()->lookat.z << "\"";
-
-	DataLogger::getInstance().logMessage(ss.str());
 }
 
 
-void StudyTrialDesktopBehavior::processEvent(SDL_Event & ev)
+void StudyTutorialDesktopBehavior::processEvent(SDL_Event & ev)
 {
 	ArcBall *arcball = static_cast<ArcBall*>(BehaviorManager::getInstance().getBehavior("arcball"));
 	LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
@@ -134,15 +109,18 @@ void StudyTrialDesktopBehavior::processEvent(SDL_Event & ev)
 			m_pDataVolume->resetPositionAndOrientation();
 			m_Camera->pos = glm::vec3(0.f, 0.f, 0.57f);
 			Renderer::getInstance().getMonoInfo()->view = glm::lookAt(m_Camera->pos, m_Camera->lookat, m_Camera->up);
+		}
 
-			if (DataLogger::getInstance().logging())
-			{
-				std::stringstream ss;
+		if (ev.key.keysym.sym == SDLK_BACKSPACE)
+		{
+			reset();
 
-				ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+			arcball->reset();
+			m_pDataVolume->resetPositionAndOrientation();
+			m_Camera->pos = glm::vec3(0.f, 0.f, 0.57f);
+			Renderer::getInstance().getMonoInfo()->view = glm::lookAt(m_Camera->pos, m_Camera->lookat, m_Camera->up);
 
-				DataLogger::getInstance().logMessage(ss.str());
-			}
+			init();
 		}
 	}
 
@@ -239,26 +217,11 @@ void StudyTrialDesktopBehavior::processEvent(SDL_Event & ev)
 			m_Camera->pos = m_Camera->lookat - eyeForward * 10.f;
 
 		Renderer::getInstance().getMonoInfo()->view = glm::lookAt(m_Camera->pos, m_Camera->lookat, m_Camera->up);
-
-		if (DataLogger::getInstance().logging())
-		{
-			std::stringstream ss;
-
-			ss << "Camera Zoom" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-			ss << "\t";
-			ss << "cam-pos:\"" << m_Camera->pos.x << "," << m_Camera->pos.y << "," << m_Camera->pos.z << "\"";
-			ss << ";";
-			ss << "cam-look:\"" << m_Camera->lookat.x << "," << m_Camera->lookat.y << "," << m_Camera->lookat.z << "\"";
-			ss << ";";
-			ss << "cam-up:\"" << m_Camera->up.x << "," << m_Camera->up.y << "," << m_Camera->up.z << "\"";
-
-			DataLogger::getInstance().logMessage(ss.str());
-		}
 	}
 }
 
 
-void StudyTrialDesktopBehavior::update()
+void StudyTutorialDesktopBehavior::update()
 {
 	m_pPointCloud->update();
 	m_pDataVolume->update();
@@ -281,45 +244,16 @@ void StudyTrialDesktopBehavior::update()
 				m_nCleanedGoodPoints++;
 		}
 
-		//if (m_nPointsLeft != prevPointCount)
-		//	m_vPointUpdateAnimations.push_back(std::make_pair(m_nPointsLeft, high_resolution_clock::now()));
-
 		if (m_nPointsLeft == 0u)
 		{
 			BehaviorManager::getInstance().removeBehavior("desktop_edit");
 
 			m_bPointsCleaned = true;
-
-			std::stringstream ss;
-
-			ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-			ss << "\t";
-			ss << "trial-type:\"desktop\"";
-			ss << ";";
-			ss << "file-name:\"" << std::experimental::filesystem::v1::path(m_strFileName).filename() << "\"";
-			ss << ";";
-			ss << "file-category:\"" << m_strCategory << "\"";
-			ss << ";";
-			ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
-			ss << ";";
-			ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
-			ss << ";";
-			ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
-			ss << ";";
-			ss << "cam-pos:\"" << Renderer::getInstance().getCamera()->pos.x << "," << Renderer::getInstance().getCamera()->pos.y << "," << Renderer::getInstance().getCamera()->pos.z << "\"";
-			ss << ";";
-			ss << "cam-lookat:\"" << Renderer::getInstance().getCamera()->lookat.x << "," << Renderer::getInstance().getCamera()->lookat.y << "," << Renderer::getInstance().getCamera()->lookat.z << "\"";
-			ss << ";";
-			ss << "total-cleaned:\"" << m_nPointsCleaned << "\"";
-			ss << ";";
-			ss << "total-mistakes:\"" << m_nCleanedGoodPoints << "\"";
-
-			DataLogger::getInstance().logMessage(ss.str());
 		}
 	}
 }
 
-void StudyTrialDesktopBehavior::draw()
+void StudyTutorialDesktopBehavior::draw()
 {
 	m_pDataVolume->drawVolumeBacking(glm::inverse(Renderer::getInstance().getMonoInfo()->view), 2.f);
 	m_pDataVolume->drawBBox(0.f);
@@ -399,8 +333,8 @@ void StudyTrialDesktopBehavior::draw()
 	else
 	{
 		Renderer::getInstance().drawUIText(
-			"Trial Complete!",
-			glm::vec4(0.2f, 0.2f, 0.8f, 1.f),
+			"Tutorial Complete!",
+			glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
 			glm::vec3(Renderer::getInstance().getMonoInfo()->viewport[2] *0.5f, Renderer::getInstance().getMonoInfo()->viewport[3], 0.f),
 			glm::quat(),
 			100,
@@ -444,13 +378,24 @@ void StudyTrialDesktopBehavior::draw()
 	}
 }
 
-void StudyTrialDesktopBehavior::finish()
+void StudyTutorialDesktopBehavior::reset()
+{
+	m_pPointCloud->resetAllMarks();
+
+	m_bPointsCleaned = false;
+
+	m_nPointsLeft = m_pPointCloud->getPointCount();
+
+	m_bActive = true;
+}
+
+void StudyTutorialDesktopBehavior::finish()
 {
 	if (m_bPointsCleaned)
 		m_bActive = false;
 }
 
-void StudyTrialDesktopBehavior::setupViews()
+void StudyTutorialDesktopBehavior::setupViews()
 {
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 

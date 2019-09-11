@@ -202,7 +202,9 @@
     <ClCompile Include="StudyTrialDesktopBehavior.cpp" />
     <ClCompile Include="StudyTrialHMDBehavior.cpp" />
     <ClCompile Include="StudyTrialFishtankBehavior.cpp" />
-    <ClCompile Include="StudyTutorialBehavior.cpp" />
+    <ClCompile Include="StudyTutorialDesktopBehavior.cpp" />
+    <ClCompile Include="StudyTutorialFishtankBehavior.cpp" />
+    <ClCompile Include="StudyTutorialHMDBehavior.cpp" />
     <ClCompile Include="TaskCompleteBehavior.cpp" />
     <ClCompile Include="TrackedDevice.cpp" />
     <ClCompile Include="TrackedDeviceManager.cpp" />
@@ -253,7 +255,9 @@
     <ClInclude Include="StudyTrialDesktopBehavior.h" />
     <ClInclude Include="StudyTrialHMDBehavior.h" />
     <ClInclude Include="StudyTrialFishtankBehavior.h" />
-    <ClInclude Include="StudyTutorialBehavior.h" />
+    <ClInclude Include="StudyTutorialDesktopBehavior.h" />
+    <ClInclude Include="StudyTutorialFishtankBehavior.h" />
+    <ClInclude Include="StudyTutorialHMDBehavior.h" />
     <ClInclude Include="TaskCompleteBehavior.h" />
     <ClInclude Include="TrackedDevice.h" />
     <ClInclude Include="TrackedDeviceManager.h" />

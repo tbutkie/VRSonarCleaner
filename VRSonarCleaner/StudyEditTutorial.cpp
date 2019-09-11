@@ -32,17 +32,23 @@ StudyEditTutorial::~StudyEditTutorial()
 
 void StudyEditTutorial::init()
 {
-	glm::vec3 tablePosition = glm::vec3(0.f, 1.1f, 0.f);
-	glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-	glm::vec3 tableSize = glm::vec3(1.f, 1.f, 0.5f);
+	glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+	glm::vec3 hmdForward = -hmdXform[2];
+	glm::vec3 hmdPos = hmdXform[3];
 
-	m_pDemoVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
+	m_pDemoVolume = new DataVolume(hmdPos + hmdForward * 0.57f, hmdXform * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(0.336f));
+
+	m_pDemoVolume->setBackingColor(glm::vec4(0.f, 0.f, 0.f, 1.f));
+	m_pDemoVolume->setFrameColor(glm::vec4(0.f, 0.f, 0.7f, 1.f));
 	
 	m_pColorScaler = new ColorScaler();
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "tutorial_points.csv", SonarPointCloud::XYZF);
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::XYZF);
+
+	while (!m_pDemoCloud->ready())
+		Sleep(10);
 
 	m_pDemoVolume->add(m_pDemoCloud);
 	
@@ -56,6 +62,13 @@ void StudyEditTutorial::init()
 	m_pProbe->lockProbeLength();
 	m_pProbe->lockProbeSize();
 
+	GLuint* shaderHandle = Renderer::getInstance().getShader("instanced");
+	if (shaderHandle)
+	{
+		glUseProgram(*shaderHandle);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.001f);
+	}
+
 	m_bInitialized = true;
 }
 
@@ -65,7 +78,18 @@ void StudyEditTutorial::update()
 		return;
 	
 	m_pDemoVolume->update();
-	m_pDemoCloud->update();
+	m_pDemoCloud->update();	
+	
+	if (m_pTDM && m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->justUnpressedMenu())
+	{
+		glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+		glm::vec3 hmdForward = -hmdXform[2];
+		glm::vec3 hmdPos = hmdXform[3];
+
+		m_pDemoVolume->setPosition(hmdPos + hmdForward * 0.57f);
+		m_pDemoVolume->setOrientation(hmdXform * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+		m_pDemoVolume->setDimensions(m_pDemoVolume->getOriginalDimensions());
+	}
 
 	if (!m_bProbeActivated)
 	{
@@ -171,19 +195,31 @@ void StudyEditTutorial::draw()
 {
 	if (m_pDemoVolume->isVisible())
 	{
-		m_pDemoVolume->setBackingColor(glm::vec4(0.15f, 0.21f, 0.31f, 1.f));
 		m_pDemoVolume->drawVolumeBacking(m_pTDM->getHMDToWorldTransform(), 2.f);
 		m_pDemoVolume->drawBBox(0.f);
 
 		Renderer::RendererSubmission rs;
-		rs.glPrimitiveType = GL_POINTS;
-		rs.shaderName = "flat";
-		rs.VAO = m_pDemoCloud->getVAO();
-		rs.vertCount = m_pDemoCloud->getPointCount();
-		rs.indexType = GL_UNSIGNED_INT;
-		rs.modelToWorldTransform = m_pDemoVolume->getTransformDataset(m_pDemoCloud);
+		rs.glPrimitiveType = GL_TRIANGLES;
+		rs.shaderName = "instanced";
+		rs.indexType = GL_UNSIGNED_SHORT;
+		rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("disc");
+		rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("disc");
+		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
+		rs.instanced = true;
+		rs.specularExponent = 0.f;
 
-		Renderer::getInstance().addToDynamicRenderQueue(rs);
+		for (auto &cloud : m_pDemoVolume->getDatasets())
+		{
+			if (!static_cast<SonarPointCloud*>(cloud)->ready())
+			{
+				continue;
+			}
+
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+			rs.modelToWorldTransform = m_pDemoVolume->getTransformDataset(cloud);
+			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+			Renderer::getInstance().addToDynamicRenderQueue(rs);
+		}
 	}
 	
 	std::chrono::duration<float> elapsedTime(std::chrono::high_resolution_clock::now() - m_tpTimestamp);

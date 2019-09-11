@@ -5,6 +5,9 @@
 #include "ScaleDataVolumeBehavior.h"
 #include "PointCleanProbe.h"
 #include "DesktopCleanBehavior.h"
+#include "StudyTutorialHMDBehavior.h"
+#include "StudyTutorialDesktopBehavior.h"
+#include "StudyTutorialFishtankBehavior.h"
 #include <gtc/quaternion.hpp>
 #include "utilities.h"
 #include <random>
@@ -108,34 +111,74 @@ void SonarStudyScene::processSDLEvent(SDL_Event & ev)
 
 		if (ev.key.keysym.sym == SDLK_d)
 		{
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP, NULL);
-			BehaviorManager::getInstance().addBehavior("study", study);
-			study->init();
+			if (ev.key.keysym.mod & KMOD_SHIFT)
+			{
+				if (BehaviorManager::getInstance().getBehavior("tutorial"))
+					BehaviorManager::getInstance().removeBehavior("tutorial");
+
+				auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::DESKTOP, NULL);
+				BehaviorManager::getInstance().addBehavior("study", study);
+				study->init();
+			}
+			else
+			{
+				auto tut = new StudyTutorialDesktopBehavior();
+				BehaviorManager::getInstance().addBehavior("tutorial", tut);
+				tut->init();
+			}
 		}
 
 		if (ev.key.keysym.sym == SDLK_v)
 		{
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::VR, NULL);
-			BehaviorManager::getInstance().addBehavior("study", study);
-			study->init();
+			if (ev.key.keysym.mod & KMOD_SHIFT)
+			{
+				if (BehaviorManager::getInstance().getBehavior("vrtutorial"))
+					BehaviorManager::getInstance().removeBehavior("vrtutorial");
+
+				auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::VR, NULL);
+				BehaviorManager::getInstance().addBehavior("study", study);
+				study->init();
+			}
+			else
+			{
+				auto tut = new StudyTutorialHMDBehavior(m_pTDM);
+				BehaviorManager::getInstance().addBehavior("vrtutorial", tut);
+			}
 		}
 
 		if (ev.key.keysym.sym == SDLK_f)
 		{
-			m_bEditMode = false;
-			SDL_ShowCursor(0);
-			m_pTDM->setWaitGetPoses(false);
-			m_pTDM->getPrimaryController()->hideRenderModel();
-			m_pTDM->getSecondaryController()->hideRenderModel();
-			auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
-			BehaviorManager::getInstance().addBehavior("study", study);
-			study->init();
+			if (ev.key.keysym.mod & KMOD_SHIFT)
+			{
+				if (BehaviorManager::getInstance().getBehavior("tutorial"))
+					BehaviorManager::getInstance().removeBehavior("tutorial");
+
+
+				m_bEditMode = false;
+				SDL_ShowCursor(0);
+				m_pTDM->setWaitGetPoses(false);
+				m_pTDM->getPrimaryController()->hideRenderModel();
+				m_pTDM->getSecondaryController()->hideRenderModel();
+				auto study = new RunStudyBehavior(m_pTDM, RunStudyBehavior::EStudyType::FISHTANK, m_pFishtankVolume);
+				BehaviorManager::getInstance().addBehavior("study", study);
+				study->init();
+			}
+			else
+			{
+				auto tut = new StudyTutorialFishtankBehavior(m_pTDM, m_pFishtankVolume);
+				BehaviorManager::getInstance().addBehavior("tutorial", tut);
+				tut->init();
+			}
 		}
 	}
 
 	RunStudyBehavior *study = static_cast<RunStudyBehavior*>(BehaviorManager::getInstance().getBehavior("study"));
 	if (study)
 		study->processSDLEvent(ev);
+
+	InitializableEventBehavior *tut = static_cast<InitializableEventBehavior*>(BehaviorManager::getInstance().getBehavior("tutorial"));
+	if (tut)
+		tut->processEvent(ev);
 }
 
 void SonarStudyScene::update()
@@ -167,6 +210,29 @@ void SonarStudyScene::draw()
 
 		m_pFishtankVolume->drawVolumeBacking(viewPos, 2.f);
 		m_pFishtankVolume->drawBBox(0.f);
+	}
+
+	if (m_pTDM && m_pTDM->getSecondaryController() && BehaviorManager::getInstance().getBehavior("study"))
+	{
+		glm::mat4 menuButtonPose = m_pTDM->getDeviceComponentPose(m_pTDM->getSecondaryController()->getIndex(), m_pTDM->getSecondaryController()->getComponentID(vr::k_EButton_ApplicationMenu));
+		glm::mat4 menuButtonTextAnchorTrans = m_pTDM->getSecondaryController()->getDeviceToWorldTransform() * glm::translate(glm::mat4(), glm::vec3(-0.025f, 0.01f, 0.f)) * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
+
+		Renderer::getInstance().drawText(
+			"Reset\nView",
+			glm::vec4(1.f),
+			menuButtonTextAnchorTrans[3],
+			glm::quat(menuButtonTextAnchorTrans),
+			0.015f,
+			Renderer::TextSizeDim::HEIGHT,
+			Renderer::TextAlignment::CENTER,
+			Renderer::TextAnchor::CENTER_RIGHT
+		);
+		Renderer::getInstance().drawDirectedPrimitive("cylinder",
+			menuButtonTextAnchorTrans[3],
+			menuButtonPose[3],
+			0.001f,
+			glm::vec4(1.f, 1.f, 1.f, 0.75f)
+		);
 	}
 }
 

@@ -8,13 +8,13 @@
 
 
 
-class StudyTutorialBehavior :
+class StudyTutorialHMDBehavior :
 	public BehaviorBase
 {
 
 public:
-	StudyTutorialBehavior(TrackedDeviceManager* m_pTDM, DataVolume* TableVolume, DataVolume* WallVolume);
-	virtual ~StudyTutorialBehavior();
+	StudyTutorialHMDBehavior(TrackedDeviceManager* m_pTDM);
+	virtual ~StudyTutorialHMDBehavior();
 
 	void update();
 
@@ -22,8 +22,6 @@ public:
 
 private:
 	TrackedDeviceManager *m_pTDM;
-	DataVolume* m_pTableVolume;
-	DataVolume* m_pWallVolume;
 
 	std::queue<std::pair<std::string, InitializableBehavior*>> m_qTutorialQueue;
 

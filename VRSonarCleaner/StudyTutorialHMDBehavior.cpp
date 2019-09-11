@@ -1,4 +1,4 @@
-#include "StudyTutorialBehavior.h"
+#include "StudyTutorialHMDBehavior.h"
 
 #include "InfoBoxManager.h"
 #include "BehaviorManager.h"
@@ -10,20 +10,16 @@
 #include "ScaleTutorial.h"
 #include "StudyEditTutorial.h"
 
-StudyTutorialBehavior::StudyTutorialBehavior(TrackedDeviceManager* pTDM, DataVolume* tableVolume, DataVolume* wallVolume)
+StudyTutorialHMDBehavior::StudyTutorialHMDBehavior(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
-	, m_pTableVolume(tableVolume)
-	, m_pWallVolume(wallVolume)
 {
 	createDemoQueue();
-	tableVolume->setVisible(false);
-	wallVolume->setVisible(false);
 	BehaviorManager::getInstance().addBehavior(m_qTutorialQueue.front().first, m_qTutorialQueue.front().second);
 	m_qTutorialQueue.front().second->init();
 }
 
 
-StudyTutorialBehavior::~StudyTutorialBehavior()
+StudyTutorialHMDBehavior::~StudyTutorialHMDBehavior()
 {
 	if (m_qTutorialQueue.size() > 0u)
 	{
@@ -38,7 +34,7 @@ StudyTutorialBehavior::~StudyTutorialBehavior()
 	}
 }
 
-void StudyTutorialBehavior::update()
+void StudyTutorialHMDBehavior::update()
 {
 	if (m_qTutorialQueue.size() == 0u)
 		return;
@@ -57,11 +53,11 @@ void StudyTutorialBehavior::update()
 	
 }
 
-void StudyTutorialBehavior::draw()
+void StudyTutorialHMDBehavior::draw()
 {
 }
 
-void StudyTutorialBehavior::createDemoQueue()
+void StudyTutorialHMDBehavior::createDemoQueue()
 {
 	m_qTutorialQueue.push(std::make_pair("Welcome", new WelcomeBehavior(m_pTDM)));
 	m_qTutorialQueue.push(std::make_pair("Intro", new StudyIntroBehavior(m_pTDM)));

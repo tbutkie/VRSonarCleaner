@@ -1,4 +1,4 @@
-#include "StudyTrialFishtankBehavior.h"
+#include "StudyTutorialFishtankBehavior.h"
 #include "BehaviorManager.h"
 #include "GrabObjectBehavior.h"
 #include "ScaleDataVolumeBehavior.h"
@@ -13,10 +13,8 @@
 
 using namespace std::chrono;
 
-StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTDM, std::string fileName, std::string category, DataVolume* dataVolume)
+StudyTutorialFishtankBehavior::StudyTutorialFishtankBehavior(TrackedDeviceManager* pTDM, DataVolume* dataVolume)
 	: m_pTDM(pTDM)
-	, m_strFileName(fileName)
-	, m_strCategory(category)
 	, m_nPointsLeft(0u)
 	, m_bPointsCleaned(false)
 	, m_pDataVolume(dataVolume)
@@ -26,7 +24,7 @@ StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTD
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
+	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
 
 	m_tpLastUpdate = high_resolution_clock::now();
 
@@ -34,12 +32,12 @@ StudyTrialFishtankBehavior::StudyTrialFishtankBehavior(TrackedDeviceManager* pTD
 	if (shaderHandle)
 	{
 		glUseProgram(*shaderHandle);
-		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.001f);
+		glUniform1f(glGetUniformLocation(*shaderHandle, "size"), 0.0005f);
 	}
 }
 
 
-StudyTrialFishtankBehavior::~StudyTrialFishtankBehavior()
+StudyTutorialFishtankBehavior::~StudyTutorialFishtankBehavior()
 {
 	m_pDataVolume->remove(m_pPointCloud);
 
@@ -50,15 +48,13 @@ StudyTrialFishtankBehavior::~StudyTrialFishtankBehavior()
 		delete m_pColorScaler;
 }
 
-void StudyTrialFishtankBehavior::init()
+void StudyTutorialFishtankBehavior::init()
 {
 	m_pDataVolume->resetPositionAndOrientation();
 	m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
 
 	while (!m_pPointCloud->ready())
-	{
 		Sleep(10);
-	}
 
 	m_pDataVolume->add(m_pPointCloud);
 	
@@ -71,69 +67,27 @@ void StudyTrialFishtankBehavior::init()
 	);
 
 	// apply new color scale
-	m_pPointCloud->resetAllMarks();
-	
+	m_pPointCloud->resetAllMarks();	
 
-	using namespace std::experimental::filesystem::v1;
-	std::cout << "Starting trial: " << path(m_strFileName).filename() << std::endl;
 	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 
-	auto cam = Renderer::getInstance().getCamera();
-	glm::vec3 COPPos = cam->pos;
-	glm::quat COPQuat = glm::inverse(glm::lookAt(cam->pos, cam->lookat, cam->up));
-
-	std::stringstream ss;
-
-	ss << "Trial Begin" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-	ss << "\t";
-	ss << "trial-type:\"fishtank\"";
-	ss << ";";
-	ss << "file-name:\"" << path(m_strFileName).filename() << "\"";
-	ss << ";";
-	ss << "file-category:\"" << m_strCategory << "\"";
-	ss << ";";
-	ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
-	ss << ";";
-	ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
-	ss << ";";
-	ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
-	ss << ";";
-	ss << "hmd-pos:\"" << COPPos.x << "," << COPPos.y << "," << COPPos.z << "\"";
-	ss << ";";
-	ss << "hmd-quat:\"" << COPQuat.x << "," << COPQuat.y << "," << COPQuat.z << "," << COPQuat.w << "\"";
-
-	if (m_pTDM->getPrimaryController())
-	{
-		glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
-		glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
-
-		ss << ";";
-		ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
-		ss << ";";
-		ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
-	}
-
-	if (m_pTDM->getSecondaryController())
-	{
-		glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
-		glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
-
-		ss << ";";
-		ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
-		ss << ";";
-		ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
-	}
-
-	DataLogger::getInstance().logMessage(ss.str());
+	std::cout << "Starting tutorial..." << std::endl;
 }
 
-void StudyTrialFishtankBehavior::processEvent(SDL_Event & ev)
+void StudyTutorialFishtankBehavior::processEvent(SDL_Event & ev)
 {
+	if (ev.type == SDL_KEYDOWN)
+	{
+		if (ev.key.keysym.sym == SDLK_BACKSPACE)
+		{
+			reset();
+		}
+	}
 }
 
-void StudyTrialFishtankBehavior::update()
+void StudyTutorialFishtankBehavior::update()
 {
 	m_pPointCloud->update();
 	m_pDataVolume->update();
@@ -142,15 +96,6 @@ void StudyTrialFishtankBehavior::update()
 	{
 		m_pDataVolume->resetPositionAndOrientation();
 		m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
-
-		if (DataLogger::getInstance().logging())
-		{
-			std::stringstream ss;
-
-			ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-
-			DataLogger::getInstance().logMessage(ss.str());
-		}
 	}
 
 	unsigned int prevPointCount = m_nPointsLeft;
@@ -179,63 +124,10 @@ void StudyTrialFishtankBehavior::update()
 
 		m_pDataVolume->resetPositionAndOrientation();
 		m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
-
-		auto cam = Renderer::getInstance().getCamera();
-		glm::vec3 COPPos = cam->pos;
-		glm::quat COPQuat = glm::inverse(glm::lookAt(cam->pos, cam->lookat, cam->up));
-
-		std::stringstream ss;
-
-		ss << "Trial End" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
-		ss << "\t";
-		ss << "trial-type:\"fishtank\"";
-		ss << ";";
-		ss << "file-name:\"" << std::experimental::filesystem::v1::path(m_strFileName).filename() << "\"";
-		ss << ";";
-		ss << "file-category:\"" << m_strCategory << "\"";
-		ss << ";";
-		ss << "vol-pos:\"" << m_pDataVolume->getPosition().x << "," << m_pDataVolume->getPosition().y << "," << m_pDataVolume->getPosition().z << "\"";
-		ss << ";";
-		ss << "vol-quat:\"" << m_pDataVolume->getOrientation().x << "," << m_pDataVolume->getOrientation().y << "," << m_pDataVolume->getOrientation().z << "," << m_pDataVolume->getOrientation().w << "\"";
-		ss << ";";
-		ss << "vol-dims:\"" << m_pDataVolume->getDimensions().x << "," << m_pDataVolume->getDimensions().y << "," << m_pDataVolume->getDimensions().z << "\"";
-		ss << ";";
-		ss << "hmd-pos:\"" << COPPos.x << "," << COPPos.y << "," << COPPos.z << "\"";
-		ss << ";";
-		ss << "hmd-quat:\"" << COPQuat.x << "," << COPQuat.y << "," << COPQuat.z << "," << COPQuat.w << "\"";
-
-		if (m_pTDM->getPrimaryController())
-		{
-			glm::vec3 primCtrlrPos = m_pTDM->getPrimaryController()->getDeviceToWorldTransform()[3];
-			glm::quat primCtrlrQuat = glm::quat_cast(m_pTDM->getPrimaryController()->getDeviceToWorldTransform());
-
-			ss << ";";
-			ss << "primary-controller-pos:\"" << primCtrlrPos.x << "," << primCtrlrPos.y << "," << primCtrlrPos.z << "\"";
-			ss << ";";
-			ss << "primary-controller-quat:\"" << primCtrlrQuat.x << "," << primCtrlrQuat.y << "," << primCtrlrQuat.z << "," << primCtrlrQuat.w << "\"";
-		}
-
-		if (m_pTDM->getSecondaryController())
-		{
-			glm::vec3 secCtrlrPos = m_pTDM->getSecondaryController()->getDeviceToWorldTransform()[3];
-			glm::quat secCtrlrQuat = glm::quat_cast(m_pTDM->getSecondaryController()->getDeviceToWorldTransform());
-
-			ss << ";";
-			ss << "secondary-controller-pos:\"" << secCtrlrPos.x << "," << secCtrlrPos.y << "," << secCtrlrPos.z << "\"";
-			ss << ";";
-			ss << "secondary-controller-quat:\"" << secCtrlrQuat.x << "," << secCtrlrQuat.y << "," << secCtrlrQuat.z << "," << secCtrlrQuat.w << "\"";
-		}
-
-		ss << ";";
-		ss << "total-cleaned:\"" << m_nPointsCleaned << "\"";
-		ss << ";";
-		ss << "total-mistakes:\"" << m_nCleanedGoodPoints << "\"";
-
-		DataLogger::getInstance().logMessage(ss.str());
 	}
 }
 
-void StudyTrialFishtankBehavior::draw()
+void StudyTutorialFishtankBehavior::draw()
 {
 	if (!m_pTDM->getPrimaryController())
 		return;
@@ -308,7 +200,7 @@ void StudyTrialFishtankBehavior::draw()
 	{
 		Renderer::getInstance().drawUIText(
 			"Trial Complete!",
-			glm::vec4(0.2f, 0.2f, 0.8f, 1.f),
+			glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
 			glm::vec3(Renderer::getInstance().getMonoInfo()->viewport[2] * 0.5f, Renderer::getInstance().getMonoInfo()->viewport[3], 0.f),
 			glm::quat(),
 			100,
@@ -352,7 +244,22 @@ void StudyTrialFishtankBehavior::draw()
 	}
 }
 
-void StudyTrialFishtankBehavior::finish()
+void StudyTutorialFishtankBehavior::reset()
+{
+	m_pPointCloud->resetAllMarks();
+
+	m_bPointsCleaned = false;
+
+	m_nPointsLeft = m_pPointCloud->getPointCount();
+
+	m_bActive = true;
+
+	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
+	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
+	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
+}
+
+void StudyTutorialFishtankBehavior::finish()
 {
 	if (m_bPointsCleaned)
 		m_bActive = false;

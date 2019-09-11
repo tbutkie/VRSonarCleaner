@@ -24,7 +24,7 @@ void WelcomeBehavior::init()
 {
 	InfoBoxManager::getInstance().addInfoBox(
 		"Welcome",
-		"welcome.png",
+		"resources/images/welcome.png",
 		1.f,
 		glm::translate(glm::mat4(), glm::vec3(0.f, 0.f, -2.f)),
 		InfoBoxManager::RELATIVE_TO::HMD,

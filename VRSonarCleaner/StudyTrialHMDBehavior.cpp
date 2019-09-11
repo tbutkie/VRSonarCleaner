@@ -31,20 +31,16 @@ StudyTrialHMDBehavior::StudyTrialHMDBehavior(TrackedDeviceManager* pTDM, std::st
 
 	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
 
-
 	m_pPointCloud = new SonarPointCloud(m_pColorScaler, fileName, SonarPointCloud::SONAR_FILETYPE::XYZF);
 
 	// point cloud loading is async, but files are small so let them load and refresh the color scale
 	while (!m_pPointCloud->ready()) Sleep(10);
 
-	glm::vec3 up(0.f, 1.f, 0.f);
 	glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
 	glm::vec3 hmdForward = -hmdXform[2];
 	glm::vec3 hmdPos = hmdXform[3];
 
-	glm::vec3 forward = glm::normalize(glm::cross(glm::normalize(glm::cross(up, hmdForward)), up));
-
-	m_pDataVolume = new DataVolume(hmdPos + forward * 0.57f, glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(vec2ScreenSizeMeters.y));
+	m_pDataVolume = new DataVolume(hmdPos + hmdForward * 0.57f, hmdXform * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)), glm::vec3(vec2ScreenSizeMeters.y));
 
 	m_pDataVolume->add(m_pPointCloud);
 
@@ -149,6 +145,26 @@ void StudyTrialHMDBehavior::update()
 {
 	m_pPointCloud->update();
 	m_pDataVolume->update();
+
+	if (m_pTDM && m_pTDM->getSecondaryController() && m_pTDM->getSecondaryController()->justUnpressedMenu())
+	{
+		glm::mat4 hmdXform = m_pTDM->getHMDToWorldTransform();
+		glm::vec3 hmdForward = -hmdXform[2];
+		glm::vec3 hmdPos = hmdXform[3];
+
+		m_pDataVolume->setPosition(hmdPos + hmdForward * 0.57f);
+		m_pDataVolume->setOrientation(hmdXform * glm::rotate(glm::mat4(), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f)));
+		m_pDataVolume->setDimensions(m_pDataVolume->getOriginalDimensions());
+		
+		if (DataLogger::getInstance().logging())
+		{
+			std::stringstream ss;
+
+			ss << "View Reset" << "\t" << DataLogger::getInstance().getTimeSinceLogStartString();
+
+			DataLogger::getInstance().logMessage(ss.str());
+		}
+	}
 
 	unsigned int prevPointCount = m_nPointsLeft;
 	m_nPointsLeft = m_nCleanedGoodPoints = m_nPointsCleaned = 0u;
@@ -270,7 +286,7 @@ void StudyTrialHMDBehavior::draw()
 
 		Renderer::getInstance().drawText(
 			"Trial Complete!",
-			glm::vec4(glm::linearRand(glm::vec3(0.f), glm::vec3(1.f)), 1.f),
+			glm::vec4(0.2f, 0.2f, 0.8f, 1.f),
 			glm::vec3(hmdPos + hmdForward * 1.f + hmdUp * 0.01f),
 			glm::quat(hmdXform),
 			0.1f,

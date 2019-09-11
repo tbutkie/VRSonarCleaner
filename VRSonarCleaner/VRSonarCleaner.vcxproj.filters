@@ -46,6 +46,9 @@
     <Filter Include="Interactions &amp; Behaviors\debug">
       <UniqueIdentifier>{96b18b3b-f79e-4ca4-ba66-85109f5e6413}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interactions &amp; Behaviors\tutorial\vr">
+      <UniqueIdentifier>{2817a4b3-524e-4b0f-9450-594580cccd51}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\lodepng.cpp">
@@ -99,9 +102,6 @@
     <ClCompile Include="Dataset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WelcomeBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClCompile>
     <ClCompile Include="DemoBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClCompile>
@@ -114,26 +114,8 @@
     <ClCompile Include="ScaleDataVolumeBehavior.cpp">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClCompile>
-    <ClCompile Include="TaskCompleteBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
-    <ClCompile Include="GrabTutorial.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
-    <ClCompile Include="ScaleTutorial.cpp">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyTutorialBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyIntroBehavior.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClCompile>
     <ClCompile Include="CloudEditControllerTutorial.cpp">
       <Filter>Interactions &amp; Behaviors\point</Filter>
-    </ClCompile>
-    <ClCompile Include="StudyEditTutorial.cpp">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClCompile>
     <ClCompile Include="RunStudyBehavior.cpp">
       <Filter>Interactions &amp; Behaviors\study</Filter>
@@ -185,6 +167,33 @@
     </ClCompile>
     <ClCompile Include="SonarStudyScene.cpp">
       <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="GrabTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="ScaleTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskCompleteBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="WelcomeBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyEditTutorial.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyIntroBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTutorialDesktopBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTutorialFishtankBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="StudyTutorialHMDBehavior.cpp">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -242,9 +251,6 @@
     <ClInclude Include="Dataset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WelcomeBehavior.h">
-      <Filter>Interactions &amp; Behaviors</Filter>
-    </ClInclude>
     <ClInclude Include="DemoBehavior.h">
       <Filter>Interactions &amp; Behaviors\demo</Filter>
     </ClInclude>
@@ -260,26 +266,8 @@
     <ClInclude Include="ScaleDataVolumeBehavior.h">
       <Filter>Interactions &amp; Behaviors</Filter>
     </ClInclude>
-    <ClInclude Include="TaskCompleteBehavior.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
-    <ClInclude Include="GrabTutorial.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
-    <ClInclude Include="ScaleTutorial.h">
-      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyTutorialBehavior.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyIntroBehavior.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
-    </ClInclude>
     <ClInclude Include="CloudEditControllerTutorial.h">
       <Filter>Interactions &amp; Behaviors\point</Filter>
-    </ClInclude>
-    <ClInclude Include="StudyEditTutorial.h">
-      <Filter>Interactions &amp; Behaviors\study</Filter>
     </ClInclude>
     <ClInclude Include="RunStudyBehavior.h">
       <Filter>Interactions &amp; Behaviors\study</Filter>
@@ -334,6 +322,33 @@
     </ClInclude>
     <ClInclude Include="SonarStudyScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="GrabTutorial.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="ScaleTutorial.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskCompleteBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="WelcomeBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyEditTutorial.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyIntroBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTutorialDesktopBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTutorialFishtankBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="StudyTutorialHMDBehavior.h">
+      <Filter>Interactions &amp; Behaviors\tutorial\vr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
