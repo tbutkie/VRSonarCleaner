@@ -24,7 +24,7 @@ StudyTutorialFishtankBehavior::StudyTutorialFishtankBehavior(TrackedDeviceManage
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
+	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
 
 	m_tpLastUpdate = high_resolution_clock::now();
 
