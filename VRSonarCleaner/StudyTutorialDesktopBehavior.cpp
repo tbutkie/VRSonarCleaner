@@ -30,7 +30,7 @@ StudyTutorialDesktopBehavior::StudyTutorialDesktopBehavior()
 
 	glm::vec2 vec2ScreenSizeMeters(winSize.x * sizer, winSize.y * sizer);
 	
-	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
+	m_pPointCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/tutorial_points.csv", SonarPointCloud::SONAR_FILETYPE::XYZF);
 	
 	// point cloud loading is async, but files are small so let them load so we can refresh the color scale
 	while (!m_pPointCloud->ready()) Sleep(10);

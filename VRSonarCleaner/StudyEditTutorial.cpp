@@ -45,7 +45,7 @@ void StudyEditTutorial::init()
 	m_pColorScaler->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
 	m_pColorScaler->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 
-	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/study/tutorial_points.csv", SonarPointCloud::XYZF);
+	m_pDemoCloud = new SonarPointCloud(m_pColorScaler, "resources/data/sonar/tutorial_points.csv", SonarPointCloud::XYZF);
 
 	while (!m_pDemoCloud->ready())
 		Sleep(10);

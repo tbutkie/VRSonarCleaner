@@ -233,8 +233,8 @@ void StudyTrialDesktopBehavior::processEvent(SDL_Event & ev)
 
 		float newLen = glm::length(m_Camera->lookat - m_Camera->pos);
 
-		if (newLen < 0.1f)
-			m_Camera->pos = m_Camera->lookat - eyeForward * 0.1f;
+		if (newLen < 0.01f)
+			m_Camera->pos = m_Camera->lookat - eyeForward * 0.01f;
 		if (newLen > 10.f)
 			m_Camera->pos = m_Camera->lookat - eyeForward * 10.f;
 
@@ -284,7 +284,7 @@ void StudyTrialDesktopBehavior::update()
 		//if (m_nPointsLeft != prevPointCount)
 		//	m_vPointUpdateAnimations.push_back(std::make_pair(m_nPointsLeft, high_resolution_clock::now()));
 
-		if (m_nPointsLeft == 0u)
+		if (m_nPointsLeft == 0u && !m_bPointsCleaned)
 		{
 			BehaviorManager::getInstance().removeBehavior("desktop_edit");
 

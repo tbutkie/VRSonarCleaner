@@ -169,7 +169,7 @@ void StudyTrialFishtankBehavior::update()
 			m_nCleanedGoodPoints++;
 	}
 	
-	if (m_nPointsLeft == 0u)// || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
+	if (m_nPointsLeft == 0u && !m_bPointsCleaned)// || (m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justPressedGrip()))
 	{
 		BehaviorManager::getInstance().removeBehavior("scale");
 		BehaviorManager::getInstance().removeBehavior("grab");
