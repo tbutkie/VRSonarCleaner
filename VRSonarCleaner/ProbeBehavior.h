@@ -27,6 +27,12 @@ public:
 
 	virtual void draw() = 0;
 
+	void setWorkingSpaceOffsetFrame(glm::mat4 coordFrameTransform);
+	glm::mat4 getWorkingSpaceOffsetFrame();
+
+	void showProbe();
+	void hideProbe();
+
 	float getProbeOffset();
 	float getProbeOffsetMax();
 	float getProbeOffsetMin();
@@ -54,6 +60,8 @@ protected:
 
 	bool m_bVerticalSwipeMode;
 	bool m_bHorizontalSwipeMode;
+
+	glm::mat4 m_mat4OffsetFrame;
 
 	float m_fProbeOffset;
 	float m_fProbeOffsetMin;

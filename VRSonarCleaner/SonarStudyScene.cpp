@@ -203,6 +203,14 @@ void SonarStudyScene::update()
 
 		setupViews();
 	}
+
+	if (m_pTDM && m_pTDM->getPrimaryController() && m_pTDM->getPrimaryController()->justUnpressedMenu())
+	{
+		PointCleanProbe* editBehavior = static_cast<PointCleanProbe*>(BehaviorManager::getInstance().getBehavior("edit"));
+		
+		if (editBehavior)
+			editBehavior->setWorkingSpaceOffsetFrame(m_mat4WorldToScreen);
+	}
 }
 
 void SonarStudyScene::draw()

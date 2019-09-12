@@ -69,7 +69,9 @@ void StudyTutorialFishtankBehavior::init()
 	// apply new color scale
 	m_pPointCloud->resetAllMarks();	
 
-	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
+	auto edit = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume);
+	BehaviorManager::getInstance().addBehavior("edit", edit);
+	edit->hideProbe();
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 
@@ -254,7 +256,9 @@ void StudyTutorialFishtankBehavior::reset()
 
 	m_bActive = true;
 
-	BehaviorManager::getInstance().addBehavior("edit", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
+	auto edit = new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume);
+	BehaviorManager::getInstance().addBehavior("edit", edit);
+	edit->hideProbe();
 	BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
 	BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
 }
