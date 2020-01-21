@@ -8,7 +8,6 @@
 #include "ScaleDataVolumeBehavior.h"
 #include "ProbeBehavior.h"
 #include "DesktopCleanBehavior.h"
-#include "PointCleanProbe.h"
 
 #include <filesystem>
 
@@ -62,6 +61,16 @@ void SonarScene::init()
 		svi->projection = glm::perspective(glm::radians(60.f), aspect, 0.01f, 100.f);
 		svi->viewport = glm::ivec4(0, 0, svi->m_nRenderWidth, svi->m_nRenderHeight);
 	}
+
+	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/quadview.png");
+
+	if (tex == NULL)
+	{
+		tex = new GLTexture("resources/images/quadview.png", false);
+		Renderer::getInstance().addTexture(tex);
+	}
+
+	glScissor(1280, 800, 1280, 800);
 
 	m_pColorScalerTPU = new ColorScaler();
 	//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -146,67 +155,6 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 		if (desktopEdit)
 			desktopEdit->activate();
-	}
-		
-	if (ev.key.keysym.sym == SDLK_l)
-	{
-		using namespace std::experimental::filesystem::v1;
-
-		//path dataset("south_santa_rosa");
-		//path dataset("santa_cruz_south");
-		path dataset("santa_cruz_basin");
-
-		auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-		std::cout << "Base data directory: " << basePath << std::endl;
-
-		auto acceptsPath = path(basePath).append(path("accept"));
-		auto rejectsPath = path(basePath).append(path("reject"));
-
-		for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
-		{
-			if (is_regular_file(*it))
-			{
-				if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-				{
-					SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-					m_vpClouds.push_back(tmp);
-					m_pDataVolume->add(tmp);
-					break;
-				}
-			}
-		}
-
-		//for (directory_iterator it(rejectsPath.append(dataset)); it != directory_iterator(); ++it)
-		//{
-		//	if (is_regular_file(*it))
-		//	{
-		//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-		//		{
-		//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-		//			m_vpClouds.push_back(tmp);
-		//			m_pTableVolume->add(tmp);
-		//			m_pWallVolume->add(tmp);
-		//			break;
-		//		}
-		//	}
-		//}
-
-		refreshColorScale(m_pColorScalerTPU, m_vpClouds);
-	}
-
-	if (ev.key.keysym.sym == SDLK_d)
-	{
-
-		static_cast<ProbeBehavior*>(BehaviorManager::getInstance().getBehavior("pointclean"))->activateDemoMode();
-
-		//if ((sdlEvent.key.keysym.mod & KMOD_LCTRL))
-		//{
-		//	if (!m_bUseDesktop)
-		//	{
-		//		m_bUseDesktop = true;
-		//		initDesktop();
-		//	}
-		//}
 	}
 
 	if (ev.key.keysym.sym == SDLK_r)
@@ -338,17 +286,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 }
 
 void SonarScene::update()
-{
-	if (m_pTDM->getPrimaryController() && !BehaviorManager::getInstance().getBehavior("pointclean"))
-		BehaviorManager::getInstance().addBehavior("pointclean", new PointCleanProbe(m_pTDM->getPrimaryController(), m_pDataVolume));
-
-	//if (!BehaviorManager::getInstance().getBehavior("harvestpoints"))
-	//	BehaviorManager::getInstance().addBehavior("harvestpoints", new SelectAreaBehavior(m_pTDM, m_pWallVolume, m_pTableVolume));
-	if (!BehaviorManager::getInstance().getBehavior("grab"))
-		BehaviorManager::getInstance().addBehavior("grab", new GrabObjectBehavior(m_pTDM, m_pDataVolume));
-	if (!BehaviorManager::getInstance().getBehavior("scale"))
-		BehaviorManager::getInstance().addBehavior("scale", new ScaleDataVolumeBehavior(m_pTDM, m_pDataVolume));
-
+{	
 	for (auto &cloud : m_vpClouds)
 		cloud->update();
 
@@ -358,6 +296,19 @@ void SonarScene::update()
 
 void SonarScene::draw()
 {
+	Renderer::RendererSubmission rs;
+	rs.glPrimitiveType = GL_TRIANGLES;
+	rs.shaderName = "lighting";
+	rs.indexType = GL_UNSIGNED_SHORT;
+	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quad");
+	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quad");
+	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
+	rs.VAO = Renderer::getInstance().getPrimitiveVAO();
+	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(1280, 800, 0)) * glm::scale(glm::mat4(), glm::vec3(2560, 1600, 1));
+	rs.diffuseTexName = "resources/images/quadview.png";
+	Renderer::getInstance().addToUIRenderQueue(rs);
+
+	
 	bool unloadedData = false;
 
 	for (auto &dv : m_vpDataVolumes)
@@ -399,6 +350,8 @@ void SonarScene::draw()
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}
 	}
+
+
 
 	if (!unloadedData && !m_bInitialColorRefresh)
 	{
