@@ -25,18 +25,14 @@ public:
 
 private:
 	TrackedDeviceManager* m_pTDM;
-	DataVolume *m_pTableVolume, *m_pWallVolume;
 
-	glm::vec3 m_vec3RoomSize;
-
+	DataVolume *m_pDataVolume;
 	ColorScaler* m_pColorScalerTPU;
 
 	std::vector<SonarPointCloud*> m_vpClouds;
 	std::vector<DataVolume*> m_vpDataVolumes;
 
 	bool m_bUseDesktop;
-	bool m_bUseVR;
-	bool m_bStudyMode;
 
 	bool m_bLeftMouseDown;
 	bool m_bRightMouseDown;

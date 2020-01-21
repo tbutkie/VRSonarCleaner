@@ -2,17 +2,8 @@
 #include "InfoBoxManager.h"
 
 #include "BehaviorManager.h"
-#include "DataLogger.h"
-#include "FlowScene.h"
 #include "SonarScene.h"
-#include "StudyTrialScene.h"
-#include "CosmoStudyTrialScene.h"
-#include "HairySlicesStudyScene.h"
-#include "MotionCompensationScene.h"
-#include "FishTankScene.h"
-#include "FishTankSonarScene.h"
 
-#include "HolodeckBackground.h"
 #include "utilities.h"
 
 #include <fstream>
@@ -21,9 +12,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
-
-
-glm::vec3						g_vec3RoomSize(1.f, 3.f, 1.f);
 
 float							g_fNearClip = 0.01f;
 float							g_fFarClip = 100.f;
@@ -114,9 +102,7 @@ bool Engine::init()
 		"resources/images/skybox/sea/back.png"
 	);
 
-	//m_pCurrentScene = new FlowScene(m_pTDM);	
-	//m_pCurrentScene = new HairySlicesStudyScene(m_fDisplayDiagonalInches, m_pTDM);
-	m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
+	m_pCurrentScene = new SonarScene(m_pTDM);
 
 	m_pCurrentScene->init();
 
@@ -143,10 +129,7 @@ bool Engine::initVR()
 		utils::dprintf("Compositor initialization failed. See log file for details\n");
 		return false;
 	}
-
-	vr::VRChaperone()->GetPlayAreaSize(&g_vec3RoomSize.x, &g_vec3RoomSize.z);
-	utils::dprintf("Play bounds %fx%f\n", g_vec3RoomSize.x, g_vec3RoomSize.z);
-
+	
 	m_pTDM = new TrackedDeviceManager(m_pHMD);
 
 	if (!m_pTDM->init())
