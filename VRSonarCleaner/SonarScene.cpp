@@ -59,7 +59,7 @@ void SonarScene::init()
 		svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 		svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 		svi->projection = glm::perspective(glm::radians(60.f), aspect, 0.01f, 100.f);
-		svi->viewport = glm::ivec4(0, 0, svi->m_nRenderWidth, svi->m_nRenderHeight);
+		svi->viewport = glm::ivec4(winSize.x / 2, winSize.y / 2, winSize.x, winSize.y);
 	}
 
 	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/quadview.png");
@@ -292,10 +292,28 @@ void SonarScene::update()
 
 	for (auto &dv : m_vpDataVolumes)
 		dv->update();
+
+	auto winSize = Renderer::getInstance().getPresentationWindowSize();
+	auto minSize = winSize / 2;
+	auto winRange = winSize - minSize;
+
+	float rate = 5.f;
+	auto ratio = (1.f + glm::sin(glm::two_pi<float>()*(glm::mod(Renderer::getInstance().getElapsedSeconds(), rate) / rate))) / 2.f;
+
+	auto svi = Renderer::getInstance().getMonoInfo();
+
+	svi->viewport = glm::ivec4(
+		minSize.x * ratio,
+		minSize.y * ratio,
+		minSize.x + winRange.x * (1.f - ratio),
+		minSize.y + winRange.y * (1.f - ratio)
+	);
 }
 
 void SonarScene::draw()
 {
+	auto svi = Renderer::getInstance().getMonoInfo();
+
 	Renderer::RendererSubmission rs;
 	rs.glPrimitiveType = GL_TRIANGLES;
 	rs.shaderName = "lighting";
@@ -304,10 +322,9 @@ void SonarScene::draw()
 	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quad");
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
 	rs.VAO = Renderer::getInstance().getPrimitiveVAO();
-	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(1280, 800, 0)) * glm::scale(glm::mat4(), glm::vec3(2560, 1600, 1));
+	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(svi->m_nRenderWidth / 2.f, svi->m_nRenderHeight / 2.f, 0)) * glm::scale(glm::mat4(), glm::vec3(svi->m_nRenderWidth, svi->m_nRenderHeight, 1));
 	rs.diffuseTexName = "resources/images/quadview.png";
-	Renderer::getInstance().addToUIRenderQueue(rs);
-
+	//Renderer::getInstance().addToUIRenderQueue(rs);
 	
 	bool unloadedData = false;
 
@@ -333,8 +350,6 @@ void SonarScene::draw()
 		rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("disc");
 		rs.instanced = true;
 		rs.specularExponent = 0.f;
-		//rs.diffuseColor = glm::vec4(1.f, 1.f, 1.f, 0.5f);
-		//rs.diffuseTexName = "resources/images/circle.png";
 
 		for (auto &cloud : dv->getDatasets())
 		{

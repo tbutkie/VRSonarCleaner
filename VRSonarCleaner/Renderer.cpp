@@ -1050,7 +1050,7 @@ void Renderer::render()
 		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pWindowFramebuffer);
 
 		Renderer::getInstance().renderFullscreenTexture(
-			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			m_sviMonoInfo->viewport.x, m_sviMonoInfo->viewport.y, m_sviMonoInfo->viewport.z, m_sviMonoInfo->viewport.w,
 			m_pWindowFramebuffer->m_nResolveTextureId,
 			true
 		);
