@@ -46,7 +46,6 @@ private:
 
 
 private:
-	static bool easeSine(float transitionRate);
 	static bool easeIn(float transitionRate);
 	static bool easeOut(float transitionRate);
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);

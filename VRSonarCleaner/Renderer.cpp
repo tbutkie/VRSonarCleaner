@@ -874,7 +874,7 @@ void Renderer::renderFullscreenTexture(int x, int y, int width, int height, GLui
 		return;
 
 	glDisable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	glViewport(x, y, width, height);
 	glNamedBufferSubData(m_glFrameUBO, offsetof(FrameUniforms, v4Viewport), sizeof(FrameUniforms::v4Viewport), glm::value_ptr(glm::vec4(x, y, width, height)));
 
@@ -974,84 +974,48 @@ void Renderer::render()
 		// VR Render
 		// We don't draw the UI layer to the VR left/right eye textures, only to presentation windows on the PC display
 		Renderer::getInstance().renderFrame(&m_sviLeftEyeInfo, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);		
-	}
-	else
-	{
-		Renderer::getInstance().renderFrame(&(*m_sviMonoInfo), m_pMonoFramebuffer);
-	}
+		Renderer::getInstance().renderFrame(&m_sviRightEyeInfo, m_pRightEyeFramebuffer);	
 
-	if (m_bStereoWindow) //DESKTOP STEREO RENDER
-	{
-		// FOR LEFT EYE
-		// Bind left eye framebuffer render buffer to read/write
-		// Draw UI Layer to left eye render target and resolve to left eye texture
-		// Bind Read Framebuffer to resolved left eye texture
-		// Bind Draw Framebuffer to window/default
-		// Set glDrawBuffer to GL_BACK_LEFT
-		// Render to full-screen quad
-		// Repeat for right eye, setting glDrawBuffer to GL_BACK_RIGHT
+		if (m_bStereoWindow) //DESKTOP STEREO RENDER
+		{
+			// Render UI to left and right eye frames
+			Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pLeftEyeFramebuffer);
+			Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pRightEyeFramebuffer);
 
-
-		// Render UI to left and right eye frames
-		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pLeftEyeFramebuffer);
-		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pRightEyeFramebuffer);
-
-		Renderer::getInstance().renderStereoTexture(m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pLeftEyeFramebuffer->m_nResolveTextureId, m_pRightEyeFramebuffer->m_nResolveTextureId);
+			Renderer::getInstance().renderStereoTexture(m_ivec2WindowSize.x, m_ivec2WindowSize.y, m_pLeftEyeFramebuffer->m_nResolveTextureId, m_pRightEyeFramebuffer->m_nResolveTextureId);
+		}	
 	}
 	else //DESKTOP NON-STEREO
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, m_pWindowFramebuffer->m_nRenderFramebufferId);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		GLint srcX0, srcX1, srcY0, srcY1;
-		GLint dstX0, dstX1, dstY0, dstY1;
-
-		if (m_sviWindowUIInfo.m_nRenderWidth < m_sviMonoInfo->m_nRenderWidth)
-		{
-			srcX0 = m_sviMonoInfo->m_nRenderWidth / 2 - m_sviWindowUIInfo.m_nRenderWidth / 2;
-			srcX1 = srcX0 + m_sviWindowUIInfo.m_nRenderWidth;
-			dstX0 = 0;
-			dstX1 = m_sviWindowUIInfo.m_nRenderWidth;
-		}
-		else
-		{
-			srcX0 = 0;
-			srcX1 = m_sviMonoInfo->m_nRenderWidth;
-
-			dstX0 = m_sviWindowUIInfo.m_nRenderWidth / 2 - m_sviMonoInfo->m_nRenderWidth / 2;
-			dstX1 = dstX0 + m_sviMonoInfo->m_nRenderWidth;
-		}
-
-		if (m_sviWindowUIInfo.m_nRenderHeight < m_sviMonoInfo->m_nRenderHeight)
-		{
-			srcY0 = m_sviMonoInfo->m_nRenderHeight / 2 - m_sviWindowUIInfo.m_nRenderHeight / 2;
-			srcY1 = srcY0 + m_sviWindowUIInfo.m_nRenderHeight;
-			dstY0 = 0;
-			dstY1 = m_sviWindowUIInfo.m_nRenderHeight;
-		}
-		else
-		{
-			srcY0 = 0;
-			srcY1 = m_sviMonoInfo->m_nRenderHeight;
-
-			dstY0 = m_sviWindowUIInfo.m_nRenderHeight / 2 - m_sviMonoInfo->m_nRenderHeight / 2;
-			dstY1 = dstY0 + m_sviMonoInfo->m_nRenderHeight;
-		}
+		Renderer::getInstance().renderFrame(&(*m_sviMonoInfo), m_pMonoFramebuffer);
 
 		glBlitNamedFramebuffer(
 			m_pMonoFramebuffer->m_nRenderFramebufferId,
-			m_pWindowFramebuffer->m_nRenderFramebufferId,
-			srcX0, srcY0, srcX1, srcY1,
-			dstX0, dstY0, dstX1, dstY1,
-			GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
-			GL_NEAREST);
+			m_pMonoFramebuffer->m_nResolveFramebufferId,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			GL_COLOR_BUFFER_BIT,
+			GL_LINEAR);
 
 		Renderer::getInstance().renderUI(&m_sviWindowUIInfo, m_pWindowFramebuffer);
 
+		glBlitNamedFramebuffer(
+			m_pWindowFramebuffer->m_nRenderFramebufferId,
+			m_pWindowFramebuffer->m_nResolveFramebufferId,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			0, 0, m_sviWindowUIInfo.m_nRenderWidth, m_sviWindowUIInfo.m_nRenderHeight,
+			GL_COLOR_BUFFER_BIT,
+			GL_LINEAR);
+
+		Renderer::getInstance().renderFullscreenTexture(
+			0, 0, m_sviMonoInfo->m_nRenderWidth, m_sviMonoInfo->m_nRenderHeight,
+			m_pWindowFramebuffer->m_nResolveTextureId,
+			true
+		);
+
 		Renderer::getInstance().renderFullscreenTexture(
 			m_sviMonoInfo->viewport.x, m_sviMonoInfo->viewport.y, m_sviMonoInfo->viewport.z, m_sviMonoInfo->viewport.w,
-			m_pWindowFramebuffer->m_nResolveTextureId,
+			m_pMonoFramebuffer->m_nResolveTextureId,
 			true
 		);
 	}
