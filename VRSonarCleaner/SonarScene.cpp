@@ -21,6 +21,8 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_bRightMouseDown(false)
 	, m_bMiddleMouseDown(false)
 	, m_bInitialColorRefresh(false)
+	, m_funcWindowEasing(NULL)
+	, m_fTransitionRate(1.f)
 {
 }
 
@@ -59,7 +61,7 @@ void SonarScene::init()
 		svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 		svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 		svi->projection = glm::perspective(glm::radians(60.f), aspect, 0.01f, 100.f);
-		svi->viewport = glm::ivec4(winSize.x / 2, winSize.y / 2, winSize.x, winSize.y);
+		svi->viewport = glm::ivec4(winSize.x / 2, winSize.y / 2, winSize.x / 2, winSize.y / 2);
 	}
 
 	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/quadview.png");
@@ -69,8 +71,6 @@ void SonarScene::init()
 		tex = new GLTexture("resources/images/quadview.png", false);
 		Renderer::getInstance().addTexture(tex);
 	}
-
-	glScissor(1280, 800, 1280, 800);
 
 	m_pColorScalerTPU = new ColorScaler();
 	//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
@@ -136,17 +136,22 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 	glm::ivec2 windowSize(Renderer::getInstance().getWindow3DViewInfo()->m_nRenderWidth, Renderer::getInstance().getWindow3DViewInfo()->m_nRenderHeight);
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();
 
-	if (ev.key.keysym.sym == SDLK_r)
+
+	
+
+	if (ev.key.keysym.sym == SDLK_f)
 	{
-		if (arcball)
-		{
-			Renderer::getInstance().getCamera()->pos = m_pDataVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-			Renderer::getInstance().getCamera()->lookat = m_pDataVolume->getPosition();
+		m_funcWindowEasing = &easeIn;
+	}
 
-			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
+	if (ev.key.keysym.sym == SDLK_m)
+	{
+		m_funcWindowEasing = &easeOut;
+	}
 
-			arcball->reset();
-		}
+	if (ev.key.keysym.sym == SDLK_o)
+	{
+		m_funcWindowEasing = &easeSine;
 	}
 
 	if (ev.key.keysym.sym == SDLK_SPACE)
@@ -164,27 +169,18 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 		for (auto &cloud : m_vpClouds)
 			cloud->resetAllMarks();
 		
-
 		for (auto &dv : m_vpDataVolumes)
 			dv->resetPositionAndOrientation();
 
 		if (arcball)
 		{
-			cam->pos = m_pDataVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
-			cam->lookat = m_pDataVolume->getPosition();
+			Renderer::getInstance().getCamera()->pos = m_pDataVolume->getPosition() + glm::vec3(0.f, 0.f, 1.f) * 3.f;
+			Renderer::getInstance().getCamera()->lookat = m_pDataVolume->getPosition();
 
-			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
+			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
 
 			arcball->reset();
 		}
-	}
-
-	if (ev.key.keysym.sym == SDLK_SPACE)
-	{
-		DesktopCleanBehavior *desktopEdit = static_cast<DesktopCleanBehavior*>(BehaviorManager::getInstance().getBehavior("desktop_edit"));
-
-		if (desktopEdit)
-			desktopEdit->activate();
 	}
 
 	//MOUSE
@@ -293,21 +289,8 @@ void SonarScene::update()
 	for (auto &dv : m_vpDataVolumes)
 		dv->update();
 
-	auto winSize = Renderer::getInstance().getPresentationWindowSize();
-	auto minSize = winSize / 2;
-	auto winRange = winSize - minSize;
-
-	float rate = 5.f;
-	auto ratio = (1.f + glm::sin(glm::two_pi<float>()*(glm::mod(Renderer::getInstance().getElapsedSeconds(), rate) / rate))) / 2.f;
-
-	auto svi = Renderer::getInstance().getMonoInfo();
-
-	svi->viewport = glm::ivec4(
-		minSize.x * ratio,
-		minSize.y * ratio,
-		minSize.x + winRange.x * (1.f - ratio),
-		minSize.y + winRange.y * (1.f - ratio)
-	);
+	if (m_funcWindowEasing && !m_funcWindowEasing(m_fTransitionRate))
+		m_funcWindowEasing = NULL;
 }
 
 void SonarScene::draw()
@@ -375,6 +358,96 @@ void SonarScene::draw()
 	}
 }
 
+
+bool SonarScene::easeSine(float transitionRate)
+{
+	auto winSize = Renderer::getInstance().getPresentationWindowSize();
+	auto minSize = winSize / 2;
+	auto winRange = winSize - minSize;
+
+	auto ratio = (1.f + glm::sin(glm::two_pi<float>()*(glm::mod(Renderer::getInstance().getElapsedSeconds(), transitionRate) / transitionRate))) / 2.f;
+
+	auto svi = Renderer::getInstance().getMonoInfo();
+
+	svi->viewport = glm::ivec4(
+		minSize.x * ratio,
+		minSize.y * ratio,
+		minSize.x + winRange.x * (1.f - ratio),
+		minSize.y + winRange.y * (1.f - ratio)
+	);
+
+	return true;
+}
+
+bool SonarScene::easeIn(float transitionRate)
+{
+	static float start;
+
+	if (start == 0.f)
+		start = Renderer::getInstance().getElapsedSeconds();
+
+	auto elapsed = Renderer::getInstance().getElapsedSeconds() - start;
+
+	auto ratio = elapsed / transitionRate;
+
+	if (ratio <= 1.f)
+	{
+		ratio = 1.f - glm::sin(glm::half_pi<float>() * ratio);
+
+		auto svi = Renderer::getInstance().getMonoInfo();
+
+		auto winSize = Renderer::getInstance().getPresentationWindowSize();
+		auto minSize = winSize / 2;
+		auto winRange = winSize - minSize;
+
+		svi->viewport = glm::ivec4(
+			minSize.x * ratio,
+			minSize.y * ratio,
+			minSize.x + winRange.x * (1.f - ratio),
+			minSize.y + winRange.y * (1.f - ratio)
+		);
+
+		return true;
+	}
+
+	start = 0.f;
+	return false;
+}
+
+bool SonarScene::easeOut(float transitionRate)
+{
+	static float start;
+
+	if (start == 0.f)
+		start = Renderer::getInstance().getElapsedSeconds();
+
+	auto elapsed = Renderer::getInstance().getElapsedSeconds() - start;
+
+	auto ratio = elapsed / transitionRate;
+
+	if (ratio <= 1.f)
+	{
+		ratio = glm::sin(glm::half_pi<float>() * ratio);
+
+		auto svi = Renderer::getInstance().getMonoInfo();
+
+		auto winSize = Renderer::getInstance().getPresentationWindowSize();
+		auto minSize = winSize / 2;
+		auto winRange = winSize - minSize;
+
+		svi->viewport = glm::ivec4(
+			minSize.x * ratio,
+			minSize.y * ratio,
+			minSize.x + winRange.x * (1.f - ratio),
+			minSize.y + winRange.y * (1.f - ratio)
+		);
+
+		return true;
+	}
+
+	start = 0.f;
+	return false;
+}
 
 void SonarScene::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
 {
