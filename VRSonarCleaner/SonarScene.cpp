@@ -22,7 +22,7 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_bMiddleMouseDown(false)
 	, m_bInitialColorRefresh(false)
 	, m_funcWindowEasing(NULL)
-	, m_fTransitionRate(2.5f)
+	, m_fTransitionRate(0.2f)
 {
 }
 
@@ -286,6 +286,8 @@ void SonarScene::update()
 
 	if (m_funcWindowEasing && !m_funcWindowEasing(m_fTransitionRate))
 		m_funcWindowEasing = NULL;
+
+	m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(0.f, 0.f, 1.f)));
 }
 
 void SonarScene::draw()
@@ -294,7 +296,7 @@ void SonarScene::draw()
 
 	Renderer::RendererSubmission rs;
 	rs.glPrimitiveType = GL_TRIANGLES;
-	rs.shaderName = "lighting";
+	rs.shaderName = "flat";
 	rs.indexType = GL_UNSIGNED_SHORT;
 	rs.indexByteOffset = Renderer::getInstance().getPrimitiveIndexByteOffset("quad");
 	rs.indexBaseVertex = Renderer::getInstance().getPrimitiveIndexBaseVertex("quad");
@@ -363,15 +365,24 @@ bool SonarScene::easeIn(float transitionRate)
 	auto minSize = winSize / 2;
 	auto winRange = winSize - minSize;
 
+	auto transitionRatio = 1.f - static_cast<float>(svi->viewport.x) / static_cast<float>(winRange.x);
+	//std::cout << transitionRatio << std::endl;
+
 	if (start == 0.f)
 	{
-		auto midTransitionRatio = 1.f - static_cast<float>(svi->viewport.x) / static_cast<float>(winRange.x);
-		start = Renderer::getInstance().getElapsedSeconds() - midTransitionRatio * transitionRate;
+		start = Renderer::getInstance().getElapsedSeconds() - transitionRatio * transitionRate;
 	}
 
 	auto elapsed = Renderer::getInstance().getElapsedSeconds() - start;
 
 	auto ratio = elapsed / transitionRate;
+
+	//if (ratio != transitionRatio)
+	//{
+	//	start = Renderer::getInstance().getElapsedSeconds() - transitionRatio * transitionRate;
+	//	elapsed = Renderer::getInstance().getElapsedSeconds() - start;
+	//	ratio = elapsed / transitionRate;
+	//}
 
 	if (ratio <= 1.f)
 	{
@@ -386,6 +397,13 @@ bool SonarScene::easeIn(float transitionRate)
 
 		return true;
 	}
+
+	svi->viewport = glm::ivec4(
+		0,
+		0,
+		winSize.x,
+		winSize.y
+	);
 
 	start = 0.f;
 	return false;
@@ -424,6 +442,13 @@ bool SonarScene::easeOut(float transitionRate)
 
 		return true;
 	}
+
+	svi->viewport = glm::ivec4(
+		minSize.x,
+		minSize.y,
+		minSize.x,
+		minSize.y
+	);
 
 	start = 0.f;
 	return false;
