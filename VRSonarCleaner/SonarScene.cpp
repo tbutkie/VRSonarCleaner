@@ -13,6 +13,19 @@
 
 using namespace std::chrono_literals;
 
+int pinX = 2521;
+int pinY = 1522;
+
+int initX = 1279;
+int initY = 802;
+
+int expandX = 0;
+int expandY = 23;
+
+auto maxSize = glm::ivec2(pinX - expandX, pinY - expandY);
+auto minSize = glm::ivec2(pinX - initX, pinY - initY);
+auto winRange = maxSize - minSize;
+
 SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
 	, m_pDataVolume(NULL)
@@ -61,14 +74,14 @@ void SonarScene::init()
 		svi->m_nRenderHeight = Renderer::getInstance().getUIRenderSize().y;
 		svi->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
 		svi->projection = glm::perspective(glm::radians(60.f), aspect, 0.01f, 100.f);
-		svi->viewport = glm::ivec4(winSize.x / 2, winSize.y / 2, winSize.x / 2, winSize.y / 2);
+		svi->viewport = glm::ivec4(initX, initY, minSize.x, minSize.y);
 	}
 
-	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/quadview.png");
+	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/slice1.png");
 
 	if (tex == NULL)
 	{
-		tex = new GLTexture("resources/images/quadview.png", false);
+		tex = new GLTexture("resources/images/slice1.png", false);
 		Renderer::getInstance().addTexture(tex);
 	}
 
@@ -134,10 +147,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 	LassoTool *lasso = static_cast<LassoTool*>(BehaviorManager::getInstance().getBehavior("lasso"));
 
 	glm::ivec2 windowSize(Renderer::getInstance().getWindow3DViewInfo()->m_nRenderWidth, Renderer::getInstance().getWindow3DViewInfo()->m_nRenderHeight);
-	Renderer::Camera* cam = Renderer::getInstance().getCamera();
-
-
-	
+	Renderer::Camera* cam = Renderer::getInstance().getCamera();	
 
 	if (ev.key.keysym.sym == SDLK_f)
 	{
@@ -303,7 +313,7 @@ void SonarScene::draw()
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
 	rs.VAO = Renderer::getInstance().getPrimitiveVAO();
 	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(svi->m_nRenderWidth / 2.f, svi->m_nRenderHeight / 2.f, 0)) * glm::scale(glm::mat4(), glm::vec3(svi->m_nRenderWidth, svi->m_nRenderHeight, 1));
-	rs.diffuseTexName = "resources/images/quadview.png";
+	rs.diffuseTexName = "resources/images/slice1.png";
 	Renderer::getInstance().addToUIRenderQueue(rs);
 	
 	bool unloadedData = false;
@@ -361,12 +371,7 @@ bool SonarScene::easeIn(float transitionRate)
 
 	auto svi = Renderer::getInstance().getMonoInfo();
 
-	auto winSize = Renderer::getInstance().getPresentationWindowSize();
-	auto minSize = winSize / 2;
-	auto winRange = winSize - minSize;
-
 	auto transitionRatio = 1.f - static_cast<float>(svi->viewport.x) / static_cast<float>(winRange.x);
-	//std::cout << transitionRatio << std::endl;
 
 	if (start == 0.f)
 	{
@@ -377,32 +382,27 @@ bool SonarScene::easeIn(float transitionRate)
 
 	auto ratio = elapsed / transitionRate;
 
-	//if (ratio != transitionRatio)
-	//{
-	//	start = Renderer::getInstance().getElapsedSeconds() - transitionRatio * transitionRate;
-	//	elapsed = Renderer::getInstance().getElapsedSeconds() - start;
-	//	ratio = elapsed / transitionRate;
-	//}
-
 	if (ratio <= 1.f)
 	{
-		ratio = 1.f - glm::sin(glm::half_pi<float>() * ratio);
+		//ratio = glm::sin(glm::half_pi<float>() * ratio);
+
+		auto sizeNow = glm::ceil(glm::vec2(minSize) + glm::vec2(winRange) * glm::sin(glm::half_pi<float>() * ratio));
 
 		svi->viewport = glm::ivec4(
-			minSize.x * ratio,
-			minSize.y * ratio,
-			minSize.x + winRange.x * (1.f - ratio),
-			minSize.y + winRange.y * (1.f - ratio)
+			pinX - sizeNow.x,
+			pinY - sizeNow.y,
+			sizeNow.x,
+			sizeNow.y
 		);
 
 		return true;
 	}
 
 	svi->viewport = glm::ivec4(
-		0,
-		0,
-		winSize.x,
-		winSize.y
+		expandX,
+		expandY,
+		maxSize.x,
+		maxSize.y
 	);
 
 	start = 0.f;
@@ -415,14 +415,11 @@ bool SonarScene::easeOut(float transitionRate)
 
 	auto svi = Renderer::getInstance().getMonoInfo();
 
-	auto winSize = Renderer::getInstance().getPresentationWindowSize();
-	auto minSize = winSize / 2;
-	auto winRange = winSize - minSize;
+	auto transitionRatio = static_cast<float>(svi->viewport.x) / static_cast<float>(winRange.x);
 
 	if (start == 0.f)
 	{
-		auto midTransitionRatio = static_cast<float>(svi->viewport.x) / static_cast<float>(winRange.x);
-		start = Renderer::getInstance().getElapsedSeconds() - midTransitionRatio * transitionRate;
+		start = Renderer::getInstance().getElapsedSeconds() - transitionRatio * transitionRate;
 	}
 
 	auto elapsed = Renderer::getInstance().getElapsedSeconds() - start;
@@ -431,21 +428,21 @@ bool SonarScene::easeOut(float transitionRate)
 
 	if (ratio <= 1.f)
 	{
-		ratio = glm::sin(glm::half_pi<float>() * ratio);
+		auto sizeNow = glm::ceil(glm::vec2(minSize) + glm::vec2(winRange) * glm::sin(glm::half_pi<float>() * (1.f - ratio)));
 
 		svi->viewport = glm::ivec4(
-			minSize.x * ratio,
-			minSize.y * ratio,
-			minSize.x + winRange.x * (1.f - ratio),
-			minSize.y + winRange.y * (1.f - ratio)
+			pinX - sizeNow.x,
+			pinY - sizeNow.y,
+			sizeNow.x,
+			sizeNow.y
 		);
 
 		return true;
 	}
 
 	svi->viewport = glm::ivec4(
-		minSize.x,
-		minSize.y,
+		initX,
+		initY,
 		minSize.x,
 		minSize.y
 	);
