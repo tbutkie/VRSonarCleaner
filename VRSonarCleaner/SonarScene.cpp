@@ -26,6 +26,14 @@ auto maxSize = glm::ivec2(pinX - expandX, pinY - expandY);
 auto minSize = glm::ivec2(pinX - initX, pinY - initY);
 auto winRange = maxSize - minSize;
 
+int clickBoxMinX = 548;
+int clickBoxMinY = 271;
+int clickBoxMaxX = 680;
+int clickBoxMaxY = 441;
+
+int clickBoxRangeX = clickBoxMaxX - clickBoxMinX;
+int clickBoxRangeY = clickBoxMaxY - clickBoxMinY;
+
 SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	: m_pTDM(pTDM)
 	, m_pDataVolume(NULL)
@@ -37,6 +45,7 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_funcWindowEasing(NULL)
 	, m_fTransitionRate(0.2f)
 	, m_nCurrentSlice(1)
+	, m_b3DMode(false)
 {
 }
 
@@ -148,6 +157,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			easeOut(0.f, true);
 		}
 		m_funcWindowEasing = &easeIn;
+		m_b3DMode = true;
 	}
 
 	if (ev.key.keysym.sym == SDLK_m)
@@ -157,6 +167,7 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			easeIn(0.f, true);
 		}
 		m_funcWindowEasing = &easeOut;
+		m_b3DMode = false;
 	}
 
 	if (ev.key.keysym.sym == SDLK_SPACE)
@@ -188,102 +199,69 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 		}
 	}
 
-	//MOUSE
-	if (m_bUseDesktop)
+	if (ev.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
 	{
-		if (ev.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
+		if (ev.button.button == SDL_BUTTON_LEFT)
 		{
-			if (ev.button.button == SDL_BUTTON_LEFT)
+			m_bLeftMouseDown = true;
+
+			int xPos = ev.button.x;
+			int yPos = Renderer::getInstance().getPresentationWindowSize().y - ev.button.y;
+			
+			if (!m_b3DMode &&
+				xPos >= clickBoxMinX && xPos <= clickBoxMaxX &&
+				yPos > clickBoxMinY && yPos < clickBoxMaxY)
 			{
-				m_bLeftMouseDown = true;
+				int sliceSize = clickBoxRangeY / 5;
+				int slice = ((yPos - clickBoxMinY) / sliceSize) + 1;
 
-				if (arcball)
-					arcball->beginDrag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
-
-				if (lasso)
-				{
-					if (m_bRightMouseDown)
-						lasso->end();
-
-					lasso->reset();
-				}
-
-			}
-			if (ev.button.button == SDL_BUTTON_RIGHT)
-			{
-				m_bRightMouseDown = true;
-				if (lasso && !m_bLeftMouseDown)
-					lasso->start(ev.button.x, windowSize.y - ev.button.y);
-			}
-			if (ev.button.button == SDL_BUTTON_MIDDLE)
-			{
-				if (lasso && m_bRightMouseDown)
-				{
-					lasso->end();
-				}
-				m_bMiddleMouseDown = true;
-
-				if (arcball)
-					arcball->translate(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
+				setView(slice);
 			}
 
-		}//end mouse down 
-		else if (ev.type == SDL_MOUSEBUTTONUP) //MOUSE UP
-		{
-			if (ev.button.button == SDL_BUTTON_LEFT)
-			{
-				m_bLeftMouseDown = false;
-
-				if (arcball)
-					arcball->endDrag();
-
-				if (lasso)
-					lasso->reset();
-			}
-			if (ev.button.button == SDL_BUTTON_RIGHT)
-			{
-				m_bRightMouseDown = false;
-
-				if (lasso)
-					lasso->end();
-			}
-			if (ev.button.button == SDL_BUTTON_MIDDLE)
-			{
-				m_bMiddleMouseDown = false;
-			}
-
-		}//end mouse up
-		if (ev.type == SDL_MOUSEMOTION)
-		{
-			if (m_bLeftMouseDown)
-			{
-				if (arcball)
-					arcball->drag(glm::vec2(ev.button.x, windowSize.y - ev.button.y));
-			}
-			if (m_bRightMouseDown && !m_bLeftMouseDown)
-			{
-				if (lasso)
-					lasso->move(ev.button.x, windowSize.y - ev.button.y);
-			}
 		}
-		if (ev.type == SDL_MOUSEWHEEL)
+		if (ev.button.button == SDL_BUTTON_RIGHT)
 		{
-			if (lasso)
-				lasso->reset();
+			m_bRightMouseDown = true;
+		}
+		if (ev.button.button == SDL_BUTTON_MIDDLE)
+		{
+			m_bMiddleMouseDown = true;
+		}
 
-			glm::vec3 eyeForward = glm::normalize(cam->lookat - cam->pos);
-			cam->pos += eyeForward * ((float)ev.wheel.y*0.1f);
+	}//end mouse down
+	else if (ev.type == SDL_MOUSEBUTTONUP) //MOUSE UP
+	{
+		if (ev.button.button == SDL_BUTTON_LEFT)
+		{
+			m_bLeftMouseDown = false;
+		}
+		if (ev.button.button == SDL_BUTTON_RIGHT)
+		{
+			m_bRightMouseDown = false;
+		}
+		if (ev.button.button == SDL_BUTTON_MIDDLE)
+		{
+			m_bMiddleMouseDown = false;
+		}
 
-			float newLen = glm::length(cam->lookat - cam->pos);
+	}//end mouse up
 
-			if (newLen < 0.1f)
-				cam->pos = cam->lookat - eyeForward * 0.1f;
-			if (newLen > 10.f)
-				cam->pos = cam->lookat - eyeForward * 10.f;
+	if (ev.type == SDL_MOUSEMOTION) //MOUSE MOTION
+	{
+		int xPos = ev.button.x;
+		int yPos = Renderer::getInstance().getPresentationWindowSize().y - ev.button.y;
 
-			Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(cam->pos, cam->lookat, cam->up);
+		if (m_bLeftMouseDown && !m_b3DMode &&
+			xPos >= clickBoxMinX && xPos <= clickBoxMaxX &&
+			yPos > clickBoxMinY && yPos < clickBoxMaxY)
+		{
+			int sliceSize = clickBoxRangeY / 5;
+			int slice = ((yPos - clickBoxMinY) / sliceSize) + 1;
+
+			setView(slice);
 		}
 	}
+
 }
 
 void SonarScene::update()
@@ -349,9 +327,9 @@ void SonarScene::draw()
 				continue;
 			}
 
-			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getVAO();
+			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
 			rs.modelToWorldTransform = dv->getTransformDataset(cloud);
-			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPointCount();
+			rs.instanceCount = static_cast<SonarPointCloud*>(cloud)->getPreviewPointCount();
 			Renderer::getInstance().addToDynamicRenderQueue(rs);
 		}
 	}
@@ -465,10 +443,30 @@ bool SonarScene::easeOut(float transitionRate, bool reset)
 
 void SonarScene::setView(int sliceNum)
 {
+	if (m_nCurrentSlice == sliceNum)
+		return;
+
 	m_nCurrentSlice = sliceNum;
+
+	auto minBounds = m_pDataVolume->getMinDataBound();
+	auto maxBounds = m_pDataVolume->getMaxDataBound();
+	auto dims = m_pDataVolume->getDataDimensions();
 
 	switch (sliceNum)
 	{
+	case 1:
+		//m_pDataVolume->setCustomBounds(minBounds, maxBounds);
+		//m_pDataVolume->useCustomBounds(true);
+		break;
+	case 2:
+		//m_pDataVolume->useCustomBounds(false);
+		break;
+	case 3:
+		break;
+	case 4:
+		break;
+	case 5:
+		break;
 	default:
 		break;
 	}

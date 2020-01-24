@@ -46,6 +46,8 @@ private:
 
 	int m_nCurrentSlice;
 
+	bool m_b3DMode;
+
 private:
 	static bool easeIn(float transitionRate, bool reset = false);
 	static bool easeOut(float transitionRate, bool reset = false);
