@@ -40,14 +40,14 @@ private:
 
 	bool m_bInitialColorRefresh;
 
-	bool(*SonarScene::m_funcWindowEasing) (float);
+	bool(*SonarScene::m_funcWindowEasing) (float, bool);
 
 	float m_fTransitionRate; //sec
 
 
 private:
-	static bool easeIn(float transitionRate);
-	static bool easeOut(float transitionRate);
+	static bool easeIn(float transitionRate, bool reset = false);
+	static bool easeOut(float transitionRate, bool reset = false);
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 };
 

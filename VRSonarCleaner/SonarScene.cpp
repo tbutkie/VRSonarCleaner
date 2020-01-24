@@ -151,11 +151,19 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 	if (ev.key.keysym.sym == SDLK_f)
 	{
+		if (m_funcWindowEasing == &easeOut)
+		{
+			easeOut(0.f, true);
+		}
 		m_funcWindowEasing = &easeIn;
 	}
 
 	if (ev.key.keysym.sym == SDLK_m)
 	{
+		if (m_funcWindowEasing == &easeIn)
+		{
+			easeIn(0.f, true);
+		}
 		m_funcWindowEasing = &easeOut;
 	}
 
@@ -294,7 +302,7 @@ void SonarScene::update()
 	for (auto &dv : m_vpDataVolumes)
 		dv->update();
 
-	if (m_funcWindowEasing && !m_funcWindowEasing(m_fTransitionRate))
+	if (m_funcWindowEasing && !m_funcWindowEasing(m_fTransitionRate, false))
 		m_funcWindowEasing = NULL;
 
 	m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(0.f, 0.f, 1.f)));
@@ -365,9 +373,15 @@ void SonarScene::draw()
 	}
 }
 
-bool SonarScene::easeIn(float transitionRate)
+bool SonarScene::easeIn(float transitionRate, bool reset)
 {
 	static float start;
+
+	if (reset)
+	{
+		start = 0.f;
+		return false;
+	}
 
 	auto svi = Renderer::getInstance().getMonoInfo();
 
@@ -409,9 +423,15 @@ bool SonarScene::easeIn(float transitionRate)
 	return false;
 }
 
-bool SonarScene::easeOut(float transitionRate)
+bool SonarScene::easeOut(float transitionRate, bool reset)
 {
 	static float start;
+
+	if (reset)
+	{
+		start = 0.f;
+		return false;
+	}
 
 	auto svi = Renderer::getInstance().getMonoInfo();
 
