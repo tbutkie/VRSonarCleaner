@@ -94,6 +94,8 @@ void ColorScaler::getOrangeBrownScaledColor(float factor, float *r, float *g, fl
 
 void ColorScaler::getRainbowScaledColor(float factor, float *r, float *g, float *b)
 {
+	factor = 1.f - factor;
+
 	int sextant;
 	float vsf, mid1, mid2;
 
