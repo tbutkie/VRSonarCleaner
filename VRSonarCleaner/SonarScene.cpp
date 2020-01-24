@@ -36,6 +36,7 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_bInitialColorRefresh(false)
 	, m_funcWindowEasing(NULL)
 	, m_fTransitionRate(0.2f)
+	, m_nCurrentSlice(1)
 {
 }
 
@@ -77,33 +78,18 @@ void SonarScene::init()
 		svi->viewport = glm::ivec4(initX, initY, minSize.x, minSize.y);
 	}
 
-	GLTexture* tex = Renderer::getInstance().getTexture("resources/images/slice1.png");
-
-	if (tex == NULL)
-	{
-		tex = new GLTexture("resources/images/slice1.png", false);
-		Renderer::getInstance().addTexture(tex);
-	}
+	Renderer::getInstance().addTexture(new GLTexture("resources/images/slice1.png", false));
+	Renderer::getInstance().addTexture(new GLTexture("resources/images/slice2.png", false));
+	Renderer::getInstance().addTexture(new GLTexture("resources/images/slice3.png", false));
+	Renderer::getInstance().addTexture(new GLTexture("resources/images/slice4.png", false));
+	Renderer::getInstance().addTexture(new GLTexture("resources/images/slice5.png", false));
 
 	m_pColorScalerTPU = new ColorScaler();
-	//m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale_BiValue);
-	//m_pColorScalerTPU->setBiValueColorMap(ColorScaler::ColorMap_BiValued::Custom);
 	m_pColorScalerTPU->setColorMode(ColorScaler::Mode::ColorScale);
 	m_pColorScalerTPU->setColorMap(ColorScaler::ColorMap::Rainbow);
 
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_1085.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-267_267_528_1324.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1516.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1508.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-149_149_000_1500.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, "resources/data/sonar/demo/H12676_TJ_3101_Reson7125_SV2_400khz_2014_2014-148_148_000_2022.txt", SonarPointCloud::SONAR_FILETYPE::CARIS));
-
-
 	using namespace std::experimental::filesystem::v1;
-	
-	//path dataset("south_santa_rosa");
-	//path dataset("santa_cruz_south");
-	//path dataset("santa_cruz_basin");
+
 	path dataset("davidson_seamount");
 	
 	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
@@ -129,16 +115,16 @@ void SonarScene::init()
 
 	m_vpDataVolumes.push_back(m_pDataVolume);
 
-	if (m_bUseDesktop)
-	{
-		DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pDataVolume);
-		BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
-		tmp->init();
-		
-		Renderer::getInstance().getCamera()->pos = glm::vec3(0.f, 0.f, 1.f);
-		Renderer::getInstance().getCamera()->up = glm::vec3(0.f, 1.f, 0.f);
-		Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
-	}
+	//if (m_bUseDesktop)
+	//{
+	//	DesktopCleanBehavior *tmp = new DesktopCleanBehavior(m_pDataVolume);
+	//	BehaviorManager::getInstance().addBehavior("desktop_edit", tmp);
+	//	tmp->init();
+	//	
+	//	Renderer::getInstance().getCamera()->pos = glm::vec3(0.f, 0.f, 1.f);
+	//	Renderer::getInstance().getCamera()->up = glm::vec3(0.f, 1.f, 0.f);
+	//	Renderer::getInstance().getWindow3DViewInfo()->view = glm::lookAt(Renderer::getInstance().getCamera()->pos, Renderer::getInstance().getCamera()->lookat, Renderer::getInstance().getCamera()->up);
+	//}
 }
 
 void SonarScene::processSDLEvent(SDL_Event & ev)
@@ -148,6 +134,12 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 	glm::ivec2 windowSize(Renderer::getInstance().getWindow3DViewInfo()->m_nRenderWidth, Renderer::getInstance().getWindow3DViewInfo()->m_nRenderHeight);
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();	
+
+	if (ev.key.keysym.sym >= SDLK_1 && ev.key.keysym.sym <= SDLK_5)
+	{
+		setView(ev.key.keysym.sym - SDLK_0);
+	}
+
 
 	if (ev.key.keysym.sym == SDLK_f)
 	{
@@ -321,7 +313,7 @@ void SonarScene::draw()
 	rs.vertCount = Renderer::getInstance().getPrimitiveIndexCount("quad");
 	rs.VAO = Renderer::getInstance().getPrimitiveVAO();
 	rs.modelToWorldTransform = glm::translate(glm::mat4(), glm::vec3(svi->m_nRenderWidth / 2.f, svi->m_nRenderHeight / 2.f, 0)) * glm::scale(glm::mat4(), glm::vec3(svi->m_nRenderWidth, svi->m_nRenderHeight, 1));
-	rs.diffuseTexName = "resources/images/slice1.png";
+	rs.diffuseTexName = "resources/images/slice" + std::to_string(m_nCurrentSlice) + ".png";
 	Renderer::getInstance().addToUIRenderQueue(rs);
 	
 	bool unloadedData = false;
@@ -469,6 +461,17 @@ bool SonarScene::easeOut(float transitionRate, bool reset)
 
 	start = 0.f;
 	return false;
+}
+
+void SonarScene::setView(int sliceNum)
+{
+	m_nCurrentSlice = sliceNum;
+
+	switch (sliceNum)
+	{
+	default:
+		break;
+	}
 }
 
 void SonarScene::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)

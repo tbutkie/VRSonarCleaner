@@ -44,10 +44,12 @@ private:
 
 	float m_fTransitionRate; //sec
 
+	int m_nCurrentSlice;
 
 private:
 	static bool easeIn(float transitionRate, bool reset = false);
 	static bool easeOut(float transitionRate, bool reset = false);
+	void setView(int sliceNum);
 	void refreshColorScale(ColorScaler* colorScaler, std::vector<SonarPointCloud*> clouds);
 };
 
