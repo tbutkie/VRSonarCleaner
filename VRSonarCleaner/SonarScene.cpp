@@ -14,10 +14,10 @@
 using namespace std::chrono_literals;
 
 int pinX = 2521;
-int pinY = 1522;
+int pinY = 1370;
 
 int initX = 1279;
-int initY = 802;
+int initY = 723;
 
 int expandX = 0;
 int expandY = 23;
@@ -27,9 +27,9 @@ auto minSize = glm::ivec2(pinX - initX, pinY - initY);
 auto winRange = maxSize - minSize;
 
 int clickBoxMinX = 548;
-int clickBoxMinY = 271;
+int clickBoxMinY = 245;
 int clickBoxMaxX = 680;
-int clickBoxMaxY = 441;
+int clickBoxMaxY = 400;
 
 int clickBoxRangeX = clickBoxMaxX - clickBoxMinX;
 int clickBoxRangeY = clickBoxMaxY - clickBoxMinY;
@@ -143,6 +143,9 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 
 	glm::ivec2 windowSize(Renderer::getInstance().getWindow3DViewInfo()->m_nRenderWidth, Renderer::getInstance().getWindow3DViewInfo()->m_nRenderHeight);
 	Renderer::Camera* cam = Renderer::getInstance().getCamera();	
+
+	if (ev.key.keysym.scancode == SDL_SCANCODE_UNKNOWN)
+		return;
 
 	if (ev.key.keysym.sym >= SDLK_1 && ev.key.keysym.sym <= SDLK_5)
 	{
@@ -455,11 +458,11 @@ void SonarScene::setView(int sliceNum)
 	switch (sliceNum)
 	{
 	case 1:
-		//m_pDataVolume->setCustomBounds(minBounds, maxBounds);
-		//m_pDataVolume->useCustomBounds(true);
+		m_pDataVolume->setCustomBounds(minBounds, glm::dvec3(maxBounds.x, maxBounds.y, maxBounds.z * -2.));
+		m_pDataVolume->useCustomBounds(true);
 		break;
 	case 2:
-		//m_pDataVolume->useCustomBounds(false);
+		m_pDataVolume->useCustomBounds(false);
 		break;
 	case 3:
 		break;

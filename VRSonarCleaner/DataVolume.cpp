@@ -500,7 +500,7 @@ void DataVolume::updateTransforms()
 			glm::mat4 customTrans = customDomainToVolumeTransform;
 			customTrans *= handednessConversion;
 			customTrans *= glm::translate(glm::mat4(), dataPositionOffsetInCustomVolume);
-			customTrans *= glm::translate(glm::mat4(), dataCenteringOffset);
+			//customTrans *= glm::translate(glm::mat4(), dataCenteringOffset);
 
 			m_mapCustomDataTransforms[dataset] = customTrans;
 		}
