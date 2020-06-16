@@ -48,6 +48,10 @@ private:
 
 	bool m_b3DMode;
 
+	bool m_bRotateX;
+	bool m_bRotateY;
+	bool m_bRotateZ;
+
 private:
 	static bool easeIn(float transitionRate, bool reset = false);
 	static bool easeOut(float transitionRate, bool reset = false);

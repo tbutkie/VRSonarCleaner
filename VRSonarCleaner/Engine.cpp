@@ -93,14 +93,14 @@ bool Engine::init()
 
 	BehaviorManager::getInstance().init();
 
-	Renderer::getInstance().setSkybox(
-		"resources/images/skybox/sea/right.png",
-		"resources/images/skybox/sea/left.png",
-		"resources/images/skybox/sea/top.png",
-		"resources/images/skybox/sea/bottom.png",
-		"resources/images/skybox/sea/front.png",
-		"resources/images/skybox/sea/back.png"
-	);
+	//Renderer::getInstance().setSkybox(
+	//	"resources/images/skybox/clouds/graycloud_rt.png",
+	//	"resources/images/skybox/clouds/graycloud_lf.png",
+	//	"resources/images/skybox/clouds/graycloud_up.png",
+	//	"resources/images/skybox/clouds/graycloud_dn.png",
+	//	"resources/images/skybox/clouds/graycloud_ft.png",
+	//	"resources/images/skybox/clouds/graycloud_bk.png"
+	//);
 
 	m_pCurrentScene = new SonarScene(m_pTDM);
 

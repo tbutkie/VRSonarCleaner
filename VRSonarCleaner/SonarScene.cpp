@@ -46,6 +46,9 @@ SonarScene::SonarScene(TrackedDeviceManager* pTDM)
 	, m_fTransitionRate(0.2f)
 	, m_nCurrentSlice(1)
 	, m_b3DMode(false)
+	, m_bRotateX(false)
+	, m_bRotateY(false)
+	, m_bRotateZ(false)
 {
 }
 
@@ -62,7 +65,7 @@ void SonarScene::init()
 	
 	glm::vec3 tablePosition = glm::vec3(0.f);
 	glm::quat tableOrientation = glm::angleAxis(glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-	glm::vec3 tableSize = glm::vec3(1.5f, 1.5f, 0.5f);
+	glm::vec3 tableSize = glm::vec3(2.f, 2.f, 0.5f) * 2.f;
 
 	m_pDataVolume = new DataVolume(tablePosition, tableOrientation, tableSize);
 	m_pDataVolume->setBackingColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.f));
@@ -99,23 +102,35 @@ void SonarScene::init()
 
 	using namespace std::experimental::filesystem::v1;
 
-	path dataset("davidson_seamount");
+	//path dataset("davidson_seamount");
+	//
+	//auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+	//
+	//auto acceptsPath = path(basePath).append(path("accept"));
+	//
+	//for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+	//{
+	//	if (is_regular_file(*it))
+	//	{
+	//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+	//		{
+	//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+	//			m_vpClouds.push_back(tmp);
+	//		}
+	//	}
+	//}
+	//
+	//std::cout << m_vpClouds.size() << " files loaded." << std::endl;
+
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/sonar/demo/slice1.xyz")).string(), SonarPointCloud::QIMERA));
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/sonar/demo/slice2.xyz")).string(), SonarPointCloud::QIMERA));
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/sonar/demo/slice3.xyz")).string(), SonarPointCloud::QIMERA));
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/sonar/demo/slice4.xyz")).string(), SonarPointCloud::QIMERA));
+	//m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/sonar/demo/slice5.xyz")).string(), SonarPointCloud::QIMERA));
+
+	m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/lidar/Tile_783383_3315422.las")).string(), SonarPointCloud::LIDAR_LAS));
+
 	
-	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-	
-	auto acceptsPath = path(basePath).append(path("accept"));
-	
-	for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
-	{
-		if (is_regular_file(*it))
-		{
-			if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-			{
-				SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-				m_vpClouds.push_back(tmp);
-			}
-		}
-	}
 
 	for (auto const &cloud : m_vpClouds)
 	{
@@ -202,6 +217,83 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 		}
 	}
 
+	if (ev.key.keysym.sym == SDLK_x && ev.key.keysym.mod & KMOD_SHIFT)
+	{
+		if (ev.key.state == SDL_PRESSED && !m_bRotateX)
+			m_bRotateX = true;
+		else if (ev.key.state == SDL_RELEASED && m_bRotateX)
+			m_bRotateX = false;
+	}
+
+	if (ev.key.keysym.sym == SDLK_y && ev.key.keysym.mod & KMOD_SHIFT)
+	{
+		if (ev.key.state == SDL_PRESSED && !m_bRotateY)
+			m_bRotateY = true;
+		else if (ev.key.state == SDL_RELEASED && m_bRotateY)
+			m_bRotateY = false;
+	}
+
+	if (ev.key.keysym.sym == SDLK_z && ev.key.keysym.mod & KMOD_SHIFT)
+	{
+		if (ev.key.state == SDL_PRESSED && !m_bRotateZ)
+			m_bRotateZ = true;
+		else if (ev.key.state == SDL_RELEASED && m_bRotateZ)
+			m_bRotateZ = false;
+	}
+
+#if _DEBUG
+	if (ev.key.keysym.sym == SDLK_s)
+	{
+		std::cout << "Saving point clouds to single file..." << std::endl;
+
+		FILE *file1, *file2, *file3, *file4, *file5;
+		file1 = fopen("saved_points_1.xyz", "w");
+		file2 = fopen("saved_points_2.xyz", "w");
+		file3 = fopen("saved_points_3.xyz", "w");
+		file4 = fopen("saved_points_4.xyz", "w");
+		file5 = fopen("saved_points_5.xyz", "w");
+
+		auto totalPts = 0ul;
+		auto sliceSize = m_pDataVolume->getDataDimensions().y / 5.;
+		for (auto const &cloud : m_vpClouds)
+		{
+			for (auto const &pt : cloud->m_vdvec3RawPointsPositions)
+			{
+				switch ((int)((pt.y - m_pDataVolume->getMinDataBound().y) / sliceSize))
+				{
+				case 0:
+					fprintf(file1, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				case 1:
+					fprintf(file2, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				case 2:
+					fprintf(file3, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				case 3:
+					fprintf(file4, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				case 4:
+					fprintf(file5, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				default:
+					fprintf(file5, "%lf %lf %lf\n", pt.x, pt.y, pt.z);
+					break;
+				}
+				totalPts++;
+			}
+		}
+
+		std::cout << totalPts << " points saved to file saved_points.xyz" << std::endl;
+
+		fclose(file1);
+		fclose(file2);
+		fclose(file3);
+		fclose(file4);
+		fclose(file5);		
+	}
+#endif
+
 	if (ev.type == SDL_MOUSEBUTTONDOWN) //MOUSE DOWN
 	{
 		if (ev.button.button == SDL_BUTTON_LEFT)
@@ -211,16 +303,22 @@ void SonarScene::processSDLEvent(SDL_Event & ev)
 			int xPos = ev.button.x;
 			int yPos = Renderer::getInstance().getPresentationWindowSize().y - ev.button.y;
 			
-			if (!m_b3DMode &&
-				xPos >= clickBoxMinX && xPos <= clickBoxMaxX &&
-				yPos > clickBoxMinY && yPos < clickBoxMaxY)
+			if (!m_b3DMode)
 			{
-				int sliceSize = clickBoxRangeY / 5;
-				int slice = ((yPos - clickBoxMinY) / sliceSize) + 1;
+				if (xPos >= clickBoxMinX && xPos <= clickBoxMaxX &&
+					yPos > clickBoxMinY && yPos < clickBoxMaxY)
+				{
+					int sliceSize = clickBoxRangeY / 5;
+					int slice = ((yPos - clickBoxMinY) / sliceSize) + 1;
 
-				setView(slice);
+					setView(slice);
+				}
+				else
+				{
+					for (auto &cloud : m_vpClouds)
+						cloud->setEnabled(true);
+				}
 			}
-
 		}
 		if (ev.button.button == SDL_BUTTON_RIGHT)
 		{
@@ -278,7 +376,15 @@ void SonarScene::update()
 	if (m_funcWindowEasing && !m_funcWindowEasing(m_fTransitionRate, false))
 		m_funcWindowEasing = NULL;
 
-	m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(0.f, 0.f, 1.f)));
+	// Rotate data set till interation implemented
+	if (m_bRotateX)
+		m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(1.f, 0.f, 0.f)));
+
+	if (m_bRotateY)
+		m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(0.f, 1.f, 0.f)));
+
+	if (m_bRotateZ)
+		m_pDataVolume->setOrientation(glm::rotate(m_pDataVolume->getOrientation(), glm::radians(1.f), glm::vec3(0.f, 0.f, 1.f)));
 }
 
 void SonarScene::draw()
@@ -329,6 +435,9 @@ void SonarScene::draw()
 				unloadedData = true;
 				continue;
 			}
+
+			if (!static_cast<SonarPointCloud*>(cloud)->isEnabled())
+				continue;
 
 			rs.VAO = static_cast<SonarPointCloud*>(cloud)->getPreviewVAO();
 			rs.modelToWorldTransform = dv->getTransformDataset(cloud);
@@ -451,28 +560,10 @@ void SonarScene::setView(int sliceNum)
 
 	m_nCurrentSlice = sliceNum;
 
-	auto minBounds = m_pDataVolume->getMinDataBound();
-	auto maxBounds = m_pDataVolume->getMaxDataBound();
-	auto dims = m_pDataVolume->getDataDimensions();
+	for (auto &cloud : m_vpClouds)
+		cloud->setEnabled(false);
 
-	switch (sliceNum)
-	{
-	case 1:
-		m_pDataVolume->setCustomBounds(minBounds, glm::dvec3(maxBounds.x, maxBounds.y, maxBounds.z * -2.));
-		m_pDataVolume->useCustomBounds(true);
-		break;
-	case 2:
-		m_pDataVolume->useCustomBounds(false);
-		break;
-	case 3:
-		break;
-	case 4:
-		break;
-	case 5:
-		break;
-	default:
-		break;
-	}
+	m_vpClouds[sliceNum-1]->setEnabled(true);
 }
 
 void SonarScene::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarPointCloud*> clouds)
@@ -491,5 +582,6 @@ void SonarScene::refreshColorScale(ColorScaler * colorScaler, std::vector<SonarP
 
 	// apply new color scale
 	for (auto &cloud : clouds)
-		cloud->resetAllMarks();
+		if (cloud->getFiletype() != SonarPointCloud::SONAR_FILETYPE::LIDAR_LAS)
+			cloud->resetAllMarks();
 }
