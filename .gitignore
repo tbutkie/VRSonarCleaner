@@ -322,4 +322,7 @@ VRSonarCleaner/saved_points*.csv
 VRSonarCleaner/flowgrid_test.fg.cp
 VRSonarCleaner/tmp.flowfieldcurator.cp
 VRSonarCleaner/flowgrid_test.fg.cp
-VRSonarCleaner/resources/data/lidar/housesmall.txt
+VRSonarCleaner/resources/data/sonar/demo/davidson.xyz
+VRSonarCleaner/resources/data/lidar
+
+thirdparty/boost*
