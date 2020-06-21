@@ -9,6 +9,7 @@
 #include <numeric>
 #include <limits>
 
+#include <gtc/type_ptr.hpp>
 
 #include "laszip_api.h"
 
@@ -889,7 +890,7 @@ bool SonarPointCloud::ready()
 			pointVec points = { { 2, 3, 0 },{ 5, 4, 0 },{ 9, 6, 0 },{ 4, 7, 0 },{ 8, 1, 0 },{ 7, 2, 0 },{ 4, 6, 1 } };
 			point_t pt;
 
-			KDTree tree(static_cast<std::vector<double[3]>>(m_vdvec3RawPointsPositions.value_ptr()));
+			KDTree tree(points);
 
 			std::cout << "nearest neighbor test\n(";
 			pt = { 9, 2, 0 };
