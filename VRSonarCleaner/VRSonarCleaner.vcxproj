@@ -172,6 +172,7 @@
     <ClCompile Include="DebugProbe.cpp" />
     <ClCompile Include="DesktopCleanBehavior.cpp" />
     <ClCompile Include="GrabObjectBehavior.cpp" />
+    <ClCompile Include="kdtree.cpp" />
     <ClCompile Include="Object3D.cpp" />
     <ClCompile Include="PointCleanProbe.cpp" />
     <ClCompile Include="PrimitivesFactory.cpp" />
@@ -205,6 +206,7 @@
     <ClInclude Include="DebugProbe.h" />
     <ClInclude Include="DesktopCleanBehavior.h" />
     <ClInclude Include="GrabObjectBehavior.h" />
+    <ClInclude Include="kdtree.h" />
     <ClInclude Include="Object3D.h" />
     <ClInclude Include="PrimitivesFactory.h" />
     <ClInclude Include="SceneBase.h" />

@@ -9,7 +9,10 @@
 #include <numeric>
 #include <limits>
 
+
 #include "laszip_api.h"
+
+#include "kdtree.h"
 
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
 	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
@@ -404,6 +407,7 @@ bool SonarPointCloud::loadLIDAR()
 
 	Renderer::getInstance().showMessage(std::string("Loading ") + getName());
 
+
 	if (laszip_load_dll())
 	{
 		fprintf(stderr, "DLL ERROR: loading LASzip DLL\n");
@@ -457,7 +461,7 @@ bool SonarPointCloud::loadLIDAR()
 
 
 	std::cout << "Compressed: " << (is_compressed ? "true" : "false") << std::endl;
-	std::cout << "Signature: " << header->file_source_ID << std::endl;
+	std::cout << "Signature: " << header->generating_software << std::endl;
 	std::cout << "Points count: " << header->number_of_point_records << std::endl;
 	std::cout << "X Min: " << header->min_x << std::endl;
 	std::cout << "X Max: " << header->max_x << std::endl;
@@ -881,6 +885,31 @@ bool SonarPointCloud::ready()
 			m_bLoaded = true;
 			
 			Renderer::getInstance().showMessage(std::string("Successfully loaded ") + getName());
+
+			pointVec points = { { 2, 3, 0 },{ 5, 4, 0 },{ 9, 6, 0 },{ 4, 7, 0 },{ 8, 1, 0 },{ 7, 2, 0 },{ 4, 6, 1 } };
+			point_t pt;
+
+			KDTree tree(static_cast<std::vector<double[3]>>(m_vdvec3RawPointsPositions.value_ptr()));
+
+			std::cout << "nearest neighbor test\n(";
+			pt = { 9, 2, 0 };
+			auto res = tree.nearest_point(pt);
+			for (double b : res) {
+				//std::cout << b << " ";
+			}
+			std::cout << ")\n";
+
+			pt = { 5, 5, 0 };
+
+			auto res2 = tree.neighborhood_points(pt, 2);
+
+			std::cout << "k nearest neighbors test\n(";
+			for (point_t a : res2) {
+				for (double b : a) {
+					std::cout << b << " ";
+				}
+				std::cout << ")\n";
+			}
 
 			return true;
 		}
