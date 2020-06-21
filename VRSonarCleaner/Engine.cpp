@@ -116,7 +116,7 @@ bool Engine::init()
 
 	//m_pCurrentScene = new FlowScene(m_pTDM);	
 	//m_pCurrentScene = new HairySlicesStudyScene(m_fDisplayDiagonalInches, m_pTDM);
-	m_pCurrentScene = new FishTankSonarScene(m_pTDM, m_fDisplayDiagonalInches);
+	m_pCurrentScene = new SonarScene(m_pTDM);
 
 	m_pCurrentScene->init();
 
