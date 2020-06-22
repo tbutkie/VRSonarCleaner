@@ -85,23 +85,26 @@ void SonarScene::init()
 	//path dataset("south_santa_rosa");
 	//path dataset("santa_cruz_south");
 	//path dataset("santa_cruz_basin");
-	path dataset("davidson_seamount");
-	
-	auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
-	
-	auto acceptsPath = path(basePath).append(path("accept"));
-	
-	for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
-	{
-		if (is_regular_file(*it))
-		{
-			if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
-			{
-				SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
-				m_vpClouds.push_back(tmp);
-			}
-		}
-	}
+	//path dataset("davidson_seamount");
+	//
+	//auto basePath = current_path().append(path("resources/data/sonar/nautilus"));
+	//
+	//auto acceptsPath = path(basePath).append(path("accept"));
+	//
+	//for (directory_iterator it(acceptsPath.append(dataset)); it != directory_iterator(); ++it)
+	//{
+	//	if (is_regular_file(*it))
+	//	{
+	//		if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
+	//		{
+	//			SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::QIMERA);
+	//			m_vpClouds.push_back(tmp);
+	//		}
+	//	}
+	//}
+
+	m_vpClouds.push_back(new SonarPointCloud(m_pColorScalerTPU, current_path().append(path("resources/data/lidar/Tile_783383_3315422.las")).string(), SonarPointCloud::LIDAR_LAS));
+
 
 	for (auto const &cloud : m_vpClouds)
 	{

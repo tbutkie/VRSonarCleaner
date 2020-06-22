@@ -9,14 +9,22 @@
 #include <numeric>
 #include <limits>
 
+#include <gtc/type_ptr.hpp>
+
+#include "laszip_api.h"
+
+#include "kdtree.h"
+
 SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fileName, SONAR_FILETYPE filetype)
 	: Dataset(fileName, (filetype == XYZF || filetype == QIMERA) ? true : false)
+	, m_Sonar_Filetype(filetype)
 	, m_glVAO(0u)
 	, m_glPreviewVAO(0u)
 	, m_glPointsBufferVBO(0u)
 	, m_pColorScaler(colorScaler)
 	, m_iPreviewReductionFactor(10)
 	, m_bPointsAllocated(false)
+	, m_bEnabled(true)
 	, refreshNeeded(true)
 	, previewRefreshNeeded(true)
 	, m_nPoints(0)
@@ -28,7 +36,7 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	, m_fMinDepthTPU(std::numeric_limits<float>::max())
 	, m_fMaxDepthTPU(-std::numeric_limits<float>::max())
 {
-	switch (filetype)
+	switch (m_Sonar_Filetype)
 	{
 	case SonarPointCloud::CARIS:
 		m_Future = std::async(std::launch::async, &SonarPointCloud::loadCARISTxt, this);
@@ -39,8 +47,11 @@ SonarPointCloud::SonarPointCloud(ColorScaler * const colorScaler, std::string fi
 	case SonarPointCloud::QIMERA:
 		m_Future = std::async(std::launch::async, &SonarPointCloud::loadQimeraTxt, this);
 		break;
-	case SonarPointCloud::LIDAR:
+	case SonarPointCloud::LIDAR_TXT:
 		m_Future = std::async(std::launch::async, &SonarPointCloud::loadLIDARTxt, this);
+		break;
+	case SonarPointCloud::LIDAR_LAS:
+		m_Future = std::async(std::launch::async, &SonarPointCloud::loadLIDAR, this);
 		break;
 	default:
 		break;
@@ -67,6 +78,7 @@ void SonarPointCloud::initPoints(int numPointsToAllocate)
 	
 	m_vdvec3RawPointsPositions.resize(m_nPoints);
 	m_vvec3AdjustedPointsPositions.resize(m_nPoints);
+	m_vvec3DefaultPointsColors.resize(m_nPoints);
 	m_vvec4PointsColors.resize(m_nPoints);
 	m_vuiPointsMarks.resize(m_nPoints);
 	m_vfPointsDepthTPU.resize(m_nPoints);
@@ -100,6 +112,7 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 	m_pColorScaler->getBiValueScaledColor(depthTPU, positionTPU, &r, &g, &b);
 	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
 
+
 	m_vfPointsDepthTPU[index] = depthTPU;
 	m_vfPointsPositionTPU[index] = positionTPU;
 
@@ -121,13 +134,17 @@ void SonarPointCloud::setUncertaintyPoint(int index, double lonX, double latY, d
 
 void SonarPointCloud::setColoredPoint(int index, double lonX, double latY, double depth, float r, float g, float b)
 {
-	m_vdvec3RawPointsPositions[index] = glm::dvec3(lonX, latY, depth);
+	glm::dvec3 pt(lonX, latY, depth);
+	m_vdvec3RawPointsPositions[index] = pt;
 
-	m_vvec4PointsColors[index] = glm::vec4(r, g, b, 1.f);
+	m_vvec3DefaultPointsColors[index] = glm::vec3(r, g, b);
+	m_vvec4PointsColors[index] = glm::vec4(m_vvec3DefaultPointsColors[index], 1.f);
 
 	m_vfPointsDepthTPU[index] = 0.f;
 	m_vfPointsPositionTPU[index] = 0.f;
 	m_vuiPointsMarks[index] = 0u;
+
+	checkNewPosition(pt);
 }
 
 
@@ -363,7 +380,6 @@ bool SonarPointCloud::loadLIDARTxt()
 		{
 			setUncertaintyPoint(index++, x, y, -height, 0.f, 0.f);
 			averageHeight += height;
-			assert(depth < 0.);
 		}
 		averageHeight /= m_nPoints;
 
@@ -384,6 +400,213 @@ bool SonarPointCloud::loadLIDARTxt()
 
 	return true;
 }
+
+
+bool SonarPointCloud::loadLIDAR()
+{
+	printf("Loading LIDAR Point Cloud from %s\n", getName().c_str());
+
+	Renderer::getInstance().showMessage(std::string("Loading ") + getName());
+
+
+	if (laszip_load_dll())
+	{
+		fprintf(stderr, "DLL ERROR: loading LASzip DLL\n");
+		return false;
+	}
+
+	// get version of LASzip DLL
+
+	laszip_U8 version_major;
+	laszip_U8 version_minor;
+	laszip_U16 version_revision;
+	laszip_U32 version_build;
+
+	if (laszip_get_version(&version_major, &version_minor, &version_revision, &version_build))
+	{
+		fprintf(stderr, "DLL ERROR: getting LASzip DLL version number\n");
+		return false;
+	}
+
+	fprintf(stderr, "LASzip DLL v%d.%d r%d (build %d)\n", (int)version_major, (int)version_minor, (int)version_revision, (int)version_build);
+
+	// create the reader
+
+	laszip_POINTER laszip_reader;
+	if (laszip_create(&laszip_reader))
+	{
+		fprintf(stderr, "DLL ERROR: creating laszip reader\n");
+		return false;
+	}
+
+	// open the reader
+
+	laszip_BOOL is_compressed = 0;
+	if (laszip_open_reader(laszip_reader, getName().c_str(), &is_compressed))
+	{
+		fprintf(stderr, "DLL ERROR: opening laszip reader for '%s'\n", getName().c_str());
+		return false;
+	}
+
+	fprintf(stderr, "file '%s' is %scompressed\n", getName().c_str(), (is_compressed ? "" : "un"));
+
+	// get a pointer to the header of the reader that was just populated
+
+	laszip_header* header;
+
+	if (laszip_get_header_pointer(laszip_reader, &header))
+	{
+		fprintf(stderr, "DLL ERROR: getting header pointer from laszip reader\n");
+		return false;
+	}
+
+
+	std::cout << "Compressed: " << (is_compressed ? "true" : "false") << std::endl;
+	std::cout << "Signature: " << header->generating_software << std::endl;
+	std::cout << "Points count: " << header->number_of_point_records << std::endl;
+	std::cout << "X Min: " << header->min_x << std::endl;
+	std::cout << "X Max: " << header->max_x << std::endl;
+	std::cout << "Y Min: " << header->min_y << std::endl;
+	std::cout << "Y Max: " << header->max_y << std::endl;
+	std::cout << "Z Min: " << header->min_z << std::endl;
+	std::cout << "Z Max: " << header->max_z << std::endl;
+
+	// how many points does the file have
+
+	laszip_I64 npoints = (header->number_of_point_records ? header->number_of_point_records : header->extended_number_of_point_records);
+
+	// report how many points the file has
+
+	fprintf(stderr, "file '%s' contains %I64d points\n", getName().c_str(), npoints);
+
+	initPoints(npoints);
+
+	// get a pointer to the points that will be read
+
+	laszip_point* point;
+
+	if (laszip_get_point_pointer(laszip_reader, &point))
+	{
+		fprintf(stderr, "DLL ERROR: getting point pointer from laszip reader\n");
+		return false;
+	}	
+
+	// read the points
+
+	laszip_I64 p_count = 0;
+	double averageHeight = 0.0;
+
+	while (p_count < npoints)
+	{
+		// read a point
+
+		if (laszip_read_point(laszip_reader))
+		{
+			fprintf(stderr, "DLL ERROR: reading point %I64d\n", p_count);
+		}
+
+		glm::vec3 color(point->rgb[0], point->rgb[1], point->rgb[2]);
+		color /= float(1 << 16);
+
+		setColoredPoint(p_count++, point->X, point->Y, -point->Z, color.r, color.g, color.b);
+		averageHeight += point->Z;
+	}
+
+	fprintf(stderr, "successfully read %I64d points\n", p_count);
+
+	averageHeight /= m_nPoints;
+
+	printf("Loaded %d points\n", npoints);
+
+	printf("Original Min/Maxes:\n");
+	printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+	printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+	printf("Height Min: %f Max: %f\n", getZMin(), getZMax());
+	printf("Height Avg: %f\n", averageHeight);
+	
+
+	// close the reader
+
+	if (laszip_close_reader(laszip_reader))
+	{
+		fprintf(stderr, "DLL ERROR: closing laszip reader\n");
+		return false;
+	}
+
+	// destroy the reader
+
+	if (laszip_destroy(laszip_reader))
+	{
+		fprintf(stderr, "DLL ERROR: destroying laszip reader\n");
+		return false;
+	}
+
+	
+	adjustPoints();
+
+	setRefreshNeeded();
+
+
+	return true;
+}
+
+
+//bool SonarPointCloud::loadLIDAR()
+//{
+//	printf("Loading LIDAR Point Cloud from %s\n", getName().c_str());
+//
+//	Renderer::getInstance().showMessage(std::string("Loading ") + getName());
+//	
+//	std::ifstream ifs;
+//	ifs.open(getName().c_str(), std::ios::in | std::ios::binary);
+//	liblas::ReaderFactory f;
+//	liblas::Reader reader = f.CreateWithStream(ifs);
+//	liblas::Header const& header = reader.GetHeader();
+//
+//	std::cout << "Compressed: " << ((header.Compressed() == true) ? "true" : "false") << std::endl;
+//	std::cout << "Signature: " << header.GetFileSignature() << std::endl;
+//	std::cout << "Points count: " << header.GetPointRecordsCount() << std::endl;
+//	std::cout << "X Min: " << header.GetMinX() << std::endl;
+//	std::cout << "X Max: " << header.GetMaxX() << std::endl;
+//	std::cout << "Y Min: " << header.GetMinY() << std::endl;
+//	std::cout << "Y Max: " << header.GetMaxY() << std::endl;
+//	std::cout << "Z Min: " << header.GetMinZ() << std::endl;
+//	std::cout << "Z Max: " << header.GetMaxZ() << std::endl;
+//
+//	initPoints(header.GetPointRecordsCount());
+//
+//	GLuint index = 0u;
+//	double averageHeight = 0.0;
+//
+//	while (reader.ReadNextPoint())
+//	{
+//		liblas::Point const& p = reader.GetPoint();
+//		glm::vec3 color(p.GetColor().GetRed(), p.GetColor().GetGreen(), p.GetColor().GetBlue());
+//		color /= float(1 << 16);
+//
+//		setColoredPoint(index++, p.GetX(), p.GetY(), -p.GetZ(), color.r, color.g, color.b);
+//		averageHeight += p.GetZ();
+//	}
+//
+//	averageHeight /= m_nPoints;
+//
+//	printf("Loaded %d points\n", index);
+//
+//	printf("Original Min/Maxes:\n");
+//	printf("X Min: %f Max: %f\n", getXMin(), getXMax());
+//	printf("Y Min: %f Max: %f\n", getYMin(), getYMax());
+//	printf("Height Min: %f Max: %f\n", getZMin(), getZMax());
+//	printf("Height Avg: %f\n", averageHeight);
+//	
+//	ifs.close();
+//
+//	adjustPoints();
+//
+//	setRefreshNeeded();
+//	
+//
+//	return true;
+//}
 
 
 
@@ -507,6 +730,11 @@ unsigned int SonarPointCloud::getPreviewPointCount()
 	return getPointCount() / m_iPreviewReductionFactor;
 }
 
+SonarPointCloud::SONAR_FILETYPE SonarPointCloud::getFiletype()
+{
+	return m_Sonar_Filetype;
+}
+
 bool SonarPointCloud::getRefreshNeeded()
 {
 	return refreshNeeded;
@@ -589,23 +817,30 @@ bool SonarPointCloud::s_funcPosTPUMaxCompare(SonarPointCloud * const & lhs, Sona
 
 glm::vec3 SonarPointCloud::getDefaultPointColor(unsigned int index)
 {
-	glm::vec3 col;
-	switch (m_pColorScaler->getColorMode())
+	if (m_Sonar_Filetype == SonarPointCloud::LIDAR_LAS)
 	{
-	case ColorScaler::Mode::ColorScale:
+		return m_vvec3DefaultPointsColors[index];
+	}
+	else
 	{
-		m_pColorScaler->getScaledColorForValue(m_vdvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
-		break;
+		glm::vec3 col;
+		switch (m_pColorScaler->getColorMode())
+		{
+		case ColorScaler::Mode::ColorScale:
+		{
+			m_pColorScaler->getScaledColorForValue(m_vdvec3RawPointsPositions[index].z, &col.r, &col.g, &col.b);
+			break;
+		}
+		case ColorScaler::Mode::ColorScale_BiValue:
+		{
+			m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &col.r, &col.g, &col.b);
+			break;
+		}
+		default:
+			break;
+		}
+		return col;
 	}
-	case ColorScaler::Mode::ColorScale_BiValue:
-	{
-		m_pColorScaler->getBiValueScaledColor(m_vfPointsDepthTPU[index], m_vfPointsPositionTPU[index], &col.r, &col.g, &col.b);
-		break;
-	}
-	default:
-		break;
-	}
-	return col;
 }
 
 void SonarPointCloud::adjustPoints()
@@ -649,6 +884,34 @@ bool SonarPointCloud::ready()
 			printf("Successfully loaded file %s\n", getName().c_str());
 			createAndLoadBuffers();
 			m_bLoaded = true;
+			
+			Renderer::getInstance().showMessage(std::string("Successfully loaded ") + getName());
+
+			pointVec points = { { 2, 3, 0 },{ 5, 4, 0 },{ 9, 6, 0 },{ 4, 7, 0 },{ 8, 1, 0 },{ 7, 2, 0 },{ 4, 6, 1 } };
+			point_t pt;
+
+			KDTree tree(points);
+
+			std::cout << "nearest neighbor test\n(";
+			pt = { 9, 2, 0 };
+			auto res = tree.nearest_point(pt);
+			for (double b : res) {
+				//std::cout << b << " ";
+			}
+			std::cout << ")\n";
+
+			pt = { 5, 5, 0 };
+
+			auto res2 = tree.neighborhood_points(pt, 2);
+
+			std::cout << "k nearest neighbors test\n(";
+			for (point_t a : res2) {
+				for (double b : a) {
+					std::cout << b << " ";
+				}
+				std::cout << ")\n";
+			}
+
 			return true;
 		}
 		else
@@ -656,6 +919,16 @@ bool SonarPointCloud::ready()
 	}
 
 	return false;
+}
+
+void SonarPointCloud::setEnabled(bool yesno)
+{
+	m_bEnabled = yesno;
+}
+
+bool SonarPointCloud::isEnabled()
+{
+	return m_bEnabled;
 }
 
 void SonarPointCloud::markPoint(unsigned int index, int code)

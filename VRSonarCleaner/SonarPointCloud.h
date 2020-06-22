@@ -21,7 +21,8 @@ public:
 		CARIS,
 		XYZF,
 		QIMERA,
-		LIDAR
+		LIDAR_TXT,
+		LIDAR_LAS
 	};
 
 	public:
@@ -29,6 +30,9 @@ public:
 		~SonarPointCloud();
 
 		bool ready();
+
+		void setEnabled(bool yesno);
+		bool isEnabled();
 		
 		bool getRefreshNeeded();
 		void setRefreshNeeded();
@@ -38,6 +42,8 @@ public:
 		unsigned int getPointCount();
 		GLuint getPreviewVAO();
 		unsigned int getPreviewPointCount();
+
+		SONAR_FILETYPE getFiletype();
 
 		//methods:
 
@@ -76,20 +82,25 @@ public:
 		static bool s_funcPosTPUMinCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 		static bool s_funcPosTPUMaxCompare(SonarPointCloud* const &lhs, SonarPointCloud* const &rhs);
 
+		std::vector<glm::dvec3> m_vdvec3RawPointsPositions;
 	private:
+		SONAR_FILETYPE m_Sonar_Filetype;
+
 		std::future<bool> m_Future;
 
 		//variables
 		float m_fMinDepthTPU, m_fMaxDepthTPU, m_fMinPositionalTPU, m_fMaxPositionalTPU;
 
-		std::vector<glm::dvec3> m_vdvec3RawPointsPositions;
 		std::vector<glm::vec3> m_vvec3AdjustedPointsPositions;
+		std::vector<glm::vec3> m_vvec3DefaultPointsColors;
 		std::vector<glm::vec4> m_vvec4PointsColors;
 		std::vector<GLuint> m_vuiPointsMarks;
 		std::vector<float> m_vfPointsDepthTPU;
 		std::vector<float> m_vfPointsPositionTPU;
 		unsigned int m_nPoints;
 		bool m_bPointsAllocated;
+
+		bool m_bEnabled;
 
 		GLuint m_glInstancedSpriteVBO;
 
@@ -111,6 +122,7 @@ public:
 		bool loadCARISTxt();
 		bool loadQimeraTxt();
 		bool loadLIDARTxt();
+		bool loadLIDAR();
 		bool loadStudyCSV();
 
 		glm::vec3 getDefaultPointColor(unsigned int index);

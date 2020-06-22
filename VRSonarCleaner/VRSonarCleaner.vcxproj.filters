@@ -258,6 +258,9 @@
     <ClCompile Include="HairySlicesStudyScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="kdtree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\lodepng.h">
@@ -475,6 +478,9 @@
     </ClInclude>
     <ClInclude Include="HairySlicesStudyScene.h">
       <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="kdtree.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

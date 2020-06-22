@@ -83,7 +83,7 @@ void FishTankSonarScene::init()
 			{
 				if (std::find_if(m_vpClouds.begin(), m_vpClouds.end(), [&it](SonarPointCloud* &pc) { return pc->getName() == (*it).path().string(); }) == m_vpClouds.end())
 				{
-					SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::LIDAR);
+					SonarPointCloud* tmp = new SonarPointCloud(m_pColorScalerTPU, (*it).path().string(), SonarPointCloud::LIDAR_TXT);
 					m_vpClouds.push_back(tmp);
 				}
 			}
