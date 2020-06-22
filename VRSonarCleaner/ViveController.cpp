@@ -174,24 +174,45 @@ bool ViveController::updateControllerState()
 
 		// Find buttons associated with component and handle state changes/events
 
-		float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
-
-		if (triggerPull >= getHairTriggerThreshold())
+		// HACK: Probe for Index Controller
+		if (m_strRenderModelName.compare(0, 17, "{indexcontroller}") == 0)
 		{
-			m_CustomState.m_fTriggerPull = triggerPull;
-
-			m_CustomState.m_bTriggerEngaged = true;			
-
-			m_CustomState.m_bTriggerClicked = triggerPull >= 1.f;
+			if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_SteamVR_Trigger) != component->m_vButtonsAssociated.end())
+			{
+				if (component->justPressed())
+				{
+					m_CustomState.m_bTriggerEngaged = true;
+					m_CustomState.m_bTriggerClicked = true;
+					m_CustomState.m_fTriggerPull = 1.f;
+				}
+				else if (component->justUnpressed()) // TRIGGER DISENGAGED
+				{
+					m_CustomState.m_bTriggerEngaged = false;
+					m_CustomState.m_bTriggerClicked = false;
+					m_CustomState.m_fTriggerPull = 0.f;
+				}
+			}
 		}
-		// TRIGGER DISENGAGED
 		else
 		{
-			m_CustomState.m_bTriggerEngaged = false;
-			m_CustomState.m_bTriggerClicked = false;
-			m_CustomState.m_fTriggerPull = 0.f;
+			float triggerPull = m_ControllerState.rAxis[m_nTriggerAxis].x; // trigger data on x axis
+
+			if (triggerPull >= getHairTriggerThreshold())
+			{
+				m_CustomState.m_fTriggerPull = triggerPull;
+
+				m_CustomState.m_bTriggerEngaged = true;
+
+				m_CustomState.m_bTriggerClicked = triggerPull >= 1.f;
+			}
+			// TRIGGER DISENGAGED
+			else
+			{
+				m_CustomState.m_bTriggerEngaged = false;
+				m_CustomState.m_bTriggerClicked = false;
+				m_CustomState.m_fTriggerPull = 0.f;
+			}
 		}
-		
 
 		if (std::find(component->m_vButtonsAssociated.begin(), component->m_vButtonsAssociated.end(), vr::k_EButton_SteamVR_Touchpad) != component->m_vButtonsAssociated.end())
 		{
